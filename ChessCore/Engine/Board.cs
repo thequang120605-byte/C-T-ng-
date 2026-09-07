@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ChessCore.Enums;
 using ChessCore.Models;
 
 namespace ChessCore.Engine
@@ -65,12 +66,12 @@ namespace ChessCore.Engine
             return Grid[row, col];
         }
 
-        public bool MakeMove(Move move)
+        public bool MakeMove(EngineMove move)
         {
             Piece p = GetPieceAt(move.From.Row, move.From.Col);
             if (p == null || p.Color != CurrentTurn) return false;
 
-            List<Move> validMoves = MoveGenerator.GetValidMoves(this, move.From);
+            List<EngineMove> validMoves = MoveGenerator.GetValidMoves(this, move.From);
             if (!validMoves.Exists(m => m.To.Equals(move.To))) return false;
 
             // Thực hiện di chuyển & bắt quân

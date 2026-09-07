@@ -1,13 +1,14 @@
 using System.Collections.Generic;
+using ChessCore.Enums;
 using ChessCore.Models;
 
 namespace ChessCore.Engine
 {
     public static class MoveGenerator
     {
-        public static List<Move> GetValidMoves(Board board, Position from)
+        public static List<EngineMove> GetValidMoves(Board board, Position from)
         {
-            List<Move> moves = new List<Move>();
+            List<EngineMove> moves = new List<EngineMove>();
             Piece p = board.GetPieceAt(from.Row, from.Col);
             if (p == null) return moves;
 
@@ -39,9 +40,9 @@ namespace ChessCore.Engine
             return moves;
         }
 
-        private static List<Move> GetRookMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetRookMoves(Board board, Position from, PieceColor color)
         {
-            List<Move> moves = new List<Move>();
+            List<EngineMove> moves = new List<EngineMove>();
             int[] dR = { -1, 1, 0, 0 };
             int[] dC = { 0, 0, -1, 1 };
 
@@ -54,11 +55,11 @@ namespace ChessCore.Engine
                     Piece target = board.GetPieceAt(r, c);
                     if (target == null)
                     {
-                        moves.Add(new Move(from, new Position(r, c)));
+                        moves.Add(new EngineMove(from, new Position(r, c)));
                     }
                     else
                     {
-                        if (target.Color != color) moves.Add(new Move(from, new Position(r, c), target));
+                        if (target.Color != color) moves.Add(new EngineMove(from, new Position(r, c), target));
                         break;
                     }
                     r += dR[i];
@@ -68,9 +69,9 @@ namespace ChessCore.Engine
             return moves;
         }
 
-        private static List<Move> GetHorseMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetHorseMoves(Board board, Position from, PieceColor color)
         {
-            List<Move> moves = new List<Move>();
+            List<EngineMove> moves = new List<EngineMove>();
             int[] dRowBlock = { -1, 1, 0, 0 };
             int[] dColBlock = { 0, 0, -1, 1 };
 
@@ -95,9 +96,9 @@ namespace ChessCore.Engine
             return moves;
         }
 
-        private static List<Move> GetElephantMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetElephantMoves(Board board, Position from, PieceColor color)
         {
-            List<Move> moves = new List<Move>();
+            List<EngineMove> moves = new List<EngineMove>();
             int[] dR = { -2, -2, 2, 2 };
             int[] dC = { -2, 2, -2, 2 };
             int[] eyeR = { -1, -1, 1, 1 };
@@ -120,9 +121,9 @@ namespace ChessCore.Engine
             return moves;
         }
 
-        private static List<Move> GetAdvisorMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetAdvisorMoves(Board board, Position from, PieceColor color)
         {
-            List<Move> moves = new List<Move>();
+            List<EngineMove> moves = new List<EngineMove>();
             int[] dR = { -1, -1, 1, 1 };
             int[] dC = { -1, 1, -1, 1 };
 
@@ -135,9 +136,9 @@ namespace ChessCore.Engine
             return moves;
         }
 
-        private static List<Move> GetKingMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetKingMoves(Board board, Position from, PieceColor color)
         {
-            List<Move> moves = new List<Move>();
+            List<EngineMove> moves = new List<EngineMove>();
             int[] dR = { -1, 1, 0, 0 };
             int[] dC = { 0, 0, -1, 1 };
 
@@ -150,9 +151,9 @@ namespace ChessCore.Engine
             return moves;
         }
 
-        private static List<Move> GetCannonMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetCannonMoves(Board board, Position from, PieceColor color)
         {
-            List<Move> moves = new List<Move>();
+            List<EngineMove> moves = new List<EngineMove>();
             int[] dR = { -1, 1, 0, 0 };
             int[] dC = { 0, 0, -1, 1 };
 
@@ -169,7 +170,7 @@ namespace ChessCore.Engine
                     {
                         if (targetPiece == null)
                         {
-                            moves.Add(new Move(from, new Position(r, c)));
+                            moves.Add(new EngineMove(from, new Position(r, c)));
                         }
                         else
                         {
@@ -182,7 +183,7 @@ namespace ChessCore.Engine
                         {
                             if (targetPiece.Color != color)
                             {
-                                moves.Add(new Move(from, new Position(r, c), targetPiece));
+                                moves.Add(new EngineMove(from, new Position(r, c), targetPiece));
                             }
                             break;
                         }
@@ -194,9 +195,9 @@ namespace ChessCore.Engine
             return moves;
         }
 
-        private static List<Move> GetPawnMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetPawnMoves(Board board, Position from, PieceColor color)
         {
-            List<Move> moves = new List<Move>();
+            List<EngineMove> moves = new List<EngineMove>();
             int forward = color == PieceColor.Red ? -1 : 1;
             bool isCrossedRiver = color == PieceColor.Red ? from.Row <= 4 : from.Row >= 5;
 
@@ -218,15 +219,15 @@ namespace ChessCore.Engine
             return color == PieceColor.Red ? r >= 7 && r <= 9 : r >= 0 && r <= 2;
         }
 
-        private static void AddMoveIfValid(Board board, List<Move> moves, Position from, int r, int c, PieceColor color)
+        private static void AddMoveIfValid(Board board, List<EngineMove> moves, Position from, int r, int c, PieceColor color)
         {
             if (!IsInsideBoard(r, c)) return;
             Piece target = board.GetPieceAt(r, c);
 
             if (target == null)
-                moves.Add(new Move(from, new Position(r, c)));
+                moves.Add(new EngineMove(from, new Position(r, c)));
             else if (target.Color != color)
-                moves.Add(new Move(from, new Position(r, c), target));
+                moves.Add(new EngineMove(from, new Position(r, c), target));
         }
     }
 }
