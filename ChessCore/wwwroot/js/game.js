@@ -15,13 +15,11 @@ document.addEventListener("DOMContentLoaded", function () {
   // GAME ID
   // =====================================================
 
-  let gameId = localStorage.getItem("currentGameId");
-
-  if (gameId !== null) {
-    gameId = parseInt(gameId);
-  }
+  let gameId = null;
 
   let isCreatingGame = false;
+
+  let isMakingMove = false;
 
   // =====================================================
   // GAME STATE
@@ -30,8 +28,6 @@ document.addEventListener("DOMContentLoaded", function () {
   let currentTurn = null;
 
   let gameStatus = null;
-
-  let isMakingMove = false;
 
   // =====================================================
   // BOARD CONFIG
@@ -64,26 +60,38 @@ document.addEventListener("DOMContentLoaded", function () {
   let currentValidMoves = [];
 
   // =====================================================
+  // START GAME
+  // =====================================================
+
+  async function initializeGame() {
+    const savedGameId = localStorage.getItem("xiangqiGameId");
+
+    if (savedGameId) {
+      gameId = parseInt(savedGameId);
+
+      console.log("Tìm thấy Game ID:", gameId);
+
+      await loadGame();
+
+      return;
+    }
+
+    await createGame();
+  }
+
+  // =====================================================
   // CREATE GAME
   // =====================================================
 
   async function createGame() {
-    // =============================================
-    // ĐÃ CÓ GAME
-    // =============================================
-
     if (gameId !== null) {
       console.log("Game đã tồn tại:", gameId);
 
       return;
     }
 
-    // =============================================
-    // ĐANG TẠO GAME
-    // =============================================
-
     if (isCreatingGame) {
-      console.log("Đang tạo game, bỏ qua request trùng lặp...");
+      console.log("Đang tạo game...");
 
       return;
     }
@@ -101,27 +109,17 @@ document.addEventListener("DOMContentLoaded", function () {
         },
       });
 
-      // =============================================
-      // ERROR
-      // =============================================
-
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-
-        throw new Error(errorData?.message || "Không thể tạo ván cờ");
+        throw new Error("Không thể tạo ván cờ");
       }
-
-      // =============================================
-      // RESPONSE
-      // =============================================
 
       const data = await response.json();
 
       console.log("Game mới:", data);
 
-      // =============================================
-      // UPDATE GAME
-      // =============================================
+      gameId = data.id;
+
+      localStorage.setItem("xiangqiGameId", gameId);
 
       updateGameFromApi(data);
 
@@ -147,14 +145,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const response = await fetch(`${API_BASE_URL}/${gameId}`);
 
-      // =============================================
-      // GAME KHÔNG TỒN TẠI
-      // =============================================
+      if (!response.ok) {
+        console.log("Game cũ không tồn tại.");
 
-      if (response.status === 404) {
-        console.log("Game cũ không tồn tại");
-
-        localStorage.removeItem("currentGameId");
+        localStorage.removeItem("xiangqiGameId");
 
         gameId = null;
 
@@ -162,18 +156,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         return;
       }
-
-      // =============================================
-      // ERROR
-      // =============================================
-
-      if (!response.ok) {
-        throw new Error("Không thể tải game");
-      }
-
-      // =============================================
-      // DATA
-      // =============================================
 
       const data = await response.json();
 
@@ -190,21 +172,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   function updateGameFromApi(data) {
-    // =============================================
-    // GAME ID
-    // =============================================
-
     gameId = data.id;
-
-    localStorage.setItem("currentGameId", gameId);
-
-    // =============================================
-    // GAME STATE
-    // =============================================
 
     currentTurn = data.currentTurn;
 
     gameStatus = data.status;
+
+    localStorage.setItem("xiangqiGameId", gameId);
 
     console.log("Game ID:", gameId);
 
@@ -212,19 +186,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     console.log("Game Status:", gameStatus);
 
-    // =============================================
-    // PIECES
-    // =============================================
-
     initialPieces = data.boardPieces.map(function (piece) {
       return convertPieceFromApi(piece);
     });
 
     console.log("Số quân còn lại:", initialPieces.length);
-
-    // =============================================
-    // RESET SELECT
-    // =============================================
 
     selectedPieceElement = null;
 
@@ -232,19 +198,62 @@ document.addEventListener("DOMContentLoaded", function () {
 
     currentValidMoves = [];
 
-    // =============================================
-    // CLEAR MOVE
-    // =============================================
-
     clearMoveHighlights();
-
-    // =============================================
-    // RENDER
-    // =============================================
 
     renderPieces();
 
+    updateTurnStatus();
+
     console.log("Bàn cờ đã được cập nhật!");
+  }
+
+  // =====================================================
+  // UPDATE TURN STATUS
+  // =====================================================
+
+  function updateTurnStatus() {
+    const turnStatus = document.getElementById("turn-status");
+
+    if (!turnStatus) {
+      return;
+    }
+
+    // ===============================================
+    // GAME ENDED
+    // ===============================================
+
+    if (gameStatus !== "InProgress") {
+      if (gameStatus === "RedWins") {
+        turnStatus.textContent = "Quân Đỏ chiến thắng!";
+
+        return;
+      }
+
+      if (gameStatus === "BlackWins") {
+        turnStatus.textContent = "Quân Đen chiến thắng!";
+
+        return;
+      }
+
+      turnStatus.textContent = "Ván cờ đã kết thúc.";
+
+      return;
+    }
+
+    // ===============================================
+    // RED TURN
+    // ===============================================
+
+    if (currentTurn === "Red") {
+      turnStatus.textContent = "Lượt của quân Đỏ";
+    }
+
+    // ===============================================
+    // BLACK TURN
+    // ===============================================
+    else {
+      turnStatus.textContent = "Lượt của quân Đen";
+    }
   }
 
   // =====================================================
@@ -258,9 +267,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let text = "";
 
-    // =================================================
+    // ===============================================
     // XE
-    // =================================================
+    // ===============================================
 
     if (piece.type === "Rook") {
       type = "Xe";
@@ -268,78 +277,58 @@ document.addEventListener("DOMContentLoaded", function () {
       text = "車";
     }
 
-    // =================================================
+    // ===============================================
     // MÃ
-    // =================================================
+    // ===============================================
     else if (piece.type === "Horse") {
       type = "Mã";
 
       text = "馬";
     }
 
-    // =================================================
+    // ===============================================
     // TƯỢNG
-    // =================================================
+    // ===============================================
     else if (piece.type === "Elephant") {
       type = "Tượng";
 
-      if (color === "red") {
-        text = "相";
-      } else {
-        text = "象";
-      }
+      text = color === "red" ? "相" : "象";
     }
 
-    // =================================================
+    // ===============================================
     // SĨ
-    // =================================================
+    // ===============================================
     else if (piece.type === "Advisor") {
       type = "Sĩ";
 
-      if (color === "red") {
-        text = "仕";
-      } else {
-        text = "士";
-      }
+      text = color === "red" ? "仕" : "士";
     }
 
-    // =================================================
+    // ===============================================
     // TƯỚNG
-    // =================================================
+    // ===============================================
     else if (piece.type === "King") {
       type = "Tướng";
 
-      if (color === "red") {
-        text = "帥";
-      } else {
-        text = "將";
-      }
+      text = color === "red" ? "帥" : "將";
     }
 
-    // =================================================
+    // ===============================================
     // PHÁO
-    // =================================================
+    // ===============================================
     else if (piece.type === "Cannon") {
       type = "Pháo";
 
-      if (color === "red") {
-        text = "砲";
-      } else {
-        text = "炮";
-      }
+      text = color === "red" ? "砲" : "炮";
     }
 
-    // =================================================
+    // ===============================================
     // TỐT
-    // =================================================
+    // ===============================================
     else if (piece.type === "Pawn") {
       type = "Tốt";
 
-      if (color === "red") {
-        text = "兵";
-      } else {
-        text = "卒";
-      }
+      text = color === "red" ? "兵" : "卒";
     }
 
     return {
@@ -356,7 +345,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // GET SVG POSITION
+  // GET POSITION
   // =====================================================
 
   function getPosition(row, col) {
@@ -374,10 +363,6 @@ document.addEventListener("DOMContentLoaded", function () {
   function createPiece(piece) {
     const position = getPosition(piece.row, piece.col);
 
-    // =============================================
-    // GROUP
-    // =============================================
-
     const pieceGroup = document.createElementNS(SVG_NS, "g");
 
     pieceGroup.setAttribute("class", `chess-piece ${piece.color}`);
@@ -390,9 +375,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     pieceGroup.setAttribute("data-col", piece.col);
 
-    // =============================================
+    // ===============================================
     // CIRCLE
-    // =============================================
+    // ===============================================
 
     const circle = document.createElementNS(SVG_NS, "circle");
 
@@ -404,9 +389,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     circle.setAttribute("class", "piece-circle");
 
-    // =============================================
+    // ===============================================
     // TEXT
-    // =============================================
+    // ===============================================
 
     const textElement = document.createElementNS(SVG_NS, "text");
 
@@ -422,17 +407,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     textElement.textContent = piece.text;
 
-    // =============================================
-    // ADD
-    // =============================================
-
     pieceGroup.appendChild(circle);
 
     pieceGroup.appendChild(textElement);
 
-    // =============================================
-    // CLICK PIECE
-    // =============================================
+    // ===============================================
+    // CLICK
+    // ===============================================
 
     pieceGroup.addEventListener("click", async function (event) {
       event.stopPropagation();
@@ -456,6 +437,16 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
+  // CHECK VALID MOVE
+  // =====================================================
+
+  function isValidMove(row, col) {
+    return currentValidMoves.some(function (move) {
+      return move.row === row && move.col === col;
+    });
+  }
+
+  // =====================================================
   // HANDLE PIECE CLICK
   // =====================================================
 
@@ -465,9 +456,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       console.log("Click quân:", piece);
 
-      // =============================================
+      // ===============================================
       // GAME ENDED
-      // =============================================
+      // ===============================================
 
       if (gameStatus !== "InProgress") {
         alert("Ván cờ đã kết thúc!");
@@ -475,15 +466,52 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      // =============================================
-      // CHECK TURN
-      // =============================================
+      // ===============================================
+      // ĐÃ CHỌN QUÂN
+      // ===============================================
 
-      if (currentTurn === null) {
-        console.error("Chưa xác định lượt chơi");
+      if (selectedPieceData !== null) {
+        // =============================================
+        // CLICK QUÂN ĐỐI THỦ
+        // XỬ LÝ ĂN QUÂN
+        // =============================================
 
-        return;
+        if (
+          piece.color.toLowerCase() !== selectedPieceData.color.toLowerCase()
+        ) {
+          const canCapture = isValidMove(piece.row, piece.col);
+
+          if (canCapture) {
+            console.log("Ăn quân đối thủ:", piece);
+
+            await makeMove(piece.row, piece.col);
+
+            return;
+          }
+        }
+
+        // =============================================
+        // CLICK LẠI QUÂN ĐANG CHỌN
+        // =============================================
+
+        if (selectedPieceElement === pieceGroup) {
+          pieceGroup.classList.remove("selected");
+
+          selectedPieceElement = null;
+
+          selectedPieceData = null;
+
+          currentValidMoves = [];
+
+          clearMoveHighlights();
+
+          return;
+        }
       }
+
+      // ===============================================
+      // KIỂM TRA LƯỢT
+      // ===============================================
 
       if (piece.color.toLowerCase() !== currentTurn.toLowerCase()) {
         console.log("Chưa tới lượt quân này");
@@ -491,19 +519,9 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      // =============================================
-      // CLICK AGAIN
-      // =============================================
-
-      if (selectedPieceElement === pieceGroup) {
-        clearSelectedPiece();
-
-        return;
-      }
-
-      // =============================================
-      // REMOVE OLD SELECT
-      // =============================================
+      // ===============================================
+      // BỎ CHỌN QUÂN CŨ
+      // ===============================================
 
       if (selectedPieceElement !== null) {
         selectedPieceElement.classList.remove("selected");
@@ -511,9 +529,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       clearMoveHighlights();
 
-      // =============================================
-      // SELECT NEW
-      // =============================================
+      // ===============================================
+      // CHỌN QUÂN MỚI
+      // ===============================================
 
       pieceGroup.classList.add("selected");
 
@@ -521,9 +539,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       selectedPieceData = piece;
 
-      // =============================================
+      // ===============================================
       // GET VALID MOVES
-      // =============================================
+      // ===============================================
 
       await fetchValidMoves(piece.row, piece.col);
     } catch (error) {
@@ -532,12 +550,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // GET VALID MOVES FROM API
+  // FETCH VALID MOVES
   // =====================================================
 
   async function fetchValidMoves(row, col) {
     try {
-      if (gameId === null) {
+      if (!gameId) {
         console.error("Game ID chưa tồn tại");
 
         return;
@@ -547,23 +565,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const url = `${API_BASE_URL}/${gameId}/valid-moves?row=${row}&col=${col}`;
 
-      const response = await fetch(url, {
-        method: "GET",
-      });
-
-      // =============================================
-      // ERROR
-      // =============================================
+      const response = await fetch(url);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
 
         throw new Error(errorData?.message || "Không thể lấy nước đi");
       }
-
-      // =============================================
-      // RESPONSE
-      // =============================================
 
       const data = await response.json();
 
@@ -580,25 +588,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // CLEAR SELECTED PIECE
-  // =====================================================
-
-  function clearSelectedPiece() {
-    if (selectedPieceElement !== null) {
-      selectedPieceElement.classList.remove("selected");
-    }
-
-    selectedPieceElement = null;
-
-    selectedPieceData = null;
-
-    currentValidMoves = [];
-
-    clearMoveHighlights();
-  }
-
-  // =====================================================
-  // CLEAR MOVE HIGHLIGHTS
+  // CLEAR HIGHLIGHTS
   // =====================================================
 
   function clearMoveHighlights() {
@@ -634,12 +624,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     moveCircle.setAttribute(
       "class",
+
       isCapture ? "valid-move capture-move" : "valid-move",
     );
-
-    // =============================================
-    // CLICK MOVE
-    // =============================================
 
     moveCircle.addEventListener("click", async function (event) {
       event.stopPropagation();
@@ -655,27 +642,23 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   async function makeMove(toRow, toCol) {
-    // =============================================
-    // ĐANG THỰC HIỆN NƯỚC ĐI
-    // =============================================
+    // ===============================================
+    // DOUBLE CLICK PROTECTION
+    // ===============================================
 
     if (isMakingMove) {
-      console.log("Đang thực hiện nước đi, bỏ qua click trùng lặp...");
-
-      return;
-    }
-
-    // =============================================
-    // CHƯA CHỌN QUÂN
-    // =============================================
-
-    if (!selectedPieceData) {
-      console.error("Chưa chọn quân");
+      console.log("Đang thực hiện nước đi...");
 
       return;
     }
 
     try {
+      if (!selectedPieceData) {
+        console.error("Chưa chọn quân");
+
+        return;
+      }
+
       isMakingMove = true;
 
       console.log("Thực hiện nước đi");
@@ -738,10 +721,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       alert(error.message);
     } finally {
-      // =============================================
-      // KẾT THÚC THỰC HIỆN NƯỚC ĐI
-      // =============================================
-
       isMakingMove = false;
     }
   }
@@ -763,37 +742,48 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // CLICK OUTSIDE BOARD
+  // CLICK OUTSIDE
   // =====================================================
 
   document.addEventListener("click", function () {
-    clearSelectedPiece();
+    if (selectedPieceElement !== null) {
+      selectedPieceElement.classList.remove("selected");
+
+      selectedPieceElement = null;
+
+      selectedPieceData = null;
+
+      currentValidMoves = [];
+
+      clearMoveHighlights();
+    }
   });
 
   // =====================================================
-  // START GAME
+  // UPDATE TURN STATUS
   // =====================================================
 
-  async function startGame() {
-    // =============================================
-    // ĐÃ CÓ GAME TRONG LOCAL STORAGE
-    // =============================================
+  function updateTurnStatus() {
+    const turnStatus = document.getElementById("turn-status");
 
-    if (gameId !== null) {
-      console.log("Tìm thấy Game ID:", gameId);
+    if (!turnStatus) {
+      console.warn("Không tìm thấy turn-status");
 
-      await loadGame();
+      return;
     }
 
-    // =============================================
-    // CHƯA CÓ GAME
-    // =============================================
-    else {
-      console.log("Chưa có game cũ");
-
-      await createGame();
+    if (currentTurn === "Red") {
+      turnStatus.textContent = "🔴 Lượt của QUÂN ĐỎ";
+    } else if (currentTurn === "Black") {
+      turnStatus.textContent = "⚫ Lượt của QUÂN ĐEN";
+    } else {
+      turnStatus.textContent = "Ván cờ đã kết thúc";
     }
   }
 
-  startGame();
+  // =====================================================
+  // START
+  // =====================================================
+
+  initializeGame();
 });

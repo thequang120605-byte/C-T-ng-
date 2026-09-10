@@ -415,3 +415,19 @@ nav a {
     cursor: pointer;
 
 }
+
+.game-turn {
+    text-align: center;
+
+    margin-top: 15px;
+}
+
+#turn-text {
+    font-size: 22px;
+
+    font-weight: bold;
+
+    padding: 10px 25px;
+
+    border-radius: 8px;
+}
