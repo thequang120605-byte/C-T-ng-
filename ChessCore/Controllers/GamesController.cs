@@ -26,7 +26,6 @@ namespace ChessCore.Controllers
             _moveService = moveService;
         }
 
-
         // =====================================================
         // POST /api/games
         // TẠO VÁN CỜ MỚI
@@ -60,7 +59,6 @@ namespace ChessCore.Controllers
 
         // =====================================================
         // GET /api/games/{id}
-        // LẤY THÔNG TIN VÁN CỜ
         // =====================================================
 
         [HttpGet("{id}")]
@@ -82,14 +80,10 @@ namespace ChessCore.Controllers
                 );
             }
 
-
-            // Tái tạo bàn cờ
-
             var board =
                 ReconstructBoard(
                     game.Moves
                 );
-
 
             var response =
                 BuildGameResponse(
@@ -97,16 +91,12 @@ namespace ChessCore.Controllers
                     board
                 );
 
-
             return Ok(response);
         }
 
 
         // =====================================================
-        // GET
-        // /api/games/{id}/valid-moves?row=...&col=...
-        //
-        // LẤY DANH SÁCH NƯỚC ĐI HỢP LỆ
+        // GET VALID MOVES
         // =====================================================
 
         [HttpGet("{id}/valid-moves")]
@@ -117,13 +107,8 @@ namespace ChessCore.Controllers
                 [FromQuery] int col
             )
         {
-            // =============================================
-            // KIỂM TRA GAME
-            // =============================================
-
             var game =
                 await _gameService.GetGameByIdAsync(id);
-
 
             if (game == null)
             {
@@ -135,11 +120,6 @@ namespace ChessCore.Controllers
                     }
                 );
             }
-
-
-            // =============================================
-            // KIỂM TRA GAME STATUS
-            // =============================================
 
             if (
                 game.Status !=
@@ -155,27 +135,16 @@ namespace ChessCore.Controllers
                 );
             }
 
-
-            // =============================================
-            // TÁI TẠO BÀN CỜ
-            // =============================================
-
             var board =
                 ReconstructBoard(
                     game.Moves
                 );
-
-
-            // =============================================
-            // LẤY QUÂN CỜ
-            // =============================================
 
             var piece =
                 board.GetPieceAt(
                     row,
                     col
                 );
-
 
             if (piece == null)
             {
@@ -187,11 +156,6 @@ namespace ChessCore.Controllers
                     }
                 );
             }
-
-
-            // =============================================
-            // KIỂM TRA LƯỢT
-            // =============================================
 
             if (
                 piece.Color !=
@@ -207,28 +171,17 @@ namespace ChessCore.Controllers
                 );
             }
 
-
-            // =============================================
-            // TÍNH NƯỚC ĐI
-            // =============================================
-
             var from =
                 new Position(
                     row,
                     col
                 );
 
-
             var validMoves =
                 MoveGenerator.GetValidMoves(
                     board,
                     from
                 );
-
-
-            // =============================================
-            // CHUYỂN SANG DTO
-            // =============================================
 
             var result =
                 validMoves
@@ -240,7 +193,6 @@ namespace ChessCore.Controllers
                                 move.To.Row,
                                 move.To.Col
                             );
-
 
                         return new ValidMoveDto
                         {
@@ -257,14 +209,12 @@ namespace ChessCore.Controllers
                 )
                 .ToList();
 
-
             return Ok(result);
         }
 
 
         // =====================================================
         // POST /api/games/{id}/moves
-        // THỰC HIỆN NƯỚC ĐI
         // =====================================================
 
         [HttpPost("{id}/moves")]
@@ -284,7 +234,6 @@ namespace ChessCore.Controllers
                     id
                 );
 
-
             if (game == null)
             {
                 return NotFound(
@@ -298,7 +247,7 @@ namespace ChessCore.Controllers
 
 
             // =============================================
-            // KIỂM TRA STATUS
+            // KIỂM TRA GAME
             // =============================================
 
             if (
@@ -310,7 +259,7 @@ namespace ChessCore.Controllers
                     new
                     {
                         message =
-                            "Ván đấu đã kết thúc hoặc chưa sẵn sàng."
+                            "Ván đấu đã kết thúc."
                     }
                 );
             }
@@ -327,7 +276,7 @@ namespace ChessCore.Controllers
 
 
             // =============================================
-            // LẤY QUÂN ĐANG DI CHUYỂN
+            // QUÂN ĐANG DI CHUYỂN
             // =============================================
 
             var movingPiece =
@@ -335,7 +284,6 @@ namespace ChessCore.Controllers
                     request.FromX,
                     request.FromY
                 );
-
 
             if (movingPiece == null)
             {
@@ -369,7 +317,7 @@ namespace ChessCore.Controllers
 
 
             // =============================================
-            // TẠO VỊ TRÍ
+            // VỊ TRÍ
             // =============================================
 
             var from =
@@ -377,7 +325,6 @@ namespace ChessCore.Controllers
                     request.FromX,
                     request.FromY
                 );
-
 
             var to =
                 new Position(
@@ -387,7 +334,7 @@ namespace ChessCore.Controllers
 
 
             // =============================================
-            // LẤY DANH SÁCH NƯỚC ĐI
+            // LẤY NƯỚC ĐI HỢP LỆ
             // =============================================
 
             var validMoves =
@@ -407,10 +354,6 @@ namespace ChessCore.Controllers
                         request.ToY
                 );
 
-
-            // =============================================
-            // NƯỚC ĐI KHÔNG HỢP LỆ
-            // =============================================
 
             if (!isValid)
             {
@@ -435,8 +378,15 @@ namespace ChessCore.Controllers
                 );
 
 
+            bool isKingCaptured =
+                capturedPiece != null
+                &&
+                capturedPiece.Type ==
+                PieceType.King;
+
+
             // =============================================
-            // GHI DATABASE
+            // LƯU NƯỚC ĐI
             // =============================================
 
             await _moveService.RecordMoveAsync(
@@ -454,52 +404,62 @@ namespace ChessCore.Controllers
 
 
             // =============================================
-            // ĐỔI LƯỢT
+            // XỬ LÝ TRẠNG THÁI
             // =============================================
 
-            var nextTurn =
-                game.CurrentTurn ==
-                PieceColor.Red
+            GameStatus newStatus;
 
-                ?
-
-                PieceColor.Black
-
-                :
-
-                PieceColor.Red;
-
-
-            // =============================================
-            // STATUS
-            // =============================================
-
-            var newStatus =
-                GameStatus.InProgress;
+            PieceColor nextTurn;
 
 
             // =============================================
             // ĂN TƯỚNG
             // =============================================
 
-            if (
-                capturedPiece != null
-                &&
-                capturedPiece.Type ==
-                PieceType.King
-            )
+            if (isKingCaptured)
+            {
+                if (
+                    movingPiece.Color ==
+                    PieceColor.Red
+                )
+                {
+                    newStatus =
+                        GameStatus.RedWins;
+
+                    nextTurn =
+                        PieceColor.Red;
+                }
+                else
+                {
+                    newStatus =
+                        GameStatus.BlackWins;
+
+                    nextTurn =
+                        PieceColor.Black;
+                }
+            }
+
+
+            // =============================================
+            // TIẾP TỤC GAME
+            // =============================================
+
+            else
             {
                 newStatus =
-                    movingPiece.Color ==
+                    GameStatus.InProgress;
+
+                nextTurn =
+                    game.CurrentTurn ==
                     PieceColor.Red
 
                     ?
 
-                    GameStatus.RedWins
+                    PieceColor.Black
 
                     :
 
-                    GameStatus.BlackWins;
+                    PieceColor.Red;
             }
 
 
@@ -528,6 +488,10 @@ namespace ChessCore.Controllers
                 );
 
 
+            // =============================================
+            // TÁI TẠO BOARD
+            // =============================================
+
             var updatedBoard =
                 ReconstructBoard(
                     updatedGame.Moves
@@ -548,12 +512,12 @@ namespace ChessCore.Controllers
 
 
         // =====================================================
-        // TÁI TẠO BÀN CỜ TỪ LỊCH SỬ NƯỚC ĐI
+        // TÁI TẠO BÀN CỜ
         // =====================================================
 
         private static Board ReconstructBoard(
-    IEnumerable<Move> moves
-)
+            IEnumerable<Move> moves
+        )
         {
             var board =
                 new Board();
@@ -590,6 +554,10 @@ namespace ChessCore.Controllers
                 }
 
 
+                // =============================================
+                // QUÂN TẠI Ô ĐÍCH
+                // =============================================
+
                 var capturedPiece =
                     board.GetPieceAt(
                         move.ToX,
@@ -598,23 +566,24 @@ namespace ChessCore.Controllers
 
 
                 // =============================================
-                // KIỂM TRA ĂN QUÂN
+                // ĂN QUÂN
                 // =============================================
 
                 if (capturedPiece != null)
                 {
                     Console.WriteLine(
-                        $"ĂN QUÂN: " +
-                        $"{piece.Color} {piece.Type} " +
+                        $"{piece.Color} " +
+                        $"{piece.Type} " +
                         $"ăn " +
-                        $"{capturedPiece.Color} {capturedPiece.Type} " +
-                        $"tại ({move.ToX}, {move.ToY})"
+                        $"{capturedPiece.Color} " +
+                        $"{capturedPiece.Type}"
                     );
                 }
 
 
                 // =============================================
-                // DI CHUYỂN QUÂN
+                // DI CHUYỂN
+                // Ghi đè quân địch nếu có
                 // =============================================
 
                 board.Grid[
@@ -626,7 +595,7 @@ namespace ChessCore.Controllers
 
 
                 // =============================================
-                // XÓA Ô CŨ
+                // XÓA VỊ TRÍ CŨ
                 // =============================================
 
                 board.Grid[
@@ -643,7 +612,7 @@ namespace ChessCore.Controllers
 
 
         // =====================================================
-        // CHUYỂN BOARD THÀNH RESPONSE
+        // BUILD RESPONSE
         // =====================================================
 
         private static GameResponseDto
@@ -655,10 +624,6 @@ namespace ChessCore.Controllers
             var pieces =
                 new List<PieceDto>();
 
-
-            // =============================================
-            // DUYỆT BÀN CỜ
-            // =============================================
 
             for (
                 int row = 0;
@@ -684,11 +649,9 @@ namespace ChessCore.Controllers
                         pieces.Add(
                             new PieceDto
                             {
-                                Row =
-                                    row,
+                                Row = row,
 
-                                Col =
-                                    col,
+                                Col = col,
 
                                 Type =
                                     piece.Type
@@ -704,40 +667,40 @@ namespace ChessCore.Controllers
             }
 
 
-            // =============================================
-            // RESPONSE
-            // =============================================
-            Console.WriteLine($"Game ID: {game.Id}");
+            Console.WriteLine(
+                $"Game ID: {game.Id}"
+            );
 
-            Console.WriteLine($"Số quân còn lại trên bàn: {pieces.Count}");
+            Console.WriteLine(
+                $"Status: {game.Status}"
+            );
+
+            Console.WriteLine(
+                $"Số quân còn lại: {pieces.Count}"
+            );
+
 
             return new GameResponseDto
             {
                 Id =
                     game.Id,
 
-
                 Status =
                     game.Status
                     .ToString(),
-
 
                 CurrentTurn =
                     game.CurrentTurn
                     .ToString(),
 
-
                 CreatedAt =
                     game.CreatedAt,
-
 
                 LastMoveAt =
                     game.LastMoveAt,
 
-
                 BoardPieces =
                     pieces,
-
 
                 Moves =
                     game.Moves?
