@@ -192,10 +192,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     updateTurnStatus();
 
-    updatePlayerStatus();
-
-    console.log("Bàn cờ đã được cập nhật!");
-
     checkGameResult();
   }
 
@@ -255,51 +251,26 @@ document.addEventListener("DOMContentLoaded", function () {
     const turnStatus = document.getElementById("turn-status");
 
     if (!turnStatus) {
-      console.warn("Không tìm thấy turn-status");
+      return;
+    }
+
+    if (gameStatus === "RedWins") {
+      turnStatus.textContent = "🏆 QUÂN ĐỎ CHIẾN THẮNG";
 
       return;
     }
 
-    // =====================================
-    // VÁN CỜ KẾT THÚC
-    // =====================================
-
-    if (gameStatus !== "InProgress") {
-      if (gameStatus === "RedWins") {
-        turnStatus.textContent = "🏆 QUÂN ĐỎ CHIẾN THẮNG!";
-      } else if (gameStatus === "BlackWins") {
-        turnStatus.textContent = "🏆 QUÂN ĐEN CHIẾN THẮNG!";
-      } else {
-        turnStatus.textContent = "Ván cờ đã kết thúc";
-      }
+    if (gameStatus === "BlackWins") {
+      turnStatus.textContent = "🏆 QUÂN ĐEN CHIẾN THẮNG";
 
       return;
     }
-
-    // =====================================
-    // LƯỢT QUÂN ĐỎ
-    // =====================================
 
     if (currentTurn === "Red") {
       turnStatus.textContent = "🔴 Lượt của QUÂN ĐỎ";
-    }
-
-    // =====================================
-    // LƯỢT QUÂN ĐEN
-    // =====================================
-    else if (currentTurn === "Black") {
+    } else if (currentTurn === "Black") {
       turnStatus.textContent = "⚫ Lượt của QUÂN ĐEN";
     }
-
-    // =====================================
-    // ANIMATION
-    // =====================================
-
-    turnStatus.classList.remove("turn-change");
-
-    void turnStatus.offsetWidth;
-
-    turnStatus.classList.add("turn-change");
   }
 
   // =====================================================

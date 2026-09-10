@@ -257,5 +257,5 @@ D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\Ches
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\ChessCore.genruntimeconfig.cache
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\ref\ChessCore.dll
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\bin\Debug\net9.0\ChessCore.staticwebassets.runtime.json
-D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-szppo36ssd-szppo36ssd.gz
-D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\5fb2geqwon-{0}-qu69jirojw-qu69jirojw.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-v64hcmi6mi-v64hcmi6mi.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\5fb2geqwon-{0}-xrvmaqdrca-xrvmaqdrca.gz
