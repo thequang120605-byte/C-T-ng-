@@ -1,0 +1,238 @@
+@{
+    ViewData["Title"] = "Chơi Cờ Tướng";
+}
+
+<div class="game-page">
+
+    <section class="game-header">
+        <h1>CỜ TƯỚNG</h1>
+        <p>Chơi Cờ Tướng trực tuyến</p>
+    </section>
+
+
+    <section class="game-container">
+
+        <!-- THÔNG TIN NGƯỜI CHƠI -->
+        <aside class="player-panel">
+
+            <h2>🔴 QUÂN ĐỎ</h2>
+
+            <div class="player-info">
+                <div class="avatar">
+                    👤
+                </div>
+
+                <div>
+                    <strong>Người chơi 1</strong>
+                    <p>Đang chờ...</p>
+                </div>
+            </div>
+
+        </aside>
+
+
+        <!-- BÀN CỜ -->
+        <section class="board-container">
+
+            <div class="xiangqi-board-wrapper">
+
+                <div id="chess-board" class="xiangqi-board">
+
+                    <svg id="board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet"
+                        xmlns="http://www.w3.org/2000/svg">
+
+                        <!-- NỀN BÀN CỜ -->
+                        <rect x="20" y="20" width="860" height="960" class="board-background" />
+
+                        <!-- ========================= -->
+                        <!-- 10 ĐƯỜNG NGANG -->
+                        <!-- ========================= -->
+
+                        <g class="board-lines">
+
+                            <line x1="50" y1="50" x2="850" y2="50" />
+                            <line x1="50" y1="150" x2="850" y2="150" />
+                            <line x1="50" y1="250" x2="850" y2="250" />
+                            <line x1="50" y1="350" x2="850" y2="350" />
+                            <line x1="50" y1="450" x2="850" y2="450" />
+
+                            <line x1="50" y1="550" x2="850" y2="550" />
+
+                            <line x1="50" y1="650" x2="850" y2="650" />
+                            <line x1="50" y1="750" x2="850" y2="750" />
+                            <line x1="50" y1="850" x2="850" y2="850" />
+                            <line x1="50" y1="950" x2="850" y2="950" />
+
+                        </g>
+
+
+                        <!-- ========================= -->
+                        <!-- 2 ĐƯỜNG BIÊN DỌC NGOÀI -->
+                        <!-- CHẠY LIÊN TỤC -->
+                        <!-- ========================= -->
+
+                        <g class="board-lines">
+
+                            <!-- Biên trái -->
+                            <line x1="50" y1="50" x2="50" y2="950" />
+
+                            <!-- Biên phải -->
+                            <line x1="850" y1="50" x2="850" y2="950" />
+
+                        </g>
+
+
+                        <!-- ========================= -->
+                        <!-- 7 ĐƯỜNG DỌC BÊN TRONG -->
+                        <!-- NGẮT Ở SÔNG -->
+                        <!-- ========================= -->
+
+                        <g class="board-lines">
+
+                            <!-- Cột 1 -->
+                            <line x1="150" y1="50" x2="150" y2="450" />
+
+                            <line x1="150" y1="550" x2="150" y2="950" />
+
+
+                            <!-- Cột 2 -->
+                            <line x1="250" y1="50" x2="250" y2="450" />
+
+                            <line x1="250" y1="550" x2="250" y2="950" />
+
+
+                            <!-- Cột 3 -->
+                            <line x1="350" y1="50" x2="350" y2="450" />
+
+                            <line x1="350" y1="550" x2="350" y2="950" />
+
+
+                            <!-- Cột 4 -->
+                            <line x1="450" y1="50" x2="450" y2="450" />
+
+                            <line x1="450" y1="550" x2="450" y2="950" />
+
+
+                            <!-- Cột 5 -->
+                            <line x1="550" y1="50" x2="550" y2="450" />
+
+                            <line x1="550" y1="550" x2="550" y2="950" />
+
+
+                            <!-- Cột 6 -->
+                            <line x1="650" y1="50" x2="650" y2="450" />
+
+                            <line x1="650" y1="550" x2="650" y2="950" />
+
+
+                            <!-- Cột 7 -->
+                            <line x1="750" y1="50" x2="750" y2="450" />
+
+                            <line x1="750" y1="550" x2="750" y2="950" />
+
+                        </g>
+
+
+                        <!-- ========================= -->
+                        <!-- SÔNG CỜ -->
+                        <!-- ========================= -->
+
+                        <g class="river-text">
+
+                            <text x="250" y="520" text-anchor="middle">
+                                楚 河
+                            </text>
+
+                            <text x="650" y="520" text-anchor="middle">
+                                漢 界
+                            </text>
+
+                        </g>
+
+
+                        <!-- ========================= -->
+                        <!-- CUNG TƯỚNG PHÍA TRÊN -->
+                        <!-- ========================= -->
+
+                        <g class="palace-lines">
+
+                            <line x1="350" y1="50" x2="550" y2="250" />
+
+                            <line x1="550" y1="50" x2="350" y2="250" />
+
+                        </g>
+
+
+                        <!-- ========================= -->
+                        <!-- CUNG TƯỚNG PHÍA DƯỚI -->
+                        <!-- ========================= -->
+
+                        <g class="palace-lines">
+
+                            <line x1="350" y1="750" x2="550" y2="950" />
+
+                            <line x1="550" y1="750" x2="350" y2="950" />
+
+                        </g>
+
+                        <!-- ========================= -->
+                        <!-- LAYER CHỨA QUÂN CỜ -->
+                        <!-- ========================= -->
+                        <g id="moves-layer"></g>
+                        <g id="pieces-layer"></g>
+                    </svg>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- THÔNG TIN ĐỐI THỦ -->
+        <aside class="player-panel">
+
+            <h2>⚫ QUÂN ĐEN</h2>
+
+            <div class="player-info">
+
+                <div class="avatar">
+                    👤
+                </div>
+
+                <div>
+                    <strong>Người chơi 2</strong>
+                    <p>Đang chờ...</p>
+                </div>
+
+            </div>
+
+        </aside>
+
+    </section>
+
+
+    <!-- TRẠNG THÁI -->
+    <section class="game-status">
+
+        <h2>🔴 Lượt của QUÂN ĐỎ</h2>
+
+    </section>
+
+
+    <!-- NÚT CHỨC NĂNG -->
+    <section class="game-actions">
+
+        <button id="new-game-btn">
+            VÁN MỚI
+        </button>
+
+        <button id="resign-btn">
+            ĐẦU HÀNG
+        </button>
+
+    </section>
+
+</div>
+
+<script src="~/js/game.js"></script>

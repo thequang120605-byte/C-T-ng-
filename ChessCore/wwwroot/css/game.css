@@ -1,0 +1,417 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+}
+
+
+/* HEADER */
+
+.main-header {
+    height: 70px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 50px;
+
+    background: #1f2937;
+    color: white;
+}
+
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+
+nav a {
+    color: white;
+
+    margin-left: 25px;
+
+    text-decoration: none;
+}
+
+
+/* GAME PAGE */
+
+.game-page {
+    padding: 30px;
+}
+
+
+.game-header {
+    text-align: center;
+
+    margin-bottom: 30px;
+}
+
+
+.game-header h1 {
+    font-size: 32px;
+}
+
+
+/* GAME CONTAINER */
+
+.game-container {
+
+    display: grid;
+
+    grid-template-columns:
+        220px
+        1fr
+        220px;
+
+    gap: 30px;
+
+    max-width: 1400px;
+
+    margin: auto;
+
+}
+
+
+/* PLAYER PANEL */
+
+.player-panel {
+
+    background: white;
+
+    padding: 20px;
+
+    border-radius: 10px;
+
+    height: 220px;
+
+}
+
+
+.player-info {
+
+    display: flex;
+
+    gap: 15px;
+
+    margin-top: 20px;
+
+}
+
+
+.avatar {
+
+    width: 50px;
+    height: 50px;
+
+    border-radius: 50%;
+
+    background: #ddd;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+}
+
+
+/* BOARD */
+
+.board-container {
+
+    display: flex;
+
+    justify-content: center;
+
+}
+
+
+/* =========================
+   XIANGQI BOARD
+========================= */
+
+.board-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+
+.xiangqi-board-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+
+.xiangqi-board {
+    width: min(680px, 90vw);
+    aspect-ratio: 9 / 10;
+
+    padding: 12px;
+
+    background: #c99b62;
+
+    border: 10px solid #5c4033;
+
+    box-shadow:
+        0 10px 25px rgba(0, 0, 0, 0.25);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+#board-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+
+/* =========================
+   BOARD BACKGROUND
+========================= */
+
+.board-background {
+    fill: #e7c28e;
+}
+
+
+/* =========================
+   BOARD LINES
+========================= */
+
+.board-lines line {
+    stroke: #4a3022;
+
+    stroke-width: 4;
+
+    stroke-linecap: square;
+}
+
+
+/* =========================
+   PALACE
+========================= */
+
+.palace-lines line {
+    stroke: #4a3022;
+
+    stroke-width: 4;
+}
+
+
+/* =========================
+   RIVER TEXT
+========================= */
+
+.river-text text {
+
+    fill: #5c4033;
+
+    font-size: 52px;
+
+    font-weight: bold;
+
+    font-family:
+        "KaiTi",
+        "STKaiti",
+        "SimSun",
+        serif;
+
+    letter-spacing: 8px;
+
+}
+
+
+/* STATUS */
+
+.game-status {
+
+    text-align: center;
+
+    margin-top: 30px;
+
+}
+
+
+.game-actions {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 20px;
+
+    margin-top: 20px;
+
+}
+
+
+.game-actions button {
+
+    padding: 12px 30px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+}
+
+
+#new-game-btn {
+
+    background: #16a34a;
+
+    color: white;
+
+}
+
+
+#resign-btn {
+
+    background: #dc2626;
+
+    color: white;
+
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+
+    .game-container {
+
+        grid-template-columns: 1fr;
+
+        gap: 20px;
+
+    }
+
+
+    .player-panel {
+
+        display: none;
+
+    }
+
+
+    .xiangqi-board {
+
+        width: min(92vw, 680px);
+
+    }
+
+}
+
+/* =========================
+   CHESS PIECES
+========================= */
+
+
+/* =========================
+   QUÂN CỜ
+========================= */
+
+.chess-piece {
+    cursor: pointer;
+}
+
+.piece-circle {
+    fill: #f5e6c8;
+    stroke: #6b4a2f;
+    stroke-width: 5;
+}
+
+.piece-text {
+    font-size: 48px;
+    font-weight: bold;
+
+    font-family:
+        "KaiTi",
+        "STKaiti",
+        "SimSun",
+        serif;
+
+    pointer-events: none;
+
+    user-select: none;
+}
+
+/* QUÂN ĐEN */
+
+.chess-piece.black .piece-text {
+    fill: #1f1f1f;
+}
+
+/* QUÂN ĐỎ */
+
+.chess-piece.red .piece-text {
+    fill: #c62828;
+}
+
+/* HOVER */
+
+.chess-piece:hover {
+    filter: brightness(1.08);
+}
+
+/* ========================================
+   QUÂN CỜ ĐANG ĐƯỢC CHỌN
+======================================== */
+
+.chess-piece.selected .piece-circle {
+
+    stroke: #00a86b;
+
+    stroke-width: 8;
+
+    filter: drop-shadow(
+        0 0 8px rgba(0, 168, 107, 0.8)
+    );
+
+}
+
+
+/* Hiệu ứng khi hover */
+
+.chess-piece:hover .piece-circle {
+
+    stroke-width: 7;
+
+}
+
+/* ========================================
+   NƯỚC ĐI HỢP LỆ
+======================================== */
+
+.valid-move {
+
+    fill: #00a86b;
+
+    stroke: white;
+
+    stroke-width: 3;
+
+    opacity: 0.85;
+
+    cursor: pointer;
+
+}
