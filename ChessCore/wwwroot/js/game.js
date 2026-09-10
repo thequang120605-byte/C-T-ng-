@@ -192,7 +192,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     updateTurnStatus();
 
-    checkGameResult();
+    updatePlayerStatus();
+
+    console.log("Bàn cờ đã được cập nhật!");
   }
 
   // =====================================================
@@ -813,52 +815,69 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // =====================================================
+  // UPDATE PLAYER STATUS
+  // =====================================================
+
   function updatePlayerStatus() {
-    const redPlayerStatus = document.getElementById("red-player-status");
+    const redStatus = document.getElementById("red-player-status");
 
-    const blackPlayerStatus = document.getElementById("black-player-status");
+    const blackStatus = document.getElementById("black-player-status");
 
-    if (!redPlayerStatus || !blackPlayerStatus) {
+    if (!redStatus || !blackStatus) {
       return;
     }
 
-    // ===============================================
+    // =============================================
     // GAME KẾT THÚC
-    // ===============================================
+    // =============================================
 
-    if (gameStatus === "RedWins") {
-      redPlayerStatus.textContent = "🏆 Chiến thắng";
+    if (gameStatus !== "InProgress") {
+      if (gameStatus === "RedWins") {
+        redStatus.textContent = "🏆 Chiến thắng";
 
-      blackPlayerStatus.textContent = "❌ Thất bại";
+        blackStatus.textContent = "❌ Thua";
+
+        return;
+      }
+
+      if (gameStatus === "BlackWins") {
+        redStatus.textContent = "❌ Thua";
+
+        blackStatus.textContent = "🏆 Chiến thắng";
+
+        return;
+      }
+
+      redStatus.textContent = "⚪ Ván cờ kết thúc";
+
+      blackStatus.textContent = "⚪ Ván cờ kết thúc";
 
       return;
     }
 
-    if (gameStatus === "BlackWins") {
-      redPlayerStatus.textContent = "❌ Thất bại";
-
-      blackPlayerStatus.textContent = "🏆 Chiến thắng";
-
-      return;
-    }
-
-    // ===============================================
+    // =============================================
     // LƯỢT QUÂN ĐỎ
-    // ===============================================
+    // =============================================
 
     if (currentTurn === "Red") {
-      redPlayerStatus.textContent = "🟢 Đang đi";
+      redStatus.textContent = "🟢 Đang đến lượt";
 
-      blackPlayerStatus.textContent = "⚪ Đang chờ";
+      blackStatus.textContent = "⚪ Đang chờ";
+
+      return;
     }
 
-    // ===============================================
+    // =============================================
     // LƯỢT QUÂN ĐEN
-    // ===============================================
-    else if (currentTurn === "Black") {
-      redPlayerStatus.textContent = "⚪ Đang chờ";
+    // =============================================
 
-      blackPlayerStatus.textContent = "🟢 Đang đi";
+    if (currentTurn === "Black") {
+      redStatus.textContent = "⚪ Đang chờ";
+
+      blackStatus.textContent = "🟢 Đang đến lượt";
+
+      return;
     }
   }
 
