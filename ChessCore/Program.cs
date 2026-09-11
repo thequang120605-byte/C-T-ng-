@@ -5,7 +5,7 @@ using ChessCore.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
 
 // Cấu hình CORS cho phép Frontend truy cập
 builder.Services.AddCors(options =>
@@ -46,6 +46,14 @@ app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
+app.UseStaticFiles();
+
 app.MapControllers();
+
+// Route cho giao diện MVC
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Game}/{action=Index}/{id?}"
+);
 
 app.Run();

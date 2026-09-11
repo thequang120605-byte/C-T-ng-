@@ -17,178 +17,736 @@ namespace ChessCore.Controllers
         private readonly IGameService _gameService;
         private readonly IMoveService _moveService;
 
-        public GamesController(IGameService gameService, IMoveService moveService)
+        public GamesController(
+            IGameService gameService,
+            IMoveService moveService
+        )
         {
             _gameService = gameService;
             _moveService = moveService;
         }
 
-        /// <summary>
-        /// POST /api/games: Khởi tạo một trận đấu mới
-        /// </summary>
+        // =====================================================
+        // POST /api/games
+        // TẠO VÁN CỜ MỚI
+        // =====================================================
+
         [HttpPost]
         public async Task<ActionResult<GameResponseDto>> CreateGame()
         {
-            var game = await _gameService.CreateGameAsync();
-            var board = new Board(); // Khởi tạo bàn cờ mặc định
+            var game =
+                await _gameService.CreateGameAsync();
 
-            var response = BuildGameResponse(game, board);
-            return CreatedAtAction(nameof(GetGameById), new { id = game.Id }, response);
+            var board =
+                new Board();
+
+            var response =
+                BuildGameResponse(
+                    game,
+                    board
+                );
+
+            return CreatedAtAction(
+                nameof(GetGameById),
+                new
+                {
+                    id = game.Id
+                },
+                response
+            );
         }
 
-        /// <summary>
-        /// GET /api/games/{id}: Lấy thông tin chi tiết và trạng thái bàn cờ của ván đấu
-        /// </summary>
+
+        // =====================================================
+        // GET /api/games/{id}
+        // =====================================================
+
         [HttpGet("{id}")]
-        public async Task<ActionResult<GameResponseDto>> GetGameById(int id)
+        public async Task<ActionResult<GameResponseDto>> GetGameById(
+            int id
+        )
         {
-            var game = await _gameService.GetGameByIdAsync(id);
+            var game =
+                await _gameService.GetGameByIdAsync(id);
+
             if (game == null)
             {
-                return NotFound(new { message = $"Không tìm thấy ván cờ với ID {id}" });
+                return NotFound(
+                    new
+                    {
+                        message =
+                            $"Không tìm thấy ván cờ với ID {id}"
+                    }
+                );
             }
 
-            // Tái hiện bàn cờ theo lịch sử các nước đi
-            var board = ReconstructBoard(game.Moves);
-            var response = BuildGameResponse(game, board);
+            var board =
+                ReconstructBoard(
+                    game.Moves
+                );
+
+            var response =
+                BuildGameResponse(
+                    game,
+                    board
+                );
 
             return Ok(response);
         }
 
-        /// <summary>
-        /// POST /api/games/{id}/moves: Ghi nhận nước đi mới của người chơi và cập nhật lịch sử nước đi
-        /// </summary>
-        [HttpPost("{id}/moves")]
-        public async Task<ActionResult<GameResponseDto>> MakeMove(int id, [FromBody] MakeMoveRequestDto request)
+
+        // =====================================================
+        // GET VALID MOVES
+        // =====================================================
+
+        [HttpGet("{id}/valid-moves")]
+        public async Task<ActionResult<List<ValidMoveDto>>>
+            GetValidMoves(
+                int id,
+                [FromQuery] int row,
+                [FromQuery] int col
+            )
         {
-            var game = await _gameService.GetGameByIdAsync(id);
+            var game =
+                await _gameService.GetGameByIdAsync(id);
+
             if (game == null)
             {
-                return NotFound(new { message = $"Không tìm thấy ván cờ với ID {id}" });
+                return NotFound(
+                    new
+                    {
+                        message =
+                            $"Không tìm thấy ván cờ với ID {id}"
+                    }
+                );
             }
 
-            if (game.Status != GameStatus.InProgress)
+            if (
+                game.Status !=
+                GameStatus.InProgress
+            )
             {
-                return BadRequest(new { message = "Ván đấu đã kết thúc hoặc chưa sẵn sàng." });
+                return BadRequest(
+                    new
+                    {
+                        message =
+                            "Ván cờ đã kết thúc."
+                    }
+                );
             }
 
-            // Tái hiện trạng thái bàn cờ hiện tại
-            var board = ReconstructBoard(game.Moves);
+            var board =
+                ReconstructBoard(
+                    game.Moves
+                );
 
-            var movingPiece = board.GetPieceAt(request.FromX, request.FromY);
+            var piece =
+                board.GetPieceAt(
+                    row,
+                    col
+                );
+
+            if (piece == null)
+            {
+                return BadRequest(
+                    new
+                    {
+                        message =
+                            "Không có quân cờ tại vị trí này."
+                    }
+                );
+            }
+
+            if (
+                piece.Color !=
+                game.CurrentTurn
+            )
+            {
+                return BadRequest(
+                    new
+                    {
+                        message =
+                            "Chưa tới lượt của quân này."
+                    }
+                );
+            }
+
+            var from =
+                new Position(
+                    row,
+                    col
+                );
+
+            var validMoves =
+                MoveGenerator.GetValidMoves(
+                    board,
+                    from
+                );
+
+            var result =
+                validMoves
+                .Select(
+                    move =>
+                    {
+                        var targetPiece =
+                            board.GetPieceAt(
+                                move.To.Row,
+                                move.To.Col
+                            );
+
+                        return new ValidMoveDto
+                        {
+                            Row =
+                                move.To.Row,
+
+                            Col =
+                                move.To.Col,
+
+                            IsCapture =
+                                targetPiece != null
+                        };
+                    }
+                )
+                .ToList();
+
+            return Ok(result);
+        }
+
+
+        // =====================================================
+        // POST /api/games/{id}/moves
+        // =====================================================
+
+        [HttpPost("{id}/moves")]
+        public async Task<ActionResult<GameResponseDto>>
+            MakeMove(
+                int id,
+                [FromBody]
+                MakeMoveRequestDto request
+            )
+        {
+            // =============================================
+            // LẤY GAME
+            // =============================================
+
+            var game =
+                await _gameService.GetGameByIdAsync(
+                    id
+                );
+
+            if (game == null)
+            {
+                return NotFound(
+                    new
+                    {
+                        message =
+                            $"Không tìm thấy ván cờ với ID {id}"
+                    }
+                );
+            }
+
+
+            // =============================================
+            // KIỂM TRA GAME
+            // =============================================
+
+            if (
+                game.Status !=
+                GameStatus.InProgress
+            )
+            {
+                return BadRequest(
+                    new
+                    {
+                        message =
+                            "Ván đấu đã kết thúc."
+                    }
+                );
+            }
+
+
+            // =============================================
+            // TÁI TẠO BÀN CỜ
+            // =============================================
+
+            var board =
+                ReconstructBoard(
+                    game.Moves
+                );
+
+
+            // =============================================
+            // QUÂN ĐANG DI CHUYỂN
+            // =============================================
+
+            var movingPiece =
+                board.GetPieceAt(
+                    request.FromX,
+                    request.FromY
+                );
+
             if (movingPiece == null)
             {
-                return BadRequest(new { message = "Không có quân cờ ở vị trí xuất phát." });
+                return BadRequest(
+                    new
+                    {
+                        message =
+                            "Không có quân cờ ở vị trí xuất phát."
+                    }
+                );
             }
 
-            if (movingPiece.Color != game.CurrentTurn)
+
+            // =============================================
+            // KIỂM TRA LƯỢT
+            // =============================================
+
+            if (
+                movingPiece.Color !=
+                game.CurrentTurn
+            )
             {
-                return BadRequest(new { message = $"Chưa tới lượt đi của quân {movingPiece.Color}." });
+                return BadRequest(
+                    new
+                    {
+                        message =
+                            $"Chưa tới lượt đi của quân {movingPiece.Color}."
+                    }
+                );
             }
 
-            // Thực hiện nước đi qua Engine logic
-            var legacyMove = new ChessCore.Models.Position(request.FromX, request.FromY);
-            var legacyTarget = new ChessCore.Models.Position(request.ToX, request.ToY);
 
-            var validMoves = MoveGenerator.GetValidMoves(board, legacyMove);
-            bool isValid = validMoves.Any(m => m.To.Row == request.ToX && m.To.Col == request.ToY);
+            // =============================================
+            // VỊ TRÍ
+            // =============================================
+
+            var from =
+                new Position(
+                    request.FromX,
+                    request.FromY
+                );
+
+            var to =
+                new Position(
+                    request.ToX,
+                    request.ToY
+                );
+
+
+            // =============================================
+            // LẤY NƯỚC ĐI HỢP LỆ
+            // =============================================
+
+            var validMoves =
+                MoveGenerator.GetValidMoves(
+                    board,
+                    from
+                );
+
+
+            bool isValid =
+                validMoves.Any(
+                    move =>
+                        move.To.Row ==
+                        request.ToX
+                        &&
+                        move.To.Col ==
+                        request.ToY
+                );
+
 
             if (!isValid)
             {
-                return BadRequest(new { message = "Nước đi không hợp lệ theo luật Cờ Tướng." });
+                return BadRequest(
+                    new
+                    {
+                        message =
+                            "Nước đi không hợp lệ theo luật Cờ Tướng."
+                    }
+                );
             }
 
-            // Bắt quân đích nếu có
-            var capturedPiece = board.GetPieceAt(request.ToX, request.ToY);
 
-            // Ghi nhận nước đi vào Database
-            var recordedMove = await _moveService.RecordMoveAsync(
+            // =============================================
+            // KIỂM TRA QUÂN BỊ ĂN
+            // =============================================
+
+            var capturedPiece =
+                board.GetPieceAt(
+                    request.ToX,
+                    request.ToY
+                );
+
+
+            bool isKingCaptured =
+                capturedPiece != null
+                &&
+                capturedPiece.Type ==
+                PieceType.King;
+
+
+            // =============================================
+            // LƯU NƯỚC ĐI
+            // =============================================
+
+            await _moveService.RecordMoveAsync(
                 id,
+
                 request.FromX,
                 request.FromY,
+
                 request.ToX,
                 request.ToY,
+
                 movingPiece.Type,
                 movingPiece.Color
             );
 
-            // Kiểm tra điều kiện thắng (nếu bắt Tướng đối phương)
-            var nextTurn = game.CurrentTurn == PieceColor.Red ? PieceColor.Black : PieceColor.Red;
-            var newStatus = GameStatus.InProgress;
 
-            if (capturedPiece != null && capturedPiece.Type == PieceType.King)
+            // =============================================
+            // XỬ LÝ TRẠNG THÁI
+            // =============================================
+
+            GameStatus newStatus;
+
+            PieceColor nextTurn;
+
+
+            // =============================================
+            // ĂN TƯỚNG
+            // =============================================
+
+            if (isKingCaptured)
             {
-                newStatus = movingPiece.Color == PieceColor.Red ? GameStatus.RedWins : GameStatus.BlackWins;
-            }
-
-            await _gameService.UpdateGameTurnAndStatusAsync(id, nextTurn, newStatus);
-
-            // Load lại game mới nhất
-            var updatedGame = await _gameService.GetGameByIdAsync(id);
-            var updatedBoard = ReconstructBoard(updatedGame.Moves);
-
-            return Ok(BuildGameResponse(updatedGame, updatedBoard));
-        }
-
-        private static Board ReconstructBoard(IEnumerable<Move> moves)
-        {
-            var board = new Board();
-            var sortedMoves = moves.OrderBy(m => m.MoveOrder);
-
-            foreach (var m in sortedMoves)
-            {
-                var piece = board.GetPieceAt(m.FromX, m.FromY);
-                if (piece != null)
+                if (
+                    movingPiece.Color ==
+                    PieceColor.Red
+                )
                 {
-                    board.Grid[m.ToX, m.ToY] = piece;
-                    board.Grid[m.FromX, m.FromY] = null;
+                    newStatus =
+                        GameStatus.RedWins;
+
+                    nextTurn =
+                        PieceColor.Red;
+                }
+                else
+                {
+                    newStatus =
+                        GameStatus.BlackWins;
+
+                    nextTurn =
+                        PieceColor.Black;
                 }
             }
+
+
+            // =============================================
+            // TIẾP TỤC GAME
+            // =============================================
+
+            else
+            {
+                newStatus =
+                    GameStatus.InProgress;
+
+                nextTurn =
+                    game.CurrentTurn ==
+                    PieceColor.Red
+
+                    ?
+
+                    PieceColor.Black
+
+                    :
+
+                    PieceColor.Red;
+            }
+
+
+            // =============================================
+            // CẬP NHẬT GAME
+            // =============================================
+
+            await
+                _gameService
+                .UpdateGameTurnAndStatusAsync(
+                    id,
+                    nextTurn,
+                    newStatus
+                );
+
+
+            // =============================================
+            // LOAD GAME MỚI
+            // =============================================
+
+            var updatedGame =
+                await
+                _gameService
+                .GetGameByIdAsync(
+                    id
+                );
+
+
+            // =============================================
+            // TÁI TẠO BOARD
+            // =============================================
+
+            var updatedBoard =
+                ReconstructBoard(
+                    updatedGame.Moves
+                );
+
+
+            // =============================================
+            // RETURN
+            // =============================================
+
+            return Ok(
+                BuildGameResponse(
+                    updatedGame,
+                    updatedBoard
+                )
+            );
+        }
+
+
+        // =====================================================
+        // TÁI TẠO BÀN CỜ
+        // =====================================================
+
+        private static Board ReconstructBoard(
+            IEnumerable<Move> moves
+        )
+        {
+            var board =
+                new Board();
+
+
+            var sortedMoves =
+                moves
+                .OrderBy(
+                    move =>
+                        move.MoveOrder
+                );
+
+
+            foreach (
+                var move
+                in sortedMoves
+            )
+            {
+                var piece =
+                    board.GetPieceAt(
+                        move.FromX,
+                        move.FromY
+                    );
+
+
+                if (piece == null)
+                {
+                    Console.WriteLine(
+                        $"Không tìm thấy quân tại " +
+                        $"({move.FromX}, {move.FromY})"
+                    );
+
+                    continue;
+                }
+
+
+                // =============================================
+                // QUÂN TẠI Ô ĐÍCH
+                // =============================================
+
+                var capturedPiece =
+                    board.GetPieceAt(
+                        move.ToX,
+                        move.ToY
+                    );
+
+
+                // =============================================
+                // ĂN QUÂN
+                // =============================================
+
+                if (capturedPiece != null)
+                {
+                    Console.WriteLine(
+                        $"{piece.Color} " +
+                        $"{piece.Type} " +
+                        $"ăn " +
+                        $"{capturedPiece.Color} " +
+                        $"{capturedPiece.Type}"
+                    );
+                }
+
+
+                // =============================================
+                // DI CHUYỂN
+                // Ghi đè quân địch nếu có
+                // =============================================
+
+                board.Grid[
+                    move.ToX,
+                    move.ToY
+                ]
+                =
+                piece;
+
+
+                // =============================================
+                // XÓA VỊ TRÍ CŨ
+                // =============================================
+
+                board.Grid[
+                    move.FromX,
+                    move.FromY
+                ]
+                =
+                null;
+            }
+
 
             return board;
         }
 
-        private static GameResponseDto BuildGameResponse(Game game, Board board)
+
+        // =====================================================
+        // BUILD RESPONSE
+        // =====================================================
+
+        private static GameResponseDto
+            BuildGameResponse(
+                Game game,
+                Board board
+            )
         {
-            var pieces = new List<PieceDto>();
-            for (int r = 0; r < 10; r++)
+            var pieces =
+                new List<PieceDto>();
+
+
+            for (
+                int row = 0;
+                row < 10;
+                row++
+            )
             {
-                for (int c = 0; c < 9; c++)
+                for (
+                    int col = 0;
+                    col < 9;
+                    col++
+                )
                 {
-                    var p = board.GetPieceAt(r, c);
-                    if (p != null)
+                    var piece =
+                        board.GetPieceAt(
+                            row,
+                            col
+                        );
+
+
+                    if (piece != null)
                     {
-                        pieces.Add(new PieceDto
-                        {
-                            Row = r,
-                            Col = c,
-                            Type = p.Type.ToString(),
-                            Color = p.Color.ToString()
-                        });
+                        pieces.Add(
+                            new PieceDto
+                            {
+                                Row = row,
+
+                                Col = col,
+
+                                Type =
+                                    piece.Type
+                                    .ToString(),
+
+                                Color =
+                                    piece.Color
+                                    .ToString()
+                            }
+                        );
                     }
                 }
             }
 
+
+            Console.WriteLine(
+                $"Game ID: {game.Id}"
+            );
+
+            Console.WriteLine(
+                $"Status: {game.Status}"
+            );
+
+            Console.WriteLine(
+                $"Số quân còn lại: {pieces.Count}"
+            );
+
+
             return new GameResponseDto
             {
-                Id = game.Id,
-                Status = game.Status.ToString(),
-                CurrentTurn = game.CurrentTurn.ToString(),
-                CreatedAt = game.CreatedAt,
-                LastMoveAt = game.LastMoveAt,
-                BoardPieces = pieces,
-                Moves = game.Moves?.OrderBy(m => m.MoveOrder).Select(m => new MoveHistoryDto
-                {
-                    Id = m.Id,
-                    FromX = m.FromX,
-                    FromY = m.FromY,
-                    ToX = m.ToX,
-                    ToY = m.ToY,
-                    PieceType = m.PieceType.ToString(),
-                    PieceColor = m.PieceColor.ToString(),
-                    MoveOrder = m.MoveOrder,
-                    MovedAt = m.MovedAt
-                }).ToList() ?? new List<MoveHistoryDto>()
+                Id =
+                    game.Id,
+
+                Status =
+                    game.Status
+                    .ToString(),
+
+                CurrentTurn =
+                    game.CurrentTurn
+                    .ToString(),
+
+                CreatedAt =
+                    game.CreatedAt,
+
+                LastMoveAt =
+                    game.LastMoveAt,
+
+                BoardPieces =
+                    pieces,
+
+                Moves =
+                    game.Moves?
+                    .OrderBy(
+                        move =>
+                            move.MoveOrder
+                    )
+                    .Select(
+                        move =>
+                            new MoveHistoryDto
+                            {
+                                Id =
+                                    move.Id,
+
+                                FromX =
+                                    move.FromX,
+
+                                FromY =
+                                    move.FromY,
+
+                                ToX =
+                                    move.ToX,
+
+                                ToY =
+                                    move.ToY,
+
+                                PieceType =
+                                    move.PieceType
+                                    .ToString(),
+
+                                PieceColor =
+                                    move.PieceColor
+                                    .ToString(),
+
+                                MoveOrder =
+                                    move.MoveOrder,
+
+                                MovedAt =
+                                    move.MovedAt
+                            }
+                    )
+                    .ToList()
+
+                    ??
+
+                    new List<MoveHistoryDto>()
             };
         }
     }
