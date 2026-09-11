@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"] - Hệ thống Cờ Tướng</title>
+
+    <link rel="stylesheet" href="~/css/game.css" />
+</head>
+
+<body>
+
+    <header class="main-header">
+        <div class="logo">
+            ♟ HỆ THỐNG CỜ TƯỚNG
+        </div>
+
+        <nav>
+            <a href="/">Trang chủ</a>
+            <a href="/Game">Chơi cờ</a>
+        </nav>
+    </header>
+
+    <main>
+        @RenderBody()
+    </main>
+
+
+</body>
+</html>
