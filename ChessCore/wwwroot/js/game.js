@@ -45,6 +45,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let gameStatus = null;
 
+  let isCheck = false;
+
   // =====================================================
   // BOARD
   // =====================================================
@@ -178,6 +180,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     gameStatus = data.status;
 
+    isCheck = data.isCheck || false;
+
     initialPieces = data.boardPieces.map(convertPieceFromApi);
 
     selectedPieceElement = null;
@@ -194,7 +198,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
     updatePlayerStatus();
 
+    handleCheckWarning();
+
+    checkGameResult();
+
     console.log("Bàn cờ đã được cập nhật!");
+  }
+
+  // =====================================================
+  // CẢNH BÁO CHIẾU TƯỚNG (PHÁT SÁNG & OVERLAY)
+  // =====================================================
+
+  function handleCheckWarning() {
+    // 1. Xóa class cảnh báo cũ trên toàn bộ bàn cờ
+    document
+      .querySelectorAll(".chess-piece.in-check")
+      .forEach((el) => el.classList.remove("in-check"));
+
+    const overlay = document.querySelector(".check-overlay");
+    if (overlay) {
+      overlay.classList.remove("show");
+    }
+
+    // 2. Nếu đang có chiếu tướng
+    if (isCheck && gameStatus === "InProgress") {
+      const activeColor = currentTurn.toLowerCase();
+
+      // Tìm đúng quân Tướng của phe đang bị chiếu (dựa vào data-type="Tướng" và data-color)
+      const kingElement = document.querySelector(
+        `.chess-piece[data-type="Tướng"][data-color="${activeColor}"]`,
+      );
+
+      if (kingElement) {
+        kingElement.classList.add("in-check");
+      }
+
+      // Nếu có overlay chữ "CHIẾU TƯỚNG!" thì kích hoạt hiệu ứng rung lắc
+      if (overlay) {
+        overlay.textContent = "CHIẾU TƯỚNG!";
+        overlay.classList.add("show");
+        setTimeout(() => {
+          overlay.classList.remove("show");
+        }, 1200);
+      }
+    }
   }
 
   // =====================================================
@@ -265,6 +312,15 @@ document.addEventListener("DOMContentLoaded", function () {
     if (gameStatus === "BlackWins") {
       turnStatus.textContent = "🏆 QUÂN ĐEN CHIẾN THẮNG";
 
+      return;
+    }
+
+    if (isCheck) {
+      if (currentTurn === "Red") {
+        turnStatus.innerHTML = `<span style="color: #ef4444; font-weight: bold;">⚠️ CHIẾU TƯỚNG! (Lượt QUÂN ĐỎ)</span>`;
+      } else {
+        turnStatus.innerHTML = `<span style="color: #ef4444; font-weight: bold;">⚠️ CHIẾU TƯỚNG! (Lượt QUÂN ĐEN)</span>`;
+      }
       return;
     }
 
@@ -644,6 +700,7 @@ document.addEventListener("DOMContentLoaded", function () {
       updateGameFromApi(data);
     } catch (error) {
       console.error("Lỗi di chuyển:", error);
+      alert(error.message);
     } finally {
       isMakingMove = false;
     }
@@ -861,7 +918,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // =============================================
 
     if (currentTurn === "Red") {
-      redStatus.textContent = "🟢 Đang đến lượt";
+      redStatus.textContent = isCheck ? "⚠️ ĐANG BỊ CHIẾU" : "🟢 Đang đến lượt";
 
       blackStatus.textContent = "⚪ Đang chờ";
 
@@ -875,7 +932,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (currentTurn === "Black") {
       redStatus.textContent = "⚪ Đang chờ";
 
-      blackStatus.textContent = "🟢 Đang đến lượt";
+      blackStatus.textContent = isCheck
+        ? "⚠️ ĐANG BỊ CHIẾU"
+        : "🟢 Đang đến lượt";
 
       return;
     }

@@ -1,0 +1,12 @@
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\bin\Debug\net9.0\VaricoseSocks.Domain.deps.json
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\bin\Debug\net9.0\VaricoseSocks.Domain.dll
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\bin\Debug\net9.0\VaricoseSocks.Domain.pdb
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\obj\Debug\net9.0\VaricoseSocks.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\obj\Debug\net9.0\VaricoseSocks.Domain.AssemblyInfoInputs.cache
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\obj\Debug\net9.0\VaricoseSocks.Domain.AssemblyInfo.cs
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\obj\Debug\net9.0\VaricoseSocks.Domain.csproj.CoreCompileInputs.cache
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\obj\Debug\net9.0\VaricoseSocks.Domain.dll
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\obj\Debug\net9.0\refint\VaricoseSocks.Domain.dll
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\obj\Debug\net9.0\VaricoseSocks.Domain.pdb
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\obj\Debug\net9.0\ref\VaricoseSocks.Domain.dll
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Domain\obj\Debug\net9.0\VaricoseSocks.Domain.sourcelink.json

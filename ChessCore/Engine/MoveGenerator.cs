@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ChessCore.Enums;
 using ChessCore.Models;
@@ -6,10 +7,106 @@ namespace ChessCore.Engine
 {
     public static class MoveGenerator
     {
+        // 1. Hàm chính: Lọc chỉ trả về các nước đi an toàn cho Tướng (không tự sát / bắt buộc giải chiếu)
         public static List<EngineMove> GetValidMoves(Board board, Position from)
         {
+            List<EngineMove> pseudoMoves = GetPseudoLegalMoves(board, from);
+            List<EngineMove> legalMoves = new List<EngineMove>();
+            Piece? currentPiece = board.GetPieceAt(from.Row, from.Col);
+            if (currentPiece == null) return legalMoves;
+
+            foreach (var move in pseudoMoves)
+            {
+                // Giả lập nước đi trực tiếp trên Grid của Board
+                Piece? captured = board.Grid[move.To.Row, move.To.Col];
+                board.Grid[move.To.Row, move.To.Col] = currentPiece;
+                board.Grid[move.From.Row, move.From.Col] = null!;
+
+                // Kiểm tra xem sau nước đi giả lập, Tướng phe mình có an toàn không
+                bool isSelfInCheck = CheckIfInCheck(board, currentPiece.Color);
+
+                // Hoàn tác lại nước đi giả lập
+                board.Grid[move.From.Row, move.From.Col] = currentPiece;
+                board.Grid[move.To.Row, move.To.Col] = captured!;
+
+                // Nếu không bị chiếu, nước đi này hoàn toàn hợp lệ
+                if (!isSelfInCheck)
+                {
+                    legalMoves.Add(move);
+                }
+            }
+
+            return legalMoves;
+        }
+
+        // 2. Logic kiểm tra Tướng phe color có bị chiếu hoặc đối mặt Tướng địch không
+        public static bool CheckIfInCheck(Board board, PieceColor color)
+        {
+            Position? kingPos = null;
+            Position? opponentKingPos = null;
+            PieceColor opponentColor = color == PieceColor.Red ? PieceColor.Black : PieceColor.Red;
+
+            // Tìm vị trí 2 Tướng
+            for (int r = 0; r < 10; r++)
+            {
+                for (int c = 0; c < 9; c++)
+                {
+                    Piece? p = board.GetPieceAt(r, c);
+                    if (p != null && p.Type == PieceType.King)
+                    {
+                        if (p.Color == color) kingPos = new Position(r, c);
+                        else opponentKingPos = new Position(r, c);
+                    }
+                }
+            }
+
+            if (!kingPos.HasValue) return false;
+
+            // Luật 2 Tướng đối mặt (Flying General) trên cùng một cột
+            if (opponentKingPos.HasValue && kingPos.Value.Col == opponentKingPos.Value.Col)
+            {
+                int minR = Math.Min(kingPos.Value.Row, opponentKingPos.Value.Row);
+                int maxR = Math.Max(kingPos.Value.Row, opponentKingPos.Value.Row);
+                bool hasObstacle = false;
+
+                for (int r = minR + 1; r < maxR; r++)
+                {
+                    if (board.GetPieceAt(r, kingPos.Value.Col) != null)
+                    {
+                        hasObstacle = true;
+                        break;
+                    }
+                }
+
+                if (!hasObstacle) return true; // Hai Tướng nhìn thấy nhau là phạm quy
+            }
+
+            // Duyệt quân đối phương xem có quân nào tấn công được King hay không
+            for (int r = 0; r < 10; r++)
+            {
+                for (int c = 0; c < 9; c++)
+                {
+                    Piece? piece = board.GetPieceAt(r, c);
+                    if (piece != null && piece.Color == opponentColor)
+                    {
+                        Position fromPos = new Position(r, c);
+                        List<EngineMove> threatMoves = GetPseudoLegalMoves(board, fromPos);
+                        if (threatMoves.Exists(m => m.To.Equals(kingPos.Value)))
+                        {
+                            return true; // Tướng đang bị quân đối phương chiếu
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        // 3. Tính nước đi hình học gốc của từng quân cờ
+        public static List<EngineMove> GetPseudoLegalMoves(Board board, Position from)
+        {
             List<EngineMove> moves = new List<EngineMove>();
-            Piece p = board.GetPieceAt(from.Row, from.Col);
+            Piece? p = board.GetPieceAt(from.Row, from.Col);
             if (p == null) return moves;
 
             switch (p.Type)
@@ -52,7 +149,7 @@ namespace ChessCore.Engine
                 int c = from.Col + dC[i];
                 while (IsInsideBoard(r, c))
                 {
-                    Piece target = board.GetPieceAt(r, c);
+                    Piece? target = board.GetPieceAt(r, c);
                     if (target == null)
                     {
                         moves.Add(new EngineMove(from, new Position(r, c)));
@@ -165,7 +262,7 @@ namespace ChessCore.Engine
 
                 while (IsInsideBoard(r, c))
                 {
-                    Piece targetPiece = board.GetPieceAt(r, c);
+                    Piece? targetPiece = board.GetPieceAt(r, c);
                     if (!foundMount)
                     {
                         if (targetPiece == null)
@@ -222,7 +319,7 @@ namespace ChessCore.Engine
         private static void AddMoveIfValid(Board board, List<EngineMove> moves, Position from, int r, int c, PieceColor color)
         {
             if (!IsInsideBoard(r, c)) return;
-            Piece target = board.GetPieceAt(r, c);
+            Piece? target = board.GetPieceAt(r, c);
 
             if (target == null)
                 moves.Add(new EngineMove(from, new Position(r, c)));

@@ -1,0 +1,16 @@
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\bin\Debug\net9.0\VaricoseSocks.Application.deps.json
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\bin\Debug\net9.0\VaricoseSocks.Application.dll
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\bin\Debug\net9.0\VaricoseSocks.Application.pdb
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\bin\Debug\net9.0\VaricoseSocks.Domain.dll
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\bin\Debug\net9.0\VaricoseSocks.Domain.pdb
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\VaricoseSocks.Application.csproj.AssemblyReference.cache
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\VaricoseSocks.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\VaricoseSocks.Application.AssemblyInfoInputs.cache
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\VaricoseSocks.Application.AssemblyInfo.cs
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\VaricoseSocks.Application.csproj.CoreCompileInputs.cache
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\Varicose.F09CC8F2.Up2Date
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\VaricoseSocks.Application.dll
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\refint\VaricoseSocks.Application.dll
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\VaricoseSocks.Application.pdb
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\ref\VaricoseSocks.Application.dll
+D:\Desktop\Projects\VaricoseSocks\VaricoseSocks.Application\obj\Debug\net9.0\VaricoseSocks.Application.sourcelink.json

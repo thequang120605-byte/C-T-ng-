@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "VaricoseSocks.Domain/1.0.0": {
+        "runtime": {
+          "VaricoseSocks.Domain.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "VaricoseSocks.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

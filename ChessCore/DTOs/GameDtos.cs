@@ -50,7 +50,7 @@ namespace ChessCore.DTOs
 
         public string CurrentTurn { get; set; }
             = string.Empty;
-
+        public bool IsCheck { get; set; }
         public DateTime CreatedAt { get; set; }
 
         public DateTime? LastMoveAt { get; set; }
