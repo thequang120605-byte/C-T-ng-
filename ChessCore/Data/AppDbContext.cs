@@ -30,14 +30,24 @@ namespace ChessCore.Data
             modelBuilder.Entity<Game>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.GameType)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
+
                 entity.Property(e => e.Status)
-                    .HasConversion<string>() // Lưu enum dạng string cho dễ đọc trong DB MySql
+                    .HasConversion<string>()
                     .HasMaxLength(30);
+
                 entity.Property(e => e.CurrentTurn)
                     .HasConversion<string>()
                     .HasMaxLength(20);
 
-                // Quan hệ 1-N: Game -> Moves
+                entity.Property(e => e.Winner)
+                    .HasConversion<string>()
+                    .HasMaxLength(20)
+                    .IsRequired(false);
+
                 entity.HasMany(g => g.Moves)
                     .WithOne()
                     .HasForeignKey(m => m.GameId)

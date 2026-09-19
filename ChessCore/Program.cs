@@ -1,11 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using ChessCore.Data;
 using ChessCore.Services;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 // Cấu hình CORS cho phép Frontend truy cập
 builder.Services.AddCors(options =>

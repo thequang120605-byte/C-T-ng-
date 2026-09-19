@@ -16,10 +16,13 @@ namespace ChessCore.Services
             _context = context;
         }
 
-        public async Task<Game> CreateGameAsync()
+        public async Task<Game> CreateGameAsync(int? redPlayerId, int? blackPlayerId, GameType gameType)
         {
             var game = new Game
             {
+                RedPlayerId = redPlayerId,
+                BlackPlayerId = blackPlayerId,
+                GameType = gameType,
                 Status = GameStatus.InProgress,
                 CurrentTurn = PieceColor.Red,
                 CreatedAt = DateTime.UtcNow
@@ -44,6 +47,27 @@ namespace ChessCore.Services
 
             game.CurrentTurn = nextTurn;
             game.Status = status;
+            game.Winner = status switch
+            {
+                GameStatus.RedWins => PieceColor.Red,
+                GameStatus.BlackWins => PieceColor.Black,
+                _ => null
+            };
+            game.LastMoveAt = DateTime.UtcNow;
+
+            _context.Games.Update(game);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> FinishGameAsync(int gameId, PieceColor winner, GameStatus status)
+        {
+            var game = await _context.Games.FindAsync(gameId);
+            if (game == null) return false;
+
+            game.Winner = winner;
+            game.Status = status;
+            game.CurrentTurn = winner;
             game.LastMoveAt = DateTime.UtcNow;
 
             _context.Games.Update(game);

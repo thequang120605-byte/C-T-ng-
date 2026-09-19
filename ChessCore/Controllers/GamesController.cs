@@ -33,11 +33,15 @@ namespace ChessCore.Controllers
         // =====================================================
 
         [HttpPost]
-        public async Task<ActionResult<GameResponseDto>> CreateGame()
+        public async Task<ActionResult<GameResponseDto>> CreateGame([FromBody] CreateGameRequestDto request)
         {
-            var game = await _gameService.CreateGameAsync();
-            var board = new Board();
+            var game = await _gameService.CreateGameAsync(
+                request?.RedPlayerId,
+                request?.BlackPlayerId,
+                request?.GameType ?? GameType.Standard
+            );
 
+            var board = new Board();
             var response = BuildGameResponse(game, board);
 
             return CreatedAtAction(
@@ -224,15 +228,14 @@ namespace ChessCore.Controllers
             {
                 newStatus = movingPiece.Color == PieceColor.Red ? GameStatus.RedWins : GameStatus.BlackWins;
                 nextTurn = movingPiece.Color;
+                await _gameService.FinishGameAsync(id, movingPiece.Color, newStatus);
             }
             else
             {
                 newStatus = GameStatus.InProgress;
                 nextTurn = game.CurrentTurn == PieceColor.Red ? PieceColor.Black : PieceColor.Red;
+                await _gameService.UpdateGameTurnAndStatusAsync(id, nextTurn, newStatus);
             }
-
-            // Cập nhật trạng thái và lượt đi mới
-            await _gameService.UpdateGameTurnAndStatusAsync(id, nextTurn, newStatus);
 
             // Tải lại game mới nhất
             var updatedGame = await _gameService.GetGameByIdAsync(id);
@@ -303,8 +306,12 @@ namespace ChessCore.Controllers
             return new GameResponseDto
             {
                 Id = game.Id,
+                RedPlayerId = game.RedPlayerId,
+                BlackPlayerId = game.BlackPlayerId,
+                GameType = game.GameType.ToString(),
                 Status = game.Status.ToString(),
                 CurrentTurn = game.CurrentTurn.ToString(),
+                Winner = game.Winner?.ToString(),
                 IsCheck = isCheck,
                 CreatedAt = game.CreatedAt,
                 LastMoveAt = game.LastMoveAt,

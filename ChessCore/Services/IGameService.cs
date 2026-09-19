@@ -7,8 +7,9 @@ namespace ChessCore.Services
 {
     public interface IGameService
     {
-        Task<Game> CreateGameAsync();
+        Task<Game> CreateGameAsync(int? redPlayerId, int? blackPlayerId, GameType gameType);
         Task<Game> GetGameByIdAsync(int gameId);
         Task<bool> UpdateGameTurnAndStatusAsync(int gameId, PieceColor nextTurn, GameStatus status);
+        Task<bool> FinishGameAsync(int gameId, PieceColor winner, GameStatus status);
     }
 }

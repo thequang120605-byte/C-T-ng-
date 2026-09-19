@@ -1,0 +1,219 @@
+{
+  "info": {
+    "name": "ChessCore - Week 2 Backend API",
+    "description": "Smoke tests for game creation, board state, valid moves, move processing, and persistence.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001"
+    },
+    {
+      "key": "gameId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Create game",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"redPlayerId\": 101,\n  \"blackPlayerId\": 202,\n  \"gameType\": \"Standard\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/games",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "games"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Created successfully', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('Initial board has 32 pieces', function () {",
+              "    pm.expect(body.boardPieces).to.have.lengthOf(32);",
+              "});",
+              "pm.collectionVariables.set('gameId', body.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get game state",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/games/{{gameId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "games",
+            "{{gameId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Fetched successfully', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Game state is in progress', function () {",
+              "    pm.expect(pm.response.json().status).to.eql('InProgress');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get valid moves for red pawn",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/games/{{gameId}}/valid-moves?row=9&col=4",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "games",
+            "{{gameId}}",
+            "valid-moves"
+          ],
+          "query": [
+            {
+              "key": "row",
+              "value": "9"
+            },
+            {
+              "key": "col",
+              "value": "4"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Valid moves returned successfully', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Pawn can move forward', function () {",
+              "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Make red pawn move",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fromX\": 9,\n  \"fromY\": 4,\n  \"toX\": 8,\n  \"toY\": 4\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/games/{{gameId}}/moves",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "games",
+            "{{gameId}}",
+            "moves"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Move accepted', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('Turn changes to black', function () {",
+              "    pm.expect(body.currentTurn).to.eql('Black');",
+              "});",
+              "pm.test('Move is persisted in response', function () {",
+              "    pm.expect(body.moves).to.have.lengthOf(1);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reload game after move",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/games/{{gameId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "games",
+            "{{gameId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Move remains persisted after reload', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().moves).to.have.lengthOf(1);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
