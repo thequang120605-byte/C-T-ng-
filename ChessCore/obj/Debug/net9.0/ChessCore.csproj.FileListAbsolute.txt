@@ -391,3 +391,8 @@ D:\Desktop\Projects\VaricoseSocks\ChessCore\obj\Debug\net9.0\ChessCore.genruntim
 D:\Desktop\Projects\VaricoseSocks\ChessCore\obj\Debug\net9.0\ref\ChessCore.dll
 D:\Desktop\Projects\VaricoseSocks\ChessCore\obj\Debug\net9.0\compressed\lmz7tb5a2g-fae3o5zy14.gz
 D:\Desktop\Projects\VaricoseSocks\ChessCore\obj\Debug\net9.0\compressed\5donsf9xdc-9utmplgnnv.gz
+C:\Users\ADMIN\Desktop\C-T-ng-\ChessCore\bin\Debug\net9.0\ChessCore.staticwebassets.runtime.json
+C:\Users\ADMIN\Desktop\C-T-ng-\ChessCore\obj\Debug\net9.0\ChessCore.RazorAssemblyInfo.cache
+C:\Users\ADMIN\Desktop\C-T-ng-\ChessCore\obj\Debug\net9.0\ChessCore.RazorAssemblyInfo.cs
+C:\Users\ADMIN\Desktop\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\5fb2geqwon-{0}-fae3o5zy14-fae3o5zy14.gz
+C:\Users\ADMIN\Desktop\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-9utmplgnnv-9utmplgnnv.gz

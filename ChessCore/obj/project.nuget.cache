@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "VAdT4mY68uI=",
+  "dgSpecHash": "x1X84+quMXI=",
   "success": true,
-  "projectFilePath": "D:\\Desktop\\Projects\\VaricoseSocks\\ChessCore\\ChessCore.csproj",
+  "projectFilePath": "C:\\Users\\ADMIN\\Desktop\\C-T-ng-\\ChessCore\\ChessCore.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ADMIN\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\ADMIN\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\7.0.0\\microsoft.bcl.asyncinterfaces.7.0.0.nupkg.sha512",
