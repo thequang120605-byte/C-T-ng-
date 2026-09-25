@@ -6,12 +6,15 @@
 
     <title>@ViewData["Title"] - Hệ thống Cờ Tướng</title>
 
-    <link rel="stylesheet" href="~/css/game.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    @RenderSection("Styles", required: false)
 </head>
 
 <body>
 
     <header class="main-header">
+
         <div class="logo">
             ♟ HỆ THỐNG CỜ TƯỚNG
         </div>
@@ -20,12 +23,15 @@
             <a href="/">Trang chủ</a>
             <a href="/Game">Chơi cờ</a>
         </nav>
+
     </header>
 
     <main>
         @RenderBody()
     </main>
 
+    @RenderSection("Scripts", required: false)
 
 </body>
 </html>
+```

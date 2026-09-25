@@ -7,29 +7,54 @@ namespace ChessCore.Engine
 {
     public static class MoveGenerator
     {
-        // 1. Hàm chính: Lọc chỉ trả về các nước đi an toàn cho Tướng (không tự sát / bắt buộc giải chiếu)
-        public static List<EngineMove> GetValidMoves(Board board, Position from)
+        public static List<EngineMove> GetValidMoves(
+            Board board,
+            Position from)
         {
-            List<EngineMove> pseudoMoves = GetPseudoLegalMoves(board, from);
-            List<EngineMove> legalMoves = new List<EngineMove>();
-            Piece? currentPiece = board.GetPieceAt(from.Row, from.Col);
-            if (currentPiece == null) return legalMoves;
+            List<EngineMove> pseudoMoves =
+                GetPseudoLegalMoves(
+                    board,
+                    from);
 
-            foreach (var move in pseudoMoves)
+            List<EngineMove> legalMoves =
+                new List<EngineMove>();
+
+            Piece? currentPiece =
+                board.GetPieceAt(
+                    from.Row,
+                    from.Col);
+
+            if (currentPiece == null)
+                return legalMoves;
+
+            foreach (EngineMove move in pseudoMoves)
             {
-                // Giả lập nước đi trực tiếp trên Grid của Board
-                Piece? captured = board.Grid[move.To.Row, move.To.Col];
-                board.Grid[move.To.Row, move.To.Col] = currentPiece;
-                board.Grid[move.From.Row, move.From.Col] = null!;
+                Piece? captured =
+                    board.GetPieceAt(
+                        move.To.Row,
+                        move.To.Col);
 
-                // Kiểm tra xem sau nước đi giả lập, Tướng phe mình có an toàn không
-                bool isSelfInCheck = CheckIfInCheck(board, currentPiece.Color);
+                board.Grid[
+                    move.To.Row,
+                    move.To.Col] = currentPiece;
 
-                // Hoàn tác lại nước đi giả lập
-                board.Grid[move.From.Row, move.From.Col] = currentPiece;
-                board.Grid[move.To.Row, move.To.Col] = captured!;
+                board.Grid[
+                    move.From.Row,
+                    move.From.Col] = null;
 
-                // Nếu không bị chiếu, nước đi này hoàn toàn hợp lệ
+                bool isSelfInCheck =
+                    CheckIfInCheck(
+                        board,
+                        currentPiece.Color);
+
+                board.Grid[
+                    move.From.Row,
+                    move.From.Col] = currentPiece;
+
+                board.Grid[
+                    move.To.Row,
+                    move.To.Col] = captured;
+
                 if (!isSelfInCheck)
                 {
                     legalMoves.Add(move);
@@ -39,61 +64,120 @@ namespace ChessCore.Engine
             return legalMoves;
         }
 
-        // 2. Logic kiểm tra Tướng phe color có bị chiếu hoặc đối mặt Tướng địch không
-        public static bool CheckIfInCheck(Board board, PieceColor color)
+        public static bool CheckIfInCheck(
+            Board board,
+            PieceColor color)
         {
             Position? kingPos = null;
             Position? opponentKingPos = null;
-            PieceColor opponentColor = color == PieceColor.Red ? PieceColor.Black : PieceColor.Red;
 
-            // Tìm vị trí 2 Tướng
+            PieceColor opponentColor =
+                color == PieceColor.Red
+                    ? PieceColor.Black
+                    : PieceColor.Red;
+
+            // ==============================
+            // TÌM HAI TƯỚNG
+            // ==============================
+
             for (int r = 0; r < 10; r++)
             {
                 for (int c = 0; c < 9; c++)
                 {
-                    Piece? p = board.GetPieceAt(r, c);
-                    if (p != null && p.Type == PieceType.King)
+                    Piece? piece =
+                        board.GetPieceAt(r, c);
+
+                    if (piece == null)
+                        continue;
+
+                    if (piece.Type != PieceType.King)
+                        continue;
+
+                    if (piece.Color == color)
                     {
-                        if (p.Color == color) kingPos = new Position(r, c);
-                        else opponentKingPos = new Position(r, c);
+                        kingPos =
+                            new Position(r, c);
+                    }
+                    else
+                    {
+                        opponentKingPos =
+                            new Position(r, c);
                     }
                 }
             }
 
-            if (!kingPos.HasValue) return false;
+            if (!kingPos.HasValue)
+                return false;
 
-            // Luật 2 Tướng đối mặt (Flying General) trên cùng một cột
-            if (opponentKingPos.HasValue && kingPos.Value.Col == opponentKingPos.Value.Col)
+            // ==============================
+            // HAI TƯỚNG ĐỐI MẶT
+            // ==============================
+
+            if (opponentKingPos.HasValue &&
+                kingPos.Value.Col ==
+                opponentKingPos.Value.Col)
             {
-                int minR = Math.Min(kingPos.Value.Row, opponentKingPos.Value.Row);
-                int maxR = Math.Max(kingPos.Value.Row, opponentKingPos.Value.Row);
+                int minRow =
+                    Math.Min(
+                        kingPos.Value.Row,
+                        opponentKingPos.Value.Row);
+
+                int maxRow =
+                    Math.Max(
+                        kingPos.Value.Row,
+                        opponentKingPos.Value.Row);
+
                 bool hasObstacle = false;
 
-                for (int r = minR + 1; r < maxR; r++)
+                for (
+                    int r = minRow + 1;
+                    r < maxRow;
+                    r++)
                 {
-                    if (board.GetPieceAt(r, kingPos.Value.Col) != null)
+                    if (board.GetPieceAt(
+                        r,
+                        kingPos.Value.Col) != null)
                     {
                         hasObstacle = true;
                         break;
                     }
                 }
 
-                if (!hasObstacle) return true; // Hai Tướng nhìn thấy nhau là phạm quy
+                if (!hasObstacle)
+                    return true;
             }
 
-            // Duyệt quân đối phương xem có quân nào tấn công được King hay không
+            // ==============================
+            // KIỂM TRA QUÂN ĐỊCH TẤN CÔNG
+            // ==============================
+
             for (int r = 0; r < 10; r++)
             {
                 for (int c = 0; c < 9; c++)
                 {
-                    Piece? piece = board.GetPieceAt(r, c);
-                    if (piece != null && piece.Color == opponentColor)
+                    Piece? piece =
+                        board.GetPieceAt(r, c);
+
+                    if (piece == null)
+                        continue;
+
+                    if (piece.Color != opponentColor)
+                        continue;
+
+                    Position from =
+                        new Position(r, c);
+
+                    List<EngineMove> threats =
+                        GetPseudoLegalMoves(
+                            board,
+                            from);
+
+                    foreach (EngineMove threat in threats)
                     {
-                        Position fromPos = new Position(r, c);
-                        List<EngineMove> threatMoves = GetPseudoLegalMoves(board, fromPos);
-                        if (threatMoves.Exists(m => m.To.Equals(kingPos.Value)))
+                        if (threat.To.Equals(
+                            kingPos.Value))
                         {
-                            return true; // Tướng đang bị quân đối phương chiếu
+                            return true;
                         }
                     }
                 }
@@ -102,172 +186,407 @@ namespace ChessCore.Engine
             return false;
         }
 
-        // 3. Tính nước đi hình học gốc của từng quân cờ
-        public static List<EngineMove> GetPseudoLegalMoves(Board board, Position from)
+        public static List<EngineMove> GetPseudoLegalMoves(
+            Board board,
+            Position from)
         {
-            List<EngineMove> moves = new List<EngineMove>();
-            Piece? p = board.GetPieceAt(from.Row, from.Col);
-            if (p == null) return moves;
+            List<EngineMove> moves =
+                new List<EngineMove>();
 
-            switch (p.Type)
+            Piece? piece =
+                board.GetPieceAt(
+                    from.Row,
+                    from.Col);
+
+            if (piece == null)
+                return moves;
+
+            switch (piece.Type)
             {
                 case PieceType.Rook:
-                    moves.AddRange(GetRookMoves(board, from, p.Color));
+                    moves.AddRange(
+                        GetRookMoves(
+                            board,
+                            from,
+                            piece.Color));
                     break;
+
                 case PieceType.Horse:
-                    moves.AddRange(GetHorseMoves(board, from, p.Color));
+                    moves.AddRange(
+                        GetHorseMoves(
+                            board,
+                            from,
+                            piece.Color));
                     break;
+
                 case PieceType.Elephant:
-                    moves.AddRange(GetElephantMoves(board, from, p.Color));
+                    moves.AddRange(
+                        GetElephantMoves(
+                            board,
+                            from,
+                            piece.Color));
                     break;
+
                 case PieceType.Advisor:
-                    moves.AddRange(GetAdvisorMoves(board, from, p.Color));
+                    moves.AddRange(
+                        GetAdvisorMoves(
+                            board,
+                            from,
+                            piece.Color));
                     break;
+
                 case PieceType.King:
-                    moves.AddRange(GetKingMoves(board, from, p.Color));
+                    moves.AddRange(
+                        GetKingMoves(
+                            board,
+                            from,
+                            piece.Color));
                     break;
+
                 case PieceType.Cannon:
-                    moves.AddRange(GetCannonMoves(board, from, p.Color));
+                    moves.AddRange(
+                        GetCannonMoves(
+                            board,
+                            from,
+                            piece.Color));
                     break;
+
                 case PieceType.Pawn:
-                    moves.AddRange(GetPawnMoves(board, from, p.Color));
+                    moves.AddRange(
+                        GetPawnMoves(
+                            board,
+                            from,
+                            piece.Color));
                     break;
             }
 
             return moves;
         }
 
-        private static List<EngineMove> GetRookMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetRookMoves(
+            Board board,
+            Position from,
+            PieceColor color)
         {
-            List<EngineMove> moves = new List<EngineMove>();
-            int[] dR = { -1, 1, 0, 0 };
-            int[] dC = { 0, 0, -1, 1 };
+            List<EngineMove> moves =
+                new List<EngineMove>();
+
+            int[] dR =
+                { -1, 1, 0, 0 };
+
+            int[] dC =
+                { 0, 0, -1, 1 };
 
             for (int i = 0; i < 4; i++)
             {
-                int r = from.Row + dR[i];
-                int c = from.Col + dC[i];
+                int r =
+                    from.Row + dR[i];
+
+                int c =
+                    from.Col + dC[i];
+
                 while (IsInsideBoard(r, c))
                 {
-                    Piece? target = board.GetPieceAt(r, c);
+                    Piece? target =
+                        board.GetPieceAt(r, c);
+
                     if (target == null)
                     {
-                        moves.Add(new EngineMove(from, new Position(r, c)));
+                        moves.Add(
+                            new EngineMove(
+                                from,
+                                new Position(r, c)));
                     }
                     else
                     {
-                        if (target.Color != color) moves.Add(new EngineMove(from, new Position(r, c), target));
+                        if (target.Color != color)
+                        {
+                            moves.Add(
+                                new EngineMove(
+                                    from,
+                                    new Position(r, c),
+                                    target));
+                        }
+
                         break;
                     }
+
                     r += dR[i];
                     c += dC[i];
                 }
             }
+
             return moves;
         }
 
-        private static List<EngineMove> GetHorseMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetHorseMoves(
+            Board board,
+            Position from,
+            PieceColor color)
         {
-            List<EngineMove> moves = new List<EngineMove>();
-            int[] dRowBlock = { -1, 1, 0, 0 };
-            int[] dColBlock = { 0, 0, -1, 1 };
+            List<EngineMove> moves =
+                new List<EngineMove>();
 
-            int[,] dRowTarget = { { -2, -2 }, { 2, 2 }, { -1, 1 }, { -1, 1 } };
-            int[,] dColTarget = { { -1, 1 }, { -1, 1 }, { -2, -2 }, { 2, 2 } };
+            int[] blockRow =
+                { -1, 1, 0, 0 };
+
+            int[] blockCol =
+                { 0, 0, -1, 1 };
+
+            int[,] targetRow =
+            {
+                { -2, -2 },
+                { 2, 2 },
+                { -1, 1 },
+                { -1, 1 }
+            };
+
+            int[,] targetCol =
+            {
+                { -1, 1 },
+                { -1, 1 },
+                { -2, -2 },
+                { 2, 2 }
+            };
 
             for (int i = 0; i < 4; i++)
             {
-                int blockRow = from.Row + dRowBlock[i];
-                int blockCol = from.Col + dColBlock[i];
+                int blockR =
+                    from.Row + blockRow[i];
 
-                if (IsInsideBoard(blockRow, blockCol) && board.GetPieceAt(blockRow, blockCol) == null)
+                int blockC =
+                    from.Col + blockCol[i];
+
+                if (!IsInsideBoard(
+                    blockR,
+                    blockC))
                 {
-                    for (int j = 0; j < 2; j++)
-                    {
-                        int targetRow = from.Row + dRowTarget[i, j];
-                        int targetCol = from.Col + dColTarget[i, j];
-                        AddMoveIfValid(board, moves, from, targetRow, targetCol, color);
-                    }
+                    continue;
+                }
+
+                if (board.GetPieceAt(
+                    blockR,
+                    blockC) != null)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < 2; j++)
+                {
+                    int r =
+                        from.Row +
+                        targetRow[i, j];
+
+                    int c =
+                        from.Col +
+                        targetCol[i, j];
+
+                    AddMoveIfValid(
+                        board,
+                        moves,
+                        from,
+                        r,
+                        c,
+                        color);
                 }
             }
+
             return moves;
         }
 
-        private static List<EngineMove> GetElephantMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetElephantMoves(
+            Board board,
+            Position from,
+            PieceColor color)
         {
-            List<EngineMove> moves = new List<EngineMove>();
-            int[] dR = { -2, -2, 2, 2 };
-            int[] dC = { -2, 2, -2, 2 };
-            int[] eyeR = { -1, -1, 1, 1 };
-            int[] eyeC = { -1, 1, -1, 1 };
+            List<EngineMove> moves =
+                new List<EngineMove>();
+
+            int[] dR =
+                { -2, -2, 2, 2 };
+
+            int[] dC =
+                { -2, 2, -2, 2 };
+
+            int[] eyeR =
+                { -1, -1, 1, 1 };
+
+            int[] eyeC =
+                { -1, 1, -1, 1 };
 
             for (int i = 0; i < 4; i++)
             {
-                int r = from.Row + dR[i];
-                int c = from.Col + dC[i];
-                int eR = from.Row + eyeR[i];
-                int eC = from.Col + eyeC[i];
+                int r =
+                    from.Row + dR[i];
 
-                bool isCrossRiver = color == PieceColor.Red ? r < 5 : r > 4;
+                int c =
+                    from.Col + dC[i];
 
-                if (!isCrossRiver && IsInsideBoard(r, c) && board.GetPieceAt(eR, eC) == null)
+                int eyeRow =
+                    from.Row + eyeR[i];
+
+                int eyeCol =
+                    from.Col + eyeC[i];
+
+                if (!IsInsideBoard(r, c))
+                    continue;
+
+                if (!IsInsideBoard(
+                    eyeRow,
+                    eyeCol))
                 {
-                    AddMoveIfValid(board, moves, from, r, c, color);
+                    continue;
                 }
+
+                bool crossRiver =
+                    color == PieceColor.Red
+                        ? r < 5
+                        : r > 4;
+
+                if (crossRiver)
+                    continue;
+
+                if (board.GetPieceAt(
+                    eyeRow,
+                    eyeCol) != null)
+                {
+                    continue;
+                }
+
+                AddMoveIfValid(
+                    board,
+                    moves,
+                    from,
+                    r,
+                    c,
+                    color);
             }
+
             return moves;
         }
 
-        private static List<EngineMove> GetAdvisorMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetAdvisorMoves(
+            Board board,
+            Position from,
+            PieceColor color)
         {
-            List<EngineMove> moves = new List<EngineMove>();
-            int[] dR = { -1, -1, 1, 1 };
-            int[] dC = { -1, 1, -1, 1 };
+            List<EngineMove> moves =
+                new List<EngineMove>();
+
+            int[] dR =
+                { -1, -1, 1, 1 };
+
+            int[] dC =
+                { -1, 1, -1, 1 };
 
             for (int i = 0; i < 4; i++)
             {
-                int r = from.Row + dR[i];
-                int c = from.Col + dC[i];
-                if (IsInPalace(r, c, color)) AddMoveIfValid(board, moves, from, r, c, color);
+                int r =
+                    from.Row + dR[i];
+
+                int c =
+                    from.Col + dC[i];
+
+                if (!IsInPalace(
+                    r,
+                    c,
+                    color))
+                {
+                    continue;
+                }
+
+                AddMoveIfValid(
+                    board,
+                    moves,
+                    from,
+                    r,
+                    c,
+                    color);
             }
+
             return moves;
         }
 
-        private static List<EngineMove> GetKingMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetKingMoves(
+            Board board,
+            Position from,
+            PieceColor color)
         {
-            List<EngineMove> moves = new List<EngineMove>();
-            int[] dR = { -1, 1, 0, 0 };
-            int[] dC = { 0, 0, -1, 1 };
+            List<EngineMove> moves =
+                new List<EngineMove>();
+
+            int[] dR =
+                { -1, 1, 0, 0 };
+
+            int[] dC =
+                { 0, 0, -1, 1 };
 
             for (int i = 0; i < 4; i++)
             {
-                int r = from.Row + dR[i];
-                int c = from.Col + dC[i];
-                if (IsInPalace(r, c, color)) AddMoveIfValid(board, moves, from, r, c, color);
+                int r =
+                    from.Row + dR[i];
+
+                int c =
+                    from.Col + dC[i];
+
+                if (!IsInPalace(
+                    r,
+                    c,
+                    color))
+                {
+                    continue;
+                }
+
+                AddMoveIfValid(
+                    board,
+                    moves,
+                    from,
+                    r,
+                    c,
+                    color);
             }
+
             return moves;
         }
 
-        private static List<EngineMove> GetCannonMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetCannonMoves(
+            Board board,
+            Position from,
+            PieceColor color)
         {
-            List<EngineMove> moves = new List<EngineMove>();
-            int[] dR = { -1, 1, 0, 0 };
-            int[] dC = { 0, 0, -1, 1 };
+            List<EngineMove> moves =
+                new List<EngineMove>();
+
+            int[] dR =
+                { -1, 1, 0, 0 };
+
+            int[] dC =
+                { 0, 0, -1, 1 };
 
             for (int i = 0; i < 4; i++)
             {
-                bool foundMount = false;
-                int r = from.Row + dR[i];
-                int c = from.Col + dC[i];
+                bool foundMount =
+                    false;
+
+                int r =
+                    from.Row + dR[i];
+
+                int c =
+                    from.Col + dC[i];
 
                 while (IsInsideBoard(r, c))
                 {
-                    Piece? targetPiece = board.GetPieceAt(r, c);
+                    Piece? target =
+                        board.GetPieceAt(r, c);
+
                     if (!foundMount)
                     {
-                        if (targetPiece == null)
+                        if (target == null)
                         {
-                            moves.Add(new EngineMove(from, new Position(r, c)));
+                            moves.Add(
+                                new EngineMove(
+                                    from,
+                                    new Position(r, c)));
                         }
                         else
                         {
@@ -276,55 +595,134 @@ namespace ChessCore.Engine
                     }
                     else
                     {
-                        if (targetPiece != null)
+                        if (target != null)
                         {
-                            if (targetPiece.Color != color)
+                            if (target.Color != color)
                             {
-                                moves.Add(new EngineMove(from, new Position(r, c), targetPiece));
+                                moves.Add(
+                                    new EngineMove(
+                                        from,
+                                        new Position(r, c),
+                                        target));
                             }
+
                             break;
                         }
                     }
+
                     r += dR[i];
                     c += dC[i];
                 }
             }
+
             return moves;
         }
 
-        private static List<EngineMove> GetPawnMoves(Board board, Position from, PieceColor color)
+        private static List<EngineMove> GetPawnMoves(
+            Board board,
+            Position from,
+            PieceColor color)
         {
-            List<EngineMove> moves = new List<EngineMove>();
-            int forward = color == PieceColor.Red ? -1 : 1;
-            bool isCrossedRiver = color == PieceColor.Red ? from.Row <= 4 : from.Row >= 5;
+            List<EngineMove> moves =
+                new List<EngineMove>();
 
-            AddMoveIfValid(board, moves, from, from.Row + forward, from.Col, color);
+            int forward =
+                color == PieceColor.Red
+                    ? -1
+                    : 1;
 
-            if (isCrossedRiver)
+            bool crossedRiver =
+                color == PieceColor.Red
+                    ? from.Row <= 4
+                    : from.Row >= 5;
+
+            AddMoveIfValid(
+                board,
+                moves,
+                from,
+                from.Row + forward,
+                from.Col,
+                color);
+
+            if (crossedRiver)
             {
-                AddMoveIfValid(board, moves, from, from.Row, from.Col - 1, color);
-                AddMoveIfValid(board, moves, from, from.Row, from.Col + 1, color);
+                AddMoveIfValid(
+                    board,
+                    moves,
+                    from,
+                    from.Row,
+                    from.Col - 1,
+                    color);
+
+                AddMoveIfValid(
+                    board,
+                    moves,
+                    from,
+                    from.Row,
+                    from.Col + 1,
+                    color);
             }
+
             return moves;
         }
 
-        private static bool IsInsideBoard(int r, int c) => r >= 0 && r <= 9 && c >= 0 && c <= 8;
-
-        private static bool IsInPalace(int r, int c, PieceColor color)
+        private static bool IsInsideBoard(
+            int row,
+            int col)
         {
-            if (c < 3 || c > 5) return false;
-            return color == PieceColor.Red ? r >= 7 && r <= 9 : r >= 0 && r <= 2;
+            return row >= 0 &&
+                   row <= 9 &&
+                   col >= 0 &&
+                   col <= 8;
         }
 
-        private static void AddMoveIfValid(Board board, List<EngineMove> moves, Position from, int r, int c, PieceColor color)
+        private static bool IsInPalace(
+            int row,
+            int col,
+            PieceColor color)
         {
-            if (!IsInsideBoard(r, c)) return;
-            Piece? target = board.GetPieceAt(r, c);
+            if (col < 3 || col > 5)
+                return false;
+
+            if (color == PieceColor.Red)
+            {
+                return row >= 7 &&
+                       row <= 9;
+            }
+
+            return row >= 0 &&
+                   row <= 2;
+        }
+
+        private static void AddMoveIfValid(
+            Board board,
+            List<EngineMove> moves,
+            Position from,
+            int row,
+            int col,
+            PieceColor color)
+        {
+            if (!IsInsideBoard(row, col))
+                return;
+
+            Piece? target =
+                board.GetPieceAt(row, col);
 
             if (target == null)
-                moves.Add(new EngineMove(from, new Position(r, c)));
+            {
+                moves.Add(
+                    new EngineMove(
+                        from,
+                        new Position(row, col)));
+            }
             else if (target.Color != color)
-                moves.Add(new EngineMove(from, new Position(r, c), target));
+            {
+                moves.Add(
+                    new EngineMove(
+                        from,
+                        new Position(row, col),
+                        target));
+            }
         }
     }
 }

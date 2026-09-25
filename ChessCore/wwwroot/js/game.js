@@ -1,6 +1,41 @@
 document.addEventListener("DOMContentLoaded", function () {
   const SVG_NS = "http://www.w3.org/2000/svg";
 
+  // =====================================================
+  // API
+  // =====================================================
+
+  const API_BASE_URL = "/api/games";
+
+  // =====================================================
+  // MODE
+  // =====================================================
+
+  let VS_COMPUTER = false;
+  let gameModeSelected = false;
+
+  const COMPUTER_DIFFICULTY = 2;
+
+  // =====================================================
+  // DOM
+  // =====================================================
+
+  const modeSelection = document.getElementById("mode-selection");
+
+  const gameContent = document.getElementById("game-content");
+
+  const playerVsPlayerButton = document.getElementById("player-vs-player-btn");
+
+  const playerVsComputerButton = document.getElementById(
+    "player-vs-computer-btn",
+  );
+
+  const startGameButton = document.getElementById("start-game-btn");
+
+  const selectedModeText = document.getElementById("selected-mode-text");
+
+  const changeModeButton = document.getElementById("change-mode-btn");
+
   const piecesLayer = document.getElementById("pieces-layer");
 
   const movesLayer = document.getElementById("moves-layer");
@@ -22,29 +57,16 @@ document.addEventListener("DOMContentLoaded", function () {
   const resignModal = document.getElementById("resign-modal");
 
   // =====================================================
-  // API
-  // =====================================================
-
-  const API_BASE_URL = "/api/games";
-
-  // =====================================================
-  // GAME
+  // GAME STATE
   // =====================================================
 
   let gameId = null;
-
   let isCreatingGame = false;
-
   let isMakingMove = false;
-
-  // =====================================================
-  // STATE
-  // =====================================================
+  let isComputerThinking = false;
 
   let currentTurn = null;
-
   let gameStatus = null;
-
   let isCheck = false;
 
   // =====================================================
@@ -52,49 +74,177 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   const START_X = 50;
-
   const START_Y = 50;
-
   const CELL_SIZE = 100;
-
-  // =====================================================
-  // SELECTED PIECE
-  // =====================================================
-
-  let selectedPieceElement = null;
-
-  let selectedPieceData = null;
 
   // =====================================================
   // PIECES
   // =====================================================
 
+  let selectedPieceElement = null;
+  let selectedPieceData = null;
+
   let initialPieces = [];
-
-  // =====================================================
-  // VALID MOVES
-  // =====================================================
-
   let currentValidMoves = [];
 
   // =====================================================
-  // INITIALIZE GAME
+  // SELECT MODE
   // =====================================================
 
-  async function initializeGame() {
-    const savedGameId = localStorage.getItem("xiangqiGameId");
+  function selectGameMode(isComputer) {
+    VS_COMPUTER = isComputer;
+    gameModeSelected = true;
 
-    if (savedGameId) {
-      gameId = parseInt(savedGameId);
+    if (playerVsPlayerButton) {
+      playerVsPlayerButton.classList.remove("selected");
+      playerVsPlayerButton.setAttribute("aria-pressed", "false");
+    }
 
-      console.log("Tìm thấy Game ID:", gameId);
+    if (playerVsComputerButton) {
+      playerVsComputerButton.classList.remove("selected");
+      playerVsComputerButton.setAttribute("aria-pressed", "false");
+    }
 
-      await loadGame();
+    if (VS_COMPUTER) {
+      if (playerVsComputerButton) {
+        playerVsComputerButton.classList.add("selected");
+        playerVsComputerButton.setAttribute("aria-pressed", "true");
+      }
 
+      if (selectedModeText) {
+        selectedModeText.textContent = "🤖 Người chơi vs Máy";
+      }
+    } else {
+      if (playerVsPlayerButton) {
+        playerVsPlayerButton.classList.add("selected");
+        playerVsPlayerButton.setAttribute("aria-pressed", "true");
+      }
+
+      if (selectedModeText) {
+        selectedModeText.textContent = "👥 Người chơi vs Người chơi";
+      }
+    }
+
+    if (startGameButton) {
+      startGameButton.disabled = false;
+      startGameButton.classList.add("enabled");
+    }
+  }
+
+  // =====================================================
+  // START SELECTED GAME
+  // =====================================================
+
+  async function startSelectedGame() {
+    if (!gameModeSelected) {
       return;
     }
 
+    closeGameResult();
+    closeResignModal();
+
+    localStorage.removeItem("xiangqiGameId");
+
+    gameId = null;
+
+    currentTurn = null;
+    gameStatus = null;
+    isCheck = false;
+    isComputerThinking = false;
+
+    clearSelection();
+
+    if (modeSelection) {
+      modeSelection.classList.add("hidden");
+    }
+
+    if (gameContent) {
+      gameContent.classList.remove("hidden");
+    }
+
+    updatePlayerNames();
+
     await createGame();
+  }
+
+  // =====================================================
+  // BACK TO MODE SELECTION
+  // =====================================================
+
+  function backToModeSelection() {
+    closeGameResult();
+    closeResignModal();
+
+    clearSelection();
+
+    if (piecesLayer) {
+      piecesLayer.innerHTML = "";
+    }
+
+    if (modeSelection) {
+      modeSelection.classList.remove("hidden");
+    }
+
+    if (gameContent) {
+      gameContent.classList.add("hidden");
+    }
+
+    gameModeSelected = false;
+    VS_COMPUTER = false;
+
+    gameId = null;
+    currentTurn = null;
+    gameStatus = null;
+    isCheck = false;
+    isComputerThinking = false;
+
+    localStorage.removeItem("xiangqiGameId");
+
+    if (playerVsPlayerButton) {
+      playerVsPlayerButton.classList.remove("selected");
+      playerVsPlayerButton.setAttribute("aria-pressed", "false");
+    }
+
+    if (playerVsComputerButton) {
+      playerVsComputerButton.classList.remove("selected");
+      playerVsComputerButton.setAttribute("aria-pressed", "false");
+    }
+
+    if (startGameButton) {
+      startGameButton.disabled = true;
+      startGameButton.classList.remove("enabled");
+    }
+
+    if (selectedModeText) {
+      selectedModeText.textContent = "Chưa chọn chế độ chơi";
+    }
+  }
+
+  // =====================================================
+  // INITIALIZE PAGE
+  // =====================================================
+
+  function initializePage() {
+    if (modeSelection) {
+      modeSelection.classList.remove("hidden");
+    }
+
+    if (gameContent) {
+      gameContent.classList.add("hidden");
+    }
+
+    if (startGameButton) {
+      startGameButton.disabled = true;
+      startGameButton.classList.remove("enabled");
+    }
+
+    if (selectedModeText) {
+      selectedModeText.textContent = "Chưa chọn chế độ chơi";
+    }
+
+    localStorage.removeItem("xiangqiGameId");
+
+    console.log("Đang chờ người dùng chọn chế độ chơi...");
   }
 
   // =====================================================
@@ -113,7 +263,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const response = await fetch(API_BASE_URL, {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
@@ -134,6 +283,8 @@ document.addEventListener("DOMContentLoaded", function () {
       updateGameFromApi(data);
     } catch (error) {
       console.error("Lỗi tạo game:", error);
+
+      alert("Không thể tạo ván cờ. Vui lòng thử lại.");
     } finally {
       isCreatingGame = false;
     }
@@ -144,19 +295,17 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   async function loadGame() {
-    try {
-      if (!gameId) {
-        return;
-      }
+    if (!gameId) {
+      return;
+    }
 
+    try {
       const response = await fetch(`${API_BASE_URL}/${gameId}`);
 
       if (!response.ok) {
         localStorage.removeItem("xiangqiGameId");
 
         gameId = null;
-
-        await createGame();
 
         return;
       }
@@ -174,6 +323,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   function updateGameFromApi(data) {
+    if (!data) {
+      return;
+    }
+
     gameId = data.id;
 
     currentTurn = data.currentTurn;
@@ -182,10 +335,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     isCheck = data.isCheck || false;
 
-    initialPieces = data.boardPieces.map(convertPieceFromApi);
+    initialPieces = (data.boardPieces || []).map(convertPieceFromApi);
 
     selectedPieceElement = null;
-
     selectedPieceData = null;
 
     currentValidMoves = [];
@@ -194,37 +346,177 @@ document.addEventListener("DOMContentLoaded", function () {
 
     renderPieces();
 
+    updatePlayerNames();
+
     updateTurnStatus();
 
     updatePlayerStatus();
 
     handleCheckWarning();
 
+    updateComputerStatus();
+
     checkGameResult();
 
     console.log("Bàn cờ đã được cập nhật!");
+
+    if (VS_COMPUTER && gameStatus === "InProgress" && currentTurn === "Black") {
+      triggerComputerMove();
+    }
   }
 
   // =====================================================
-  // CẢNH BÁO CHIẾU TƯỚNG (PHÁT SÁNG & OVERLAY)
+  // PLAYER NAMES
+  // =====================================================
+
+  function updatePlayerNames() {
+    const redPlayerName = document.getElementById("red-player-name");
+
+    const blackPlayerName = document.getElementById("black-player-name");
+
+    if (redPlayerName) {
+      redPlayerName.textContent = VS_COMPUTER ? "Bạn" : "Người chơi 1";
+    }
+
+    if (blackPlayerName) {
+      blackPlayerName.textContent = VS_COMPUTER ? "Máy" : "Người chơi 2";
+    }
+  }
+
+  // =====================================================
+  // COMPUTER STATUS
+  // =====================================================
+
+  function updateComputerStatus() {
+    const blackStatus = document.getElementById("black-player-status");
+
+    if (!blackStatus) {
+      return;
+    }
+
+    if (!VS_COMPUTER) {
+      return;
+    }
+
+    if (gameStatus === "RedWins") {
+      blackStatus.textContent = "❌ Máy thua";
+
+      return;
+    }
+
+    if (gameStatus === "BlackWins") {
+      blackStatus.textContent = "🏆 Máy chiến thắng";
+
+      return;
+    }
+
+    if (gameStatus !== "InProgress") {
+      blackStatus.textContent = "⚪ Ván cờ kết thúc";
+
+      return;
+    }
+
+    if (isComputerThinking) {
+      blackStatus.textContent = "🤖 Máy đang suy nghĩ...";
+
+      return;
+    }
+
+    if (currentTurn === "Black") {
+      blackStatus.textContent = "🤖 Đến lượt máy";
+
+      return;
+    }
+
+    blackStatus.textContent = "🤖 Máy đang chờ";
+  }
+
+  // =====================================================
+  // COMPUTER MOVE
+  // =====================================================
+
+  async function triggerComputerMove() {
+    if (isComputerThinking) {
+      return;
+    }
+
+    if (gameStatus !== "InProgress") {
+      return;
+    }
+
+    if (currentTurn !== "Black") {
+      return;
+    }
+
+    if (!VS_COMPUTER) {
+      return;
+    }
+
+    try {
+      isComputerThinking = true;
+
+      clearSelection();
+
+      updateComputerStatus();
+      updateTurnStatus();
+
+      console.log("🤖 Máy đang tính nước đi...");
+
+      const response = await fetch(
+        `${API_BASE_URL}/${gameId}/computer-move?difficulty=${COMPUTER_DIFFICULTY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        throw new Error(
+          errorData?.message || "Máy không thể thực hiện nước đi",
+        );
+      }
+
+      const data = await response.json();
+
+      console.log("🤖 Máy đã đi:", data);
+
+      updateGameFromApi(data);
+    } catch (error) {
+      console.error("Lỗi máy đi:", error);
+
+      alert(error.message);
+    } finally {
+      isComputerThinking = false;
+
+      updateComputerStatus();
+      updateTurnStatus();
+    }
+  }
+
+  // =====================================================
+  // CHECK WARNING
   // =====================================================
 
   function handleCheckWarning() {
-    // 1. Xóa class cảnh báo cũ trên toàn bộ bàn cờ
     document
       .querySelectorAll(".chess-piece.in-check")
-      .forEach((el) => el.classList.remove("in-check"));
+      .forEach(function (element) {
+        element.classList.remove("in-check");
+      });
 
-    const overlay = document.querySelector(".check-overlay");
+    const overlay = document.getElementById("check-overlay");
+
     if (overlay) {
       overlay.classList.remove("show");
     }
 
-    // 2. Nếu đang có chiếu tướng
-    if (isCheck && gameStatus === "InProgress") {
+    if (isCheck && gameStatus === "InProgress" && currentTurn) {
       const activeColor = currentTurn.toLowerCase();
 
-      // Tìm đúng quân Tướng của phe đang bị chiếu (dựa vào data-type="Tướng" và data-color)
       const kingElement = document.querySelector(
         `.chess-piece[data-type="Tướng"][data-color="${activeColor}"]`,
       );
@@ -233,11 +525,10 @@ document.addEventListener("DOMContentLoaded", function () {
         kingElement.classList.add("in-check");
       }
 
-      // Nếu có overlay chữ "CHIẾU TƯỚNG!" thì kích hoạt hiệu ứng rung lắc
       if (overlay) {
-        overlay.textContent = "CHIẾU TƯỚNG!";
         overlay.classList.add("show");
-        setTimeout(() => {
+
+        setTimeout(function () {
           overlay.classList.remove("show");
         }, 1200);
       }
@@ -245,7 +536,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // CHECK GAME RESULT
+  // CHECK RESULT
   // =====================================================
 
   function checkGameResult() {
@@ -253,27 +544,41 @@ document.addEventListener("DOMContentLoaded", function () {
       showGameResult(
         "🏆 CHIẾN THẮNG",
         "🔴 QUÂN ĐỎ",
-        "Quân Đỏ đã giành chiến thắng!",
+        VS_COMPUTER ? "Bạn đã đánh bại máy!" : "Quân Đỏ đã giành chiến thắng!",
       );
-    } else if (gameStatus === "BlackWins") {
+
+      return;
+    }
+
+    if (gameStatus === "BlackWins") {
       showGameResult(
-        "🏆 CHIẾN THẮNG",
+        VS_COMPUTER ? "😔 THẤT BẠI" : "🏆 CHIẾN THẮNG",
         "⚫ QUÂN ĐEN",
-        "Quân Đen đã giành chiến thắng!",
+        VS_COMPUTER
+          ? "Máy đã giành chiến thắng!"
+          : "Quân Đen đã giành chiến thắng!",
       );
     }
   }
 
   // =====================================================
-  // SHOW GAME RESULT
+  // SHOW RESULT
   // =====================================================
 
   function showGameResult(title, winner, message) {
+    if (!gameResultModal) {
+      return;
+    }
+
     const resultTitle = document.getElementById("result-title");
 
     const winnerName = document.getElementById("winner-name");
 
     const resultMessage = document.getElementById("result-message");
+
+    if (!resultTitle || !winnerName || !resultMessage) {
+      return;
+    }
 
     resultTitle.textContent = title;
 
@@ -285,10 +590,14 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // CLOSE GAME RESULT
+  // CLOSE RESULT
   // =====================================================
 
   function closeGameResult() {
+    if (!gameResultModal) {
+      return;
+    }
+
     gameResultModal.classList.remove("show");
   }
 
@@ -299,35 +608,69 @@ document.addEventListener("DOMContentLoaded", function () {
   function updateTurnStatus() {
     const turnStatus = document.getElementById("turn-status");
 
+    const turnIndicator = document.getElementById("turn-indicator");
+
     if (!turnStatus) {
       return;
     }
 
     if (gameStatus === "RedWins") {
-      turnStatus.textContent = "🏆 QUÂN ĐỎ CHIẾN THẮNG";
+      turnStatus.textContent = VS_COMPUTER
+        ? "🏆 BẠN CHIẾN THẮNG"
+        : "🏆 QUÂN ĐỎ CHIẾN THẮNG";
+
+      if (turnIndicator) {
+        turnIndicator.textContent = "🏆";
+      }
 
       return;
     }
 
     if (gameStatus === "BlackWins") {
-      turnStatus.textContent = "🏆 QUÂN ĐEN CHIẾN THẮNG";
+      turnStatus.textContent = VS_COMPUTER
+        ? "🤖 MÁY CHIẾN THẮNG"
+        : "🏆 QUÂN ĐEN CHIẾN THẮNG";
+
+      if (turnIndicator) {
+        turnIndicator.textContent = "🏆";
+      }
 
       return;
     }
 
     if (isCheck) {
-      if (currentTurn === "Red") {
-        turnStatus.innerHTML = `<span style="color: #ef4444; font-weight: bold;">⚠️ CHIẾU TƯỚNG! (Lượt QUÂN ĐỎ)</span>`;
-      } else {
-        turnStatus.innerHTML = `<span style="color: #ef4444; font-weight: bold;">⚠️ CHIẾU TƯỚNG! (Lượt QUÂN ĐEN)</span>`;
+      turnStatus.textContent =
+        currentTurn === "Red"
+          ? "⚠️ CHIẾU TƯỚNG! (Lượt QUÂN ĐỎ)"
+          : "⚠️ CHIẾU TƯỚNG! (Lượt QUÂN ĐEN)";
+
+      if (turnIndicator) {
+        turnIndicator.textContent = "⚠️";
       }
+
       return;
     }
 
     if (currentTurn === "Red") {
-      turnStatus.textContent = "🔴 Lượt của QUÂN ĐỎ";
-    } else if (currentTurn === "Black") {
-      turnStatus.textContent = "⚫ Lượt của QUÂN ĐEN";
+      turnStatus.textContent = VS_COMPUTER
+        ? "🔴 Lượt của BẠN"
+        : "🔴 Lượt của QUÂN ĐỎ";
+
+      if (turnIndicator) {
+        turnIndicator.textContent = "🔴";
+      }
+
+      return;
+    }
+
+    if (currentTurn === "Black") {
+      turnStatus.textContent = VS_COMPUTER
+        ? "🤖 Máy đang suy nghĩ..."
+        : "⚫ Lượt của QUÂN ĐEN";
+
+      if (turnIndicator) {
+        turnIndicator.textContent = VS_COMPUTER ? "🤖" : "⚫";
+      }
     }
   }
 
@@ -339,16 +682,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const color = piece.color.toLowerCase();
 
     let type = "";
-
     let text = "";
 
     if (piece.type === "Rook") {
       type = "Xe";
-
       text = "車";
     } else if (piece.type === "Horse") {
       type = "Mã";
-
       text = "馬";
     } else if (piece.type === "Elephant") {
       type = "Tượng";
@@ -374,13 +714,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     return {
       type: type,
-
       text: text,
-
       color: color,
-
       row: piece.row,
-
       col: piece.col,
     };
   }
@@ -402,6 +738,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   function createPiece(piece) {
+    if (!piecesLayer) {
+      return;
+    }
+
     const position = getPosition(piece.row, piece.col);
 
     const pieceGroup = document.createElementNS(SVG_NS, "g");
@@ -416,10 +756,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     pieceGroup.setAttribute("data-col", piece.col);
 
-    // ===============================================
-    // CIRCLE
-    // ===============================================
-
     const circle = document.createElementNS(SVG_NS, "circle");
 
     circle.setAttribute("cx", position.x);
@@ -429,10 +765,6 @@ document.addEventListener("DOMContentLoaded", function () {
     circle.setAttribute("r", 42);
 
     circle.setAttribute("class", "piece-circle");
-
-    // ===============================================
-    // TEXT
-    // ===============================================
 
     const textElement = document.createElementNS(SVG_NS, "text");
 
@@ -452,10 +784,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     pieceGroup.appendChild(textElement);
 
-    // ===============================================
-    // CLICK
-    // ===============================================
-
     pieceGroup.addEventListener("click", async function (event) {
       event.stopPropagation();
 
@@ -466,10 +794,14 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // RENDER PIECES
+  // RENDER
   // =====================================================
 
   function renderPieces() {
+    if (!piecesLayer) {
+      return;
+    }
+
     piecesLayer.innerHTML = "";
 
     initialPieces.forEach(function (piece) {
@@ -478,7 +810,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // CHECK VALID MOVE
+  // VALID MOVE
   // =====================================================
 
   function isValidMove(row, col) {
@@ -493,19 +825,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function handlePieceClick(pieceGroup) {
     try {
-      const piece = getPieceData(pieceGroup);
-
-      // =============================================
-      // GAME ENDED
-      // =============================================
+      if (isComputerThinking) {
+        return;
+      }
 
       if (gameStatus !== "InProgress") {
         return;
       }
 
-      // =============================================
+      if (VS_COMPUTER && currentTurn !== "Red") {
+        return;
+      }
+
+      const piece = getPieceData(pieceGroup);
+
+      // =========================================
       // CAPTURE
-      // =============================================
+      // =========================================
 
       if (selectedPieceData !== null) {
         if (
@@ -520,26 +856,16 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }
 
-        // CLICK SAME PIECE
-
         if (selectedPieceElement === pieceGroup) {
-          pieceGroup.classList.remove("selected");
-
-          selectedPieceElement = null;
-
-          selectedPieceData = null;
-
-          currentValidMoves = [];
-
-          clearMoveHighlights();
+          clearSelection();
 
           return;
         }
       }
 
-      // =============================================
-      // CHECK TURN
-      // =============================================
+      // =========================================
+      // TURN
+      // =========================================
 
       if (piece.color.toLowerCase() !== currentTurn.toLowerCase()) {
         console.log("Chưa tới lượt quân này");
@@ -547,19 +873,19 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      // =============================================
+      // =========================================
       // REMOVE OLD
-      // =============================================
+      // =========================================
 
-      if (selectedPieceElement !== null) {
+      if (selectedPieceElement) {
         selectedPieceElement.classList.remove("selected");
       }
 
       clearMoveHighlights();
 
-      // =============================================
+      // =========================================
       // SELECT
-      // =============================================
+      // =========================================
 
       pieceGroup.classList.add("selected");
 
@@ -567,9 +893,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       selectedPieceData = piece;
 
-      // =============================================
+      // =========================================
       // GET MOVES
-      // =============================================
+      // =========================================
 
       await fetchValidMoves(piece.row, piece.col);
     } catch (error) {
@@ -582,6 +908,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   async function fetchValidMoves(row, col) {
+    if (!gameId) {
+      return;
+    }
+
     try {
       const url = `${API_BASE_URL}/${gameId}/valid-moves?row=${row}&col=${col}`;
 
@@ -593,9 +923,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const data = await response.json();
 
-      currentValidMoves = data;
+      currentValidMoves = data || [];
 
-      showValidMovesFromApi(data);
+      showValidMovesFromApi(currentValidMoves);
     } catch (error) {
       console.error("Lỗi valid moves:", error);
 
@@ -604,11 +934,31 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // CLEAR HIGHLIGHT
+  // CLEAR MOVE HIGHLIGHTS
   // =====================================================
 
   function clearMoveHighlights() {
-    movesLayer.innerHTML = "";
+    if (movesLayer) {
+      movesLayer.innerHTML = "";
+    }
+  }
+
+  // =====================================================
+  // CLEAR SELECTION
+  // =====================================================
+
+  function clearSelection() {
+    if (selectedPieceElement) {
+      selectedPieceElement.classList.remove("selected");
+    }
+
+    selectedPieceElement = null;
+
+    selectedPieceData = null;
+
+    currentValidMoves = [];
+
+    clearMoveHighlights();
   }
 
   // =====================================================
@@ -624,10 +974,14 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // HIGHLIGHT
+  // HIGHLIGHT MOVE
   // =====================================================
 
   function highlightMove(row, col, isCapture) {
+    if (!movesLayer) {
+      return;
+    }
+
     const position = getPosition(row, col);
 
     const moveCircle = document.createElementNS(SVG_NS, "circle");
@@ -640,7 +994,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     moveCircle.setAttribute(
       "class",
-
       isCapture ? "valid-move capture-move" : "valid-move",
     );
 
@@ -662,8 +1015,20 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    if (isComputerThinking) {
+      return;
+    }
+
+    if (!selectedPieceData) {
+      return;
+    }
+
+    if (!gameId) {
+      return;
+    }
+
     try {
-      if (!selectedPieceData) {
+      if (VS_COMPUTER && selectedPieceData.color !== "red") {
         return;
       }
 
@@ -700,6 +1065,7 @@ document.addEventListener("DOMContentLoaded", function () {
       updateGameFromApi(data);
     } catch (error) {
       console.error("Lỗi di chuyển:", error);
+
       alert(error.message);
     } finally {
       isMakingMove = false;
@@ -711,34 +1077,28 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   async function startNewGame() {
+    if (!gameModeSelected) {
+      return;
+    }
+
     try {
-      console.log("Bắt đầu ván mới");
-
-      // CLOSE MODAL
-
       closeGameResult();
-
-      resignModal.classList.remove("show");
-
-      // REMOVE OLD GAME
+      closeResignModal();
 
       localStorage.removeItem("xiangqiGameId");
 
       gameId = null;
 
-      // RESET
+      currentTurn = null;
+      gameStatus = null;
+      isCheck = false;
+      isComputerThinking = false;
 
-      selectedPieceElement = null;
+      clearSelection();
 
-      selectedPieceData = null;
-
-      currentValidMoves = [];
-
-      clearMoveHighlights();
-
-      piecesLayer.innerHTML = "";
-
-      // CREATE
+      if (piecesLayer) {
+        piecesLayer.innerHTML = "";
+      }
 
       await createGame();
     } catch (error) {
@@ -747,7 +1107,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
-  // SHOW RESIGN MODAL
+  // RESIGN MODAL
   // =====================================================
 
   function showResignModal() {
@@ -755,15 +1115,15 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    resignModal.classList.add("show");
+    if (resignModal) {
+      resignModal.classList.add("show");
+    }
   }
 
-  // =====================================================
-  // CLOSE RESIGN MODAL
-  // =====================================================
-
   function closeResignModal() {
-    resignModal.classList.remove("show");
+    if (resignModal) {
+      resignModal.classList.remove("show");
+    }
   }
 
   // =====================================================
@@ -771,24 +1131,39 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   async function resignGame() {
-    try {
-      if (!gameId) {
-        return;
-      }
+    if (!gameId) {
+      return;
+    }
 
+    if (gameStatus !== "InProgress") {
+      return;
+    }
+
+    try {
       const response = await fetch(`${API_BASE_URL}/${gameId}/resign`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
 
-        throw new Error(errorData?.message || "Không thể đầu hàng");
+        throw new Error(
+          errorData?.message || `Không thể đầu hàng. HTTP ${response.status}`,
+        );
       }
 
       const data = await response.json();
 
+      console.log("Đầu hàng thành công:", data);
+
       closeResignModal();
+
+      clearSelection();
+
+      isComputerThinking = false;
 
       updateGameFromApi(data);
     } catch (error) {
@@ -819,55 +1194,123 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   document.addEventListener("click", function () {
-    if (selectedPieceElement !== null) {
-      selectedPieceElement.classList.remove("selected");
+    if (isComputerThinking) {
+      return;
+    }
 
-      selectedPieceElement = null;
-
-      selectedPieceData = null;
-
-      currentValidMoves = [];
-
-      clearMoveHighlights();
+    if (selectedPieceElement) {
+      clearSelection();
     }
   });
 
   // =====================================================
-  // BUTTON EVENTS
+  // MODE BUTTON
+  // =====================================================
+
+  if (playerVsPlayerButton) {
+    playerVsPlayerButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+
+      selectGameMode(false);
+    });
+  }
+
+  if (playerVsComputerButton) {
+    playerVsComputerButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+
+      selectGameMode(true);
+    });
+  }
+
+  if (startGameButton) {
+    startGameButton.addEventListener("click", async function (event) {
+      event.stopPropagation();
+
+      await startSelectedGame();
+    });
+  }
+
+  // =====================================================
+  // NEW GAME
   // =====================================================
 
   if (newGameButton) {
-    newGameButton.addEventListener("click", async function () {
+    newGameButton.addEventListener("click", async function (event) {
+      event.stopPropagation();
+
       await startNewGame();
     });
   }
 
+  // =====================================================
+  // CHANGE MODE
+  // =====================================================
+
+  if (changeModeButton) {
+    changeModeButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+
+      backToModeSelection();
+    });
+  }
+
+  // =====================================================
+  // RESIGN
+  // =====================================================
+
   if (resignButton) {
-    resignButton.addEventListener("click", function () {
+    resignButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+
       showResignModal();
     });
   }
 
+  // =====================================================
+  // RESULT NEW GAME
+  // =====================================================
+
   if (resultNewGameButton) {
-    resultNewGameButton.addEventListener("click", async function () {
+    resultNewGameButton.addEventListener("click", async function (event) {
+      event.stopPropagation();
+
       await startNewGame();
     });
   }
 
+  // =====================================================
+  // CLOSE RESULT
+  // =====================================================
+
   if (resultCloseButton) {
-    resultCloseButton.addEventListener("click", function () {
+    resultCloseButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+
       closeGameResult();
     });
   }
 
+  // =====================================================
+  // CONFIRM RESIGN
+  // =====================================================
+
   if (confirmResignButton) {
-    confirmResignButton.addEventListener("click", async function () {
+    confirmResignButton.addEventListener("click", async function (event) {
+      event.stopPropagation();
+
       await resignGame();
     });
   }
 
+  // =====================================================
+  // CANCEL RESIGN
+  // =====================================================
+
   if (cancelResignButton) {
-    cancelResignButton.addEventListener("click", function () {
+    cancelResignButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+
       closeResignModal();
     });
   }
@@ -885,9 +1328,55 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // =============================================
-    // GAME KẾT THÚC
-    // =============================================
+    // ==============================================
+    // VS COMPUTER
+    // ==============================================
+
+    if (VS_COMPUTER) {
+      if (gameStatus !== "InProgress") {
+        if (gameStatus === "RedWins") {
+          redStatus.textContent = "🏆 Chiến thắng";
+
+          blackStatus.textContent = "❌ Máy thua";
+
+          return;
+        }
+
+        if (gameStatus === "BlackWins") {
+          redStatus.textContent = "❌ Bạn thua";
+
+          blackStatus.textContent = "🏆 Máy chiến thắng";
+
+          return;
+        }
+
+        redStatus.textContent = "⚪ Ván cờ kết thúc";
+
+        blackStatus.textContent = "⚪ Ván cờ kết thúc";
+
+        return;
+      }
+
+      redStatus.textContent =
+        currentTurn === "Red"
+          ? isCheck
+            ? "⚠️ ĐANG BỊ CHIẾU"
+            : "🟢 Đang đến lượt"
+          : "⚪ Đang chờ";
+
+      if (isComputerThinking) {
+        blackStatus.textContent = "🤖 Máy đang suy nghĩ...";
+      } else {
+        blackStatus.textContent =
+          currentTurn === "Black" ? "🤖 Đến lượt máy" : "🤖 Đang chờ";
+      }
+
+      return;
+    }
+
+    // ==============================================
+    // VS PLAYER
+    // ==============================================
 
     if (gameStatus !== "InProgress") {
       if (gameStatus === "RedWins") {
@@ -913,10 +1402,6 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // =============================================
-    // LƯỢT QUÂN ĐỎ
-    // =============================================
-
     if (currentTurn === "Red") {
       redStatus.textContent = isCheck ? "⚠️ ĐANG BỊ CHIẾU" : "🟢 Đang đến lượt";
 
@@ -925,18 +1410,12 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // =============================================
-    // LƯỢT QUÂN ĐEN
-    // =============================================
-
     if (currentTurn === "Black") {
       redStatus.textContent = "⚪ Đang chờ";
 
       blackStatus.textContent = isCheck
         ? "⚠️ ĐANG BỊ CHIẾU"
         : "🟢 Đang đến lượt";
-
-      return;
     }
   }
 
@@ -944,5 +1423,5 @@ document.addEventListener("DOMContentLoaded", function () {
   // START
   // =====================================================
 
-  initializeGame();
+  initializePage();
 });
