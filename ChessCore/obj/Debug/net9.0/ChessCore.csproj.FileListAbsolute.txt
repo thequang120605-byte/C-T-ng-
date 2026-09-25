@@ -378,9 +378,7 @@ D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\rjim
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\scopedcss\bundle\ChessCore.styles.css
-D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\5fb2geqwon-{0}-xmwrze8cb6-xmwrze8cb6.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\g7b6p8umme-{0}-ye1rh6qutf-ye1rh6qutf.gz
-D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-zvgt4mx9q3-zvgt4mx9q3.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\staticwebassets.build.json
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\staticwebassets.build.json.cache
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\staticwebassets.development.json
@@ -392,3 +390,5 @@ D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\refi
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\ChessCore.pdb
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\ChessCore.genruntimeconfig.cache
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\ref\ChessCore.dll
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\5fb2geqwon-{0}-9ju8cqromu-9ju8cqromu.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-7n68nkk6rc-7n68nkk6rc.gz

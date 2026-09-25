@@ -12,9 +12,47 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   let VS_COMPUTER = false;
+
   let gameModeSelected = false;
 
-  const COMPUTER_DIFFICULTY = 2;
+  // =====================================================
+  // COMPUTER DIFFICULTY
+  // =====================================================
+
+  // 1 = Dễ        = Depth 1
+  // 2 = Trung bình = Depth 2
+  // 3 = Khó       = Depth 3
+  // 4 = Siêu khó  = Depth 4
+
+  let computerDifficulty = 2;
+
+  const DIFFICULTY_INFO = {
+    1: {
+      name: "🟢 Dễ",
+      depth: 1,
+      description: "Máy tính toán ở Depth 1, phù hợp để làm quen.",
+    },
+
+    2: {
+      name: "🟡 Trung bình",
+      depth: 2,
+      description:
+        "Máy tính toán ở Depth 2, có thể xem xét nước đáp trả của đối thủ.",
+    },
+
+    3: {
+      name: "🟠 Khó",
+      depth: 3,
+      description: "Máy tính toán ở Depth 3, phải xét nhiều nhánh nước đi hơn.",
+    },
+
+    4: {
+      name: "🔴 Siêu khó",
+      depth: 4,
+      description:
+        "Máy tính toán ở Depth 4, số lượng trạng thái cần đánh giá tăng đáng kể.",
+    },
+  };
 
   // =====================================================
   // DOM
@@ -33,6 +71,22 @@ document.addEventListener("DOMContentLoaded", function () {
   const startGameButton = document.getElementById("start-game-btn");
 
   const selectedModeText = document.getElementById("selected-mode-text");
+
+  const difficultySelection = document.getElementById("difficulty-selection");
+
+  const difficultyButtons = document.querySelectorAll(".difficulty-option");
+
+  const difficultyDescription = document.getElementById(
+    "difficulty-description",
+  );
+
+  const selectedDifficultyContainer = document.getElementById(
+    "selected-difficulty-container",
+  );
+
+  const selectedDifficultyText = document.getElementById(
+    "selected-difficulty-text",
+  );
 
   const changeModeButton = document.getElementById("change-mode-btn");
 
@@ -61,12 +115,17 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   let gameId = null;
+
   let isCreatingGame = false;
+
   let isMakingMove = false;
+
   let isComputerThinking = false;
 
   let currentTurn = null;
+
   let gameStatus = null;
+
   let isCheck = false;
 
   // =====================================================
@@ -74,7 +133,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   const START_X = 50;
+
   const START_Y = 50;
+
   const CELL_SIZE = 100;
 
   // =====================================================
@@ -82,10 +143,64 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   let selectedPieceElement = null;
+
   let selectedPieceData = null;
 
   let initialPieces = [];
+
   let currentValidMoves = [];
+
+  // =====================================================
+  // SELECT DIFFICULTY
+  // =====================================================
+
+  function selectDifficulty(difficulty) {
+    difficulty = parseInt(difficulty, 10);
+
+    if (!DIFFICULTY_INFO[difficulty]) {
+      difficulty = 2;
+    }
+
+    computerDifficulty = difficulty;
+
+    // -----------------------------------------
+    // Remove selected from all buttons
+    // -----------------------------------------
+
+    difficultyButtons.forEach(function (button) {
+      const buttonDifficulty = parseInt(button.dataset.difficulty, 10);
+
+      const selected = buttonDifficulty === computerDifficulty;
+
+      button.classList.toggle("selected", selected);
+
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+
+    // -----------------------------------------
+    // Description
+    // -----------------------------------------
+
+    const info = DIFFICULTY_INFO[computerDifficulty];
+
+    if (difficultyDescription) {
+      difficultyDescription.textContent = `${info.name} - ${info.description}`;
+    }
+
+    // -----------------------------------------
+    // Selected difficulty
+    // -----------------------------------------
+
+    if (selectedDifficultyText) {
+      selectedDifficultyText.textContent = `${info.name} - Depth ${info.depth}`;
+    }
+
+    if (selectedDifficultyContainer) {
+      selectedDifficultyContainer.style.display = "block";
+    }
+
+    console.log("Độ khó máy:", computerDifficulty, "Depth:", info.depth);
+  }
 
   // =====================================================
   // SELECT MODE
@@ -93,40 +208,91 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function selectGameMode(isComputer) {
     VS_COMPUTER = isComputer;
+
     gameModeSelected = true;
+
+    // -----------------------------------------
+    // Reset selected buttons
+    // -----------------------------------------
 
     if (playerVsPlayerButton) {
       playerVsPlayerButton.classList.remove("selected");
+
       playerVsPlayerButton.setAttribute("aria-pressed", "false");
     }
 
     if (playerVsComputerButton) {
       playerVsComputerButton.classList.remove("selected");
+
       playerVsComputerButton.setAttribute("aria-pressed", "false");
     }
+
+    // -----------------------------------------
+    // COMPUTER
+    // -----------------------------------------
 
     if (VS_COMPUTER) {
       if (playerVsComputerButton) {
         playerVsComputerButton.classList.add("selected");
+
         playerVsComputerButton.setAttribute("aria-pressed", "true");
       }
 
       if (selectedModeText) {
         selectedModeText.textContent = "🤖 Người chơi vs Máy";
       }
-    } else {
+
+      if (difficultySelection) {
+        difficultySelection.style.display = "block";
+      }
+
+      if (difficultyDescription) {
+        const info = DIFFICULTY_INFO[computerDifficulty];
+
+        difficultyDescription.textContent = `${info.name} - ${info.description}`;
+      }
+
+      if (selectedDifficultyContainer) {
+        selectedDifficultyContainer.style.display = "block";
+      }
+
+      if (selectedDifficultyText) {
+        const info = DIFFICULTY_INFO[computerDifficulty];
+
+        selectedDifficultyText.textContent = `${info.name} - Depth ${info.depth}`;
+      }
+    }
+
+    // -----------------------------------------
+    // PLAYER VS PLAYER
+    // -----------------------------------------
+    else {
       if (playerVsPlayerButton) {
         playerVsPlayerButton.classList.add("selected");
+
         playerVsPlayerButton.setAttribute("aria-pressed", "true");
       }
 
       if (selectedModeText) {
         selectedModeText.textContent = "👥 Người chơi vs Người chơi";
       }
+
+      if (difficultySelection) {
+        difficultySelection.style.display = "none";
+      }
+
+      if (selectedDifficultyContainer) {
+        selectedDifficultyContainer.style.display = "none";
+      }
     }
+
+    // -----------------------------------------
+    // Enable start button
+    // -----------------------------------------
 
     if (startGameButton) {
       startGameButton.disabled = false;
+
       startGameButton.classList.add("enabled");
     }
   }
@@ -141,6 +307,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     closeGameResult();
+
     closeResignModal();
 
     localStorage.removeItem("xiangqiGameId");
@@ -148,8 +315,11 @@ document.addEventListener("DOMContentLoaded", function () {
     gameId = null;
 
     currentTurn = null;
+
     gameStatus = null;
+
     isCheck = false;
+
     isComputerThinking = false;
 
     clearSelection();
@@ -173,6 +343,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function backToModeSelection() {
     closeGameResult();
+
     closeResignModal();
 
     clearSelection();
@@ -190,34 +361,54 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     gameModeSelected = false;
+
     VS_COMPUTER = false;
 
     gameId = null;
+
     currentTurn = null;
+
     gameStatus = null;
+
     isCheck = false;
+
     isComputerThinking = false;
 
     localStorage.removeItem("xiangqiGameId");
 
     if (playerVsPlayerButton) {
       playerVsPlayerButton.classList.remove("selected");
+
       playerVsPlayerButton.setAttribute("aria-pressed", "false");
     }
 
     if (playerVsComputerButton) {
       playerVsComputerButton.classList.remove("selected");
+
       playerVsComputerButton.setAttribute("aria-pressed", "false");
+    }
+
+    if (difficultySelection) {
+      difficultySelection.style.display = "none";
+    }
+
+    if (selectedDifficultyContainer) {
+      selectedDifficultyContainer.style.display = "none";
     }
 
     if (startGameButton) {
       startGameButton.disabled = true;
+
       startGameButton.classList.remove("enabled");
     }
 
     if (selectedModeText) {
       selectedModeText.textContent = "Chưa chọn chế độ chơi";
     }
+
+    // Mặc định lại Trung bình
+
+    selectDifficulty(2);
   }
 
   // =====================================================
@@ -233,8 +424,17 @@ document.addEventListener("DOMContentLoaded", function () {
       gameContent.classList.add("hidden");
     }
 
+    if (difficultySelection) {
+      difficultySelection.style.display = "none";
+    }
+
+    if (selectedDifficultyContainer) {
+      selectedDifficultyContainer.style.display = "none";
+    }
+
     if (startGameButton) {
       startGameButton.disabled = true;
+
       startGameButton.classList.remove("enabled");
     }
 
@@ -243,6 +443,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     localStorage.removeItem("xiangqiGameId");
+
+    // Mặc định Trung bình
+
+    selectDifficulty(2);
 
     console.log("Đang chờ người dùng chọn chế độ chơi...");
   }
@@ -263,6 +467,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const response = await fetch(API_BASE_URL, {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
@@ -338,6 +543,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initialPieces = (data.boardPieces || []).map(convertPieceFromApi);
 
     selectedPieceElement = null;
+
     selectedPieceData = null;
 
     currentValidMoves = [];
@@ -458,14 +664,20 @@ document.addEventListener("DOMContentLoaded", function () {
       clearSelection();
 
       updateComputerStatus();
+
       updateTurnStatus();
 
+      const difficultyInfo = DIFFICULTY_INFO[computerDifficulty];
+
       console.log("🤖 Máy đang tính nước đi...");
+      console.log("Độ khó:", difficultyInfo.name);
+      console.log("Depth:", difficultyInfo.depth);
 
       const response = await fetch(
-        `${API_BASE_URL}/${gameId}/computer-move?difficulty=${COMPUTER_DIFFICULTY}`,
+        `${API_BASE_URL}/${gameId}/computer-move?difficulty=${computerDifficulty}`,
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
           },
@@ -488,13 +700,49 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (error) {
       console.error("Lỗi máy đi:", error);
 
-      alert(error.message);
+      showComputerErrorNotification(
+        error.message || "Máy không thể thực hiện nước đi",
+      );
     } finally {
       isComputerThinking = false;
 
       updateComputerStatus();
+
       updateTurnStatus();
     }
+  }
+
+  function showComputerErrorNotification(message) {
+    const overlay = document.getElementById("check-overlay");
+
+    if (!overlay) {
+      console.error("Không tìm thấy #check-overlay");
+      return;
+    }
+
+    const icon = document.getElementById("check-overlay-icon");
+    const title = document.getElementById("check-overlay-title");
+    const messageElement = document.getElementById("check-overlay-message");
+
+    if (icon) {
+      icon.textContent = "🤖";
+    }
+
+    if (title) {
+      title.textContent = "MÁY KHÔNG TÌM ĐƯỢC NƯỚC ĐI";
+    }
+
+    if (messageElement) {
+      messageElement.textContent = message;
+    }
+
+    overlay.classList.add("show");
+    overlay.classList.add("ai-error");
+
+    setTimeout(() => {
+      overlay.classList.remove("show");
+      overlay.classList.remove("ai-error");
+    }, 2500);
   }
 
   // =====================================================
@@ -543,7 +791,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (gameStatus === "RedWins") {
       showGameResult(
         "🏆 CHIẾN THẮNG",
+
         "🔴 QUÂN ĐỎ",
+
         VS_COMPUTER ? "Bạn đã đánh bại máy!" : "Quân Đỏ đã giành chiến thắng!",
       );
 
@@ -553,7 +803,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (gameStatus === "BlackWins") {
       showGameResult(
         VS_COMPUTER ? "😔 THẤT BẠI" : "🏆 CHIẾN THẮNG",
+
         "⚫ QUÂN ĐEN",
+
         VS_COMPUTER
           ? "Máy đã giành chiến thắng!"
           : "Quân Đen đã giành chiến thắng!",
@@ -682,13 +934,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const color = piece.color.toLowerCase();
 
     let type = "";
+
     let text = "";
 
     if (piece.type === "Rook") {
       type = "Xe";
+
       text = "車";
     } else if (piece.type === "Horse") {
       type = "Mã";
+
       text = "馬";
     } else if (piece.type === "Elephant") {
       type = "Tượng";
@@ -714,9 +969,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     return {
       type: type,
+
       text: text,
+
       color: color,
+
       row: piece.row,
+
       col: piece.col,
     };
   }
@@ -839,9 +1098,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const piece = getPieceData(pieceGroup);
 
-      // =========================================
       // CAPTURE
-      // =========================================
 
       if (selectedPieceData !== null) {
         if (
@@ -863,9 +1120,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
-      // =========================================
       // TURN
-      // =========================================
 
       if (piece.color.toLowerCase() !== currentTurn.toLowerCase()) {
         console.log("Chưa tới lượt quân này");
@@ -873,9 +1128,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      // =========================================
       // REMOVE OLD
-      // =========================================
 
       if (selectedPieceElement) {
         selectedPieceElement.classList.remove("selected");
@@ -883,9 +1136,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       clearMoveHighlights();
 
-      // =========================================
       // SELECT
-      // =========================================
 
       pieceGroup.classList.add("selected");
 
@@ -893,9 +1144,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       selectedPieceData = piece;
 
-      // =========================================
       // GET MOVES
-      // =========================================
 
       await fetchValidMoves(piece.row, piece.col);
     } catch (error) {
@@ -1083,6 +1332,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       closeGameResult();
+
       closeResignModal();
 
       localStorage.removeItem("xiangqiGameId");
@@ -1090,8 +1340,11 @@ document.addEventListener("DOMContentLoaded", function () {
       gameId = null;
 
       currentTurn = null;
+
       gameStatus = null;
+
       isCheck = false;
+
       isComputerThinking = false;
 
       clearSelection();
@@ -1142,6 +1395,7 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const response = await fetch(`${API_BASE_URL}/${gameId}/resign`, {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
@@ -1222,6 +1476,24 @@ document.addEventListener("DOMContentLoaded", function () {
       selectGameMode(true);
     });
   }
+
+  // =====================================================
+  // DIFFICULTY BUTTONS
+  // =====================================================
+
+  difficultyButtons.forEach(function (button) {
+    button.addEventListener("click", function (event) {
+      event.stopPropagation();
+
+      const difficulty = parseInt(button.dataset.difficulty, 10);
+
+      selectDifficulty(difficulty);
+    });
+  });
+
+  // =====================================================
+  // START GAME
+  // =====================================================
 
   if (startGameButton) {
     startGameButton.addEventListener("click", async function (event) {
@@ -1417,6 +1689,35 @@ document.addEventListener("DOMContentLoaded", function () {
         ? "⚠️ ĐANG BỊ CHIẾU"
         : "🟢 Đang đến lượt";
     }
+  }
+
+  function showGameNotification(icon, title, message, duration = 2500) {
+    const overlay = document.getElementById("check-overlay");
+    const iconElement = document.getElementById("check-overlay-icon");
+    const titleElement = document.getElementById("check-overlay-title");
+    const messageElement = document.getElementById("check-overlay-message");
+
+    if (!overlay) {
+      return;
+    }
+
+    if (iconElement) {
+      iconElement.textContent = icon;
+    }
+
+    if (titleElement) {
+      titleElement.textContent = title;
+    }
+
+    if (messageElement) {
+      messageElement.textContent = message;
+    }
+
+    overlay.classList.add("show");
+
+    setTimeout(() => {
+      overlay.classList.remove("show");
+    }, duration);
   }
 
   // =====================================================
