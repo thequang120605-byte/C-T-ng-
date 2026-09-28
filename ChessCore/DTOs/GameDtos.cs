@@ -65,9 +65,6 @@ namespace ChessCore.DTOs
         public int ToY { get; set; }
     }
 
-    // =========================================
-    // NƯỚC ĐI HỢP LỆ
-    // =========================================
     public class ValidMoveDto
     {
         public int Row { get; set; }
