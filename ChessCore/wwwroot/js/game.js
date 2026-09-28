@@ -110,6 +110,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const resignModal = document.getElementById("resign-modal");
 
+  // DOM HIỂN THỊ ĐIỂM THẾ TRẬN TỔNG THỂ
+  const redScoreEl = document.getElementById("red-score");
+  const blackScoreEl = document.getElementById("black-score");
+
+  // DOM ĐÁNH GIÁ NƯỚC VỪA ĐI (H1 + H2 + H3)
+  const lastMoveBox = document.getElementById("last-move-box");
+  const lmPiece = document.getElementById("lm-piece");
+  const lmDesc = document.getElementById("lm-desc");
+  const lmH1 = document.getElementById("lm-h1");
+  const lmH2 = document.getElementById("lm-h2");
+  const lmH3 = document.getElementById("lm-h3");
+  const lmTotal = document.getElementById("lm-total");
+
   // =====================================================
   // GAME STATE
   // =====================================================
@@ -163,10 +176,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     computerDifficulty = difficulty;
 
-    // -----------------------------------------
-    // Remove selected from all buttons
-    // -----------------------------------------
-
     difficultyButtons.forEach(function (button) {
       const buttonDifficulty = parseInt(button.dataset.difficulty, 10);
 
@@ -177,19 +186,11 @@ document.addEventListener("DOMContentLoaded", function () {
       button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
 
-    // -----------------------------------------
-    // Description
-    // -----------------------------------------
-
     const info = DIFFICULTY_INFO[computerDifficulty];
 
     if (difficultyDescription) {
       difficultyDescription.textContent = `${info.name} - ${info.description}`;
     }
-
-    // -----------------------------------------
-    // Selected difficulty
-    // -----------------------------------------
 
     if (selectedDifficultyText) {
       selectedDifficultyText.textContent = `${info.name} - Depth ${info.depth}`;
@@ -211,10 +212,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     gameModeSelected = true;
 
-    // -----------------------------------------
-    // Reset selected buttons
-    // -----------------------------------------
-
     if (playerVsPlayerButton) {
       playerVsPlayerButton.classList.remove("selected");
 
@@ -226,10 +223,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       playerVsComputerButton.setAttribute("aria-pressed", "false");
     }
-
-    // -----------------------------------------
-    // COMPUTER
-    // -----------------------------------------
 
     if (VS_COMPUTER) {
       if (playerVsComputerButton) {
@@ -261,12 +254,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         selectedDifficultyText.textContent = `${info.name} - Depth ${info.depth}`;
       }
-    }
-
-    // -----------------------------------------
-    // PLAYER VS PLAYER
-    // -----------------------------------------
-    else {
+    } else {
       if (playerVsPlayerButton) {
         playerVsPlayerButton.classList.add("selected");
 
@@ -285,10 +273,6 @@ document.addEventListener("DOMContentLoaded", function () {
         selectedDifficultyContainer.style.display = "none";
       }
     }
-
-    // -----------------------------------------
-    // Enable start button
-    // -----------------------------------------
 
     if (startGameButton) {
       startGameButton.disabled = false;
@@ -324,6 +308,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     clearSelection();
 
+    resetScores();
+
     if (modeSelection) {
       modeSelection.classList.add("hidden");
     }
@@ -347,6 +333,8 @@ document.addEventListener("DOMContentLoaded", function () {
     closeResignModal();
 
     clearSelection();
+
+    resetScores();
 
     if (piecesLayer) {
       piecesLayer.innerHTML = "";
@@ -406,8 +394,6 @@ document.addEventListener("DOMContentLoaded", function () {
       selectedModeText.textContent = "Chưa chọn chế độ chơi";
     }
 
-    // Mặc định lại Trung bình
-
     selectDifficulty(2);
   }
 
@@ -444,11 +430,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     localStorage.removeItem("xiangqiGameId");
 
-    // Mặc định Trung bình
+    resetScores();
 
     selectDifficulty(2);
 
     console.log("Đang chờ người dùng chọn chế độ chơi...");
+  }
+
+  // =====================================================
+  // RESET SCORES & PANELS
+  // =====================================================
+
+  function resetScores() {
+    if (redScoreEl) redScoreEl.textContent = "0";
+    if (blackScoreEl) blackScoreEl.textContent = "0";
+
+    if (lastMoveBox) {
+      lastMoveBox.style.display = "none";
+    }
   }
 
   // =====================================================
@@ -528,10 +527,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   function updateGameFromApi(data) {
-    if (!data) {
-      return;
-    }
-
     gameId = data.id;
 
     currentTurn = data.currentTurn;
@@ -540,7 +535,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     isCheck = data.isCheck || false;
 
-    initialPieces = (data.boardPieces || []).map(convertPieceFromApi);
+    initialPieces = data.boardPieces.map(convertPieceFromApi);
 
     selectedPieceElement = null;
 
@@ -552,17 +547,58 @@ document.addEventListener("DOMContentLoaded", function () {
 
     renderPieces();
 
-    updatePlayerNames();
-
     updateTurnStatus();
 
     updatePlayerStatus();
 
     handleCheckWarning();
 
-    updateComputerStatus();
-
     checkGameResult();
+
+    // =============================================
+    // 1. CẬP NHẬT ĐIỂM THẾ TRẬN TỔNG HỢP (H1 + H2 + H3)
+    // =============================================
+    const rScore = data.redScore !== undefined ? data.redScore : data.RedScore;
+    const bScore = data.blackScore !== undefined ? data.blackScore : data.BlackScore;
+
+    console.log("-> Điểm thế trận nhận được từ API:", { Đỏ: rScore, Đen: bScore });
+
+    if (redScoreEl && rScore !== undefined) {
+      redScoreEl.textContent = rScore > 0 ? `+${rScore}` : `${rScore}`;
+    }
+    if (blackScoreEl && bScore !== undefined) {
+      blackScoreEl.textContent = bScore > 0 ? `+${bScore}` : `${bScore}`;
+    }
+
+    // =============================================
+    // 2. CẬP NHẬT ĐÁNH GIÁ NƯỚC VỪA ĐI (H1 + H2 + H3)
+    // =============================================
+    const lm = data.lastMoveEval || data.LastMoveEval;
+
+    if (lastMoveBox) {
+      if (lm) {
+        lastMoveBox.style.display = "block";
+
+        if (lmPiece) lmPiece.textContent = lm.pieceName || lm.PieceName || "-";
+        if (lmDesc) lmDesc.textContent = lm.moveDescription || lm.MoveDescription || "-";
+
+        const h1 = lm.deltaH1 !== undefined ? lm.deltaH1 : (lm.DeltaH1 || 0);
+        const h2 = lm.deltaH2 !== undefined ? lm.deltaH2 : (lm.DeltaH2 || 0);
+        const h3 = lm.deltaH3 !== undefined ? lm.deltaH3 : (lm.DeltaH3 || 0);
+        const total = lm.totalDelta !== undefined ? lm.totalDelta : (lm.TotalDelta !== undefined ? lm.TotalDelta : (h1 + h2 + h3));
+
+        if (lmH1) lmH1.textContent = h1 > 0 ? `+${h1}` : `${h1}`;
+        if (lmH2) lmH2.textContent = h2 > 0 ? `+${h2}` : `${h2}`;
+        if (lmH3) lmH3.textContent = h3 > 0 ? `+${h3}` : `${h3}`;
+
+        if (lmTotal) {
+          lmTotal.textContent = total > 0 ? `+${total}` : `${total}`;
+          lmTotal.style.color = total >= 0 ? "#4ade80" : "#f87171";
+        }
+      } else {
+        lastMoveBox.style.display = "none";
+      }
+    }
 
     console.log("Bàn cờ đã được cập nhật!");
 
@@ -1098,8 +1134,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const piece = getPieceData(pieceGroup);
 
-      // CAPTURE
-
       if (selectedPieceData !== null) {
         if (
           piece.color.toLowerCase() !== selectedPieceData.color.toLowerCase()
@@ -1120,15 +1154,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
-      // TURN
-
       if (piece.color.toLowerCase() !== currentTurn.toLowerCase()) {
         console.log("Chưa tới lượt quân này");
 
         return;
       }
-
-      // REMOVE OLD
 
       if (selectedPieceElement) {
         selectedPieceElement.classList.remove("selected");
@@ -1136,15 +1166,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
       clearMoveHighlights();
 
-      // SELECT
-
       pieceGroup.classList.add("selected");
 
       selectedPieceElement = pieceGroup;
 
       selectedPieceData = piece;
-
-      // GET MOVES
 
       await fetchValidMoves(piece.row, piece.col);
     } catch (error) {
@@ -1348,6 +1374,8 @@ document.addEventListener("DOMContentLoaded", function () {
       isComputerThinking = false;
 
       clearSelection();
+
+      resetScores();
 
       if (piecesLayer) {
         piecesLayer.innerHTML = "";
@@ -1600,10 +1628,6 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // ==============================================
-    // VS COMPUTER
-    // ==============================================
-
     if (VS_COMPUTER) {
       if (gameStatus !== "InProgress") {
         if (gameStatus === "RedWins") {
@@ -1645,10 +1669,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       return;
     }
-
-    // ==============================================
-    // VS PLAYER
-    // ==============================================
 
     if (gameStatus !== "InProgress") {
       if (gameStatus === "RedWins") {

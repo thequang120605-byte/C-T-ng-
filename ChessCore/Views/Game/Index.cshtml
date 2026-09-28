@@ -323,6 +323,11 @@
 
                 </div>
 
+                <!-- BẢNG ĐIỂM THẾ TRẬN QUÂN ĐỎ -->
+                <div class="score-box red-score-box">
+                    <span>Thế trận (H1+H2+H3):</span>
+                    <strong id="red-score">0</strong>
+                </div>
 
                 <div class="player-piece-preview">
                 </div>
@@ -511,6 +516,11 @@
 
                 </div>
 
+                <!-- BẢNG ĐIỂM THẾ TRẬN QUÂN ĐEN -->
+                <div class="score-box black-score-box">
+                    <span>Thế trận (H1+H2+H3):</span>
+                    <strong id="black-score">0</strong>
+                </div>
 
                 <div class="player-piece-preview black-pieces">
                 </div>
@@ -534,6 +544,35 @@
 
             </div>
 
+        </section>
+
+        <!-- ================================================= -->
+        <!-- ĐÁNH GIÁ CHI TIẾT NƯỚC VỪA ĐI (H1 + H2 + H3) -->
+        <!-- ================================================= -->
+
+        <section id="last-move-box" style="display: none; max-width: 580px; margin: 15px auto 0; padding: 12px 20px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="color: #fbbf24; font-weight: 800; font-size: 14px;">
+                    ⚡ NƯỚC VỪA ĐI: <span id="lm-piece" style="color: #f8fafc;">-</span> (<span id="lm-desc" style="color: #94a3b8; font-size: 12px;">-</span>)
+                </span>
+                <span style="font-weight: 800; font-size: 14px;">
+                    Hiệu quả: <strong id="lm-total" style="color: #4ade80;">+0</strong>
+                </span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px; text-align: center;">
+                <div style="background: rgba(0, 0, 0, 0.3); padding: 6px; border-radius: 6px;">
+                    <span style="color: #94a3b8; display: block; font-size: 11px;">H1 (Ăn quân)</span>
+                    <strong id="lm-h1" style="color: #f8fafc;">0</strong>
+                </div>
+                <div style="background: rgba(0, 0, 0, 0.3); padding: 6px; border-radius: 6px;">
+                    <span style="color: #94a3b8; display: block; font-size: 11px;">H2 (Vị trí)</span>
+                    <strong id="lm-h2" style="color: #f8fafc;">0</strong>
+                </div>
+                <div style="background: rgba(0, 0, 0, 0.3); padding: 6px; border-radius: 6px;">
+                    <span style="color: #94a3b8; display: block; font-size: 11px;">H3 (Chiến thuật)</span>
+                    <strong id="lm-h3" style="color: #f8fafc;">0</strong>
+                </div>
+            </div>
         </section>
 
 
