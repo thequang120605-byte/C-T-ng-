@@ -28,6 +28,13 @@
                     <span class="mode-title">Người vs Máy</span>
                     <span class="mode-subtitle">Thử thách với AI (Đang cập nhật)</span>
                 </button>
+
+                <!-- CHƠI QUA MẠNG -->
+                <button id="player-vs-online-btn" class="mode-btn">
+                    <i class="fa-solid fa-globe"></i>
+                    <span class="mode-title">Chơi qua mạng</span>
+                    <span class="mode-subtitle">Tạo phòng chơi với bạn bè</span>
+                </button>
             </div>
 
             <!-- CHỌN ĐỘ KHÓ -->
@@ -50,6 +57,20 @@
                         <i class="fa-solid fa-skull" style="color: #ef4444;"></i>
                         <span>Siêu khó</span>
                     </button>
+                </div>
+            </div>
+
+            <!-- ONLINE LOBBY -->
+            <div id="online-selection" class="difficulty-panel hidden">
+                <h3><i class="fa-solid fa-network-wired"></i> Sảnh chờ Online</h3>
+                <div class="lobby-actions" style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+                    <p style="font-size:14px; color:var(--text-muted);">Để trống và bấm nút để Tạo phòng, hoặc nhập mã để Vào phòng.</p>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="online-room-id" placeholder="Nhập mã phòng" style="flex:1; padding:10px; border-radius:8px; border:1px solid #475569; background:#1e293b; color:white; font-size:16px; text-align:center;" />
+                        <button id="join-online-btn" class="btn-primary" style="background:#10b981; border:none; padding:10px 16px;">
+                            <i class="fa-solid fa-paper-plane"></i> Đi
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -183,6 +204,17 @@
             
             <div class="panel-box game-status-box">
                 <div class="status-header">Trạng thái ván đấu</div>
+
+            <div id="room-info-box" class="panel-box room-info-box hidden" style="border: 1px solid var(--accent-gold); background: rgba(212, 175, 55, 0.05);">
+                <div class="status-header" style="color: var(--accent-gold);"><i class="fa-solid fa-globe"></i> Phòng Online</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                    <span style="font-size: 14px; color: var(--text-muted);">Mã phòng:</span>
+                    <strong id="display-room-code" style="font-size: 18px; letter-spacing: 2px; color: white;">----</strong>
+                </div>
+                <button id="copy-room-code-btn" class="btn-secondary" style="width: 100%; margin-top: 10px; padding: 6px; font-size: 12px;">
+                    <i class="fa-regular fa-copy"></i> Sao chép mã
+                </button>
+            </div>
                 <div class="turn-indicator">
                     <i class="fa-solid fa-chess"></i> 
                     <span id="turn-status">Lượt của QUÂN ĐỎ</span>

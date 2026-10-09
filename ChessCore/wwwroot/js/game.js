@@ -96,7 +96,7 @@
 
   const difficultySelection = document.getElementById("difficulty-selection");
 
-  const difficultyButtons = document.querySelectorAll(".difficulty-option");
+  const difficultyButtons = document.querySelectorAll(".diff-btn");
 
   const difficultyDescription = document.getElementById(
     "difficulty-description",
@@ -218,7 +218,7 @@
     }
 
     if (selectedDifficultyContainer) {
-      selectedDifficultyContainer.style.display = "block";
+      selectedDifficultyContainer.style.display = "block"; selectedDifficultyContainer.classList.remove("hidden");
     }
 
     console.log("Độ khó máy:", computerDifficulty, "Depth:", info.depth);
@@ -249,6 +249,11 @@
       playerVsComputerButton.setAttribute("aria-pressed", "false");
     }
 
+    if (playerVsOnlineButton) {
+      playerVsOnlineButton.classList.remove("selected");
+      playerVsOnlineButton.setAttribute("aria-pressed", "false");
+    }
+
     // -----------------------------------------
     // COMPUTER
     // -----------------------------------------
@@ -265,7 +270,7 @@
       }
 
       if (difficultySelection) {
-        difficultySelection.style.display = "block";
+        difficultySelection.style.display = "block"; difficultySelection.classList.remove("hidden");
       }
 
       if (difficultyDescription) {
@@ -275,7 +280,7 @@
       }
 
       if (selectedDifficultyContainer) {
-        selectedDifficultyContainer.style.display = "block";
+        selectedDifficultyContainer.style.display = "block"; selectedDifficultyContainer.classList.remove("hidden");
       }
 
       if (selectedDifficultyText) {
@@ -300,11 +305,11 @@
       }
 
       if (difficultySelection) {
-        difficultySelection.style.display = "none";
+        difficultySelection.style.display = "none"; difficultySelection.classList.add("hidden");
       }
 
       if (selectedDifficultyContainer) {
-        selectedDifficultyContainer.style.display = "none";
+        selectedDifficultyContainer.style.display = "none"; selectedDifficultyContainer.classList.add("hidden");
       }
     }
 
@@ -411,11 +416,11 @@
     }
 
     if (difficultySelection) {
-      difficultySelection.style.display = "none";
+      difficultySelection.style.display = "none"; difficultySelection.classList.add("hidden");
     }
 
     if (selectedDifficultyContainer) {
-      selectedDifficultyContainer.style.display = "none";
+      selectedDifficultyContainer.style.display = "none"; selectedDifficultyContainer.classList.add("hidden");
     }
 
     if (startGameButton) {
@@ -454,11 +459,11 @@
     }
 
     if (difficultySelection) {
-      difficultySelection.style.display = "none";
+      difficultySelection.style.display = "none"; difficultySelection.classList.add("hidden");
     }
 
     if (selectedDifficultyContainer) {
-      selectedDifficultyContainer.style.display = "none";
+      selectedDifficultyContainer.style.display = "none"; selectedDifficultyContainer.classList.add("hidden");
     }
 
     if (startGameButton) {
@@ -767,11 +772,11 @@
       messageElement.textContent = message;
     }
 
-    overlay.classList.add("show");
+    overlay.classList.remove("hidden");
     overlay.classList.add("ai-error");
 
     setTimeout(() => {
-      overlay.classList.remove("show");
+      overlay.classList.add("hidden");
       overlay.classList.remove("ai-error");
     }, 2500);
   }
@@ -790,7 +795,7 @@
     const overlay = document.getElementById("check-overlay");
 
     if (overlay) {
-      overlay.classList.remove("show");
+      overlay.classList.add("hidden");
     }
 
     if (isCheck && gameStatus === "InProgress" && currentTurn) {
@@ -805,10 +810,10 @@
       }
 
       if (overlay) {
-        overlay.classList.add("show");
+        overlay.classList.remove("hidden");
 
         setTimeout(function () {
-          overlay.classList.remove("show");
+          overlay.classList.add("hidden");
         }, 1200);
       }
     }
@@ -869,7 +874,7 @@
 
     resultMessage.textContent = message;
 
-    gameResultModal.classList.add("show");
+    gameResultModal.classList.remove("hidden");
   }
 
   // =====================================================
@@ -881,7 +886,7 @@
       return;
     }
 
-    gameResultModal.classList.remove("show");
+    gameResultModal.classList.add("hidden");
   }
 
   // =====================================================
@@ -1410,13 +1415,13 @@
     }
 
     if (resignModal) {
-      resignModal.classList.add("show");
+      resignModal.classList.remove("hidden");
     }
   }
 
   function closeResignModal() {
     if (resignModal) {
-      resignModal.classList.remove("show");
+      resignModal.classList.add("hidden");
     }
   }
 
@@ -1505,8 +1510,8 @@
   if (playerVsPlayerButton) {
     playerVsPlayerButton.addEventListener("click", function (event) {
       event.stopPropagation();
-      if (onlineSelection) onlineSelection.style.display = "none";
-      if (startGameButton) startGameButton.style.display = "block";
+      if (onlineSelection) { onlineSelection.style.display = "none"; onlineSelection.classList.add("hidden"); }
+      if (startGameButton) { startGameButton.style.display = "block"; startGameButton.classList.remove("hidden"); }
       selectGameMode(false);
     });
   }
@@ -1514,8 +1519,8 @@
   if (playerVsComputerButton) {
     playerVsComputerButton.addEventListener("click", function (event) {
       event.stopPropagation();
-      if (onlineSelection) onlineSelection.style.display = "none";
-      if (startGameButton) startGameButton.style.display = "block";
+      if (onlineSelection) { onlineSelection.style.display = "none"; onlineSelection.classList.add("hidden"); }
+      if (startGameButton) { startGameButton.style.display = "block"; startGameButton.classList.remove("hidden"); }
       selectGameMode(true);
     });
   }
@@ -1532,11 +1537,11 @@
       playerVsOnlineButton.classList.add("selected");
       
       if (selectedModeText) selectedModeText.textContent = "🌐 Online";
-      if (difficultySelection) difficultySelection.style.display = "none";
-      if (selectedDifficultyContainer) selectedDifficultyContainer.style.display = "none";
+      if (difficultySelection) { difficultySelection.style.display = "none"; difficultySelection.classList.add("hidden"); }
+      if (selectedDifficultyContainer) { selectedDifficultyContainer.style.display = "none"; selectedDifficultyContainer.classList.add("hidden"); }
       
-      if (onlineSelection) onlineSelection.style.display = "block";
-      if (startGameButton) startGameButton.style.display = "none";
+      if (onlineSelection) { onlineSelection.style.display = "block"; onlineSelection.classList.remove("hidden"); }
+      if (startGameButton) { startGameButton.style.display = "none"; startGameButton.classList.add("hidden"); }
     });
   }
 
@@ -1559,7 +1564,13 @@
                   
                   modeSelection.classList.add("hidden");
                   gameContent.classList.remove("hidden");
-                  alert("Đã tạo phòng Online! ID Phòng của bạn là: " + gameId + "\n\nHãy gửi ID này cho người bạn muốn chơi cùng.");
+                  // alert replaced by UI
+                  const roomBox = document.getElementById("room-info-box");
+                  const roomCodeDisplay = document.getElementById("display-room-code");
+                  if (roomBox && roomCodeDisplay) {
+                      roomBox.classList.remove("hidden");
+                      roomCodeDisplay.textContent = gameId;
+                  }
               } catch (e) {
                   console.error(e);
                   alert("Lỗi tạo phòng.");
@@ -1579,7 +1590,13 @@
                   
                   modeSelection.classList.add("hidden");
                   gameContent.classList.remove("hidden");
-                  alert("Vào phòng thành công!");
+                  // alert replaced by UI
+                  const roomBox = document.getElementById("room-info-box");
+                  const roomCodeDisplay = document.getElementById("display-room-code");
+                  if (roomBox && roomCodeDisplay) {
+                      roomBox.classList.remove("hidden");
+                      roomCodeDisplay.textContent = gameId;
+                  }
               } catch (e) {
                   console.error(e);
                   alert("Không tìm thấy phòng hoặc lỗi kết nối.");
@@ -1824,10 +1841,10 @@
       messageElement.textContent = message;
     }
 
-    overlay.classList.add("show");
+    overlay.classList.remove("hidden");
 
     setTimeout(() => {
-      overlay.classList.remove("show");
+      overlay.classList.add("hidden");
     }, duration);
   }
 
@@ -1866,3 +1883,21 @@
           console.error("Eval Error:", err);
       }
   }
+
+document.addEventListener("DOMContentLoaded", function() {
+    const copyBtn = document.getElementById("copy-room-code-btn");
+    if (copyBtn) {
+        copyBtn.addEventListener("click", function() {
+            const code = document.getElementById("display-room-code").textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép';
+                copyBtn.style.color = '#10b981';
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.style.color = '';
+                }, 2000);
+            });
+        });
+    }
+});

@@ -86,31 +86,5 @@
 }
 
 @section Styles {
-    <style>
-        .auth-page {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: calc(100vh - 70px);
-            padding: 20px;
-            background-color: var(--bg-navy);
-            background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
-        }
-
-        .auth-box {
-            background: var(--bg-navy-panel);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-        }
-        
-        .btn-auth:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(251, 191, 36, 0.3);
-        }
-        
-        #resendForm button:hover {
-            background: rgba(251, 191, 36, 0.1);
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
 }
