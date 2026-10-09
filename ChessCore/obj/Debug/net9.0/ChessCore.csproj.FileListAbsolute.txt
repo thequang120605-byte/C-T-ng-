@@ -408,4 +408,6 @@ D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\bin\Debug\net9.0\pack
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\bin\Debug\net9.0\package.json
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-7f0m4hz3f3-7f0m4hz3f3.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\umok1qzg76-{0}-ilrzgdwsfi-ilrzgdwsfi.gz
-D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\mxv5a2fa17-{0}-3edl0mnols-3edl0mnols.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\mxv5a2fa17-{0}-uyd9vwub1t-uyd9vwub1t.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\0mab5q8h0a-{0}-ih0g5g2xoc-ih0g5g2xoc.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\3k3slxwqqg-{0}-p34vqvnrch-p34vqvnrch.gz
