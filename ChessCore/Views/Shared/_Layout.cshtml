@@ -3,35 +3,122 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>@ViewData["Title"] - Hệ thống Cờ Tướng</title>
-
+    <title>@ViewData["Title"] - Cờ Tướng Pro</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-
     @RenderSection("Styles", required: false)
 </head>
-
 <body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="app-sidebar">
+            <div class="sidebar-logo">
+                <i class="fa-solid fa-chess-knight"></i>
+                <span>CỜ TƯỚNG</span>
+            </div>
+            <nav class="sidebar-nav">
+                @{
+                    var path = Context.Request.Path.Value ?? "";
+                    var isHome = path == "/" || path == "";
+                    var isGame = path.StartsWith("/Game", StringComparison.OrdinalIgnoreCase);
+                    var isPuzzle = path.StartsWith("/Puzzle", StringComparison.OrdinalIgnoreCase);
+                }
+                <a href="/" class="nav-item @(isHome ? "active" : "")">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Trang chủ</span>
+                </a>
+                <a href="/Game" class="nav-item @(isGame ? "active" : "")">
+                    <i class="fa-solid fa-chess-board"></i>
+                    <span>Chơi cờ</span>
+                </a>
+                <a href="/Puzzle" class="nav-item @(isPuzzle ? "active" : "")">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                    <span>Cờ thế</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-chart-simple"></i>
+                    <span>Thống kê</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>Khóa học</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Cài đặt</span>
+                </a>
+            </div>
+        </aside>
 
-    <header class="main-header">
+        <!-- MAIN CONTENT WRAPPER -->
+        <div class="main-wrapper">
+            <!-- TOP NAVBAR -->
+            <header class="app-navbar">
+                <div class="mobile-menu-toggle">
+                    <i class="fa-solid fa-bars"></i>
+                </div>
+                <div class="navbar-title">
+                    @ViewData["Title"]
+                </div>
+                <div class="navbar-user">
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        var eloClaim = User.Claims.FirstOrDefault(c => c.Type == "Elo")?.Value ?? "1200";
+                        <div class="user-info">
+                            <span class="user-name">@User.Identity.Name</span>
+                            <span class="user-elo">Elo: @eloClaim</span>
+                        </div>
+                        <div class="user-avatar" style="cursor: pointer;" onclick="document.getElementById('logout-modal').classList.add('show');" title="Đăng xuất">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </div>
+                        <form id="logout-form" asp-controller="Auth" asp-action="Logout" method="post" style="display: none;"></form>
+                    }
+                    else
+                    {
+                        <div class="user-info">
+                            <span class="user-name">Khách (Guest)</span>
+                            <a asp-controller="Auth" asp-action="Login" style="color: var(--accent-gold-light); font-size: 12px; text-decoration: none;">Đăng nhập / Đăng ký</a>
+                        </div>
+                        <div class="user-avatar">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                    }
+                </div>
+            </header>
 
-        <div class="logo">
-            ♟ HỆ THỐNG CỜ TƯỚNG
+            <!-- PAGE CONTENT -->
+            <main class="app-main">
+                @RenderBody()
+            </main>
         </div>
+    </div>
 
-        <nav>
-            <a href="/">Trang chủ</a>
-            <a href="/Game">Chơi cờ</a>
-        </nav>
+    <!-- LOGOUT MODAL -->
+    <div id="logout-modal" class="custom-modal" style="display: none; position: fixed; inset: 0; justify-content: center; align-items: center; background: rgba(15, 23, 42, 0.85); z-index: 9999;">
+        <div class="modal-content" style="background: var(--bg-navy-panel); border: 2px solid var(--accent-gold-dark); border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <i class="fa-solid fa-right-from-bracket" style="font-size: 48px; color: var(--accent-gold); margin-bottom: 16px;"></i>
+            <h2 style="font-size: 20px; color: var(--text-main); margin-bottom: 8px;">Xác nhận đăng xuất</h2>
+            <p style="color: var(--text-muted); margin-bottom: 24px;">Bạn có chắc chắn muốn đăng xuất khỏi tài khoản hiện tại?</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" style="padding: 10px 20px; border: none; border-radius: 8px; background: #64748b; color: white; cursor: pointer; font-weight: bold;" onclick="document.getElementById('logout-modal').classList.remove('show');">Hủy</button>
+                <button type="button" style="padding: 10px 20px; border: none; border-radius: 8px; background: #ef4444; color: white; cursor: pointer; font-weight: bold;" onclick="document.getElementById('logout-form').submit();">Đăng xuất</button>
+            </div>
+        </div>
+    </div>
+    <style>
+        #logout-modal.show { display: flex !important; }
+    </style>
 
-    </header>
-
-    <main>
-        @RenderBody()
-    </main>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     @RenderSection("Scripts", required: false)
-
 </body>
 </html>
 ```

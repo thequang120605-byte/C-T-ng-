@@ -253,8 +253,7 @@
       "Microsoft.CodeAnalysis.Workspaces.MSBuild/4.8.0": {
         "dependencies": {
           "Microsoft.CodeAnalysis.Common": "4.8.0",
-          "Microsoft.CodeAnalysis.Workspaces.Common": "4.8.0",
-          "System.Text.Json": "9.0.20"
+          "Microsoft.CodeAnalysis.Workspaces.Common": "4.8.0"
         },
         "runtime": {
           "lib/net7.0/Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll": {
@@ -341,8 +340,7 @@
           "Microsoft.Extensions.Configuration.Abstractions": "9.0.20",
           "Microsoft.Extensions.DependencyModel": "9.0.20",
           "Microsoft.Extensions.Logging": "9.0.20",
-          "Mono.TextTemplating": "3.0.0",
-          "System.Text.Json": "9.0.20"
+          "Mono.TextTemplating": "3.0.0"
         },
         "runtime": {
           "lib/net8.0/Microsoft.EntityFrameworkCore.Design.dll": {
@@ -573,14 +571,6 @@
           "lib/net7.0/System.Composition.TypedParts.dll": {
             "assemblyVersion": "7.0.0.0",
             "fileVersion": "7.0.22.51805"
-          }
-        }
-      },
-      "System.Text.Json/9.0.20": {
-        "runtime": {
-          "lib/net9.0/System.Text.Json.dll": {
-            "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.2026.41315"
           }
         }
       }
@@ -815,13 +805,6 @@
       "sha512": "sha512-ZK0KNPfbtxVceTwh+oHNGUOYV2WNOHReX2AXipuvkURC7s/jPwoWfsu3SnDBDgofqbiWr96geofdQ2erm/KTHg==",
       "path": "system.composition.typedparts/7.0.0",
       "hashPath": "system.composition.typedparts.7.0.0.nupkg.sha512"
-    },
-    "System.Text.Json/9.0.20": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-BTRIxPnDLRAQLJI3Q7/ezyfJLp/KAi5k2NwGfAwrkiWPa/nS+bcVu2GX3dXt8jO5u8gcf2AJ04mIhvdtchDG9A==",
-      "path": "system.text.json/9.0.20",
-      "hashPath": "system.text.json.9.0.20.nupkg.sha512"
     }
   }
 }

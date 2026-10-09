@@ -1,0 +1,20 @@
+﻿import re
+
+def add_star_marks(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    if 'd="M 55 330' in content:
+        return
+        
+    marks = '<path class="star-marks" d="M 55 330 L 55 345 L 70 345 M 55 370 L 55 355 L 70 355 M 245 330 L 245 345 L 230 345 M 255 330 L 255 345 L 270 345 M 245 370 L 245 355 L 230 355 M 255 370 L 255 355 L 270 355 M 445 330 L 445 345 L 430 345 M 455 330 L 455 345 L 470 345 M 445 370 L 445 355 L 430 355 M 455 370 L 455 355 L 470 355 M 645 330 L 645 345 L 630 345 M 655 330 L 655 345 L 670 345 M 645 370 L 645 355 L 630 355 M 655 370 L 655 355 L 670 355 M 845 330 L 845 345 L 830 345 M 845 370 L 845 355 L 830 355 M 55 630 L 55 645 L 70 645 M 55 670 L 55 655 L 70 655 M 245 630 L 245 645 L 230 645 M 255 630 L 255 645 L 270 645 M 245 670 L 245 655 L 230 655 M 255 670 L 255 655 L 270 655 M 445 630 L 445 645 L 430 645 M 455 630 L 455 645 L 470 645 M 445 670 L 445 655 L 430 655 M 455 670 L 455 655 L 470 655 M 645 630 L 645 645 L 630 645 M 655 630 L 655 645 L 670 645 M 645 670 L 645 655 L 630 655 M 655 670 L 655 655 L 670 655 M 845 630 L 845 645 L 830 645 M 845 670 L 845 655 L 830 655 M 145 230 L 145 245 L 130 245 M 155 230 L 155 245 L 170 245 M 145 270 L 145 255 L 130 255 M 155 270 L 155 255 L 170 255 M 745 230 L 745 245 L 730 245 M 755 230 L 755 245 L 770 245 M 745 270 L 745 255 L 730 255 M 755 270 L 755 255 L 770 255 M 145 730 L 145 745 L 130 745 M 155 730 L 155 745 L 170 745 M 145 770 L 145 755 L 130 755 M 155 770 L 155 755 L 170 755 M 745 730 L 745 745 L 730 745 M 755 730 L 755 745 L 770 745 M 745 770 L 745 755 L 730 755 M 755 770 L 755 755 L 770 755" stroke="#4a3022" stroke-width="2" fill="none" />'
+    
+    # Insert right before </g> of board-lines
+    new_content = re.sub(r'(</g>\s*<!-- SÔNG -->)', rf'{marks}\n                        \1', content)
+    
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(new_content)
+
+add_star_marks('Views/Game/Index.cshtml')
+add_star_marks('Views/Puzzle/Index.cshtml')
+print('Added stars')

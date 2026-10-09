@@ -17,7 +17,7 @@ namespace ChessCore.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.19")
+                .HasAnnotation("ProductVersion", "9.0.20")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -30,6 +30,9 @@ namespace ChessCore.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("BlackPlayerId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -38,8 +41,14 @@ namespace ChessCore.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<string>("InitialFen")
+                        .HasColumnType("longtext");
+
                     b.Property<DateTime?>("LastMoveAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("RedPlayerId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -47,6 +56,10 @@ namespace ChessCore.Migrations
                         .HasColumnType("varchar(30)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BlackPlayerId");
+
+                    b.HasIndex("RedPlayerId");
 
                     b.ToTable("Games");
                 });
@@ -97,6 +110,108 @@ namespace ChessCore.Migrations
                     b.ToTable("Moves");
                 });
 
+            modelBuilder.Entity("ChessCore.Models.Puzzle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.Property<int>("Difficulty")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Fen")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MateIn")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Puzzles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Chiếu bí trong 1 nước (Xe cắm đáy)",
+                            Difficulty = 1,
+                            Fen = "4k4/9/9/9/9/9/9/9/9/4R4 r - - 0 1",
+                            Level = 1,
+                            MateIn = 1,
+                            Title = "Tuyệt sát 1"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Song pháo sát cục",
+                            Difficulty = 1,
+                            Fen = "4k4/4a4/4a4/9/9/9/9/9/9/4C4 r - - 0 1",
+                            Level = 2,
+                            MateIn = 1,
+                            Title = "Pháo lồng"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Kết hợp Xe Pháo",
+                            Difficulty = 2,
+                            Fen = "4k4/9/9/9/9/9/9/9/9/4R4 r - - 0 1",
+                            Level = 3,
+                            MateIn = 1,
+                            Title = "Lưỡng chiếu"
+                        });
+                });
+
+            modelBuilder.Entity("ChessCore.Models.PuzzleProgress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("PuzzleKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "PuzzleKey")
+                        .IsUnique();
+
+                    b.ToTable("PuzzleProgresses");
+                });
+
             modelBuilder.Entity("ChessCore.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -108,19 +223,73 @@ namespace ChessCore.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int>("Draws")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Elo")
+                        .HasColumnType("int");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
+
+                    b.Property<int>("GamesPlayed")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Losses")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
+                    b.Property<int>("Wins")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("PlayerId")
+                        .IsUnique();
+
+                    b.HasIndex("Username")
+                        .IsUnique();
+
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.Game", b =>
+                {
+                    b.HasOne("ChessCore.Models.User", "BlackPlayer")
+                        .WithMany()
+                        .HasForeignKey("BlackPlayerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ChessCore.Models.User", "RedPlayer")
+                        .WithMany()
+                        .HasForeignKey("RedPlayerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("BlackPlayer");
+
+                    b.Navigation("RedPlayer");
                 });
 
             modelBuilder.Entity("ChessCore.Models.Move", b =>

@@ -57,6 +57,23 @@ namespace ChessCore.Engine
             return bestMove;
         }
 
+        /// <summary>
+        /// Điểm của thế cờ theo góc nhìn <paramref name="perspective"/>
+        /// (dùng cho thanh phân tích). Tìm kiếm theo độ sâu của engine.
+        /// </summary>
+        public int EvaluatePosition(
+            Board board,
+            PieceColor perspective)
+        {
+            bool maximizing = board.CurrentTurn == perspective;
+
+            return Minimax(
+                board,
+                _depth,
+                maximizing,
+                perspective);
+        }
+
         private int Minimax(
             Board board,
             int depth,

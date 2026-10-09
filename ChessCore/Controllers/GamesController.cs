@@ -1,3 +1,4 @@
+﻿using Microsoft.AspNetCore.SignalR;
 using ChessCore.DTOs;
 using ChessCore.Engine;
 using ChessCore.Enums;
@@ -17,28 +18,31 @@ namespace ChessCore.Controllers
     {
         private readonly IGameService _gameService;
         private readonly IMoveService _moveService;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<Hubs.GameHub> _hubContext;
 
         public GamesController(
             IGameService gameService,
-            IMoveService moveService
+            IMoveService moveService,
+            Microsoft.AspNetCore.SignalR.IHubContext<Hubs.GameHub> hubContext
         )
         {
             _gameService = gameService;
             _moveService = moveService;
+            _hubContext = hubContext;
         }
 
         // =====================================================
         // POST /api/games
-        // TẠO VÁN CỜ MỚI
+        // Táº O VÃN Cá»œ Má»šI
         // =====================================================
 
         [HttpPost]
-        public async Task<ActionResult<GameResponseDto>> CreateGame()
+        public async Task<ActionResult<GameResponseDto>> CreateGame([FromQuery] string initialFen = null)
         {
             var game =
-                await _gameService.CreateGameAsync();
+                await _gameService.CreateGameAsync(initialFen);
 
-            var board = new Board();
+            var board = GameRules.RebuildBoard(game.InitialFen, null, game.CurrentTurn);
 
             var response =
                 BuildGameResponse(
@@ -55,7 +59,7 @@ namespace ChessCore.Controllers
 
         // =====================================================
         // GET /api/games/{id}
-        // LẤY THÔNG TIN VÁN CỜ
+        // Láº¤Y THÃ”NG TIN VÃN Cá»œ
         // =====================================================
 
         [HttpGet("{id}")]
@@ -71,12 +75,13 @@ namespace ChessCore.Controllers
                 return NotFound(new
                 {
                     message =
-                        $"Không tìm thấy ván cờ với ID {id}"
+                        $"KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá» vá»›i ID {id}"
                 });
             }
 
             var board =
-                ReconstructBoard(
+                GameRules.RebuildBoard(
+                    game.InitialFen,
                     game.Moves,
                     game.CurrentTurn
                 );
@@ -87,12 +92,13 @@ namespace ChessCore.Controllers
                     board
                 );
 
+            await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
             return Ok(response);
         }
 
         // =====================================================
         // GET /api/games/{id}/valid-moves
-        // LẤY CÁC NƯỚC ĐI HỢP LỆ
+        // Láº¤Y CÃC NÆ¯á»šC ÄI Há»¢P Lá»†
         // =====================================================
 
         [HttpGet("{id}/valid-moves")]
@@ -110,7 +116,7 @@ namespace ChessCore.Controllers
                 return NotFound(new
                 {
                     message =
-                        $"Không tìm thấy ván cờ với ID {id}"
+                        $"KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá» vá»›i ID {id}"
                 });
             }
 
@@ -119,12 +125,13 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Ván cờ đã kết thúc."
+                        "VÃ¡n cá» Ä‘Ã£ káº¿t thÃºc."
                 });
             }
 
             var board =
-                ReconstructBoard(
+                GameRules.RebuildBoard(
+                    game.InitialFen,
                     game.Moves,
                     game.CurrentTurn
                 );
@@ -140,7 +147,7 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Không có quân cờ tại vị trí này."
+                        "KhÃ´ng cÃ³ quÃ¢n cá» táº¡i vá»‹ trÃ­ nÃ y."
                 });
             }
 
@@ -149,7 +156,7 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Chưa tới lượt của quân này."
+                        "ChÆ°a tá»›i lÆ°á»£t cá»§a quÃ¢n nÃ y."
                 });
             }
 
@@ -190,7 +197,7 @@ namespace ChessCore.Controllers
 
         // =====================================================
         // POST /api/games/{id}/moves
-        // NGƯỜI CHƠI THỰC HIỆN NƯỚC ĐI
+        // NGÆ¯á»œI CHÆ I THá»°C HIá»†N NÆ¯á»šC ÄI
         // =====================================================
 
         [HttpPost("{id}/moves")]
@@ -207,7 +214,7 @@ namespace ChessCore.Controllers
                 return NotFound(new
                 {
                     message =
-                        $"Không tìm thấy ván cờ với ID {id}"
+                        $"KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá» vá»›i ID {id}"
                 });
             }
 
@@ -216,12 +223,13 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Ván đấu đã kết thúc."
+                        "VÃ¡n Ä‘áº¥u Ä‘Ã£ káº¿t thÃºc."
                 });
             }
 
             var board =
-                ReconstructBoard(
+                GameRules.RebuildBoard(
+                    game.InitialFen,
                     game.Moves,
                     game.CurrentTurn
                 );
@@ -237,7 +245,7 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Không có quân cờ ở vị trí xuất phát."
+                        "KhÃ´ng cÃ³ quÃ¢n cá» á»Ÿ vá»‹ trÃ­ xuáº¥t phÃ¡t."
                 });
             }
 
@@ -246,7 +254,7 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        $"Chưa tới lượt đi của quân {movingPiece.Color}."
+                        $"ChÆ°a tá»›i lÆ°á»£t Ä‘i cá»§a quÃ¢n {movingPiece.Color}."
                 });
             }
 
@@ -280,7 +288,7 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Nước đi không hợp lệ theo luật Cờ Tướng."
+                        "NÆ°á»›c Ä‘i khÃ´ng há»£p lá»‡ theo luáº­t Cá» TÆ°á»›ng."
                 });
             }
 
@@ -295,7 +303,7 @@ namespace ChessCore.Controllers
                 capturedPiece.Type == PieceType.King;
 
             // =================================================
-            // LƯU NƯỚC ĐI
+            // LÆ¯U NÆ¯á»šC ÄI
             // =================================================
 
             await _moveService.RecordMoveAsync(
@@ -309,7 +317,7 @@ namespace ChessCore.Controllers
             );
 
             // =================================================
-            // CẬP NHẬT TRẠNG THÁI
+            // Cáº¬P NHáº¬T TRáº NG THÃI
             // =================================================
 
             GameStatus newStatus;
@@ -344,7 +352,7 @@ namespace ChessCore.Controllers
             );
 
             // =================================================
-            // LẤY GAME MỚI NHẤT
+            // Láº¤Y GAME Má»šI NHáº¤T
             // =================================================
 
             var updatedGame =
@@ -355,37 +363,36 @@ namespace ChessCore.Controllers
                 return NotFound(new
                 {
                     message =
-                        "Không thể tải lại ván cờ."
+                        "KhÃ´ng thá»ƒ táº£i láº¡i vÃ¡n cá»."
                 });
             }
 
             var updatedBoard =
-                ReconstructBoard(
+                GameRules.RebuildBoard(
+                    updatedGame.InitialFen,
                     updatedGame.Moves,
                     updatedGame.CurrentTurn
                 );
 
-            return Ok(
-                BuildGameResponse(
-                    updatedGame,
-                    updatedBoard
-                )
-            );
+            var response = BuildGameResponse(updatedGame, updatedBoard);
+            await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
+            return Ok(response);
         }
 
         // =====================================================
         // POST /api/games/{id}/computer-move
-        // MÁY THỰC HIỆN NƯỚC ĐI
+        // MÃY THá»°C HIá»†N NÆ¯á»šC ÄI
         // =====================================================
 
         [HttpPost("{id}/computer-move")]
         public async Task<ActionResult<GameResponseDto>> ComputerMove(
             int id,
-            [FromQuery] int difficulty = 2
+            [FromQuery] int difficulty = 2,
+            [FromQuery] string computerColor = "black"
         )
         {
             // =================================================
-            // 1. LẤY GAME
+            // 1. Láº¤Y GAME
             // =================================================
 
             var game =
@@ -396,12 +403,12 @@ namespace ChessCore.Controllers
                 return NotFound(new
                 {
                     message =
-                        $"Không tìm thấy ván cờ với ID {id}"
+                        $"KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá» vá»›i ID {id}"
                 });
             }
 
             // =================================================
-            // 2. KIỂM TRA TRẠNG THÁI
+            // 2. KIá»‚M TRA TRáº NG THÃI
             // =================================================
 
             if (game.Status != GameStatus.InProgress)
@@ -409,25 +416,27 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Ván cờ đã kết thúc."
+                        "VÃ¡n cá» Ä‘Ã£ káº¿t thÃºc."
                 });
             }
 
             // =================================================
-            // 3. MÁY CHỈ ĐÁNH QUÂN ĐEN
+            // 3. KIá»‚M TRA LÆ¯á»¢T
             // =================================================
 
-            if (game.CurrentTurn != PieceColor.Black)
+            PieceColor engineColor = computerColor.ToLower() == "red" ? PieceColor.Red : PieceColor.Black;
+
+            if (game.CurrentTurn != engineColor)
             {
                 return BadRequest(new
                 {
                     message =
-                        "Hiện tại chưa tới lượt của máy."
+                        "Hiá»‡n táº¡i chÆ°a tá»›i lÆ°á»£t cá»§a mÃ¡y."
                 });
             }
 
             // =================================================
-            // 4. GIỚI HẠN ĐỘ KHÓ
+            // 4. GIá»šI Háº N Äá»˜ KHÃ“
             // =================================================
 
             if (difficulty < 1)
@@ -441,27 +450,28 @@ namespace ChessCore.Controllers
             }
 
             // =================================================
-            // 5. TÁI TẠO BÀN CỜ
+            // 5. TÃI Táº O BÃ€N Cá»œ
             // =================================================
 
             var board =
-                ReconstructBoard(
+                GameRules.RebuildBoard(
+                    game.InitialFen,
                     game.Moves,
                     game.CurrentTurn
                 );
 
             // =================================================
-            // 6. TẠO COMPUTER PLAYER
+            // 6. Táº O COMPUTER PLAYER
             // =================================================
 
             var computer =
                 new ComputerPlayer(
-                    PieceColor.Black,
+                    engineColor,
                     difficulty
                 );
 
             // =================================================
-            // 7. TÌM NƯỚC ĐI
+            // 7. TÃŒM NÆ¯á»šC ÄI
             // =================================================
 
             var computerMove =
@@ -472,12 +482,12 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Máy không tìm được nước đi hợp lệ."
+                        "MÃ¡y khÃ´ng tÃ¬m Ä‘Æ°á»£c nÆ°á»›c Ä‘i há»£p lá»‡."
                 });
             }
 
             // =================================================
-            // 8. LẤY QUÂN CỜ
+            // 8. Láº¤Y QUÃ‚N Cá»œ
             // =================================================
 
             var movingPiece =
@@ -491,12 +501,12 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Không tìm thấy quân cờ của máy."
+                        "KhÃ´ng tÃ¬m tháº¥y quÃ¢n cá» cá»§a mÃ¡y."
                 });
             }
 
             // =================================================
-            // 9. KIỂM TRA QUÂN BỊ ĂN
+            // 9. KIá»‚M TRA QUÃ‚N Bá»Š Ä‚N
             // =================================================
 
             var capturedPiece =
@@ -510,7 +520,7 @@ namespace ChessCore.Controllers
                 capturedPiece.Type == PieceType.King;
 
             // =================================================
-            // 10. LƯU NƯỚC ĐI
+            // 10. LÆ¯U NÆ¯á»šC ÄI
             // =================================================
 
             await _moveService.RecordMoveAsync(
@@ -524,7 +534,7 @@ namespace ChessCore.Controllers
             );
 
             // =================================================
-            // 11. CẬP NHẬT BÀN CỜ MEMORY
+            // 11. Cáº¬P NHáº¬T BÃ€N Cá»œ MEMORY
             // =================================================
 
             board.Grid[
@@ -538,7 +548,7 @@ namespace ChessCore.Controllers
             ] = null;
 
             // =================================================
-            // 12. XÁC ĐỊNH TRẠNG THÁI
+            // 12. XÃC Äá»ŠNH TRáº NG THÃI
             // =================================================
 
             GameStatus newStatus;
@@ -563,7 +573,7 @@ namespace ChessCore.Controllers
             }
 
             // =================================================
-            // 13. CẬP NHẬT GAME
+            // 13. Cáº¬P NHáº¬T GAME
             // =================================================
 
             await _gameService.UpdateGameTurnAndStatusAsync(
@@ -573,7 +583,7 @@ namespace ChessCore.Controllers
             );
 
             // =================================================
-            // 14. LẤY GAME MỚI NHẤT
+            // 14. Láº¤Y GAME Má»šI NHáº¤T
             // =================================================
 
             var updatedGame =
@@ -584,35 +594,66 @@ namespace ChessCore.Controllers
                 return NotFound(new
                 {
                     message =
-                        "Không thể tải lại ván cờ sau khi máy đi."
+                        "KhÃ´ng thá»ƒ táº£i láº¡i vÃ¡n cá» sau khi mÃ¡y Ä‘i."
                 });
             }
 
             // =================================================
-            // 15. TÁI TẠO BÀN CỜ
+            // 15. TÃI Táº O BÃ€N Cá»œ
             // =================================================
 
             var updatedBoard =
-                ReconstructBoard(
+                GameRules.RebuildBoard(
+                    updatedGame.InitialFen,
                     updatedGame.Moves,
                     updatedGame.CurrentTurn
                 );
 
             // =================================================
-            // 16. TRẢ KẾT QUẢ
+            // 16. TRáº¢ Káº¾T QUáº¢
             // =================================================
 
-            return Ok(
-                BuildGameResponse(
-                    updatedGame,
-                    updatedBoard
-                )
-            );
+            var response = BuildGameResponse(updatedGame, updatedBoard);
+            await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
+            return Ok(response);
+        }
+
+        // =====================================================
+        // POST /api/games/{id}/undo
+        // ÄI Láº I (UNDO)
+        // =====================================================
+
+        [HttpPost("{id}/undo")]
+        public async Task<ActionResult<GameResponseDto>> Undo(
+            int id,
+            [FromQuery] bool isPvE = true
+        )
+        {
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null)
+            {
+                return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá»." });
+            }
+
+            var success = await _gameService.UndoMoveAsync(id, isPvE);
+            if (!success)
+            {
+                return BadRequest(new { message = "KhÃ´ng thá»ƒ Ä‘i láº¡i (chÆ°a Ä‘á»§ nÆ°á»›c Ä‘i)." });
+            }
+
+            // Refetch after undo
+            game = await _gameService.GetGameByIdAsync(id);
+
+            var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+
+            var response = BuildGameResponse(game, board);
+            await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
+            return Ok(response);
         }
 
         // =====================================================
         // POST /api/games/{id}/resign
-        // ĐẦU HÀNG
+        // Äáº¦U HÃ€NG
         // =====================================================
 
         [HttpPost("{id}/resign")]
@@ -621,7 +662,7 @@ namespace ChessCore.Controllers
         )
         {
             // =================================================
-            // 1. LẤY GAME
+            // 1. Láº¤Y GAME
             // =================================================
 
             var game =
@@ -632,12 +673,12 @@ namespace ChessCore.Controllers
                 return NotFound(new
                 {
                     message =
-                        $"Không tìm thấy ván cờ với ID {id}"
+                        $"KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá» vá»›i ID {id}"
                 });
             }
 
             // =================================================
-            // 2. KIỂM TRA GAME ĐÃ KẾT THÚC CHƯA
+            // 2. KIá»‚M TRA GAME ÄÃƒ Káº¾T THÃšC CHÆ¯A
             // =================================================
 
             if (game.Status != GameStatus.InProgress)
@@ -645,15 +686,15 @@ namespace ChessCore.Controllers
                 return BadRequest(new
                 {
                     message =
-                        "Ván cờ đã kết thúc."
+                        "VÃ¡n cá» Ä‘Ã£ káº¿t thÃºc."
                 });
             }
 
             // =================================================
-            // 3. XÁC ĐỊNH NGƯỜI ĐẦU HÀNG
+            // 3. XÃC Äá»ŠNH NGÆ¯á»œI Äáº¦U HÃ€NG
             //
-            // Red đầu hàng  -> Black thắng
-            // Black đầu hàng -> Red thắng
+            // Red Ä‘áº§u hÃ ng  -> Black tháº¯ng
+            // Black Ä‘áº§u hÃ ng -> Red tháº¯ng
             // =================================================
 
             GameStatus newStatus;
@@ -670,10 +711,10 @@ namespace ChessCore.Controllers
             }
 
             // =================================================
-            // 4. CẬP NHẬT GAME VÀO DATABASE
+            // 4. Cáº¬P NHáº¬T GAME VÃ€O DATABASE
             //
-            // Giữ CurrentTurn hiện tại vì ván đã kết thúc.
-            // Status mới sẽ quyết định người thắng.
+            // Giá»¯ CurrentTurn hiá»‡n táº¡i vÃ¬ vÃ¡n Ä‘Ã£ káº¿t thÃºc.
+            // Status má»›i sáº½ quyáº¿t Ä‘á»‹nh ngÆ°á»i tháº¯ng.
             // =================================================
 
             await _gameService.UpdateGameTurnAndStatusAsync(
@@ -683,7 +724,7 @@ namespace ChessCore.Controllers
             );
 
             // =================================================
-            // 5. LẤY GAME SAU KHI UPDATE
+            // 5. Láº¤Y GAME SAU KHI UPDATE
             // =================================================
 
             var updatedGame =
@@ -694,110 +735,65 @@ namespace ChessCore.Controllers
                 return NotFound(new
                 {
                     message =
-                        "Không thể tải lại ván cờ sau khi đầu hàng."
+                        "KhÃ´ng thá»ƒ táº£i láº¡i vÃ¡n cá» sau khi Ä‘áº§u hÃ ng."
                 });
             }
 
             // =================================================
-            // 6. TÁI TẠO BÀN CỜ
+            // 6. TÃI Táº O BÃ€N Cá»œ
             // =================================================
 
             var updatedBoard =
-                ReconstructBoard(
+                GameRules.RebuildBoard(
+                    updatedGame.InitialFen,
                     updatedGame.Moves,
                     updatedGame.CurrentTurn
                 );
 
             // =================================================
-            // 7. TRẢ RESPONSE GIỐNG CÁC API KHÁC
+            // 7. TRáº¢ RESPONSE GIá»NG CÃC API KHÃC
             // =================================================
 
-            return Ok(
-                BuildGameResponse(
-                    updatedGame,
-                    updatedBoard
-                )
-            );
+            var response = BuildGameResponse(updatedGame, updatedBoard);
+            await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
+            return Ok(response);
         }
 
         // =====================================================
-        // TÁI TẠO BÀN CỜ TỪ LỊCH SỬ NƯỚC ĐI
+        // GET /api/games/{id}/fen
+        // Láº¤Y FEN Cá»¦A VÃN Cá»œ HIá»†N Táº I
         // =====================================================
-
-        private static Board ReconstructBoard(
-            IEnumerable<Move> moves,
-            PieceColor currentTurn
-        )
+        [HttpGet("{id}/fen")]
+        public async Task<ActionResult<string>> GetFen(int id)
         {
-            var board =
-                new Board();
-
-            if (moves == null)
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null)
             {
-                return board;
+                return NotFound(new { message = $"KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá» vá»›i ID {id}" });
             }
 
-            var sortedMoves =
-                moves
-                    .OrderBy(
-                        move => move.MoveOrder
-                    )
-                    .ToList();
+            var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+            var fen = board.ToFen();
+            return Ok(new { fen = fen });
+        }
 
-            foreach (var move in sortedMoves)
-            {
-                var piece =
-                    board.GetPieceAt(
-                        move.FromX,
-                        move.FromY
-                    );
+        // =====================================================
+        // GET /api/games/{id}/eval
+        // Láº¤Y ÄIá»‚M ÄÃNH GIÃ (EVALUATION BAR)
+        // =====================================================
+        [HttpGet("{id}/eval")]
+        public async Task<ActionResult<int>> GetEval(int id)
+        {
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null) return NotFound();
 
-                if (piece == null)
-                {
-                    Console.WriteLine(
-                        $"Không tìm thấy quân tại " +
-                        $"({move.FromX}, {move.FromY}) " +
-                        $"ở MoveOrder = {move.MoveOrder}"
-                    );
-
-                    continue;
-                }
-
-                // =================================================
-                // DI CHUYỂN QUÂN
-                // =================================================
-
-                board.Grid[
-                    move.ToX,
-                    move.ToY
-                ] = piece;
-
-                // =================================================
-                // XÓA VỊ TRÍ CŨ
-                // =================================================
-
-                board.Grid[
-                    move.FromX,
-                    move.FromY
-                ] = null;
-
-                // =================================================
-                // ĐỔI LƯỢT
-                // =================================================
-
-                board.SwitchTurn();
-            }
-
-            // =================================================
-            // ĐỒNG BỘ CURRENT TURN VỚI DATABASE
-            // =================================================
-
-            while (board.CurrentTurn != currentTurn)
-            {
-                board.SwitchTurn();
-            }
-
-            return board;
+            var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+            
+            // Láº¥y Ä‘iá»ƒm theo gÃ³c nhÃ¬n cá»§a quÃ¢n Äá» (DÆ°Æ¡ng = Äá» Æ°u tháº¿, Ã‚m = Äen Æ°u tháº¿)
+            var engine = new MinimaxEngine(3); // Depth 3 for analysis
+            var eval = engine.EvaluatePosition(board, PieceColor.Red);
+            
+            return Ok(new { eval = eval });
         }
 
         // =====================================================
@@ -813,7 +809,7 @@ namespace ChessCore.Controllers
                 new List<PieceDto>();
 
             // =================================================
-            // LẤY TOÀN BỘ QUÂN CỜ TRÊN BÀN
+            // Láº¤Y TOÃ€N Bá»˜ QUÃ‚N Cá»œ TRÃŠN BÃ€N
             // =================================================
 
             for (int row = 0; row < 10; row++)
@@ -844,7 +840,7 @@ namespace ChessCore.Controllers
             }
 
             // =================================================
-            // KIỂM TRA CHIẾU TƯỚNG
+            // KIá»‚M TRA CHIáº¾U TÆ¯á»šNG
             // =================================================
 
             bool isCheck = false;
@@ -862,7 +858,7 @@ namespace ChessCore.Controllers
             }
 
             // =================================================
-            // TRẢ RESPONSE
+            // TRáº¢ RESPONSE
             // =================================================
 
             return new GameResponseDto

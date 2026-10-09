@@ -1,5 +1,21 @@
-document.addEventListener("DOMContentLoaded", function () {
+﻿document.addEventListener("DOMContentLoaded", function () {
   const SVG_NS = "http://www.w3.org/2000/svg";
+
+  // =====================================================
+  // SIGNALR
+  // =====================================================
+  const connection = new signalR.HubConnectionBuilder()
+      .withUrl("/gameHub")
+      .withAutomaticReconnect()
+      .build();
+
+  connection.on("GameUpdated", function (data) {
+      if (typeof gameId !== 'undefined' && data && data.id == gameId) {
+          updateGameFromApi(data);
+      }
+  });
+
+  connection.start().catch(err => console.error("SignalR Connection Error:", err.toString()));
 
   // =====================================================
   // API
@@ -67,6 +83,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const playerVsComputerButton = document.getElementById(
     "player-vs-computer-btn",
   );
+  
+  const playerVsOnlineButton = document.getElementById("player-vs-online-btn");
+  const onlineSelection = document.getElementById("online-selection");
+  const joinOnlineButton = document.getElementById("join-online-btn");
+  const onlineRoomIdInput = document.getElementById("online-room-id");
+  let isOnlineMode = false;
 
   const startGameButton = document.getElementById("start-game-btn");
 
@@ -416,6 +438,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   function initializePage() {
+    const isOnline = localStorage.getItem("isOnlineMode") === "true";
+    if (gameId && isOnline) {
+      if (modeSelection) modeSelection.classList.add("hidden");
+      if (gameContent) gameContent.classList.remove("hidden");
+      fetchGame(gameId);
+      return;
+    }
     if (modeSelection) {
       modeSelection.classList.remove("hidden");
     }
@@ -563,6 +592,8 @@ document.addEventListener("DOMContentLoaded", function () {
     updateComputerStatus();
 
     checkGameResult();
+    
+    updateEvalBar();
 
     console.log("Bàn cờ đã được cập nhật!");
 
@@ -1096,6 +1127,14 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
+      const isOnlineMode = localStorage.getItem("isOnlineMode") === "true";
+      if (isOnlineMode) {
+          const myColor = localStorage.getItem("onlinePlayerColor");
+          if (currentTurn !== myColor) {
+              return; 
+          }
+      }
+
       const piece = getPieceData(pieceGroup);
 
       // CAPTURE
@@ -1263,6 +1302,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (isMakingMove) {
       return;
     }
+
+    if (!selectedPieceData) return;
 
     if (isComputerThinking) {
       return;
@@ -1464,7 +1505,8 @@ document.addEventListener("DOMContentLoaded", function () {
   if (playerVsPlayerButton) {
     playerVsPlayerButton.addEventListener("click", function (event) {
       event.stopPropagation();
-
+      if (onlineSelection) onlineSelection.style.display = "none";
+      if (startGameButton) startGameButton.style.display = "block";
       selectGameMode(false);
     });
   }
@@ -1472,9 +1514,78 @@ document.addEventListener("DOMContentLoaded", function () {
   if (playerVsComputerButton) {
     playerVsComputerButton.addEventListener("click", function (event) {
       event.stopPropagation();
-
+      if (onlineSelection) onlineSelection.style.display = "none";
+      if (startGameButton) startGameButton.style.display = "block";
       selectGameMode(true);
     });
+  }
+
+  if (playerVsOnlineButton) {
+    playerVsOnlineButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+      isOnlineMode = true;
+      gameModeSelected = true;
+      VS_COMPUTER = false;
+      
+      if (playerVsPlayerButton) playerVsPlayerButton.classList.remove("selected");
+      if (playerVsComputerButton) playerVsComputerButton.classList.remove("selected");
+      playerVsOnlineButton.classList.add("selected");
+      
+      if (selectedModeText) selectedModeText.textContent = "🌐 Online";
+      if (difficultySelection) difficultySelection.style.display = "none";
+      if (selectedDifficultyContainer) selectedDifficultyContainer.style.display = "none";
+      
+      if (onlineSelection) onlineSelection.style.display = "block";
+      if (startGameButton) startGameButton.style.display = "none";
+    });
+  }
+
+  if (joinOnlineButton) {
+      joinOnlineButton.addEventListener("click", async function (event) {
+          event.stopPropagation();
+          const roomId = onlineRoomIdInput.value.trim();
+          
+          if (!roomId) {
+              isCreatingGame = true;
+              try {
+                  const response = await fetch(API_BASE_URL, { method: "POST" });
+                  if (!response.ok) throw new Error("API Lỗi");
+                  const data = await response.json();
+                  gameId = data.id;
+                  localStorage.setItem("xiangqiGameId", gameId);
+                  localStorage.setItem("onlinePlayerColor", "Red");
+                  localStorage.setItem("isOnlineMode", "true");
+                  updateGameFromApi(data);
+                  
+                  modeSelection.classList.add("hidden");
+                  gameContent.classList.remove("hidden");
+                  alert("Đã tạo phòng Online! ID Phòng của bạn là: " + gameId + "\n\nHãy gửi ID này cho người bạn muốn chơi cùng.");
+              } catch (e) {
+                  console.error(e);
+                  alert("Lỗi tạo phòng.");
+              } finally {
+                  isCreatingGame = false;
+              }
+          } else {
+              try {
+                  const response = await fetch(API_BASE_URL + "/" + roomId);
+                  if (!response.ok) throw new Error("API Lỗi");
+                  const data = await response.json();
+                  gameId = data.id;
+                  localStorage.setItem("xiangqiGameId", gameId);
+                  localStorage.setItem("onlinePlayerColor", "Black");
+                  localStorage.setItem("isOnlineMode", "true");
+                  updateGameFromApi(data);
+                  
+                  modeSelection.classList.add("hidden");
+                  gameContent.classList.remove("hidden");
+                  alert("Vào phòng thành công!");
+              } catch (e) {
+                  console.error(e);
+                  alert("Không tìm thấy phòng hoặc lỗi kết nối.");
+              }
+          }
+      });
   }
 
   // =====================================================
@@ -1726,3 +1837,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
   initializePage();
 });
+
+  // =====================================================
+  // EVALUATION BAR
+  // =====================================================
+  
+  async function updateEvalBar() {
+      if (!gameId) return;
+      try {
+          const response = await fetch(API_BASE_URL + "/" + gameId + "/eval");
+          if (response.ok) {
+              const data = await response.json();
+              const evalScore = data.eval;
+              
+              const evalBarFill = document.getElementById("eval-bar-fill");
+              const evalBarText = document.getElementById("eval-bar-text");
+              
+              if (evalBarFill && evalBarText) {
+                  const maxDisplayScore = 1000;
+                  let percentage = 50 + (evalScore / maxDisplayScore) * 50;
+                  percentage = Math.max(0, Math.min(100, percentage));
+                  evalBarFill.style.height = (100 - percentage) + "%";
+                  evalBarFill.style.backgroundColor = "#0f172a"; 
+                  evalBarText.textContent = (evalScore / 100).toFixed(1);
+              }
+          }
+      } catch (err) {
+          console.error("Eval Error:", err);
+      }
+  }

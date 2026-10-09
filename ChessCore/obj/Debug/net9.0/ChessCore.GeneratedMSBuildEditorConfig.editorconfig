@@ -31,12 +31,32 @@ build_property._RazorSourceGeneratorDebug =
 build_property.EffectiveAnalysisLevelStyle = 9.0
 build_property.EnableCodeStyleSeverity = 
 
+[D:/TRONGNGUYEN_HK7/KLCN_153_CO_TUONG/Dev/C-T-ng-/ChessCore/Views/Auth/Login.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQXV0aFxMb2dpbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/TRONGNGUYEN_HK7/KLCN_153_CO_TUONG/Dev/C-T-ng-/ChessCore/Views/Auth/Register.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQXV0aFxSZWdpc3Rlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/TRONGNGUYEN_HK7/KLCN_153_CO_TUONG/Dev/C-T-ng-/ChessCore/Views/Auth/VerifyOtp.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQXV0aFxWZXJpZnlPdHAuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/TRONGNGUYEN_HK7/KLCN_153_CO_TUONG/Dev/C-T-ng-/ChessCore/Views/Game/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcR2FtZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/TRONGNGUYEN_HK7/KLCN_153_CO_TUONG/Dev/C-T-ng-/ChessCore/Views/Puzzle/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHV6emxlXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/TRONGNGUYEN_HK7/KLCN_153_CO_TUONG/Dev/C-T-ng-/ChessCore/Views/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/TRONGNGUYEN_HK7/KLCN_153_CO_TUONG/Dev/C-T-ng-/ChessCore/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/TRONGNGUYEN_HK7/KLCN_153_CO_TUONG/Dev/C-T-ng-/ChessCore/Views/_ViewStart.cshtml]

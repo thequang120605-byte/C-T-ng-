@@ -12,6 +12,17 @@ namespace ChessCore.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? LastMoveAt { get; set; }
 
+        /// <summary>
+        /// Thế cờ xuất phát (FEN). Null = thế chuẩn. Dùng cho ván nhập từ FEN.
+        /// </summary>
+        public string? InitialFen { get; set; }
+
+        public int? RedPlayerId { get; set; }
+        public int? BlackPlayerId { get; set; }
+
+        public User RedPlayer { get; set; }
+        public User BlackPlayer { get; set; }
+
         // Navigation properties
         public List<Move> Moves { get; set; } = new List<Move>();
     }
