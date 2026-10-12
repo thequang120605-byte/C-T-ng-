@@ -32,29 +32,29 @@
                 }
                 <a href="/" class="nav-item @(isHome ? "active" : "")">
                     <i class="fa-solid fa-house"></i>
-                    <span>Trang chủ</span>
+                    <span data-i18n="menu_home">Trang chủ</span>
                 </a>
                 <a href="/Game" class="nav-item @(isGame ? "active" : "")">
                     <i class="fa-solid fa-chess-board"></i>
-                    <span>Chơi cờ</span>
+                    <span data-i18n="menu_play">Chơi cờ</span>
                 </a>
                 <a href="/Puzzle" class="nav-item @(isPuzzle ? "active" : "")">
                     <i class="fa-solid fa-puzzle-piece"></i>
-                    <span>Cờ thế</span>
+                    <span data-i18n="menu_puzzle">Cờ thế</span>
                 </a>
                 <a href="/Dashboard" class="nav-item">
                     <i class="fa-solid fa-chart-simple"></i>
-                    <span>Thống kê</span>
+                    <span data-i18n="menu_stats">Thống kê</span>
                 </a>
                 <a href="#" class="nav-item">
                     <i class="fa-solid fa-graduation-cap"></i>
-                    <span>Khóa học</span>
+                    <span data-i18n="menu_course">Khóa học</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
                 <a href="#" class="nav-item" id="nav-settings-btn" onclick="event.preventDefault(); document.getElementById('settings-modal').classList.add('show');">
                     <i class="fa-solid fa-gear"></i>
-                    <span>Cài đặt</span>
+                    <span data-i18n="menu_settings">Cài đặt</span>
                 </a>
             </div>
         </aside>
@@ -147,27 +147,27 @@
     <div id="settings-modal" class="settings-modal">
         <div class="settings-content">
             <div class="settings-header">
-                <h2><i class="fa-solid fa-sliders"></i> Cài đặt hệ thống</h2>
+                <h2 data-i18n="settings_title"><i class="fa-solid fa-sliders"></i> Cài đặt hệ thống</h2>
                 <button class="close-settings" onclick="document.getElementById('settings-modal').classList.remove('show');"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div class="settings-body">
                 <!-- GIAO DIỆN BÀN CỜ -->
                 <div class="setting-group">
-                    <div class="setting-title">Giao diện (Đang phát triển)</div>
+                    <div class="setting-title" data-i18n="settings_theme_title">Giao diện (Đang phát triển)</div>
                     <div class="theme-options">
-                        <button class="theme-btn active" data-theme="wood"><div class="theme-circle" style="background: linear-gradient(135deg, #c99b62, #5c4033);"></div><span>Gỗ Cổ Điển</span></button>
-                        <button class="theme-btn" data-theme="night"><div class="theme-circle" style="background: #1e293b;"></div><span>Night Mode</span></button>
-                        <button class="theme-btn" data-theme="light"><div class="theme-circle" style="background: #e2e8f0; border-color: #94a3b8;"></div><span>Sáng Sủa</span></button>
+                        <button class="theme-btn active" data-theme="wood"><div class="theme-circle" style="background: linear-gradient(135deg, #c99b62, #5c4033);"></div><span data-i18n="theme_wood">Gỗ Cổ Điển</span></button>
+                        <button class="theme-btn" data-theme="night"><div class="theme-circle" style="background: #1e293b;"></div><span data-i18n="theme_night">Night Mode</span></button>
+                        <button class="theme-btn" data-theme="light"><div class="theme-circle" style="background: #e2e8f0; border-color: #94a3b8;"></div><span data-i18n="theme_light">Sáng Sủa</span></button>
                     </div>
                 </div>
 
                 <!-- TÙY CHỈNH CHUNG -->
                 <div class="setting-group">
-                    <div class="setting-title">Tùy chỉnh chung</div>
+                    <div class="setting-title" data-i18n="settings_general">Tùy chỉnh chung</div>
                     
                     <div class="setting-item">
-                        <div class="setting-label">
+                        <div class="setting-label" data-i18n="setting_sound">
                             <i class="fa-solid fa-volume-high"></i> Âm thanh trò chơi
                         </div>
                         <label class="switch">
@@ -177,7 +177,7 @@
                     </div>
                     
                     <div class="setting-item">
-                        <div class="setting-label">
+                        <div class="setting-label" data-i18n="setting_lang">
                             <i class="fa-solid fa-language"></i> Ngôn ngữ
                         </div>
                         <select class="setting-select" id="setting-lang">
@@ -188,7 +188,7 @@
                     </div>
 
                     <div class="setting-item">
-                        <div class="setting-label">
+                        <div class="setting-label" data-i18n="setting_hint">
                             <i class="fa-solid fa-chess-knight"></i> Hiện gợi ý nước đi
                         </div>
                         <label class="switch">
@@ -200,11 +200,12 @@
             </div>
 
             <div class="settings-footer">
-                <button class="btn-save-settings" onclick="document.getElementById('settings-modal').classList.remove('show');">Lưu cài đặt</button>
+                <button class="btn-save-settings" data-i18n="settings_save" onclick="document.getElementById('settings-modal').classList.remove('show');">Lưu cài đặt</button>
             </div>
         </div>
     </div>
 
+    <script src="~/js/i18n.js" asp-append-version="true"></script>
     <script src="~/js/settings.js" asp-append-version="true"></script>
 </body>
 </html>

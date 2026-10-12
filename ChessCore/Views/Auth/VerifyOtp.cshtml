@@ -9,7 +9,7 @@
         
         <div style="text-align: center; margin-bottom: 30px;">
             <i class="fa-solid fa-envelope-circle-check" style="font-size: 64px; color: var(--accent-gold); margin-bottom: 20px;"></i>
-            <h2 style="color: white; margin-bottom: 10px;">Xác Thực Email</h2>
+            <h2 style="color: var(--text-main); margin-bottom: 10px;">Xác Thực Email</h2>
             
             @if (TempData["OtpMessage"] != null)
             {
@@ -31,7 +31,7 @@
                 <label asp-for="Otp" style="color: var(--text-main); display: block; margin-bottom: 8px;">Nhập mã OTP 6 số</label>
                 <div class="input-icon-wrapper" style="position: relative;">
                     <i class="fa-solid fa-key" style="position: absolute; left: 14px; top: 15px; color: var(--text-muted);"></i>
-                    <input asp-for="Otp" placeholder="123456" maxlength="6" style="width: 100%; padding: 12px 12px 12px 40px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; color: white; font-size: 18px; letter-spacing: 2px; text-align: center;" />
+                    <input asp-for="Otp" placeholder="123456" maxlength="6" style="width: 100%; padding: 12px 12px 12px 40px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); font-size: 18px; letter-spacing: 2px; text-align: center;" />
                 </div>
                 <span asp-validation-for="Otp" class="text-danger" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: block;"></span>
             </div>

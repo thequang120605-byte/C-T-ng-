@@ -1,10 +1,11 @@
-﻿.settings-modal {
+.settings-modal {
     position: fixed;
     inset: 0;
     display: none;
     justify-content: center;
     align-items: center;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
     z-index: 9999;
 }
 .settings-modal.show {
@@ -17,13 +18,13 @@
     border-radius: 16px;
     width: 100%;
     max-width: 500px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
     overflow: hidden;
     transform: translateY(20px);
     animation: slideUp 0.3s ease forwards;
 }
 .settings-header {
-    background: rgba(15, 23, 42, 0.5);
+    background: var(--bg-navy-light);
     padding: 20px 24px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
@@ -136,9 +137,9 @@ input:checked + .slider:before {
 }
 /* Select/Dropdown */
 .setting-select {
-    background: #1e293b;
-    color: white;
-    border: 1px solid #475569;
+    background: var(--bg-navy-panel);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
     padding: 6px 12px;
     border-radius: 6px;
     font-size: 14px;
@@ -167,21 +168,22 @@ input:checked + .slider:before {
     transition: 0.2s;
 }
 .theme-btn:hover {
-    background: rgba(255,255,255,0.05);
+    background: var(--bg-navy-light);
 }
 .theme-btn.active {
     border-color: var(--accent-gold);
-    background: rgba(212, 175, 55, 0.1);
+    background: rgba(217, 119, 6, 0.1);
 }
 .theme-circle {
     width: 32px;
     height: 32px;
     border-radius: 50%;
     border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
 }
 .settings-footer {
     padding: 16px 24px;
-    background: rgba(15, 23, 42, 0.5);
+    background: var(--bg-navy-light);
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
@@ -189,7 +191,7 @@ input:checked + .slider:before {
 .btn-save-settings {
     padding: 10px 24px;
     background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dark));
-    color: var(--wood-dark);
+    color: #ffffff;
     border: none;
     border-radius: 8px;
     font-weight: bold;
@@ -198,7 +200,7 @@ input:checked + .slider:before {
 }
 .btn-save-settings:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(212,175,55,0.3);
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
 }
 
 @keyframes slideUp {
@@ -212,32 +214,43 @@ input:checked + .slider:before {
 
 /* THEME OVERRIDES */
 body[data-theme="night"] {
-    --bg-navy-dark: #020617;
-    --bg-navy-panel: #0f172a;
-    --bg-navy-light: #1e293b;
-    --wood-light: #334155;
-    --wood-dark: #0f172a;
+    --bg-navy-dark: #0f172a;
+    --bg-navy-panel: #1e293b;
+    --bg-navy-light: #334155;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent-gold: #d4af37;
+    --accent-gold-light: #fbbf24;
+    --accent-gold-dark: #b48600;
+    --wood-light: #e7c28e;
+    --wood-dark: #5c4033;
+    --border-color: rgba(148, 163, 184, 0.15);
 }
 
-body[data-theme="light"] {
-    --bg-navy-dark: #f8fafc;
+body[data-theme="light"], :root {
+    --bg-navy-dark: #f1f5f9;
     --bg-navy-panel: #ffffff;
     --bg-navy-light: #e2e8f0;
     --text-main: #0f172a;
     --text-muted: #64748b;
-    --border-color: rgba(15, 23, 42, 0.15);
+    --accent-gold: #d97706;
+    --accent-gold-light: #f59e0b;
+    --accent-gold-dark: #b45309;
+    --wood-light: #f5e6d3;
+    --wood-dark: #78350f;
+    --border-color: #e2e8f0;
 }
 
-/* Fix some text colors in light mode */
-body[data-theme="light"] .sidebar-logo span,
-body[data-theme="light"] .nav-item span,
-body[data-theme="light"] .settings-header h2,
-body[data-theme="light"] .setting-label,
-body[data-theme="light"] .theme-btn span,
-body[data-theme="light"] .dashboard-header h1 {
-    color: #0f172a;
-}
-
-body[data-theme="light"] .theme-btn {
-    color: #0f172a;
+body[data-theme="wood"] {
+    --bg-navy-dark: #fcf8ee;
+    --bg-navy-panel: #ffffff;
+    --bg-navy-light: #f6eedb;
+    --text-main: #2b1808;
+    --text-muted: #796551;
+    --accent-gold: #b45309;
+    --accent-gold-light: #d97706;
+    --accent-gold-dark: #78350f;
+    --wood-light: #e7c28e;
+    --wood-dark: #5c4033;
+    --border-color: #e8ddc7;
 }

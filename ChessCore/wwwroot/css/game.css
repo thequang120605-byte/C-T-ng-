@@ -36,10 +36,10 @@
 
 .btn-primary {
     background-color: var(--accent-gold);
-    color: var(--bg-navy-dark);
+    color: #ffffff;
 }
 .btn-primary:hover:not(:disabled) {
-    background-color: var(--accent-gold-light);
+    background-color: var(--accent-gold-dark);
     transform: translateY(-2px);
 }
 .btn-primary:disabled {
@@ -51,9 +51,10 @@
 .btn-secondary {
     background-color: var(--bg-navy-light);
     color: var(--text-main);
+    border: 1px solid var(--border-color);
 }
 .btn-secondary:hover {
-    background-color: rgba(255,255,255,0.2);
+    background-color: #cbd5e1;
 }
 
 .btn-danger {
@@ -73,24 +74,24 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: rgba(15, 23, 42, 0.9);
+    background: rgba(241, 245, 249, 0.85);
     backdrop-filter: blur(8px);
     z-index: 50;
 }
 
 .mode-card {
     background-color: var(--bg-navy-panel);
-    border: 1px solid var(--accent-gold-dark);
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 40px;
     width: 100%;
     max-width: 600px;
     text-align: center;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.1);
 }
 
 .mode-card h2 {
-    color: var(--accent-gold-light);
+    color: var(--accent-gold-dark);
     font-size: 28px;
     margin-bottom: 8px;
 }
@@ -138,19 +139,20 @@
 }
 
 .mode-btn:hover {
-    border-color: var(--accent-gold-dark);
+    border-color: var(--accent-gold);
     background-color: var(--bg-navy-light);
 }
 
 .mode-btn.selected {
     border-color: var(--accent-gold);
-    background-color: rgba(212, 175, 55, 0.1);
+    background-color: rgba(217, 119, 6, 0.1);
 }
-.mode-btn.selected i { color: var(--accent-gold-light); }
+.mode-btn.selected i { color: var(--accent-gold); }
 
 /* DIFFICULTY SELECTION */
 .difficulty-panel {
     background-color: var(--bg-navy-dark);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 24px;
@@ -185,10 +187,10 @@
 }
 
 .diff-btn i { font-size: 20px; }
-.diff-btn:hover { border-color: var(--text-muted); }
+.diff-btn:hover { border-color: var(--accent-gold); background-color: var(--bg-navy-light); }
 .diff-btn.selected {
     border-color: var(--accent-gold);
-    background-color: rgba(255,255,255,0.05);
+    background-color: rgba(217, 119, 6, 0.1);
 }
 
 .selection-summary {
@@ -196,7 +198,7 @@
     font-size: 14px;
     color: var(--text-muted);
 }
-.highlight-text { color: var(--accent-gold-light); }
+.highlight-text { color: var(--accent-gold-dark); }
 
 /* =========================================================
    GAME LAYOUT
@@ -265,8 +267,9 @@
     font-family: monospace;
     font-size: 20px;
     font-weight: 700;
-    color: var(--accent-gold);
-    background-color: var(--bg-navy-dark);
+    color: var(--accent-gold-dark);
+    background-color: var(--bg-navy-light);
+    border: 1px solid var(--border-color);
     padding: 6px 12px;
     border-radius: 6px;
 }
@@ -293,6 +296,7 @@
     padding: 16px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .xiangqi-board {
@@ -527,7 +531,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.5);
     backdrop-filter: blur(4px);
     z-index: 9999;
 }
@@ -540,7 +544,7 @@
     width: 100%;
     max-width: 400px;
     text-align: center;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    box-shadow: 0 20px 45px rgba(0,0,0,0.2);
     animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 

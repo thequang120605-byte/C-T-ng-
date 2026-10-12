@@ -226,6 +226,132 @@ namespace ChessCore.Controllers
             return RedirectToAction("Register");
         }
 
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Index", "Game");
+            }
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+                if (user == null)
+                {
+                    ModelState.AddModelError("Email", "Email này chưa được đăng ký trong hệ thống.");
+                    return View(model);
+                }
+
+                // Sinh OTP ngẫu nhiên (6 số)
+                string otp = Random.Shared.Next(100000, 999999).ToString();
+
+                // Lưu OTP vào Cache (Hết hạn sau 15 phút)
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
+                
+                _cache.Set($"RESET_OTP_{model.Email}", otp, cacheEntryOptions);
+
+                // Gửi Email qua Gmail
+                bool emailSent = await SendOtpEmailAsync(model.Email, otp);
+
+                if (emailSent)
+                {
+                    TempData["OtpMessage"] = $"Mã OTP đặt lại mật khẩu đã được gửi đến {model.Email}. Vui lòng kiểm tra hộp thư.";
+                }
+                else
+                {
+                    TempData["OtpMessage"] = $"Lỗi khi gửi email qua Gmail. MÃ OTP CỦA BẠN LÀ: {otp}";
+                    TempData["DevOtp"] = otp;
+                }
+
+                return RedirectToAction("ResetPassword", new { email = model.Email });
+            }
+
+            return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword(string email)
+        {
+            if (string.IsNullOrEmpty(email)) return RedirectToAction("ForgotPassword");
+            return View(new ResetPasswordViewModel { Email = email });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                if (_cache.TryGetValue($"RESET_OTP_{model.Email}", out string? cachedOtp) && !string.IsNullOrEmpty(cachedOtp))
+                {
+                    if (model.Otp.Trim() == cachedOtp.Trim())
+                    {
+                        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+                        if (user != null)
+                        {
+                            user.PasswordHash = HashPassword(model.NewPassword);
+                            await _context.SaveChangesAsync();
+
+                            _cache.Remove($"RESET_OTP_{model.Email}");
+                            TempData["SuccessMessage"] = "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.";
+                            return RedirectToAction("Login");
+                        }
+                        else
+                        {
+                            ModelState.AddModelError(string.Empty, "Tài khoản không tồn tại.");
+                        }
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("Otp", "Mã OTP không chính xác.");
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError("Otp", "Mã OTP đã hết hạn hoặc không tồn tại. Vui lòng gửi lại.");
+                }
+            }
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendResetOtp(string email)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user != null)
+            {
+                string newOtp = Random.Shared.Next(100000, 999999).ToString();
+                var cacheEntryOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
+                _cache.Set($"RESET_OTP_{email}", newOtp, cacheEntryOptions);
+
+                bool emailSent = await SendOtpEmailAsync(email, newOtp);
+                if (emailSent)
+                {
+                    TempData["OtpMessage"] = $"Đã gửi lại mã OTP mới đến {email}.";
+                }
+                else
+                {
+                    TempData["OtpMessage"] = $"Lỗi khi gửi email. MÃ OTP CỦA BẠN LÀ: {newOtp}";
+                    TempData["DevOtp"] = newOtp;
+                }
+
+                return RedirectToAction("ResetPassword", new { email = email });
+            }
+
+            TempData["OtpMessage"] = "Email không hợp lệ. Vui lòng thử lại.";
+            return RedirectToAction("ForgotPassword");
+        }
+
         [HttpPost]
         public async Task<IActionResult> Logout()
         {

@@ -4,7 +4,30 @@ using ChessCore.Services;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
 
-var builder = WebApplication.CreateBuilder(args);
+// Tự động nhận diện chính xác ContentRootPath kể cả khi chạy từ thư mục gốc hoặc thư mục con
+var contentRoot = Directory.GetCurrentDirectory();
+if (!Directory.Exists(Path.Combine(contentRoot, "Views")))
+{
+    var projectDirInSub = Path.Combine(contentRoot, "ChessCore");
+    if (Directory.Exists(Path.Combine(projectDirInSub, "Views")))
+    {
+        contentRoot = projectDirInSub;
+    }
+    else
+    {
+        var fromBin = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+        if (Directory.Exists(Path.Combine(fromBin, "Views")))
+        {
+            contentRoot = fromBin;
+        }
+    }
+}
+
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = contentRoot
+});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -39,7 +62,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseMySql(
         connectionString,
-        ServerVersion.AutoDetect(connectionString)
+        new MySqlServerVersion(new Version(8, 0, 30))
     );
 });
 
@@ -62,7 +85,10 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("AllowAll");
 

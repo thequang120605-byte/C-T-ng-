@@ -19,6 +19,13 @@
                 <h3>Chào mừng trở lại!</h3>
                 <p class="auth-sub">Vui lòng đăng nhập vào tài khoản của bạn</p>
 
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; color: #10b981; font-size: 14px; font-weight: 500;">
+                        <i class="fa-solid fa-circle-check"></i> @TempData["SuccessMessage"]
+                    </div>
+                }
+
                 @if (!ViewData.ModelState.IsValid)
                 {
                     <div class="auth-error-box">
@@ -50,7 +57,7 @@
                         <label class="remember-me">
                             <input asp-for="RememberMe" type="checkbox" /> Ghi nhớ tôi
                         </label>
-                        <a href="#" class="forgot-pwd">Quên mật khẩu?</a>
+                        <a asp-action="ForgotPassword" class="forgot-pwd">Quên mật khẩu?</a>
                     </div>
 
                     <button type="submit" class="btn-auth">ĐĂNG NHẬP <i class="fa-solid fa-arrow-right"></i></button>

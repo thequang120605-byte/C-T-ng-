@@ -1,17 +1,18 @@
-﻿document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     const themeBtns = document.querySelectorAll('.theme-btn');
     const soundToggle = document.getElementById('setting-sound');
     const hintToggle = document.getElementById('setting-hint');
     const langSelect = document.getElementById('setting-lang');
 
     // Tải cấu hình từ localStorage
-    const savedTheme = localStorage.getItem('chess_theme') || 'wood';
+    const savedTheme = localStorage.getItem('chess_theme') || 'light';
     const savedSound = localStorage.getItem('chess_sound') !== 'false';
     const savedHint = localStorage.getItem('chess_hint') !== 'false';
     const savedLang = localStorage.getItem('chess_lang') || 'vi';
 
     // Áp dụng cấu hình ban đầu
     applyTheme(savedTheme);
+    if (typeof updateLanguageText === 'function') { updateLanguageText(savedLang); }
     if(soundToggle) soundToggle.checked = savedSound;
     if(hintToggle) hintToggle.checked = savedHint;
     if(langSelect) langSelect.value = savedLang;
@@ -48,8 +49,7 @@
     if(langSelect) {
         langSelect.addEventListener('change', function() {
             localStorage.setItem('chess_lang', this.value);
-            alert('Ngôn ngữ đã được lưu: ' + this.value + '. Vui lòng tải lại trang để áp dụng!');
-            window.location.reload();
+            if (typeof updateLanguageText === 'function') { updateLanguageText(this.value); }
         });
     }
 

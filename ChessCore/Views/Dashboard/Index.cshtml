@@ -1,4 +1,5 @@
-﻿@{
+﻿@model ChessCore.ViewModels.DashboardViewModel
+@{
     ViewData["Title"] = "Thống kê";
 }
 
@@ -8,9 +9,9 @@
 
 <div class="dashboard-container">
     <div class="dashboard-header">
-        <h1><i class="fa-solid fa-chart-pie"></i> Bảng điều khiển</h1>
+        <h1 data-i18n="menu_stats"><i class="fa-solid fa-chart-pie"></i> Bảng điều khiển</h1>
         <div style="background: rgba(212,175,55,0.1); color: var(--accent-gold); padding: 8px 15px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(212,175,55,0.3);">
-            <i class="fa-solid fa-trophy"></i> Hạng: Kiện Tướng
+            <i class="fa-solid fa-trophy"></i> Hạng: @Model.RankIndex
         </div>
     </div>
 
@@ -20,28 +21,28 @@
             <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
             <div class="stat-info">
                 <h3>ĐIỂM ELO</h3>
-                <p class="stat-value">1450</p>
+                <p class="stat-value">@Model.CurrentUser.Elo</p>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="color: #10b981; background: rgba(16,185,129,0.1);"><i class="fa-solid fa-medal"></i></div>
             <div class="stat-info">
                 <h3>TỈ LỆ THẮNG</h3>
-                <p class="stat-value">62%</p>
+                <p class="stat-value">@Model.WinRate%</p>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="color: #3b82f6; background: rgba(59,130,246,0.1);"><i class="fa-solid fa-chess"></i></div>
             <div class="stat-info">
                 <h3>TỔNG SỐ TRẬN</h3>
-                <p class="stat-value">128</p>
+                <p class="stat-value">@Model.CurrentUser.GamesPlayed</p>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="color: #f59e0b; background: rgba(245,158,11,0.1);"><i class="fa-solid fa-puzzle-piece"></i></div>
             <div class="stat-info">
                 <h3>CỜ THẾ ĐÃ GIẢI</h3>
-                <p class="stat-value">45</p>
+                <p class="stat-value">@Model.PuzzlesSolved</p>
             </div>
         </div>
     </div>
@@ -51,91 +52,45 @@
         <div class="panel-box">
             <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đấu gần đây</h2>
             <div class="history-list">
-                
-                <div class="history-item win">
-                    <div class="history-main">
-                        <div class="history-opp">vs. MasterPlayer99 (Elo: 1520)</div>
-                        <div class="history-meta">
-                            <span><i class="fa-regular fa-calendar"></i> Hôm nay, 14:30</span>
-                            <span><i class="fa-solid fa-chess-board"></i> 42 nước</span>
+                @if (Model.RecentGames.Any())
+                {
+                    foreach (var game in Model.RecentGames)
+                    {
+                        <div class="history-item @game.Result">
+                            <div class="history-main">
+                                <div class="history-opp">vs. @game.OpponentName (Elo: @(game.OpponentElo?.ToString() ?? "?"))</div>
+                                <div class="history-meta">
+                                    <span><i class="fa-regular fa-calendar"></i> @game.PlayedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                    <span><i class="fa-solid fa-chess-board"></i> @game.TotalMoves nước</span>
+                                </div>
+                            </div>
+                            <div class="history-result @game.Result">@game.ResultText</div>
                         </div>
-                    </div>
-                    <div class="history-result win">Thắng</div>
-                </div>
-
-                <div class="history-item loss">
-                    <div class="history-main">
-                        <div class="history-opp">vs. AI - Mức độ Khó</div>
-                        <div class="history-meta">
-                            <span><i class="fa-regular fa-calendar"></i> Hôm qua, 20:15</span>
-                            <span><i class="fa-solid fa-chess-board"></i> 56 nước</span>
-                        </div>
-                    </div>
-                    <div class="history-result loss">Thua</div>
-                </div>
-
-                <div class="history-item draw">
-                    <div class="history-main">
-                        <div class="history-opp">vs. ChessNoob123 (Elo: 1390)</div>
-                        <div class="history-meta">
-                            <span><i class="fa-regular fa-calendar"></i> 07/10/2026</span>
-                            <span><i class="fa-solid fa-chess-board"></i> 120 nước</span>
-                        </div>
-                    </div>
-                    <div class="history-result draw">Hòa</div>
-                </div>
-
-                <div class="history-item win">
-                    <div class="history-main">
-                        <div class="history-opp">vs. AI - Mức độ Trung bình</div>
-                        <div class="history-meta">
-                            <span><i class="fa-regular fa-calendar"></i> 05/10/2026</span>
-                            <span><i class="fa-solid fa-chess-board"></i> 34 nước</span>
-                        </div>
-                    </div>
-                    <div class="history-result win">Thắng</div>
-                </div>
-
+                    }
+                }
+                else
+                {
+                    <p style="color: var(--text-muted); text-align: center; padding: 20px;">Bạn chưa chơi trận nào.</p>
+                }
             </div>
-            
-            <button class="btn-secondary" style="width: 100%; margin-top: 15px;">Xem toàn bộ lịch sử</button>
         </div>
 
         <!-- LEADERBOARD -->
         <div class="panel-box">
             <h2 class="panel-title"><i class="fa-solid fa-ranking-star"></i> Bảng xếp hạng</h2>
             <div class="leaderboard-list">
-                
-                <div class="leaderboard-item rank-1">
-                    <div class="rank-badge">1</div>
-                    <div class="lb-player">GrandMasterVN</div>
-                    <div class="lb-elo">2450</div>
-                </div>
-                
-                <div class="leaderboard-item rank-2">
-                    <div class="rank-badge">2</div>
-                    <div class="lb-player">ThienHaDeNhat</div>
-                    <div class="lb-elo">2380</div>
-                </div>
-                
-                <div class="leaderboard-item rank-3">
-                    <div class="rank-badge">3</div>
-                    <div class="lb-player">CoTuongPro</div>
-                    <div class="lb-elo">2315</div>
-                </div>
-                
-                <div class="leaderboard-item">
-                    <div class="rank-badge">4</div>
-                    <div class="lb-player">DarkKnight</div>
-                    <div class="lb-elo">2290</div>
-                </div>
-                
-                <div class="leaderboard-item" style="border: 1px solid var(--accent-gold); background: rgba(212,175,55,0.05);">
-                    <div class="rank-badge" style="background: var(--accent-gold); color: white;">24</div>
-                    <div class="lb-player" style="color: var(--accent-gold);">nguyendev (Bạn)</div>
-                    <div class="lb-elo">1450</div>
-                </div>
-                
+                @foreach (var user in Model.Leaderboard)
+                {
+                    var extraStyle = user.IsCurrentUser ? "border: 1px solid var(--accent-gold); background: rgba(212,175,55,0.05);" : "";
+                    var rankBadgeStyle = user.IsCurrentUser && user.Rank > 3 ? "background: var(--accent-gold); color: white;" : "";
+                    var lbPlayerStyle = user.IsCurrentUser ? "color: var(--accent-gold);" : "";
+
+                    <div class="leaderboard-item rank-@(user.Rank <= 3 ? user.Rank : 0)" style="@extraStyle">
+                        <div class="rank-badge" style="@rankBadgeStyle">@user.Rank</div>
+                        <div class="lb-player" style="@lbPlayerStyle">@user.Username</div>
+                        <div class="lb-elo">@user.Elo</div>
+                    </div>
+                }
             </div>
         </div>
     </div>

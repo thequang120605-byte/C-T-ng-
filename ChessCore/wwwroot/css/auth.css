@@ -1,11 +1,10 @@
-﻿.auth-page {
+.auth-page {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: calc(100vh - 70px);
     padding: 20px;
-    background-color: var(--bg-navy);
-    background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+    background-color: var(--bg-navy-dark);
 }
 
 .auth-box {
@@ -17,7 +16,7 @@
     border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
 }
 
 .auth-left {
@@ -91,7 +90,7 @@
     background: var(--bg-navy-dark);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    color: white;
+    color: var(--text-main);
     font-size: 14px;
     transition: 0.3s;
 }
