@@ -404,11 +404,11 @@ D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\bin\Debug\net9.0\Data
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\gi09ue8pi0-{0}-n2vtxgym72-n2vtxgym72.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\bin\Debug\net9.0\package-lock.json
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\bin\Debug\net9.0\package.json
-D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-7f0m4hz3f3-7f0m4hz3f3.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w0r1uegohx-{0}-36isqrdc7g-36isqrdc7g.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\umok1qzg76-{0}-lxo47g80y5-lxo47g80y5.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\mxv5a2fa17-{0}-2dva2mnf7a-2dva2mnf7a.gz
-D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\5fb2geqwon-{0}-5y9l4dx5ki-5y9l4dx5ki.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\0mab5q8h0a-{0}-5dsn3nqsnk-5dsn3nqsnk.gz
-D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\g7b6p8umme-{0}-87x40rh96h-87x40rh96h.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\3k3slxwqqg-{0}-3aoxig1y8d-3aoxig1y8d.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\g7b6p8umme-{0}-a34g90vujk-a34g90vujk.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\5fb2geqwon-{0}-rhsn9dusr5-rhsn9dusr5.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-kdk9ofc0ad-kdk9ofc0ad.gz

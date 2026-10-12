@@ -4,21 +4,28 @@ using ChessCore.Services;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
 
-// Tự động nhận diện chính xác ContentRootPath kể cả khi chạy từ thư mục gốc hoặc thư mục con
+// Keep MVC's view lookup rooted at the ChessCore project when the app is
+// launched from the solution/repository root (for example by an IDE task).
 var contentRoot = Directory.GetCurrentDirectory();
 if (!Directory.Exists(Path.Combine(contentRoot, "Views")))
 {
-    var projectDirInSub = Path.Combine(contentRoot, "ChessCore");
-    if (Directory.Exists(Path.Combine(projectDirInSub, "Views")))
+    var projectDir = Path.Combine(contentRoot, "ChessCore");
+    if (Directory.Exists(Path.Combine(projectDir, "Views")))
     {
-        contentRoot = projectDirInSub;
+        contentRoot = projectDir;
     }
     else
     {
-        var fromBin = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
-        if (Directory.Exists(Path.Combine(fromBin, "Views")))
+        // `dotnet ChessCore.dll` can be started from an arbitrary directory.
+        var candidate = AppContext.BaseDirectory;
+        for (var i = 0; i < 5 && !Directory.Exists(Path.Combine(candidate, "Views")); i++)
         {
-            contentRoot = fromBin;
+            candidate = Directory.GetParent(candidate)?.FullName ?? candidate;
+        }
+
+        if (Directory.Exists(Path.Combine(candidate, "Views")))
+        {
+            contentRoot = candidate;
         }
     }
 }
@@ -71,6 +78,7 @@ builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddSingleton<PuzzleCampaignService>();
 
 builder.Services.AddScoped<IMoveService, MoveService>();
+builder.Services.AddHostedService<GameTimeoutWorker>();
 
 var app = builder.Build();
 

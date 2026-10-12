@@ -44,6 +44,11 @@ namespace ChessCore.Migrations
                     b.Property<string>("InitialFen")
                         .HasColumnType("longtext");
 
+                    b.Property<string>("RoomCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
                     b.Property<DateTime?>("LastMoveAt")
                         .HasColumnType("datetime(6)");
 
@@ -60,6 +65,9 @@ namespace ChessCore.Migrations
                     b.HasIndex("BlackPlayerId");
 
                     b.HasIndex("RedPlayerId");
+
+                    b.HasIndex("RoomCode")
+                        .IsUnique();
 
                     b.ToTable("Games");
                 });

@@ -45,6 +45,9 @@ namespace ChessCore.DTOs
     {
         public int Id { get; set; }
 
+        public string RoomCode { get; set; }
+            = string.Empty;
+
         public string Status { get; set; }
             = string.Empty;
 
@@ -54,6 +57,7 @@ namespace ChessCore.DTOs
         public DateTime CreatedAt { get; set; }
 
         public DateTime? LastMoveAt { get; set; }
+        public int RemainingSeconds { get; set; } = 180;
 
         public List<PieceDto> BoardPieces { get; set; }
             = new();
@@ -86,5 +90,11 @@ namespace ChessCore.DTOs
         public int Col { get; set; }
 
         public bool IsCapture { get; set; }
+    }
+
+    public class RespondDrawRequestDto
+    {
+        public bool Accepted { get; set; }
+        public bool IsAccepted { get; set; }
     }
 }

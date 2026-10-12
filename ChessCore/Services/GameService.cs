@@ -3,6 +3,7 @@ using ChessCore.Engine;
 using ChessCore.Enums;
 using ChessCore.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace ChessCore.Services
 {
     public class GameService : IGameService
     {
+        private const string RoomCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         private readonly AppDbContext _context;
 
         public GameService(AppDbContext context)
@@ -38,6 +40,7 @@ namespace ChessCore.Services
 
             var game = new Game
             {
+                RoomCode = await GenerateRoomCodeAsync(),
                 Status = status,
                 CurrentTurn = firstTurn,
                 InitialFen = storedFen,
@@ -47,6 +50,20 @@ namespace ChessCore.Services
             _context.Games.Add(game);
             await _context.SaveChangesAsync();
             return game;
+        }
+
+        private async Task<string> GenerateRoomCodeAsync()
+        {
+            for (var attempt = 0; attempt < 10; attempt++)
+            {
+                var code = string.Concat(Enumerable.Range(0, 8)
+                    .Select(_ => RoomCodeAlphabet[RandomNumberGenerator.GetInt32(RoomCodeAlphabet.Length)]));
+
+                if (!await _context.Games.AnyAsync(game => game.RoomCode == code))
+                    return code;
+            }
+
+            throw new InvalidOperationException("Không thể tạo mã bàn duy nhất.");
         }
 
         public async Task<Game> GetGameByIdAsync(int gameId)

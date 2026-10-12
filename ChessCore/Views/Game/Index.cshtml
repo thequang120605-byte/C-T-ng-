@@ -11,78 +11,113 @@
     <!-- ===================================================== -->
     <section id="mode-selection" class="mode-overlay">
         <div class="mode-card">
-            <h2>CHỌN CHẾ ĐỘ CHƠI</h2>
+            <!-- HEADER EMBLEM -->
+            <div class="mode-header-badge">
+                <i class="fa-solid fa-chess-knight"></i>
+                <span>CỜ TƯỚNG VIỆT NAM</span>
+            </div>
+
+            <h2 class="mode-card-title">CHỌN CHẾ ĐỘ CHƠI</h2>
             <p class="mode-desc">Hãy chọn cách bạn muốn tham gia ván cờ</p>
 
             <div class="mode-buttons">
                 <!-- NGƯỜI VS NGƯỜI -->
-                <button id="player-vs-player-btn" class="mode-btn">
-                    <i class="fa-solid fa-user-group"></i>
+                <button id="player-vs-player-btn" class="mode-btn" type="button">
+                    <div class="mode-icon-circle mode-pvp-circle">
+                        <i class="fa-solid fa-user-group"></i>
+                    </div>
                     <span class="mode-title">Người vs Người</span>
                     <span class="mode-subtitle">Chơi 2 người trên cùng thiết bị</span>
+                    <span class="mode-active-indicator"><i class="fa-solid fa-circle-check"></i></span>
                 </button>
 
                 <!-- NGƯỜI VS MÁY -->
-                <button id="player-vs-computer-btn" class="mode-btn">
-                    <i class="fa-solid fa-robot"></i>
+                <button id="player-vs-computer-btn" class="mode-btn" type="button">
+                    <div class="mode-icon-circle mode-ai-circle">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
                     <span class="mode-title">Người vs Máy</span>
                     <span class="mode-subtitle">Thử thách với AI (Đang cập nhật)</span>
+                    <span class="mode-active-indicator"><i class="fa-solid fa-circle-check"></i></span>
                 </button>
 
                 <!-- CHƠI QUA MẠNG -->
-                <button id="player-vs-online-btn" class="mode-btn">
-                    <i class="fa-solid fa-globe"></i>
+                <button id="player-vs-online-btn" class="mode-btn" type="button">
+                    <div class="mode-icon-circle mode-online-circle">
+                        <i class="fa-solid fa-globe"></i>
+                    </div>
                     <span class="mode-title">Chơi qua mạng</span>
                     <span class="mode-subtitle">Tạo phòng chơi với bạn bè</span>
+                    <span class="mode-active-indicator"><i class="fa-solid fa-circle-check"></i></span>
                 </button>
             </div>
 
             <!-- CHỌN ĐỘ KHÓ -->
             <div id="difficulty-selection" class="difficulty-panel hidden">
-                <h3><i class="fa-solid fa-brain"></i> Chọn độ khó của máy</h3>
+                <div class="diff-header">
+                    <i class="fa-solid fa-brain" style="color: var(--accent-gold);"></i>
+                    <h3>Chọn độ khó của máy</h3>
+                </div>
                 <div class="diff-buttons">
-                    <button class="diff-btn" data-difficulty="1">
-                        <i class="fa-solid fa-seedling" style="color: #4ade80;"></i>
-                        <span>Dễ</span>
+                    <button class="diff-btn" data-difficulty="1" type="button">
+                        <i class="fa-solid fa-seedling" style="color: #22c55e;"></i>
+                        <span class="diff-name">Dễ</span>
+                        <span class="diff-depth">Depth 1</span>
                     </button>
-                    <button class="diff-btn" data-difficulty="2">
-                        <i class="fa-solid fa-tree" style="color: #fbbf24;"></i>
-                        <span>Trung bình</span>
+                    <button class="diff-btn" data-difficulty="2" type="button">
+                        <i class="fa-solid fa-shield-halved" style="color: #f59e0b;"></i>
+                        <span class="diff-name">Trung bình</span>
+                        <span class="diff-depth">Depth 2</span>
                     </button>
-                    <button class="diff-btn" data-difficulty="3">
+                    <button class="diff-btn" data-difficulty="3" type="button">
                         <i class="fa-solid fa-fire" style="color: #f97316;"></i>
-                        <span>Khó</span>
+                        <span class="diff-name">Khó</span>
+                        <span class="diff-depth">Depth 3</span>
                     </button>
-                    <button class="diff-btn" data-difficulty="4">
+                    <button class="diff-btn" data-difficulty="4" type="button">
                         <i class="fa-solid fa-skull" style="color: #ef4444;"></i>
-                        <span>Siêu khó</span>
+                        <span class="diff-name">Siêu khó</span>
+                        <span class="diff-depth">Depth 4</span>
                     </button>
                 </div>
+                <p id="difficulty-description" class="diff-desc-text"></p>
             </div>
 
             <!-- ONLINE LOBBY -->
             <div id="online-selection" class="difficulty-panel hidden">
-                <h3><i class="fa-solid fa-network-wired"></i> Sảnh chờ Online</h3>
-                <div class="lobby-actions" style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
-                    <p style="font-size:14px; color:var(--text-muted);">Để trống và bấm nút để Tạo phòng, hoặc nhập mã để Vào phòng.</p>
-                    <div style="display:flex; gap:8px;">
-                        <input type="text" id="online-room-id" placeholder="Nhập mã phòng" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-navy-panel); color:var(--text-main); font-size:16px; text-align:center;" />
-                        <button id="join-online-btn" class="btn-primary" style="background:#10b981; border:none; padding:10px 16px;">
-                            <i class="fa-solid fa-paper-plane"></i> Đi
+                <div class="diff-header">
+                    <i class="fa-solid fa-network-wired" style="color: #10b981;"></i>
+                    <h3>Sảnh chờ Online</h3>
+                </div>
+                <div class="lobby-actions">
+                    <p class="lobby-hint">Nhập mã bàn đối thủ cung cấp để tham gia, hoặc tạo bàn mới.</p>
+                    <div class="lobby-input-group">
+                        <input type="text" id="online-room-id" placeholder="Nhập mã bàn 8 ký tự" maxlength="8" autocapitalize="characters" autocomplete="off" />
+                        <button id="join-online-btn" class="btn-lobby-action" type="button">
+                            <i class="fa-solid fa-right-to-bracket"></i> Vào bàn
                         </button>
                     </div>
+                    <button id="create-online-btn" class="btn-lobby-create" type="button">
+                        <i class="fa-solid fa-plus"></i> Tạo bàn
+                    </button>
                 </div>
             </div>
 
             <!-- THÔNG TIN ĐÃ CHỌN -->
             <div class="selection-summary">
-                <p>Chế độ: <strong id="selected-mode-text" class="highlight-text">Chưa chọn</strong></p>
-                <div id="selected-difficulty-container" class="hidden">
-                    <p>Độ khó: <strong id="selected-difficulty-text" class="highlight-text">Chưa chọn</strong></p>
+                <div class="summary-pill">
+                    <i class="fa-solid fa-gamepad summary-icon"></i>
+                    <span>Chế độ:</span>
+                    <strong id="selected-mode-text" class="highlight-text">Chưa chọn chế độ chơi</strong>
+                </div>
+                <div id="selected-difficulty-container" class="summary-pill hidden">
+                    <i class="fa-solid fa-gauge-high summary-icon"></i>
+                    <span>Độ khó:</span>
+                    <strong id="selected-difficulty-text" class="highlight-text">Chưa chọn</strong>
                 </div>
             </div>
 
-            <button id="start-game-btn" class="btn-primary start-btn" disabled>
+            <button id="start-game-btn" class="btn-primary start-btn" disabled type="button">
                 <i class="fa-solid fa-play"></i> BẮT ĐẦU VÁN CỜ
             </button>
         </div>
@@ -108,7 +143,7 @@
                 <div class="player-captured black-pieces">
                     <!-- Quân bị bắt sẽ hiển thị ở đây -->
                 </div>
-                <div class="player-timer">10:00</div>
+                <div id="black-player-timer" class="player-timer">03:00</div>
             </div>
 
             <!-- BÀN CỜ -->
@@ -151,8 +186,8 @@
 
                         <!-- SÔNG -->
                         <g class="river-text">
-                            <text x="250" y="520" text-anchor="middle">楚 河</text>
-                            <text x="650" y="520" text-anchor="middle">漢 界</text>
+                            <text id="river-text-left" x="250" y="520" text-anchor="middle">楚 河</text>
+                            <text id="river-text-right" x="650" y="520" text-anchor="middle">漢 界</text>
                         </g>
 
                         <!-- CUNG TƯỚNG TRÊN -->
@@ -195,7 +230,7 @@
                 <div class="player-captured red-pieces">
                     <!-- Quân bị bắt sẽ hiển thị ở đây -->
                 </div>
-                <div class="player-timer">10:00</div>
+                <div id="red-player-timer" class="player-timer">03:00</div>
             </div>
         </div>
 
@@ -214,6 +249,14 @@
                 <button id="copy-room-code-btn" class="btn-secondary" style="width: 100%; margin-top: 10px; padding: 6px; font-size: 12px;">
                     <i class="fa-regular fa-copy"></i> Sao chép mã
                 </button>
+                <div id="opponent-invite-panel" class="opponent-invite-panel hidden">
+                    <label for="opponent-player-id">Mời đối thủ bằng ID người chơi</label>
+                    <div class="opponent-invite-row">
+                        <input type="text" id="opponent-player-id" placeholder="Ví dụ: CT-12345" autocomplete="off" />
+                        <button id="invite-player-btn" type="button"><i class="fa-solid fa-user-plus"></i> Mời chơi</button>
+                    </div>
+                    <p id="invite-player-status" role="status" aria-live="polite"></p>
+                </div>
             </div>
                 <div class="turn-indicator">
                     <i class="fa-solid fa-chess"></i> 
@@ -248,6 +291,9 @@
                 </div>
                 
                 <div class="action-footer">
+                    <button id="flip-board-btn" class="btn-secondary w-full mb-2" type="button" title="Đảo góc nhìn bàn cờ">
+                        <i class="fa-solid fa-arrows-rotate"></i> Xoay bàn cờ
+                    </button>
                     <button id="new-game-btn" class="btn-primary w-full mb-2">
                         <i class="fa-solid fa-rotate"></i> Ván mới
                     </button>
@@ -285,7 +331,7 @@
     <div class="modal-content">
         <div class="modal-icon text-danger"><i class="fa-solid fa-triangle-exclamation"></i></div>
         <h2>XÁC NHẬN ĐẦU HÀNG</h2>
-        <p>Bạn có chắc chắn muốn nhận thua ván cờ này?</p>
+        <p>Bạn có chắc chắn muốn đầu hàng? Rời bàn khi ván đang diễn ra sẽ được tính là đầu hàng.</p>
         <div class="modal-actions">
             <button id="confirm-resign-btn" class="btn-danger">Đầu hàng</button>
             <button id="cancel-resign-btn" class="btn-secondary">Hủy</button>
@@ -293,5 +339,33 @@
     </div>
 </div>
 
+<!-- XÁC NHẬN XIN HÒA -->
+<div id="confirm-draw-modal" class="custom-modal hidden">
+    <div class="modal-content">
+        <div class="modal-icon text-gold"><i class="fa-solid fa-handshake"></i></div>
+        <h2>XÁC NHẬN XIN HÒA</h2>
+        <p>Bạn có chắc chắn muốn gửi lời đề nghị hòa cờ tới đối thủ? (Tối đa 2 lần/ván)</p>
+        <div class="modal-actions">
+            <button id="confirm-draw-submit-btn" class="btn-primary">Gửi lời xin hòa</button>
+            <button id="confirm-draw-cancel-btn" class="btn-secondary">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- LỜI MỜI XIN HÒA TỪ ĐỐI THỦ -->
+<div id="draw-offer-modal" class="custom-modal hidden">
+    <div class="modal-content">
+        <div class="modal-icon text-gold"><i class="fa-solid fa-handshake"></i></div>
+        <h2>ĐỐI THỦ XIN HÒA</h2>
+        <p id="draw-offer-text">Đối thủ đang đề nghị hòa ván cờ này. Bạn có đồng ý không?</p>
+        <div id="draw-offer-countdown" style="font-weight: bold; color: var(--accent-gold-dark); margin-bottom: 12px;">Tự động từ chối sau: 15s</div>
+        <div class="modal-actions">
+            <button id="accept-draw-btn" class="btn-primary">Đồng ý</button>
+            <button id="decline-draw-btn" class="btn-secondary">Từ chối</button>
+        </div>
+    </div>
+</div>
+
 <!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
 <script src="~/js/game.js" asp-append-version="true"></script>

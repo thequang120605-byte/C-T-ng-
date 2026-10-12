@@ -70,26 +70,49 @@
                     @ViewData["Title"]
                 </div>
                 <div class="navbar-user">
-                    @if (User.Identity.IsAuthenticated)
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
                     {
-                        var eloClaim = User.Claims.FirstOrDefault(c => c.Type == "Elo")?.Value ?? "1200";
-                        <div class="user-info">
-                            <span class="user-name">@User.Identity.Name</span>
-                            <span class="user-elo">Elo: @eloClaim</span>
+                        var playerIdClaim = User.Claims.FirstOrDefault(c => c.Type == "PlayerId")?.Value;
+                        if (string.IsNullOrEmpty(playerIdClaim))
+                        {
+                            var userIdVal = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "1";
+                            playerIdClaim = "CT-" + (userIdVal.PadLeft(5, '0'));
+                        }
+                        var initial = !string.IsNullOrEmpty(User.Identity.Name) ? User.Identity.Name.Substring(0, 1).ToUpper() : "U";
+
+                        <div class="navbar-user-card" id="navbar-user-card">
+                            <div class="user-avatar-badge" title="Tài khoản: @User.Identity.Name">
+                                <span class="avatar-initial">@initial</span>
+                                <span class="status-indicator-dot" title="Đang trực tuyến"></span>
+                            </div>
+                            <div class="user-meta">
+                                <span class="user-display-name">@User.Identity.Name</span>
+                                <div class="user-id-chip" title="Nhấn để sao chép mã ID người chơi" onclick="copyPlayerId('@playerIdClaim');">
+                                    <i class="fa-solid fa-id-badge id-icon"></i>
+                                    <span class="id-text">ID: <strong id="current-player-id">@playerIdClaim</strong></span>
+                                    <i class="fa-regular fa-copy copy-icon"></i>
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <button type="button" class="btn-user-logout" onclick="document.getElementById('logout-modal').classList.add('show');" title="Đăng xuất">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                </button>
+                            </div>
+                            <form id="logout-form" asp-controller="Auth" asp-action="Logout" method="post" style="display: none;"></form>
                         </div>
-                        <div class="user-avatar" style="cursor: pointer;" onclick="document.getElementById('logout-modal').classList.add('show');" title="Đăng xuất">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                        </div>
-                        <form id="logout-form" asp-controller="Auth" asp-action="Logout" method="post" style="display: none;"></form>
                     }
                     else
                     {
-                        <div class="user-info">
-                            <span class="user-name">Khách (Guest)</span>
-                            <a asp-controller="Auth" asp-action="Login" style="color: var(--accent-gold-light); font-size: 12px; text-decoration: none;">Đăng nhập / Đăng ký</a>
-                        </div>
-                        <div class="user-avatar">
-                            <i class="fa-solid fa-user"></i>
+                        <div class="navbar-user-card guest-card">
+                            <div class="user-avatar-badge guest-avatar">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div class="user-meta">
+                                <span class="user-display-name">Khách (Guest)</span>
+                                <a asp-controller="Auth" asp-action="Login" class="guest-login-link">
+                                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập / Đăng ký
+                                </a>
+                            </div>
                         </div>
                     }
                 </div>
@@ -110,7 +133,7 @@
             <p style="color: var(--text-muted); margin-bottom: 24px;">Bạn có chắc chắn muốn đăng xuất khỏi tài khoản hiện tại?</p>
             <div style="display: flex; gap: 12px; justify-content: center;">
                 <button type="button" style="padding: 10px 20px; border: none; border-radius: 8px; background: #64748b; color: white; cursor: pointer; font-weight: bold;" onclick="document.getElementById('logout-modal').classList.remove('show');">Hủy</button>
-                <button type="button" style="padding: 10px 20px; border: none; border-radius: 8px; background: #ef4444; color: white; cursor: pointer; font-weight: bold;" onclick="document.getElementById('logout-form').submit();">Đăng xuất</button>
+                <button type="button" style="padding: 10px 20px; border: none; border-radius: 8px; background: #ef4444; color: white; cursor: pointer; font-weight: bold;" onclick="if (window.requestLogoutWithResign) { window.requestLogoutWithResign(); } else { document.getElementById('logout-form').submit(); }">Đăng xuất</button>
             </div>
         </div>
     </div>
@@ -140,6 +163,44 @@
                 });
             }
         });
+
+        function copyPlayerId(id) {
+            if (!id) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(id).then(function() {
+                    showPlayerIdToast('Đã sao chép ID: ' + id);
+                }).catch(function() {
+                    fallbackCopy(id);
+                });
+            } else {
+                fallbackCopy(id);
+            }
+        }
+
+        function fallbackCopy(text) {
+            var tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showPlayerIdToast('Đã sao chép ID: ' + text);
+        }
+
+        function showPlayerIdToast(msg) {
+            var toast = document.getElementById('user-copy-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'user-copy-toast';
+                toast.className = 'user-copy-toast';
+                document.body.appendChild(toast);
+            }
+            toast.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #22c55e;"></i> ' + msg;
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 2200);
+        }
     </script>
 
 

@@ -1,10 +1,15 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using ChessCore.DTOs;
 using ChessCore.Engine;
 using ChessCore.Enums;
 using ChessCore.Models;
 using ChessCore.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using ChessCore.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +17,11 @@ using System.Threading.Tasks;
 
 namespace ChessCore.Controllers
 {
+    public class InvitePlayerRequest
+    {
+        public string PlayerId { get; set; } = string.Empty;
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class GamesController : ControllerBase
@@ -19,16 +29,126 @@ namespace ChessCore.Controllers
         private readonly IGameService _gameService;
         private readonly IMoveService _moveService;
         private readonly Microsoft.AspNetCore.SignalR.IHubContext<Hubs.GameHub> _hubContext;
+        private readonly AppDbContext _dbContext;
+        private readonly IMemoryCache _cache;
 
         public GamesController(
             IGameService gameService,
             IMoveService moveService,
-            Microsoft.AspNetCore.SignalR.IHubContext<Hubs.GameHub> hubContext
+            Microsoft.AspNetCore.SignalR.IHubContext<Hubs.GameHub> hubContext,
+            AppDbContext dbContext,
+            IMemoryCache cache
         )
         {
             _gameService = gameService;
             _moveService = moveService;
             _hubContext = hubContext;
+            _dbContext = dbContext;
+            _cache = cache;
+        }
+
+        // Online endpoints require a signed-in player. Generic game endpoints
+        // remain available for local/offline play.
+        [Authorize]
+        [HttpPost("online")]
+        public async Task<ActionResult<GameResponseDto>> CreateOnlineGame()
+        {
+            if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
+            var game = await _gameService.CreateGameAsync(status: GameStatus.WaitingForPlayers);
+            game.RedPlayerId = userId;
+            await _dbContext.SaveChangesAsync();
+
+            var board = GameRules.RebuildBoard(game.InitialFen, null, game.CurrentTurn);
+            var response = BuildGameResponse(game, board);
+            return CreatedAtAction(nameof(GetGameById), new { id = game.Id }, response);
+        }
+
+        [Authorize]
+        [HttpPost("{roomCode}/join")]
+        public async Task<ActionResult<GameResponseDto>> JoinOnlineGame(string roomCode)
+        {
+            if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
+            if (string.IsNullOrWhiteSpace(roomCode))
+                return BadRequest(new { message = "Vui lòng nhập mã bàn." });
+
+            var normalizedRoomCode = roomCode.Trim().ToUpperInvariant();
+            var gameId = await _dbContext.Games
+                .Where(game => game.RoomCode == normalizedRoomCode)
+                .Select(game => (int?)game.Id)
+                .FirstOrDefaultAsync();
+            if (!gameId.HasValue)
+                return NotFound(new { message = "Không tìm thấy bàn với mã này." });
+
+            var game = await _gameService.GetGameByIdAsync(gameId.Value);
+            if (game == null) return NotFound(new { message = "Không tìm thấy bàn cờ." });
+            if (game.RedPlayerId == userId)
+                return BadRequest(new { message = "Bạn đã là người tạo bàn này." });
+            if (game.BlackPlayerId.HasValue && game.BlackPlayerId != userId)
+                return Conflict(new { message = "Bàn này đã được dành cho người chơi khác." });
+            if (game.Status != GameStatus.WaitingForPlayers && game.BlackPlayerId != userId)
+                return Conflict(new { message = "Bàn này không còn chờ người chơi." });
+
+            game.BlackPlayerId = userId;
+            game.Status = GameStatus.InProgress;
+            game.LastMoveAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+
+            var opponent = game.RedPlayerId.HasValue
+                ? await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == game.RedPlayerId.Value)
+                : null;
+            var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+            var response = BuildGameResponse(game, board);
+            await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("GameUpdated", response);
+            return Ok(new { game = response, opponentUsername = opponent?.Username });
+        }
+
+        [Authorize]
+        [HttpPost("{id}/invite")]
+        public async Task<IActionResult> InvitePlayer(int id, [FromBody] InvitePlayerRequest request)
+        {
+            if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(request?.PlayerId))
+                return BadRequest(new { message = "Vui lòng nhập ID người chơi." });
+
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null) return NotFound(new { message = "Không tìm thấy bàn cờ." });
+            if (game.RedPlayerId != userId)
+                return Forbid();
+            if (game.Status != GameStatus.WaitingForPlayers)
+                return Conflict(new { message = "Bàn này đã bắt đầu hoặc đã kết thúc." });
+
+            var opponent = await _dbContext.Users
+                .FirstOrDefaultAsync(user => user.PlayerId == request.PlayerId.Trim());
+            if (opponent == null)
+                return NotFound(new { message = "Không tìm thấy người chơi với ID này." });
+            if (opponent.Id == userId)
+                return BadRequest(new { message = "Bạn không thể thêm chính mình vào bàn." });
+            if (game.BlackPlayerId.HasValue && game.BlackPlayerId != opponent.Id)
+                return Conflict(new { message = "Bàn này đã có đối thủ khác." });
+
+            game.BlackPlayerId = opponent.Id;
+            game.Status = GameStatus.InProgress;
+            game.LastMoveAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+
+            var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+            var response = BuildGameResponse(game, board);
+            await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
+            return Ok(new { playerId = opponent.PlayerId, username = opponent.Username, game = response });
+        }
+
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            return int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
+        }
+
+        private bool CanAccessOnlineGame(Game game)
+        {
+            if (!game.RedPlayerId.HasValue && !game.BlackPlayerId.HasValue) return true;
+            return TryGetCurrentUserId(out var userId) &&
+                (game.RedPlayerId == userId || game.BlackPlayerId == userId);
         }
 
         // =====================================================
@@ -79,6 +199,8 @@ namespace ChessCore.Controllers
                 });
             }
 
+            if (!CanAccessOnlineGame(game)) return Unauthorized();
+
             var board =
                 GameRules.RebuildBoard(
                     game.InitialFen,
@@ -119,6 +241,8 @@ namespace ChessCore.Controllers
                         $"KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá» vá»›i ID {id}"
                 });
             }
+
+            if (!CanAccessOnlineGame(game)) return Unauthorized();
 
             if (game.Status != GameStatus.InProgress)
             {
@@ -218,12 +342,41 @@ namespace ChessCore.Controllers
                 });
             }
 
+            if (!CanAccessOnlineGame(game)) return Unauthorized();
+
             if (game.Status != GameStatus.InProgress)
             {
                 return BadRequest(new
                 {
                     message =
-                        "VÃ¡n Ä‘áº¥u Ä‘Ã£ káº¿t thÃºc."
+                        "Ván đấu đã kết thúc."
+                });
+            }
+
+            // Kiểm tra giới hạn thời gian 3 phút (cộng 2s dung sai độ trễ mạng)
+            var lastActionTime = game.LastMoveAt ?? game.CreatedAt;
+            if ((game.RedPlayerId.HasValue || game.BlackPlayerId.HasValue) &&
+                DateTime.UtcNow - lastActionTime > TimeSpan.FromSeconds(182))
+            {
+                game.Status = game.CurrentTurn == PieceColor.Red
+                    ? GameStatus.BlackWins
+                    : GameStatus.RedWins;
+
+                _dbContext.Games.Update(game);
+                await _dbContext.SaveChangesAsync();
+
+                var currentBoard = GameRules.RebuildBoard(
+                    game.InitialFen,
+                    game.Moves,
+                    game.CurrentTurn
+                );
+                var timeoutResponse = BuildGameResponse(game, currentBoard);
+                await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("GameUpdated", timeoutResponse);
+
+                return BadRequest(new
+                {
+                    message = "Đã hết thời gian 3 phút! Bạn đã bị xử thua vì rụng kim.",
+                    game = timeoutResponse
                 });
             }
 
@@ -406,6 +559,8 @@ namespace ChessCore.Controllers
                         $"KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá» vá»›i ID {id}"
                 });
             }
+
+            if (!CanAccessOnlineGame(game)) return Unauthorized();
 
             // =================================================
             // 2. KIá»‚M TRA TRáº NG THÃI
@@ -635,6 +790,8 @@ namespace ChessCore.Controllers
                 return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá»." });
             }
 
+            if (!CanAccessOnlineGame(game)) return Unauthorized();
+
             var success = await _gameService.UndoMoveAsync(id, isPvE);
             if (!success)
             {
@@ -677,6 +834,8 @@ namespace ChessCore.Controllers
                 });
             }
 
+            if (!CanAccessOnlineGame(game)) return Unauthorized();
+
             // =================================================
             // 2. KIá»‚M TRA GAME ÄÃƒ Káº¾T THÃšC CHÆ¯A
             // =================================================
@@ -699,7 +858,14 @@ namespace ChessCore.Controllers
 
             GameStatus newStatus;
 
-            if (game.CurrentTurn == PieceColor.Red)
+            if (game.RedPlayerId.HasValue || game.BlackPlayerId.HasValue)
+            {
+                if (!TryGetCurrentUserId(out var resigningPlayerId)) return Unauthorized();
+                newStatus = game.RedPlayerId == resigningPlayerId
+                    ? GameStatus.BlackWins
+                    : GameStatus.RedWins;
+            }
+            else if (game.CurrentTurn == PieceColor.Red)
             {
                 newStatus =
                     GameStatus.BlackWins;
@@ -760,6 +926,173 @@ namespace ChessCore.Controllers
         }
 
         // =====================================================
+        // POST /api/games/{id}/draw/offer  &  /api/games/{id}/offer-draw  &  /api/match/{id}/offer-draw
+        // XIN HÒA CỜ (OFFER DRAW)
+        // =====================================================
+        [HttpPost("{id}/draw/offer")]
+        [HttpPost("{id}/offer-draw")]
+        [HttpPost("/api/match/{id}/offer-draw")]
+        public async Task<IActionResult> OfferDraw(int id)
+        {
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null)
+            {
+                return NotFound(new { message = "Không tìm thấy ván cờ." });
+            }
+
+            if (game.Status != GameStatus.InProgress)
+            {
+                return BadRequest(new { message = "Ván đấu không trong trạng thái đang diễn ra." });
+            }
+
+            int currentUserId = 0;
+            bool isOnline = game.RedPlayerId.HasValue || game.BlackPlayerId.HasValue;
+            if (isOnline)
+            {
+                if (!TryGetCurrentUserId(out currentUserId))
+                {
+                    return Unauthorized();
+                }
+
+                if (game.RedPlayerId != currentUserId && game.BlackPlayerId != currentUserId)
+                {
+                    return Forbid();
+                }
+            }
+
+            // --- NGHIỆP VỤ CHỐNG SPAM ---
+            string countKey = $"DrawOfferCount:{id}:{currentUserId}";
+            string cooldownKey = $"DrawOfferCooldown:{id}:{currentUserId}";
+            string pendingKey = $"DrawOfferPending:{id}";
+
+            int offerCount = _cache.Get<int>(countKey);
+            if (offerCount >= 2)
+            {
+                return BadRequest(new { message = "Bạn đã dùng hết số lần xin hòa trong ván cờ này (tối đa 2 lần)." });
+            }
+
+            if (_cache.TryGetValue(cooldownKey, out _))
+            {
+                return BadRequest(new { message = "Bạn vừa gửi đề nghị hòa. Vui lòng đợi trong giây lát trước khi thử lại." });
+            }
+
+            if (_cache.TryGetValue(pendingKey, out _))
+            {
+                return BadRequest(new { message = "Đang có lời đề nghị hòa chờ phản hồi." });
+            }
+
+            // Xử lý khi Chơi với Máy (VS COMPUTER)
+            if (!isOnline)
+            {
+                var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+                int eval = BoardEvaluator.Evaluate(board, PieceColor.Black);
+                bool computerAgrees = Math.Abs(eval) <= 150 || (game.Moves != null && game.Moves.Count >= 40);
+
+                if (computerAgrees)
+                {
+                    game.Status = GameStatus.Draw;
+                    _dbContext.Games.Update(game);
+                    await _dbContext.SaveChangesAsync();
+
+                    var drawResponse = BuildGameResponse(game, board);
+                    await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", drawResponse);
+                    await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Máy đã đồng ý hòa ván cờ!" });
+
+                    return Ok(new { accepted = true, message = "Máy đã đồng ý hòa ván cờ!", game = drawResponse });
+                }
+                else
+                {
+                    _cache.Set(cooldownKey, true, TimeSpan.FromSeconds(30));
+                    _cache.Set(countKey, offerCount + 1, TimeSpan.FromHours(2));
+                    return Ok(new { accepted = false, message = "Máy từ chối lời xin hòa! Thế cờ vẫn đang tiếp diễn." });
+                }
+            }
+
+            // Xử lý khi Chơi Online:
+            _cache.Set(pendingKey, currentUserId, TimeSpan.FromSeconds(15));
+            _cache.Set(countKey, offerCount + 1, TimeSpan.FromHours(2));
+            _cache.Set(cooldownKey, true, TimeSpan.FromSeconds(30));
+
+            string offeringColor = game.RedPlayerId == currentUserId ? "Red" : "Black";
+            var offerPayload = new
+            {
+                gameId = id,
+                fromUserId = currentUserId,
+                fromColor = offeringColor,
+                timeoutSeconds = 15,
+                message = "Đối thủ đang đề nghị hòa cờ. Bạn có đồng ý không?"
+            };
+
+            await _hubContext.Clients.Group(id.ToString()).SendAsync("DrawOffered", offerPayload);
+            return Ok(new { success = true, message = "Đã gửi đề nghị hòa tới đối thủ (chờ trong 15s).", timeoutSeconds = 15 });
+        }
+
+        // =====================================================
+        // POST /api/games/{id}/draw/respond  &  /api/games/{id}/respond-draw  &  /api/match/{id}/respond-draw
+        // PHẢN HỒI XIN HÒA (RESPOND DRAW)
+        // =====================================================
+        [HttpPost("{id}/draw/respond")]
+        [HttpPost("{id}/respond-draw")]
+        [HttpPost("/api/match/{id}/respond-draw")]
+        public async Task<IActionResult> RespondDraw(int id, [FromBody] RespondDrawRequestDto request)
+        {
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null)
+            {
+                return NotFound(new { message = "Không tìm thấy ván cờ." });
+            }
+
+            if (game.Status != GameStatus.InProgress)
+            {
+                return BadRequest(new { message = "Ván đấu không trong trạng thái đang diễn ra." });
+            }
+
+            if (!TryGetCurrentUserId(out var currentUserId))
+            {
+                return Unauthorized();
+            }
+
+            if (game.RedPlayerId != currentUserId && game.BlackPlayerId != currentUserId)
+            {
+                return Forbid();
+            }
+
+            string pendingKey = $"DrawOfferPending:{id}";
+            if (!_cache.TryGetValue(pendingKey, out int offeringUserId))
+            {
+                return BadRequest(new { message = "Lời đề nghị xin hòa đã hết hạn hoặc không tồn tại." });
+            }
+
+            if (offeringUserId == currentUserId)
+            {
+                return BadRequest(new { message = "Bạn không thể tự phản hồi đề nghị của chính mình." });
+            }
+
+            _cache.Remove(pendingKey);
+
+            bool isAccepted = request != null && (request.Accepted || request.IsAccepted);
+            if (isAccepted)
+            {
+                game.Status = GameStatus.Draw;
+                _dbContext.Games.Update(game);
+                await _dbContext.SaveChangesAsync();
+
+                var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+                var drawResponse = BuildGameResponse(game, board);
+
+                await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", drawResponse);
+                await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Hai bên đã đồng ý hòa ván cờ!" });
+
+                return Ok(new { accepted = true, message = "Đã đồng ý hòa ván cờ thành công.", game = drawResponse });
+            }
+            else
+            {
+                await _hubContext.Clients.Group(id.ToString()).SendAsync("DrawDeclined", new { gameId = id, declinedBy = currentUserId, message = "Đối thủ đã từ chối lời xin hòa." });
+                return Ok(new { accepted = false, message = "Đã từ chối lời xin hòa." });
+            }
+        }
+
+        // =====================================================
         // GET /api/games/{id}/fen
         // Láº¤Y FEN Cá»¦A VÃN Cá»œ HIá»†N Táº I
         // =====================================================
@@ -771,6 +1104,8 @@ namespace ChessCore.Controllers
             {
                 return NotFound(new { message = $"KhÃ´ng tÃ¬m tháº¥y vÃ¡n cá» vá»›i ID {id}" });
             }
+
+            if (!CanAccessOnlineGame(game)) return Unauthorized();
 
             var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
             var fen = board.ToFen();
@@ -786,6 +1121,7 @@ namespace ChessCore.Controllers
         {
             var game = await _gameService.GetGameByIdAsync(id);
             if (game == null) return NotFound();
+            if (!CanAccessOnlineGame(game)) return Unauthorized();
 
             var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
             
@@ -861,10 +1197,18 @@ namespace ChessCore.Controllers
             // TRáº¢ RESPONSE
             // =================================================
 
+            var lastAction = game.LastMoveAt ?? game.CreatedAt;
+            var remainingSeconds = game.Status == GameStatus.InProgress
+                ? Math.Max(0, 180 - (int)(DateTime.UtcNow - lastAction).TotalSeconds)
+                : 0;
+
             return new GameResponseDto
             {
                 Id =
                     game.Id,
+
+                RoomCode =
+                    game.RoomCode,
 
                 Status =
                     game.Status.ToString(),
@@ -880,6 +1224,9 @@ namespace ChessCore.Controllers
 
                 LastMoveAt =
                     game.LastMoveAt,
+
+                RemainingSeconds =
+                    remainingSeconds,
 
                 BoardPieces =
                     pieces,

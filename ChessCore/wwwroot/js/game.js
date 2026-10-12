@@ -1,21 +1,71 @@
-﻿document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function () {
   const SVG_NS = "http://www.w3.org/2000/svg";
 
   // =====================================================
-  // SIGNALR
+  // SIGNALR (SAFE INITIALIZATION & REALTIME GROUP)
   // =====================================================
-  const connection = new signalR.HubConnectionBuilder()
-      .withUrl("/gameHub")
-      .withAutomaticReconnect()
-      .build();
+  let connection = null;
 
-  connection.on("GameUpdated", function (data) {
-      if (typeof gameId !== 'undefined' && data && data.id == gameId) {
-          updateGameFromApi(data);
-      }
-  });
+  function joinSignalRGroup(gid) {
+    if (!gid || !connection || typeof signalR === "undefined") return;
+    if (connection.state === signalR.HubConnectionState.Connected) {
+      connection.invoke("JoinGame", gid.toString()).catch(err => console.warn("Lỗi JoinGame SignalR:", err));
+    }
+  }
 
-  connection.start().catch(err => console.error("SignalR Connection Error:", err.toString()));
+  if (typeof signalR !== "undefined") {
+    try {
+      connection = new signalR.HubConnectionBuilder()
+          .withUrl("/gameHub")
+          .withAutomaticReconnect()
+          .build();
+
+      connection.on("GameUpdated", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.id == gameId) {
+              console.log("Realtime: Nhận GameUpdated từ SignalR:", data);
+              updateGameFromApi(data);
+          }
+      });
+
+      connection.on("DrawOffered", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
+              const myColor = localStorage.getItem("onlinePlayerColor");
+              if (data.fromColor === myColor) {
+                  return;
+              }
+              showDrawOfferModal(data.timeoutSeconds || 15);
+          }
+      });
+
+      connection.on("DrawDeclined", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
+              alert(data.message || "Đối thủ đã từ chối lời xin hòa.");
+              closeDrawOfferModal();
+          }
+      });
+
+      connection.on("MatchEnded_Draw", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
+              closeDrawOfferModal();
+          }
+      });
+
+      connection.start().then(function () {
+          console.log("SignalR kết nối thành công.");
+          if (typeof gameId !== 'undefined' && gameId) {
+              joinSignalRGroup(gameId);
+          }
+      }).catch(err => console.warn("SignalR Connection Warning:", err.toString()));
+
+      connection.onreconnected(function () {
+          if (typeof gameId !== 'undefined' && gameId) {
+              joinSignalRGroup(gameId);
+          }
+      });
+    } catch (err) {
+      console.warn("SignalR initialization skipped:", err);
+    }
+  }
 
   // =====================================================
   // API
@@ -87,8 +137,13 @@
   const playerVsOnlineButton = document.getElementById("player-vs-online-btn");
   const onlineSelection = document.getElementById("online-selection");
   const joinOnlineButton = document.getElementById("join-online-btn");
+  const createOnlineButton = document.getElementById("create-online-btn");
   const onlineRoomIdInput = document.getElementById("online-room-id");
-  let isOnlineMode = false;
+  const opponentPlayerIdInput = document.getElementById("opponent-player-id");
+  const invitePlayerButton = document.getElementById("invite-player-btn");
+  const invitePlayerStatus = document.getElementById("invite-player-status");
+  const isAuthenticated = document.getElementById("current-player-id") !== null;
+  let isOnlineMode = localStorage.getItem("isOnlineMode") === "true";
 
   const startGameButton = document.getElementById("start-game-btn");
 
@@ -132,11 +187,22 @@
 
   const resignModal = document.getElementById("resign-modal");
 
+  const drawButton = document.getElementById("draw-btn");
+  const confirmDrawModal = document.getElementById("confirm-draw-modal");
+  const confirmDrawSubmitBtn = document.getElementById("confirm-draw-submit-btn");
+  const confirmDrawCancelBtn = document.getElementById("confirm-draw-cancel-btn");
+  const drawOfferModal = document.getElementById("draw-offer-modal");
+  const acceptDrawBtn = document.getElementById("accept-draw-btn");
+  const declineDrawBtn = document.getElementById("decline-draw-btn");
+  const drawOfferCountdown = document.getElementById("draw-offer-countdown");
+
   // =====================================================
   // GAME STATE
   // =====================================================
 
   let gameId = null;
+
+  let pendingExitAction = null;
 
   let isCreatingGame = false;
 
@@ -149,6 +215,10 @@
   let gameStatus = null;
 
   let isCheck = false;
+
+  let timerInterval = null;
+
+  let remainingSeconds = 180;
 
   // =====================================================
   // BOARD
@@ -338,6 +408,7 @@
     closeResignModal();
 
     localStorage.removeItem("xiangqiGameId");
+    localStorage.removeItem("manualBoardFlipped");
 
     gameId = null;
 
@@ -359,6 +430,7 @@
       gameContent.classList.remove("hidden");
     }
 
+    updateBoardOrientation();
     updatePlayerNames();
 
     await createGame();
@@ -372,6 +444,8 @@
     closeGameResult();
 
     closeResignModal();
+    closeConfirmDrawModal();
+    closeDrawOfferModal();
 
     clearSelection();
 
@@ -401,7 +475,18 @@
 
     isComputerThinking = false;
 
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    const redTimer = document.getElementById("red-player-timer");
+    const blackTimer = document.getElementById("black-player-timer");
+    if (redTimer) { redTimer.textContent = "03:00"; redTimer.classList.remove("danger"); }
+    if (blackTimer) { blackTimer.textContent = "03:00"; blackTimer.classList.remove("danger"); }
+
     localStorage.removeItem("xiangqiGameId");
+    localStorage.removeItem("manualBoardFlipped");
+    updateBoardOrientation();
 
     if (playerVsPlayerButton) {
       playerVsPlayerButton.classList.remove("selected");
@@ -444,10 +529,12 @@
 
   function initializePage() {
     const isOnline = localStorage.getItem("isOnlineMode") === "true";
-    if (gameId && isOnline) {
+    const savedGameId = localStorage.getItem("xiangqiGameId");
+    if (savedGameId && isOnline) {
+      gameId = savedGameId;
       if (modeSelection) modeSelection.classList.add("hidden");
       if (gameContent) gameContent.classList.remove("hidden");
-      fetchGame(gameId);
+      loadGame();
       return;
     }
     if (modeSelection) {
@@ -458,31 +545,13 @@
       gameContent.classList.add("hidden");
     }
 
-    if (difficultySelection) {
-      difficultySelection.style.display = "none"; difficultySelection.classList.add("hidden");
-    }
+    // Mặc định chọn Người vs Người để nút BẮT ĐẦU VÁN CỜ luôn sẵn sàng
+    selectGameMode(false);
 
-    if (selectedDifficultyContainer) {
-      selectedDifficultyContainer.style.display = "none"; selectedDifficultyContainer.classList.add("hidden");
-    }
-
-    if (startGameButton) {
-      startGameButton.disabled = true;
-
-      startGameButton.classList.remove("enabled");
-    }
-
-    if (selectedModeText) {
-      selectedModeText.textContent = "Chưa chọn chế độ chơi";
-    }
-
-    localStorage.removeItem("xiangqiGameId");
-
-    // Mặc định Trung bình
-
+    // Mặc định Độ khó Trung bình
     selectDifficulty(2);
 
-    console.log("Đang chờ người dùng chọn chế độ chơi...");
+    console.log("Khởi tạo trang chơi cờ thành công. Sẵn sàng tạo ván cờ.");
   }
 
   // =====================================================
@@ -497,23 +566,24 @@
     try {
       isCreatingGame = true;
 
-      console.log("Đang tạo ván cờ mới...");
+      console.log("Đang gửi yêu cầu tạo ván cờ mới tới API:", API_BASE_URL);
 
       const response = await fetch(API_BASE_URL, {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error("Không thể tạo ván cờ");
+        const errorText = await response.text();
+        console.error("Lỗi HTTP tạo game:", response.status, errorText);
+        throw new Error(`Mã phản hồi ${response.status}: ${errorText || "Không thể tạo ván cờ"}`);
       }
 
       const data = await response.json();
 
-      console.log("Game mới:", data);
+      console.log("Tạo ván cờ thành công:", data);
 
       gameId = data.id;
 
@@ -523,7 +593,7 @@
     } catch (error) {
       console.error("Lỗi tạo game:", error);
 
-      alert("Không thể tạo ván cờ. Vui lòng thử lại.");
+      alert(`Không thể tạo ván cờ: ${error.message || "Vui lòng kiểm tra lại kết nối."}`);
     } finally {
       isCreatingGame = false;
     }
@@ -567,6 +637,7 @@
     }
 
     gameId = data.id;
+    joinSignalRGroup(gameId);
 
     currentTurn = data.currentTurn;
 
@@ -584,9 +655,18 @@
 
     clearMoveHighlights();
 
+    updateBoardOrientation();
+
     renderPieces();
 
     updatePlayerNames();
+
+    updatePlayerTimers(data);
+
+    const invitePanel = document.getElementById("opponent-invite-panel");
+    if (invitePanel && data.status === "InProgress") {
+      invitePanel.classList.add("hidden");
+    }
 
     updateTurnStatus();
 
@@ -608,13 +688,89 @@
   }
 
   // =====================================================
+  // PLAYER TIMERS (3 PHÚT / NƯỚC)
+  // =====================================================
+
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins < 10 ? "0" : ""}${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  }
+
+  function updatePlayerTimers(data) {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    const redTimer = document.getElementById("red-player-timer");
+    const blackTimer = document.getElementById("black-player-timer");
+    if (!redTimer || !blackTimer) return;
+
+    if (data.status !== "InProgress") {
+      redTimer.classList.remove("danger");
+      blackTimer.classList.remove("danger");
+      return;
+    }
+
+    if (typeof data.remainingSeconds === "number") {
+      remainingSeconds = data.remainingSeconds;
+    } else if (data.lastMoveAt) {
+      const elapsed = Math.floor((Date.now() - new Date(data.lastMoveAt).getTime()) / 1000);
+      remainingSeconds = Math.max(0, 180 - elapsed);
+    } else {
+      remainingSeconds = 180;
+    }
+
+    const activeTimer = data.currentTurn === "Red" ? redTimer : blackTimer;
+    const waitingTimer = data.currentTurn === "Red" ? blackTimer : redTimer;
+
+    waitingTimer.textContent = "03:00";
+    waitingTimer.classList.remove("danger");
+
+    activeTimer.textContent = formatTime(remainingSeconds);
+    activeTimer.classList.toggle("danger", remainingSeconds <= 30);
+
+    timerInterval = setInterval(function () {
+      if (remainingSeconds > 0) {
+        remainingSeconds--;
+        activeTimer.textContent = formatTime(remainingSeconds);
+        activeTimer.classList.toggle("danger", remainingSeconds <= 30);
+      } else {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        activeTimer.textContent = "00:00";
+        activeTimer.classList.add("danger");
+      }
+    }, 1000);
+  }
+
+  // =====================================================
   // PLAYER NAMES
   // =====================================================
 
   function updatePlayerNames() {
+    updateBoardOrientation();
     const redPlayerName = document.getElementById("red-player-name");
 
     const blackPlayerName = document.getElementById("black-player-name");
+
+    if (isOnlineMode) {
+      const currentPlayerName = "Bạn";
+      let opponentName = localStorage.getItem("onlineOpponentName");
+      if (!opponentName) {
+        opponentName = (gameStatus === "WaitingForPlayers") ? "Đang chờ đối thủ" : "Đối thủ";
+      }
+      const playerColor = localStorage.getItem("onlinePlayerColor");
+
+      if (redPlayerName) {
+        redPlayerName.textContent = playerColor === "Black" ? opponentName : currentPlayerName;
+      }
+      if (blackPlayerName) {
+        blackPlayerName.textContent = playerColor === "Black" ? currentPlayerName : opponentName;
+      }
+      return;
+    }
 
     if (redPlayerName) {
       redPlayerName.textContent = VS_COMPUTER ? "Bạn" : "Người chơi 1";
@@ -824,27 +980,48 @@
   // =====================================================
 
   function checkGameResult() {
-    if (gameStatus === "RedWins") {
+    if (gameStatus === "RedWins" || gameStatus === "BlackWins" || gameStatus === "Draw") {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    if (gameStatus === "Draw") {
       showGameResult(
-        "🏆 CHIẾN THẮNG",
-
-        "🔴 QUÂN ĐỎ",
-
-        VS_COMPUTER ? "Bạn đã đánh bại máy!" : "Quân Đỏ đã giành chiến thắng!",
+        "🤝 HÒA CỜ",
+        "HÒA NHAU",
+        "Ván cờ kết thúc với kết quả hòa thỏa thuận!"
       );
+      return;
+    }
 
+    if (gameStatus === "RedWins") {
+      const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+      const isMyWin = !isOnline ? true : (localStorage.getItem("onlinePlayerColor") === "Red");
+      const isTimeout = remainingSeconds <= 0;
+      const subtitle = isTimeout ? (isMyWin ? "Đối thủ đã hết 3 phút (Bị xử thua do rụng kim)!" : "Bạn đã hết 3 phút (Bị xử thua do rụng kim)!") : (isMyWin ? "Bạn đã giành chiến thắng!" : "Đối thủ đã giành chiến thắng!");
+      showGameResult(
+        isMyWin ? "🏆 CHIẾN THẮNG" : "😔 THẤT BẠI",
+        "🔴 QUÂN ĐỎ",
+        isOnline
+          ? subtitle
+          : (VS_COMPUTER ? "Bạn đã đánh bại máy!" : "Quân Đỏ đã giành chiến thắng!"),
+      );
       return;
     }
 
     if (gameStatus === "BlackWins") {
+      const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+      const isMyWin = !isOnline ? false : (localStorage.getItem("onlinePlayerColor") === "Black");
+      const isTimeout = remainingSeconds <= 0;
+      const subtitle = isTimeout ? (isMyWin ? "Đối thủ đã hết 3 phút (Bị xử thua do rụng kim)!" : "Bạn đã hết 3 phút (Bị xử thua do rụng kim)!") : (isMyWin ? "Bạn đã giành chiến thắng!" : "Đối thủ đã giành chiến thắng!");
       showGameResult(
-        VS_COMPUTER ? "😔 THẤT BẠI" : "🏆 CHIẾN THẮNG",
-
+        (VS_COMPUTER || isOnline) ? (isMyWin ? "🏆 CHIẾN THẮNG" : "😔 THẤT BẠI") : "🏆 CHIẾN THẮNG",
         "⚫ QUÂN ĐEN",
-
-        VS_COMPUTER
-          ? "Máy đã giành chiến thắng!"
-          : "Quân Đen đã giành chiến thắng!",
+        isOnline
+          ? subtitle
+          : (VS_COMPUTER ? "Máy đã giành chiến thắng!" : "Quân Đen đã giành chiến thắng!"),
       );
     }
   }
@@ -899,6 +1076,49 @@
     const turnIndicator = document.getElementById("turn-indicator");
 
     if (!turnStatus) {
+      return;
+    }
+
+    const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+
+    if (isOnline) {
+      const myColor = localStorage.getItem("onlinePlayerColor");
+      const isMyTurn = currentTurn === myColor;
+      const pieceName = currentTurn === "Red" ? "QUÂN ĐỎ" : "QUÂN ĐEN";
+      const icon = currentTurn === "Red" ? "🔴" : "⚫";
+
+      if (gameStatus === "Draw") {
+        turnStatus.textContent = "🤝 VÁN CỜ HÒA";
+        if (turnIndicator) turnIndicator.textContent = "🤝";
+        return;
+      }
+      if (gameStatus === "RedWins") {
+        turnStatus.textContent = myColor === "Red" ? "🏆 BẠN CHIẾN THẮNG" : "❌ ĐỐI THỦ CHIẾN THẮNG";
+        if (turnIndicator) turnIndicator.textContent = "🏆";
+        return;
+      }
+      if (gameStatus === "BlackWins") {
+        turnStatus.textContent = myColor === "Black" ? "🏆 BẠN CHIẾN THẮNG" : "❌ ĐỐI THỦ CHIẾN THẮNG";
+        if (turnIndicator) turnIndicator.textContent = "🏆";
+        return;
+      }
+      if (isCheck) {
+        turnStatus.textContent = `⚠️ CHIẾU TƯỚNG! (${isMyTurn ? "Lượt của BẠN" : "Lượt ĐỐI THỦ"})`;
+        if (turnIndicator) turnIndicator.textContent = "⚠️";
+        return;
+      }
+      turnStatus.textContent = isMyTurn
+        ? `${icon} Lượt của BẠN (${pieceName})`
+        : `${icon} Lượt của ĐỐI THỦ (${pieceName})`;
+      if (turnIndicator) turnIndicator.textContent = icon;
+      return;
+    }
+
+    if (gameStatus === "Draw") {
+      turnStatus.textContent = "🤝 VÁN CỜ HÒA";
+      if (turnIndicator) {
+        turnIndicator.textContent = "🤝";
+      }
       return;
     }
 
@@ -1017,14 +1237,42 @@
   }
 
   // =====================================================
-  // POSITION
+  // POSITION & ORIENTATION
   // =====================================================
 
-  function getPosition(row, col) {
-    return {
-      x: START_X + col * CELL_SIZE,
+  function isBoardFlipped() {
+    const manualFlipped = localStorage.getItem("manualBoardFlipped");
+    if (manualFlipped !== null) {
+      return manualFlipped === "true";
+    }
+    const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+    if (isOnline) {
+      return localStorage.getItem("onlinePlayerColor") === "Black";
+    }
+    return false;
+  }
 
-      y: START_Y + row * CELL_SIZE,
+  function updateBoardOrientation() {
+    const boardColumn = document.querySelector(".board-column");
+    const flipped = isBoardFlipped();
+    if (boardColumn) {
+      boardColumn.classList.toggle("flipped", flipped);
+    }
+    const riverLeft = document.getElementById("river-text-left");
+    const riverRight = document.getElementById("river-text-right");
+    if (riverLeft && riverRight) {
+      riverLeft.textContent = flipped ? "漢 界" : "楚 河";
+      riverRight.textContent = flipped ? "楚 河" : "漢 界";
+    }
+  }
+
+  function getPosition(row, col) {
+    const flipped = isBoardFlipped();
+    const r = flipped ? 9 - row : row;
+    const c = flipped ? 8 - col : col;
+    return {
+      x: START_X + c * CELL_SIZE,
+      y: START_Y + r * CELL_SIZE,
     };
   }
 
@@ -1351,7 +1599,9 @@
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-
+        if (errorData?.game) {
+          updateGameFromApi(errorData.game);
+        }
         throw new Error(errorData?.message || "Không thể thực hiện nước đi");
       }
 
@@ -1419,6 +1669,30 @@
     }
   }
 
+  function requestExitFromGame(action) {
+    const isActiveGame = gameContent &&
+      !gameContent.classList.contains("hidden") &&
+      gameStatus === "InProgress";
+
+    if (!isActiveGame) {
+      action();
+      return;
+    }
+
+    pendingExitAction = action;
+    showResignModal();
+  }
+
+  async function completePendingExitAction() {
+    const action = pendingExitAction;
+    pendingExitAction = null;
+
+    if (resultNewGameButton) resultNewGameButton.classList.remove("hidden");
+    if (resultCloseButton) resultCloseButton.textContent = "Đóng";
+
+    if (action) await action();
+  }
+
   function closeResignModal() {
     if (resignModal) {
       resignModal.classList.add("hidden");
@@ -1466,10 +1740,150 @@
       isComputerThinking = false;
 
       updateGameFromApi(data);
+
+      if (pendingExitAction) {
+        const winner = data.status === "RedWins" ? "Quân Đỏ" : "Quân Đen";
+        const resultMessage = document.getElementById("result-message");
+        if (resultMessage) resultMessage.textContent = `Bạn đã đầu hàng. ${winner} giành chiến thắng!`;
+        if (resultNewGameButton) resultNewGameButton.classList.add("hidden");
+        if (resultCloseButton) resultCloseButton.textContent = "Tiếp tục";
+      }
     } catch (error) {
       console.error("Lỗi đầu hàng:", error);
 
       alert(error.message);
+    }
+  }
+
+  // =====================================================
+  // DRAW (XIN HÒA)
+  // =====================================================
+
+  let drawOfferTimer = null;
+
+  function openConfirmDrawModal() {
+    if (gameStatus !== "InProgress") {
+      return;
+    }
+    if (confirmDrawModal) {
+      confirmDrawModal.classList.remove("hidden");
+    }
+  }
+
+  function closeConfirmDrawModal() {
+    if (confirmDrawModal) {
+      confirmDrawModal.classList.add("hidden");
+    }
+  }
+
+  async function sendDrawOffer() {
+    if (!gameId || gameStatus !== "InProgress") {
+      closeConfirmDrawModal();
+      return;
+    }
+
+    try {
+      closeConfirmDrawModal();
+
+      const response = await fetch(`${API_BASE_URL}/${gameId}/draw/offer`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        alert(data.message || "Không thể gửi yêu cầu xin hòa.");
+        return;
+      }
+
+      if (data.accepted === true) {
+        showGameNotification("🤝", "HÒA CỜ", data.message || "Ván cờ kết thúc với kết quả hòa!", 3000);
+        if (data.game) {
+          updateGameFromApi(data.game);
+        }
+      } else if (data.accepted === false) {
+        alert(data.message || "Máy đã từ chối lời xin hòa. Hãy tiếp tục thi đấu!");
+      } else {
+        showGameNotification("🤝", "XIN HÒA", data.message || "Đã gửi đề nghị hòa. Chờ đối thủ trong 15s...", 3500);
+      }
+    } catch (error) {
+      console.error("Lỗi gửi đề nghị xin hòa:", error);
+      alert("Lỗi kết nối khi gửi đề nghị xin hòa.");
+    }
+  }
+
+  function showDrawOfferModal(timeoutSec = 15) {
+    if (drawOfferTimer) {
+      clearInterval(drawOfferTimer);
+      drawOfferTimer = null;
+    }
+
+    if (drawOfferModal) {
+      drawOfferModal.classList.remove("hidden");
+    }
+
+    let remaining = timeoutSec;
+    if (drawOfferCountdown) {
+      drawOfferCountdown.textContent = `Tự động từ chối sau: ${remaining}s`;
+    }
+
+    drawOfferTimer = setInterval(async () => {
+      remaining--;
+      if (drawOfferCountdown) {
+        drawOfferCountdown.textContent = `Tự động từ chối sau: ${remaining}s`;
+      }
+      if (remaining <= 0) {
+        clearInterval(drawOfferTimer);
+        drawOfferTimer = null;
+        closeDrawOfferModal();
+        await respondDraw(false);
+      }
+    }, 1000);
+  }
+
+  function closeDrawOfferModal() {
+    if (drawOfferTimer) {
+      clearInterval(drawOfferTimer);
+      drawOfferTimer = null;
+    }
+    if (drawOfferModal) {
+      drawOfferModal.classList.add("hidden");
+    }
+  }
+
+  async function respondDraw(isAccepted) {
+    closeDrawOfferModal();
+    if (!gameId || gameStatus !== "InProgress") {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/${gameId}/draw/respond`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          accepted: isAccepted,
+          isAccepted: isAccepted,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        alert(data.message || "Không thể phản hồi yêu cầu xin hòa.");
+        return;
+      }
+
+      if (isAccepted && data.game) {
+        updateGameFromApi(data.game);
+      }
+    } catch (error) {
+      console.error("Lỗi phản hồi xin hòa:", error);
     }
   }
 
@@ -1510,6 +1924,10 @@
   if (playerVsPlayerButton) {
     playerVsPlayerButton.addEventListener("click", function (event) {
       event.stopPropagation();
+      isOnlineMode = false;
+      localStorage.removeItem("isOnlineMode");
+      localStorage.removeItem("onlinePlayerColor");
+      localStorage.removeItem("onlineOpponentName");
       if (onlineSelection) { onlineSelection.style.display = "none"; onlineSelection.classList.add("hidden"); }
       if (startGameButton) { startGameButton.style.display = "block"; startGameButton.classList.remove("hidden"); }
       selectGameMode(false);
@@ -1519,6 +1937,10 @@
   if (playerVsComputerButton) {
     playerVsComputerButton.addEventListener("click", function (event) {
       event.stopPropagation();
+      isOnlineMode = false;
+      localStorage.removeItem("isOnlineMode");
+      localStorage.removeItem("onlinePlayerColor");
+      localStorage.removeItem("onlineOpponentName");
       if (onlineSelection) { onlineSelection.style.display = "none"; onlineSelection.classList.add("hidden"); }
       if (startGameButton) { startGameButton.style.display = "block"; startGameButton.classList.remove("hidden"); }
       selectGameMode(true);
@@ -1528,6 +1950,11 @@
   if (playerVsOnlineButton) {
     playerVsOnlineButton.addEventListener("click", function (event) {
       event.stopPropagation();
+      if (!isAuthenticated) {
+        alert("Bạn cần đăng nhập để chơi online.");
+        window.location.href = "/Auth/Login?returnUrl=%2FGame";
+        return;
+      }
       isOnlineMode = true;
       gameModeSelected = true;
       VS_COMPUTER = false;
@@ -1545,62 +1972,136 @@
     });
   }
 
+  async function createOnlineGame() {
+      isCreatingGame = true;
+      try {
+          const response = await fetch(API_BASE_URL + "/online", { method: "POST" });
+          if (response.status === 401) {
+              window.location.href = "/Auth/Login?returnUrl=%2FGame";
+              return;
+          }
+          if (!response.ok) throw new Error("Không thể tạo bàn online.");
+          const data = await response.json();
+          gameId = data.id;
+          localStorage.setItem("xiangqiGameId", gameId);
+          localStorage.setItem("onlinePlayerColor", "Red");
+          localStorage.setItem("isOnlineMode", "true");
+          localStorage.removeItem("onlineOpponentName");
+          localStorage.removeItem("manualBoardFlipped");
+          isOnlineMode = true;
+          updateBoardOrientation();
+          updateGameFromApi(data);
+
+          modeSelection.classList.add("hidden");
+          gameContent.classList.remove("hidden");
+          const roomBox = document.getElementById("room-info-box");
+          const roomCodeDisplay = document.getElementById("display-room-code");
+          if (roomBox && roomCodeDisplay) {
+              roomBox.classList.remove("hidden");
+              roomCodeDisplay.textContent = data.roomCode;
+          }
+          const invitePanel = document.getElementById("opponent-invite-panel");
+          if (invitePanel) invitePanel.classList.remove("hidden");
+          if (invitePlayerStatus) invitePlayerStatus.textContent = "Bàn đang chờ đối thủ tham gia.";
+      } catch (e) {
+          console.error(e);
+          alert(e.message || "Lỗi tạo bàn.");
+      } finally {
+          isCreatingGame = false;
+      }
+  }
+
+  if (invitePlayerButton) {
+      invitePlayerButton.addEventListener("click", async function (event) {
+          event.stopPropagation();
+          const playerId = opponentPlayerIdInput.value.trim();
+          if (!playerId) {
+              alert("Vui lòng nhập ID người chơi cần mời.");
+              opponentPlayerIdInput.focus();
+              return;
+          }
+
+          invitePlayerButton.disabled = true;
+          if (invitePlayerStatus) invitePlayerStatus.textContent = "Đang kiểm tra ID người chơi...";
+          try {
+              const response = await fetch(`${API_BASE_URL}/${gameId}/invite`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ playerId })
+              });
+              const result = await response.json();
+              if (response.status === 401) {
+                  window.location.href = "/Auth/Login?returnUrl=%2FGame";
+                  return;
+              }
+              if (!response.ok) throw new Error(result.message || "Không thể mời người chơi.");
+
+              localStorage.setItem("onlineOpponentName", result.username);
+              if (result.game) updateGameFromApi(result.game);
+              if (invitePlayerStatus) {
+                  invitePlayerStatus.textContent = `Đã thêm ${result.username} (${result.playerId}) vào bàn.`;
+              }
+              opponentPlayerIdInput.value = "";
+          } catch (e) {
+              if (invitePlayerStatus) invitePlayerStatus.textContent = e.message || "Không thể mời người chơi.";
+          } finally {
+              invitePlayerButton.disabled = false;
+          }
+      });
+  }
+
+  if (createOnlineButton) {
+      createOnlineButton.addEventListener("click", function (event) {
+          event.stopPropagation();
+          createOnlineGame();
+      });
+  }
+
   if (joinOnlineButton) {
       joinOnlineButton.addEventListener("click", async function (event) {
           event.stopPropagation();
           const roomId = onlineRoomIdInput.value.trim();
-          
           if (!roomId) {
-              isCreatingGame = true;
-              try {
-                  const response = await fetch(API_BASE_URL, { method: "POST" });
-                  if (!response.ok) throw new Error("API Lỗi");
-                  const data = await response.json();
-                  gameId = data.id;
-                  localStorage.setItem("xiangqiGameId", gameId);
-                  localStorage.setItem("onlinePlayerColor", "Red");
-                  localStorage.setItem("isOnlineMode", "true");
-                  updateGameFromApi(data);
-                  
-                  modeSelection.classList.add("hidden");
-                  gameContent.classList.remove("hidden");
-                  // alert replaced by UI
-                  const roomBox = document.getElementById("room-info-box");
-                  const roomCodeDisplay = document.getElementById("display-room-code");
-                  if (roomBox && roomCodeDisplay) {
-                      roomBox.classList.remove("hidden");
-                      roomCodeDisplay.textContent = gameId;
-                  }
-              } catch (e) {
-                  console.error(e);
-                  alert("Lỗi tạo phòng.");
-              } finally {
-                  isCreatingGame = false;
+              alert("Vui lòng nhập mã bàn đối thủ cung cấp.");
+              onlineRoomIdInput.focus();
+              return;
+          }
+
+          try {
+              const response = await fetch(API_BASE_URL + "/" + encodeURIComponent(roomId) + "/join", { method: "POST" });
+              if (response.status === 401) {
+                  window.location.href = "/Auth/Login?returnUrl=%2FGame";
+                  return;
               }
-          } else {
-              try {
-                  const response = await fetch(API_BASE_URL + "/" + roomId);
-                  if (!response.ok) throw new Error("API Lỗi");
-                  const data = await response.json();
-                  gameId = data.id;
-                  localStorage.setItem("xiangqiGameId", gameId);
-                  localStorage.setItem("onlinePlayerColor", "Black");
-                  localStorage.setItem("isOnlineMode", "true");
-                  updateGameFromApi(data);
-                  
-                  modeSelection.classList.add("hidden");
-                  gameContent.classList.remove("hidden");
-                  // alert replaced by UI
-                  const roomBox = document.getElementById("room-info-box");
-                  const roomCodeDisplay = document.getElementById("display-room-code");
-                  if (roomBox && roomCodeDisplay) {
-                      roomBox.classList.remove("hidden");
-                      roomCodeDisplay.textContent = gameId;
-                  }
-              } catch (e) {
-                  console.error(e);
-                  alert("Không tìm thấy phòng hoặc lỗi kết nối.");
+              if (!response.ok) {
+                  const error = await response.json();
+                  throw new Error(error.message || "Không thể vào bàn.");
               }
+              const joinResult = await response.json();
+              const data = joinResult.game;
+              gameId = data.id;
+              localStorage.setItem("xiangqiGameId", gameId);
+              localStorage.setItem("onlinePlayerColor", "Black");
+              localStorage.setItem("isOnlineMode", "true");
+              localStorage.removeItem("manualBoardFlipped");
+              localStorage.setItem("onlineOpponentName", joinResult.opponentUsername || "Đối thủ");
+              isOnlineMode = true;
+              updateBoardOrientation();
+              updateGameFromApi(data);
+
+              modeSelection.classList.add("hidden");
+              gameContent.classList.remove("hidden");
+              const roomBox = document.getElementById("room-info-box");
+              const roomCodeDisplay = document.getElementById("display-room-code");
+              if (roomBox && roomCodeDisplay) {
+                  roomBox.classList.remove("hidden");
+                  roomCodeDisplay.textContent = data.roomCode;
+              }
+              const invitePanel = document.getElementById("opponent-invite-panel");
+              if (invitePanel) invitePanel.classList.add("hidden");
+          } catch (e) {
+              console.error(e);
+              alert(e.message || "Không tìm thấy bàn hoặc lỗi kết nối.");
           }
       });
   }
@@ -1639,7 +2140,9 @@
     newGameButton.addEventListener("click", async function (event) {
       event.stopPropagation();
 
-      await startNewGame();
+      requestExitFromGame(async function () {
+        await startNewGame();
+      });
     });
   }
 
@@ -1651,7 +2154,25 @@
     changeModeButton.addEventListener("click", function (event) {
       event.stopPropagation();
 
-      backToModeSelection();
+      requestExitFromGame(backToModeSelection);
+    });
+  }
+
+  // =====================================================
+  // FLIP BOARD
+  // =====================================================
+
+  const flipBoardButton = document.getElementById("flip-board-btn");
+  if (flipBoardButton) {
+    flipBoardButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+      const nextFlipped = !isBoardFlipped();
+      localStorage.setItem("manualBoardFlipped", nextFlipped.toString());
+      clearSelection();
+      clearMoveHighlights();
+      updateBoardOrientation();
+      renderPieces();
+      updatePlayerNames();
     });
   }
 
@@ -1684,10 +2205,11 @@
   // =====================================================
 
   if (resultCloseButton) {
-    resultCloseButton.addEventListener("click", function (event) {
+    resultCloseButton.addEventListener("click", async function (event) {
       event.stopPropagation();
 
       closeGameResult();
+      await completePendingExitAction();
     });
   }
 
@@ -1711,9 +2233,72 @@
     cancelResignButton.addEventListener("click", function (event) {
       event.stopPropagation();
 
+      pendingExitAction = null;
       closeResignModal();
     });
   }
+
+  // =====================================================
+  // DRAW (XIN HÒA) LISTENERS
+  // =====================================================
+
+  if (drawButton) {
+    drawButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+      openConfirmDrawModal();
+    });
+  }
+
+  if (confirmDrawSubmitBtn) {
+    confirmDrawSubmitBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      await sendDrawOffer();
+    });
+  }
+
+  if (confirmDrawCancelBtn) {
+    confirmDrawCancelBtn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      closeConfirmDrawModal();
+    });
+  }
+
+  if (acceptDrawBtn) {
+    acceptDrawBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      await respondDraw(true);
+    });
+  }
+
+  if (declineDrawBtn) {
+    declineDrawBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      await respondDraw(false);
+    });
+  }
+
+  document.querySelectorAll(".sidebar-nav a.nav-item[href]").forEach(function (link) {
+    link.addEventListener("click", function (event) {
+      const destination = new URL(link.href, window.location.href);
+      if (destination.pathname === window.location.pathname || destination.hash === "#") return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      const href = link.href;
+      requestExitFromGame(function () {
+        window.location.assign(href);
+      });
+    });
+  });
+
+  window.requestLogoutWithResign = function () {
+      const logoutModal = document.getElementById("logout-modal");
+      if (logoutModal) logoutModal.classList.remove("show");
+
+      requestExitFromGame(function () {
+        document.getElementById("logout-form")?.submit();
+      });
+  };
 
   // =====================================================
   // UPDATE PLAYER STATUS
@@ -1728,12 +2313,24 @@
       return;
     }
 
+    if (gameStatus === "WaitingForPlayers") {
+      redStatus.textContent = "🟠 Đang chờ đối thủ";
+      blackStatus.textContent = "⚪ Chờ tham gia";
+      return;
+    }
+
     // ==============================================
     // VS COMPUTER
     // ==============================================
 
     if (VS_COMPUTER) {
       if (gameStatus !== "InProgress") {
+        if (gameStatus === "Draw") {
+          redStatus.textContent = "🤝 Hòa cờ";
+          blackStatus.textContent = "🤝 Hòa cờ";
+          return;
+        }
+
         if (gameStatus === "RedWins") {
           redStatus.textContent = "🏆 Chiến thắng";
 
@@ -1779,6 +2376,12 @@
     // ==============================================
 
     if (gameStatus !== "InProgress") {
+      if (gameStatus === "Draw") {
+        redStatus.textContent = "🤝 Hòa cờ";
+        blackStatus.textContent = "🤝 Hòa cờ";
+        return;
+      }
+
       if (gameStatus === "RedWins") {
         redStatus.textContent = "🏆 Chiến thắng";
 

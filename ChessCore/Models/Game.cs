@@ -7,6 +7,7 @@ namespace ChessCore.Models
     public class Game
     {
         public int Id { get; set; }
+        public string RoomCode { get; set; } = string.Empty;
         public GameStatus Status { get; set; } = GameStatus.WaitingForPlayers;
         public PieceColor CurrentTurn { get; set; } = PieceColor.Red; // Red goes first
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

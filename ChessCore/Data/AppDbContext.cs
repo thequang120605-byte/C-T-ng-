@@ -46,6 +46,8 @@ namespace ChessCore.Data
             modelBuilder.Entity<Game>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.RoomCode).IsRequired().HasMaxLength(32);
+                entity.HasIndex(e => e.RoomCode).IsUnique();
                 entity.Property(e => e.Status)
                     .HasConversion<string>() // Lưu enum dạng string cho dễ đọc trong DB MySql
                     .HasMaxLength(30);

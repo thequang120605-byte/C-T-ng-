@@ -44,13 +44,25 @@ namespace ChessCore.Controllers
 
                 if (user != null && VerifyPassword(model.Password, user.PasswordHash))
                 {
+                    if (string.IsNullOrEmpty(user.PlayerId))
+                    {
+                        var random = new Random();
+                        string newPid;
+                        do
+                        {
+                            newPid = "CT-" + random.Next(10000, 99999).ToString();
+                        } while (await _context.Users.AnyAsync(u => u.PlayerId == newPid));
+                        user.PlayerId = newPid;
+                        await _context.SaveChangesAsync();
+                    }
+
                     var claims = new[]
                     {
                         new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                         new Claim(ClaimTypes.Name, user.Username),
                         new Claim(ClaimTypes.Email, user.Email),
                         new Claim(ClaimTypes.Role, user.Role ?? "Player"),
-                        new Claim("PlayerId", user.PlayerId ?? ""),
+                        new Claim("PlayerId", user.PlayerId),
                         new Claim("Elo", user.Elo.ToString())
                     };
 
