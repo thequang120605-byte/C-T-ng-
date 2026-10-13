@@ -22,6 +22,461 @@ namespace ChessCore.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("ChessCore.Models.CourseLesson", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BoardPosition")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LessonType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<int>("ModuleId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModuleId", "DisplayOrder")
+                        .IsUnique();
+
+                    b.ToTable("CourseLessons");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Content = "Bàn cờ Tướng có 9 đường dọc và 10 đường ngang, ở giữa là con sông. Mỗi bên có một cung 3x3 để Tướng và Sĩ hoạt động.",
+                            Description = "Sông, cung tướng và đường đi trên bàn cờ.",
+                            DisplayOrder = 1,
+                            LessonType = "board",
+                            ModuleId = 1,
+                            Title = "Bàn cờ và các khu vực"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Content = "Bảy loại quân gồm Tướng, Sĩ, Tượng, Xe, Pháo, Mã và Binh/Chốt. Quân Đỏ và quân Đen có mặt chữ khác nhau nhưng cách đi tương ứng.",
+                            Description = "Tên gọi, mặt chữ và giá trị tương đối của các quân.",
+                            DisplayOrder = 2,
+                            LessonType = "theory",
+                            ModuleId = 1,
+                            Title = "Nhận biết 7 loại quân"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Content = "Xe đi ngang hoặc dọc không giới hạn, nhưng không được đi xuyên qua quân khác. Xe Đỏ bắt đầu ở hàng cuối, cột 0; Xe Đen bắt đầu ở hàng đầu, cột 0. Bạn điều khiển Xe Đỏ, còn Xe Đen là quân đối diện để quan sát và thực hành ăn quân.",
+                            Description = "Nhận biết Xe và thực hành đường đi của Xe.",
+                            DisplayOrder = 1,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Xe: đi ngang và dọc"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Content = "Pháo đi như Xe khi không ăn. Khi ăn, Pháo phải nhảy qua đúng một quân làm ngòi.",
+                            Description = "Phân biệt nước đi thường và nước ăn của Pháo.",
+                            DisplayOrder = 2,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Pháo: đi và ăn qua ngòi"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Content = "Mã đi theo hình chữ L. Nếu chân Mã bị chặn, hướng đó không đi được. Mã Đỏ bắt đầu ở hàng cuối, cột 1 và 7.",
+                            Description = "Thực hành tám hướng đi của Mã.",
+                            DisplayOrder = 3,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Mã: chữ L và cản chân"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Content = "Tướng đi ngang hoặc dọc một ô trong cung 3x3. Tướng Đỏ bắt đầu ở hàng 9, cột 4.",
+                            Description = "Học giới hạn cung và cách đi của Tướng.",
+                            DisplayOrder = 4,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Tướng: một bước trong cung"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Content = "Sĩ đi chéo một ô và chỉ hoạt động trong cung. Sĩ Đỏ bắt đầu ở hàng 9, cột 3 và 5.",
+                            Description = "Học bốn đường chéo hợp lệ của Sĩ.",
+                            DisplayOrder = 5,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Sĩ: đi chéo trong cung"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Content = "Tượng đi chéo hai ô, không được qua sông và không được đi khi mắt Tượng bị chặn.",
+                            Description = "Học mắt Tượng và giới hạn qua sông.",
+                            DisplayOrder = 6,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Tượng: chéo hai ô"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Content = "Binh đi thẳng trước khi qua sông. Sau khi qua sông, Binh được đi ngang nhưng không đi lùi.",
+                            Description = "Thực hành Binh trước và sau khi qua sông.",
+                            DisplayOrder = 7,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Binh: qua sông đổi cách đi"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Content = "Luyện phối hợp Xe và Pháo từ đúng vị trí khai cuộc của quân Đỏ.",
+                            Description = "Ghép hai quân chủ lực trên thế khai cuộc.",
+                            DisplayOrder = 8,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Kết hợp Xe và Pháo"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Content = "Sau khi nắm từng quân, hãy phối hợp Xe, Pháo và Mã để mở đường và ăn quân.",
+                            Description = "Bài thực hành phối hợp ba quân.",
+                            DisplayOrder = 9,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Kết hợp Xe, Pháo và Mã"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Content = "Chiếu là khi Tướng đang bị đe dọa bắt ở nước kế tiếp. Chiếu hết là khi bên bị chiếu không còn nước hợp lệ để thoát chiếu.",
+                            Description = "Nhận biết tình huống bị chiếu và kết thúc ván.",
+                            DisplayOrder = 1,
+                            LessonType = "theory",
+                            ModuleId = 3,
+                            Title = "Chiếu tướng và chiếu hết"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Content = "Bắt bí là không còn nước hợp lệ nhưng Tướng không bị chiếu. Khi ghi biên bản, hãy ghi số nước, quân đi, hướng đi và ô đến theo quy ước của ván.",
+                            Description = "Bắt bí, các trường hợp hòa và ký hiệu nước đi.",
+                            DisplayOrder = 2,
+                            LessonType = "theory",
+                            ModuleId = 3,
+                            Title = "Hòa cờ và ghi biên bản"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Content = "Ưu tiên đưa các quân hoạt động tốt, mở đường cho Xe, không di chuyển một quân quá nhiều lần và luôn chú ý an toàn của Tướng.",
+                            Description = "Kiểm soát trung tâm và phát triển quân.",
+                            DisplayOrder = 1,
+                            LessonType = "theory",
+                            ModuleId = 4,
+                            Title = "Nguyên tắc khai cuộc"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Content = "Xe, Pháo, Mã nên hỗ trợ lẫn nhau. Chỉ đổi quân khi có lợi về vị trí, vật chất hoặc làm giảm áp lực lên Tướng của bạn.",
+                            Description = "Xây dựng kế hoạch trung cuộc vững chắc.",
+                            DisplayOrder = 2,
+                            LessonType = "theory",
+                            ModuleId = 4,
+                            Title = "Phối hợp và đổi quân"
+                        });
+                });
+
+            modelBuilder.Entity("ChessCore.Models.CourseModule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisplayOrder")
+                        .IsUnique();
+
+                    b.ToTable("CourseModules");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Làm quen với bàn cờ, cung, sông và các quân cờ.",
+                            DisplayOrder = 1,
+                            Icon = "fa-seedling",
+                            Title = "Vỡ lòng & Làm quen"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Học từng quân riêng lẻ, sau đó luyện phối hợp 2–3 quân trên thế khai cuộc chuẩn.",
+                            DisplayOrder = 2,
+                            Icon = "fa-arrows-up-down-left-right",
+                            Title = "Nhận biết quân & Nước đi"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Hiểu chiếu tướng, chiếu hết, hòa cờ và cách ghi biên bản.",
+                            DisplayOrder = 3,
+                            Icon = "fa-scale-balanced",
+                            Title = "Luật chơi & Nguyên tắc cơ bản"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Description = "Phát triển quân, phối hợp lực lượng và đổi quân có lợi.",
+                            DisplayOrder = 4,
+                            Icon = "fa-chess-knight",
+                            Title = "Chiến thuật cơ bản & Trung cuộc"
+                        });
+                });
+
+            modelBuilder.Entity("ChessCore.Models.CourseQuizQuestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CorrectAnswer")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Explanation")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OptionsJson")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId", "DisplayOrder")
+                        .IsUnique();
+
+                    b.ToTable("CourseQuizQuestions");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Con sông nằm giữa hai bên và chia bàn cờ thành hai nửa.",
+                            LessonId = 1,
+                            OptionsJson = "[\"Cung tướng\",\"Con sông\",\"Đường biên\"]",
+                            Question = "Khu vực nào nằm giữa hai bên bàn cờ?"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Xe đi thẳng ngang hoặc dọc trên các đường trống.",
+                            LessonId = 2,
+                            OptionsJson = "[\"Mã\",\"Xe\",\"Tượng\"]",
+                            Question = "Quân nào có thể đi ngang hoặc dọc không giới hạn?"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Xe đi ngang hoặc dọc trên các đường trống.",
+                            LessonId = 3,
+                            OptionsJson = "[\"Chéo\",\"Ngang hoặc dọc\",\"Theo hình chữ L\"]",
+                            Question = "Xe đi như thế nào?"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Pháo phải nhảy qua đúng một quân làm ngòi để ăn.",
+                            LessonId = 4,
+                            OptionsJson = "[\"Hai ngòi\",\"Đúng một ngòi\",\"Không cần ngòi\"]",
+                            Question = "Pháo cần gì khi ăn quân?"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 1,
+                            Explanation = "Mã không đi được nếu chân Mã bị chặn.",
+                            LessonId = 5,
+                            OptionsJson = "[\"Chân Mã\",\"Mắt Tượng\",\"Cung tướng\"]",
+                            Question = "Mã bị cản bởi gì?"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Tướng chỉ đi ngang hoặc dọc một ô trong cung.",
+                            LessonId = 10,
+                            OptionsJson = "[\"Ngoài bàn cờ\",\"Trong cung 3x3\",\"Qua sông\"]",
+                            Question = "Tướng được đi ở đâu?"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 1,
+                            Explanation = "Sĩ đi chéo một ô và không ra khỏi cung.",
+                            LessonId = 11,
+                            OptionsJson = "[\"Chéo một ô trong cung\",\"Ngang không giới hạn\",\"Chéo hai ô qua sông\"]",
+                            Question = "Sĩ đi như thế nào?"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Tượng chỉ hoạt động ở phần sân của mình.",
+                            LessonId = 12,
+                            OptionsJson = "[\"Có\",\"Không\",\"Chỉ khi chiếu tướng\"]",
+                            Question = "Tượng có được qua sông không?"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Sau khi qua sông, Binh được đi ngang nhưng không đi lùi.",
+                            LessonId = 13,
+                            OptionsJson = "[\"Đi lùi\",\"Đi ngang\",\"Đi chéo hai ô\"]",
+                            Question = "Binh sau khi qua sông được đi thêm hướng nào?"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 1,
+                            Explanation = "Xe mở đường và quân làm ngòi giúp Pháo ăn đúng luật.",
+                            LessonId = 14,
+                            OptionsJson = "[\"Mở đường và tạo ngòi cho Pháo\",\"Đặt hai quân cùng một ô\",\"Cho Xe đi chéo\"]",
+                            Question = "Khi phối hợp Xe và Pháo cần chú ý gì?"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 1,
+                            Explanation = "Xe, Pháo và Mã cần phối hợp thay vì hoạt động rời rạc.",
+                            LessonId = 15,
+                            OptionsJson = "[\"Cho các quân hỗ trợ lẫn nhau\",\"Chỉ di chuyển Tướng\",\"Không được ăn quân\"]",
+                            Question = "Mục tiêu của bài phối hợp ba quân là gì?"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 1,
+                            Explanation = "Phát triển quân và kiểm soát trung tâm giúp các quân phối hợp tốt hơn.",
+                            LessonId = 8,
+                            OptionsJson = "[\"Phát triển quân và kiểm soát trung tâm\",\"Di chuyển một quân liên tục\",\"Bỏ qua an toàn của Tướng\"]",
+                            Question = "Đâu là nguyên tắc khai cuộc tốt?"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            CorrectAnswer = 2,
+                            DisplayOrder = 1,
+                            Explanation = "Chiếu hết kết thúc ván vì bên bị chiếu không thể hóa giải.",
+                            LessonId = 6,
+                            OptionsJson = "[\"Tướng bị đe dọa nhưng còn đường thoát\",\"Tướng không bị đe dọa\",\"Bị chiếu và không còn nước hợp lệ để thoát\"]",
+                            Question = "Chiếu hết nghĩa là gì?"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 1,
+                            Explanation = "Bắt bí là hòa cờ: không còn nước đi nhưng Tướng không bị chiếu.",
+                            LessonId = 7,
+                            OptionsJson = "[\"Không còn nước hợp lệ nhưng không bị chiếu\",\"Bị chiếu hết\",\"Ăn được quân Xe\"]",
+                            Question = "Bắt bí là trường hợp nào?"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Đổi quân cần phục vụ kế hoạch và đem lại lợi thế.",
+                            LessonId = 9,
+                            OptionsJson = "[\"Luôn luôn đổi quân\",\"Khi đổi quân có lợi về vị trí hoặc vật chất\",\"Không bao giờ đổi quân\"]",
+                            Question = "Khi nào nên đổi quân?"
+                        });
+                });
+
             modelBuilder.Entity("ChessCore.Models.Game", b =>
                 {
                     b.Property<int>("Id")
@@ -44,16 +499,16 @@ namespace ChessCore.Migrations
                     b.Property<string>("InitialFen")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("RoomCode")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
                     b.Property<DateTime?>("LastMoveAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<int?>("RedPlayerId")
                         .HasColumnType("int");
+
+                    b.Property<string>("RoomCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -283,6 +738,73 @@ namespace ChessCore.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("ChessCore.Models.UserCourseProgress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BestQuizScore")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("LastPosition")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuizAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("UserId", "LessonId")
+                        .IsUnique();
+
+                    b.ToTable("UserCourseProgresses");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.CourseLesson", b =>
+                {
+                    b.HasOne("ChessCore.Models.CourseModule", "Module")
+                        .WithMany("Lessons")
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Module");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.CourseQuizQuestion", b =>
+                {
+                    b.HasOne("ChessCore.Models.CourseLesson", "Lesson")
+                        .WithMany("QuizQuestions")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+                });
+
             modelBuilder.Entity("ChessCore.Models.Game", b =>
                 {
                     b.HasOne("ChessCore.Models.User", "BlackPlayer")
@@ -307,6 +829,37 @@ namespace ChessCore.Migrations
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ChessCore.Models.UserCourseProgress", b =>
+                {
+                    b.HasOne("ChessCore.Models.CourseLesson", "Lesson")
+                        .WithMany("Progresses")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ChessCore.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.CourseLesson", b =>
+                {
+                    b.Navigation("Progresses");
+
+                    b.Navigation("QuizQuestions");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.CourseModule", b =>
+                {
+                    b.Navigation("Lessons");
                 });
 
             modelBuilder.Entity("ChessCore.Models.Game", b =>

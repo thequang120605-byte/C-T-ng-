@@ -1,21 +1,21 @@
 {
   "format": 1,
   "restore": {
-    "D:\\TRONGNGUYEN_HK7\\KLCN_153_CO_TUONG\\Dev\\C-T-ng-\\ChessCore\\ChessCore.csproj": {}
+    "C:\\Users\\ADMIN\\Desktop\\C-T-ng-\\ChessCore\\ChessCore.csproj": {}
   },
   "projects": {
-    "D:\\TRONGNGUYEN_HK7\\KLCN_153_CO_TUONG\\Dev\\C-T-ng-\\ChessCore\\ChessCore.csproj": {
+    "C:\\Users\\ADMIN\\Desktop\\C-T-ng-\\ChessCore\\ChessCore.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\TRONGNGUYEN_HK7\\KLCN_153_CO_TUONG\\Dev\\C-T-ng-\\ChessCore\\ChessCore.csproj",
+        "projectUniqueName": "C:\\Users\\ADMIN\\Desktop\\C-T-ng-\\ChessCore\\ChessCore.csproj",
         "projectName": "ChessCore",
-        "projectPath": "D:\\TRONGNGUYEN_HK7\\KLCN_153_CO_TUONG\\Dev\\C-T-ng-\\ChessCore\\ChessCore.csproj",
-        "packagesPath": "C:\\Users\\ACER\\.nuget\\packages\\",
-        "outputPath": "D:\\TRONGNGUYEN_HK7\\KLCN_153_CO_TUONG\\Dev\\C-T-ng-\\ChessCore\\obj\\",
+        "projectPath": "C:\\Users\\ADMIN\\Desktop\\C-T-ng-\\ChessCore\\ChessCore.csproj",
+        "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ADMIN\\Desktop\\C-T-ng-\\ChessCore\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "D:\\TRONGNGUYEN_HK7\\KLCN_153_CO_TUONG\\Dev\\C-T-ng-\\NuGet.Config",
-          "C:\\Users\\ACER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\ADMIN\\Desktop\\C-T-ng-\\NuGet.Config",
+          "C:\\Users\\ADMIN\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -23,7 +23,6 @@
           "net9.0"
         ],
         "sources": {
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -72,24 +71,6 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[9.0.20, 9.0.20]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Host.win-x64",
-              "version": "[9.0.20, 9.0.20]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Ref",
-              "version": "[9.0.20, 9.0.20]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Ref",
-              "version": "[9.0.20, 9.0.20]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"

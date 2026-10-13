@@ -29,6 +29,7 @@
                     var isHome = path == "/" || path == "";
                     var isGame = path.StartsWith("/Game", StringComparison.OrdinalIgnoreCase);
                     var isPuzzle = path.StartsWith("/Puzzle", StringComparison.OrdinalIgnoreCase);
+                    var isCourse = path.StartsWith("/Course", StringComparison.OrdinalIgnoreCase);
                 }
                 <a href="/" class="nav-item @(isHome ? "active" : "")">
                     <i class="fa-solid fa-house"></i>
@@ -46,7 +47,7 @@
                     <i class="fa-solid fa-chart-simple"></i>
                     <span data-i18n="menu_stats">Thống kê</span>
                 </a>
-                <a href="#" class="nav-item">
+                <a href="/Course" class="nav-item @(isCourse ? "active" : "")">
                     <i class="fa-solid fa-graduation-cap"></i>
                     <span data-i18n="menu_course">Khóa học</span>
                 </a>
