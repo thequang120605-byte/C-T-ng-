@@ -411,4 +411,4 @@ D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\comp
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\3k3slxwqqg-{0}-3aoxig1y8d-3aoxig1y8d.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\g7b6p8umme-{0}-a34g90vujk-a34g90vujk.gz
 D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\5fb2geqwon-{0}-rhsn9dusr5-rhsn9dusr5.gz
-D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-kdk9ofc0ad-kdk9ofc0ad.gz
+D:\TRONGNGUYEN_HK7\KLCN_153_CO_TUONG\Dev\C-T-ng-\ChessCore\obj\Debug\net9.0\compressed\w3gzljr3cc-{0}-md325f4jh0-md325f4jh0.gz
