@@ -1,0 +1,221 @@
+@model List<ChessCore.Models.CourseModule>
+@{
+    ViewData["Title"] = "Quản lý Khóa học - Admin";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fa-solid fa-graduation-cap"></i> Quản lý Khóa học & Bài học</h1>
+        <div class="admin-tabs">
+            <a href="/Admin" class="admin-tab-btn"><i class="fa-solid fa-chart-pie"></i> Tổng quan</a>
+            <a href="/Admin/Puzzles" class="admin-tab-btn"><i class="fa-solid fa-puzzle-piece"></i> Quản lý Cờ thế</a>
+            <a href="/Admin/Courses" class="admin-tab-btn active"><i class="fa-solid fa-graduation-cap"></i> Quản lý Khóa học</a>
+            <a href="/Admin/AiBenchmark" class="admin-tab-btn"><i class="fa-solid fa-microchip"></i> Hiệu năng AI</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="admin-alert admin-alert-success">
+            <i class="fa-solid fa-circle-check"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="admin-alert admin-alert-danger">
+            <i class="fa-solid fa-triangle-exclamation"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+        <button type="button" class="btn-admin btn-admin-gold" onclick="openAddLessonModal();">
+            <i class="fa-solid fa-plus"></i> Thêm bài học mới
+        </button>
+    </div>
+
+    @foreach (var module in Model)
+    {
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h2>
+                    <i class="fa-solid @module.Icon" style="color: #60a5fa;"></i>
+                    Module @module.DisplayOrder: @module.Title
+                    <span style="font-size: 13px; color: #94a3b8; font-weight: normal;">(@module.Lessons.Count bài học)</span>
+                </h2>
+                <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="openAddLessonToModule(@module.Id, '@Html.Raw(Html.Encode(module.Title))');">
+                    <i class="fa-solid fa-plus"></i> Thêm bài vào Module
+                </button>
+            </div>
+
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Thứ tự</th>
+                            <th>Tên bài học</th>
+                            <th>Loại bài</th>
+                            <th>Bàn cờ mẫu (FEN)</th>
+                            <th style="width: 140px; text-align: center;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lesson in module.Lessons.OrderBy(l => l.DisplayOrder))
+                        {
+                            <tr>
+                                <td><strong style="color: var(--accent-gold-dark);">#@lesson.DisplayOrder</strong></td>
+                                <td>
+                                    <strong>@lesson.Title</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted); max-width: 320px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                        @lesson.Description
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--bg-navy-light); color: var(--accent-gold-dark); border: 1px solid var(--border-color); font-weight: 600;">
+                                        @(lesson.LessonType == "board" ? "Bàn cờ thực hành" : "Lý thuyết")
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(lesson.BoardPosition))
+                                    {
+                                        <code class="admin-code-fen" title="@lesson.BoardPosition">
+                                            @lesson.BoardPosition
+                                        </code>
+                                    }
+                                    else
+                                    {
+                                        <span style="color: var(--text-muted); font-size: 12px;">(Không có)</span>
+                                    }
+                                </td>
+                                <td style="text-align: center;">
+                                    <div style="display: flex; gap: 6px; justify-content: center;">
+                                        <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" 
+                                                onclick='openEditLessonModal(@lesson.Id, @lesson.ModuleId, "@lesson.DisplayOrder", "@Html.Raw(Html.Encode(lesson.Title))", "@Html.Raw(Html.Encode(lesson.Description))", "@lesson.LessonType", "@lesson.BoardPosition", `@Html.Raw(Html.Encode(lesson.Content))`);' title="Chỉnh sửa bài học">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+                                        <form asp-controller="Admin" asp-action="DeleteLesson" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài học này không?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@lesson.Id" />
+                                            <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" title="Xóa bài học">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal Thêm/Sửa Bài Học -->
+<div class="admin-modal" id="lesson-modal">
+    <div class="admin-modal-dialog">
+        <div class="admin-modal-header">
+            <h3 id="lesson-modal-title"><i class="fa-solid fa-book-open" style="color: #60a5fa;"></i> Thêm bài học mới</h3>
+            <button type="button" onclick="closeLessonModal();" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form id="lesson-form" asp-controller="Admin" asp-action="CreateLesson" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="lesson-id" name="Id" value="0" />
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+                <div class="admin-form-group">
+                    <label>Module *</label>
+                    <select id="lesson-module-id" name="ModuleId" class="admin-select" required>
+                        @foreach (var m in Model)
+                        {
+                            <option value="@m.Id">Module @m.DisplayOrder: @m.Title</option>
+                        }
+                    </select>
+                </div>
+                <div class="admin-form-group">
+                    <label>Thứ tự bài</label>
+                    <input type="number" id="lesson-display-order" name="DisplayOrder" class="admin-input" placeholder="Tự động" />
+                </div>
+            </div>
+
+            <div class="admin-form-group">
+                <label>Tiêu đề bài học *</label>
+                <input type="text" id="lesson-title" name="Title" class="admin-input" required placeholder="Ví dụ: Nước đi của quân Pháo" />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px;">
+                <div class="admin-form-group">
+                    <label>Loại bài học</label>
+                    <select id="lesson-type" name="LessonType" class="admin-select">
+                        <option value="board">Bàn cờ thực hành</option>
+                        <option value="theory">Lý thuyết</option>
+                    </select>
+                </div>
+                <div class="admin-form-group">
+                    <label>Bàn cờ mẫu (FEN nếu có)</label>
+                    <input type="text" id="lesson-board-pos" name="BoardPosition" class="admin-input" placeholder="Ví dụ: 3k5/9/9/9/9/9/9/9/9/4K4 w - - 0 1" />
+                </div>
+            </div>
+
+            <div class="admin-form-group">
+                <label>Tóm tắt ngắn</label>
+                <input type="text" id="lesson-desc" name="Description" class="admin-input" placeholder="Mô tả tóm tắt nội dung bài học..." />
+            </div>
+
+            <div class="admin-form-group">
+                <label>Nội dung chi tiết (HTML hoặc Text)</label>
+                <textarea id="lesson-content" name="Content" class="admin-textarea" rows="5" placeholder="Nội dung hướng dẫn chi tiết cho học viên..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+                <button type="button" class="btn-admin" style="background: #334155; color: white;" onclick="closeLessonModal();">Hủy bỏ</button>
+                <button type="submit" class="btn-admin btn-admin-gold"><i class="fa-solid fa-check"></i> Lưu bài học</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openAddLessonModal() {
+            document.getElementById('lesson-modal-title').innerHTML = '<i class="fa-solid fa-book-open" style="color: #60a5fa;"></i> Thêm bài học mới';
+            document.getElementById('lesson-form').action = '/Admin/CreateLesson';
+            document.getElementById('lesson-id').value = '0';
+            document.getElementById('lesson-display-order').value = '';
+            document.getElementById('lesson-title').value = '';
+            document.getElementById('lesson-desc').value = '';
+            document.getElementById('lesson-board-pos').value = '';
+            document.getElementById('lesson-content').value = '';
+            document.getElementById('lesson-type').value = 'board';
+            document.getElementById('lesson-modal').classList.add('show');
+        }
+
+        function openAddLessonToModule(moduleId, moduleTitle) {
+            openAddLessonModal();
+            document.getElementById('lesson-module-id').value = moduleId;
+        }
+
+        function openEditLessonModal(id, moduleId, displayOrder, title, desc, type, boardPos, content) {
+            document.getElementById('lesson-modal-title').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: #60a5fa;"></i> Chỉnh sửa bài học #' + id;
+            document.getElementById('lesson-form').action = '/Admin/EditLesson';
+            document.getElementById('lesson-id').value = id;
+            document.getElementById('lesson-module-id').value = moduleId;
+            document.getElementById('lesson-display-order').value = displayOrder;
+            document.getElementById('lesson-title').value = title;
+            document.getElementById('lesson-desc').value = desc;
+            document.getElementById('lesson-type').value = type || 'board';
+            document.getElementById('lesson-board-pos').value = boardPos || '';
+            document.getElementById('lesson-content').value = content || '';
+            document.getElementById('lesson-modal').classList.add('show');
+        }
+
+        function closeLessonModal() {
+            document.getElementById('lesson-modal').classList.remove('show');
+        }
+    </script>
+}

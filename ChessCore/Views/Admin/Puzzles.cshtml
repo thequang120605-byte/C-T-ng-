@@ -1,0 +1,193 @@
+@model List<ChessCore.Models.Puzzle>
+@{
+    ViewData["Title"] = "Quản lý Cờ thế - Admin";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fa-solid fa-puzzle-piece"></i> Quản lý Cờ thế (Puzzles)</h1>
+        <div class="admin-tabs">
+            <a href="/Admin" class="admin-tab-btn"><i class="fa-solid fa-chart-pie"></i> Tổng quan</a>
+            <a href="/Admin/Puzzles" class="admin-tab-btn active"><i class="fa-solid fa-puzzle-piece"></i> Quản lý Cờ thế</a>
+            <a href="/Admin/Courses" class="admin-tab-btn"><i class="fa-solid fa-graduation-cap"></i> Quản lý Khóa học</a>
+            <a href="/Admin/AiBenchmark" class="admin-tab-btn"><i class="fa-solid fa-microchip"></i> Hiệu năng AI</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="admin-alert admin-alert-success">
+            <i class="fa-solid fa-circle-check"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="admin-alert admin-alert-danger">
+            <i class="fa-solid fa-triangle-exclamation"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2><i class="fa-solid fa-list-check" style="color: #facc15;"></i> Danh sách Cờ thế hiện có (@Model.Count thế cờ)</h2>
+            <button type="button" class="btn-admin btn-admin-gold" onclick="openAddPuzzleModal();">
+                <i class="fa-solid fa-plus"></i> Thêm thế cờ mới
+            </button>
+        </div>
+
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">Màn</th>
+                        <th>Tên thế cờ</th>
+                        <th>Độ khó</th>
+                        <th>Sát pháp</th>
+                        <th>Chuỗi FEN</th>
+                        <th style="width: 140px; text-align: center;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td><strong style="color: var(--accent-gold-dark);">#@p.Level</strong></td>
+                            <td>
+                                <strong>@p.Title</strong>
+                                <div style="font-size: 11px; color: var(--text-muted); max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                    @p.Description
+                                </div>
+                            </td>
+                            <td>
+                                <span style="font-size: 12px; font-weight: 600; color: @(p.Difficulty == 1 ? "#059669" : (p.Difficulty == 2 ? "#d97706" : "#dc2626"));">
+                                    @(p.Difficulty == 1 ? "Dễ" : (p.Difficulty == 2 ? "Trung bình" : "Khó"))
+                                </span>
+                            </td>
+                            <td><span style="color: var(--text-main);">@p.MateIn nước</span></td>
+                            <td>
+                                <code class="admin-code-fen" title="@p.Fen">
+                                    @p.Fen
+                                </code>
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; gap: 6px; justify-content: center;">
+                                    <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" 
+                                            onclick='openEditPuzzleModal(@p.Id, "@p.Level", "@Html.Raw(Html.Encode(p.Title))", "@Html.Raw(Html.Encode(p.Description))", "@p.Fen", @p.MateIn, @p.Difficulty);' title="Chỉnh sửa">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <form asp-controller="Admin" asp-action="DeletePuzzle" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thế cờ này không?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@p.Id" />
+                                        <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" title="Xóa thế cờ">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Cờ Thế -->
+<div class="admin-modal" id="puzzle-modal">
+    <div class="admin-modal-dialog">
+        <div class="admin-modal-header">
+            <h3 id="puzzle-modal-title"><i class="fa-solid fa-puzzle-piece" style="color: #facc15;"></i> Thêm thế cờ mới</h3>
+            <button type="button" onclick="closePuzzleModal();" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form id="puzzle-form" asp-controller="Admin" asp-action="CreatePuzzle" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="puzzle-id" name="Id" value="0" />
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px;">
+                <div class="admin-form-group">
+                    <label>Màn chơi (Level)</label>
+                    <input type="number" id="puzzle-level" name="Level" class="admin-input" placeholder="Tự động" />
+                </div>
+                <div class="admin-form-group">
+                    <label>Tên thế cờ *</label>
+                    <input type="text" id="puzzle-title" name="Title" class="admin-input" required placeholder="Ví dụ: Đơn mã bảo giá" />
+                </div>
+            </div>
+
+            <div class="admin-form-group">
+                <label>Chuỗi FEN (Trạng thái bàn cờ) *</label>
+                <input type="text" id="puzzle-fen" name="Fen" class="admin-input" required placeholder="Ví dụ: 3k5/4a4/9/9/9/9/9/9/4A4/4K4 w - - 0 1" />
+                <small style="color: #64748b; font-size: 11px;">Bên đi trước (w: Đỏ, b: Đen) phải là bên thực hiện sát pháp.</small>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="admin-form-group">
+                    <label>Sát pháp (Mate in)</label>
+                    <select id="puzzle-matein" name="MateIn" class="admin-select">
+                        <option value="1">Chiếu bí 1 nước</option>
+                        <option value="2">Chiếu bí 2 nước</option>
+                        <option value="3">Chiếu bí 3 nước</option>
+                    </select>
+                </div>
+                <div class="admin-form-group">
+                    <label>Độ khó</label>
+                    <select id="puzzle-difficulty" name="Difficulty" class="admin-select">
+                        <option value="1">Dễ</option>
+                        <option value="2">Trung bình</option>
+                        <option value="3">Khó</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="admin-form-group">
+                <label>Mô tả / Gợi ý</label>
+                <textarea id="puzzle-desc" name="Description" class="admin-textarea" rows="3" placeholder="Gợi ý hướng đánh hoặc bối cảnh thế cờ..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+                <button type="button" class="btn-admin" style="background: #334155; color: white;" onclick="closePuzzleModal();">Hủy bỏ</button>
+                <button type="submit" class="btn-admin btn-admin-gold"><i class="fa-solid fa-check"></i> Lưu thế cờ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openAddPuzzleModal() {
+            document.getElementById('puzzle-modal-title').innerHTML = '<i class="fa-solid fa-puzzle-piece" style="color: #facc15;"></i> Thêm thế cờ mới';
+            document.getElementById('puzzle-form').action = '/Admin/CreatePuzzle';
+            document.getElementById('puzzle-id').value = '0';
+            document.getElementById('puzzle-level').value = '';
+            document.getElementById('puzzle-title').value = '';
+            document.getElementById('puzzle-desc').value = '';
+            document.getElementById('puzzle-fen').value = '';
+            document.getElementById('puzzle-matein').value = '1';
+            document.getElementById('puzzle-difficulty').value = '1';
+            document.getElementById('puzzle-modal').classList.add('show');
+        }
+
+        function openEditPuzzleModal(id, level, title, desc, fen, mateIn, difficulty) {
+            document.getElementById('puzzle-modal-title').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: #60a5fa;"></i> Chỉnh sửa thế cờ #' + id;
+            document.getElementById('puzzle-form').action = '/Admin/EditPuzzle';
+            document.getElementById('puzzle-id').value = id;
+            document.getElementById('puzzle-level').value = level;
+            document.getElementById('puzzle-title').value = title;
+            document.getElementById('puzzle-desc').value = desc;
+            document.getElementById('puzzle-fen').value = fen;
+            document.getElementById('puzzle-matein').value = mateIn;
+            document.getElementById('puzzle-difficulty').value = difficulty;
+            document.getElementById('puzzle-modal').classList.add('show');
+        }
+
+        function closePuzzleModal() {
+            document.getElementById('puzzle-modal').classList.remove('show');
+        }
+    </script>
+}

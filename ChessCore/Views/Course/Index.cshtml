@@ -1,0 +1,190 @@
+@model ChessCore.ViewModels.CourseIndexViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Học cờ tướng";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/course.css" asp-append-version="true" />
+}
+
+<div class="course-page">
+    <section class="course-hero">
+        <div>
+            <span class="course-kicker"><i class="fa-solid fa-graduation-cap"></i> LỘ TRÌNH CHO NGƯỜI MỚI</span>
+            <h1>Học Cờ Tướng Từ Con Số Không</h1>
+            <p>Từ bàn cờ đầu tiên đến những nguyên tắc trung cuộc vững chắc. Học từng bước, thực hành ngay và lưu lại tiến độ của bạn.</p>
+        </div>
+        <div class="course-progress-card">
+            <div class="progress-ring" style="--progress: @Model.ProgressPercent%;">
+                <strong>@Model.ProgressPercent%</strong>
+            </div>
+            <div>
+                <b>Tiến độ khóa học</b>
+                <span>@Model.CompletedLessons/@Model.TotalLessons bài đã hoàn thành</span>
+                <div style="margin-top: 8px;">
+                    <a href="/Course/Certificate" class="btn-cert-badge" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #b45309); color: #ffffff; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 12px rgba(180, 83, 9, 0.25); transition: all 0.2s ease; border: 1px solid rgba(255,255,255,0.2);">
+                        <i class="fa-solid fa-award" style="color: #fef08a;"></i> 
+                        <span>Chứng chỉ hoàn thành</span>
+                        @if (Model.ProgressPercent >= 100)
+                        {
+                            <span style="background: #22c55e; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 2px;">Khả dụng</span>
+                        }
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (!User.Identity?.IsAuthenticated == true)
+    {
+        <div class="course-guest-notice" style="background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="fa-solid fa-circle-info" style="color: #d97706; font-size: 20px;"></i>
+                <span style="font-size: 14px; color: #92400e;">
+                    Bạn đang xem khóa học với tư cách <b>Khách (Guest)</b>. Bạn có thể tự do học và làm bài tập, nhưng hãy <b>Đăng nhập</b> để hệ thống lưu lại tiến độ học tập và huy hiệu nhé!
+                </span>
+            </div>
+            <a asp-controller="Auth" asp-action="Login" style="background: #d97706; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập ngay
+            </a>
+        </div>
+    }
+
+    <div class="course-layout">
+        <aside class="course-modules">
+            <h2>Nội dung khóa học</h2>
+            @foreach (var item in Model.Modules)
+            {
+                <button type="button" class="module-summary" data-module-index="@item.Module.DisplayOrder - 1" aria-controls="course-module-@item.Module.DisplayOrder" aria-pressed="false">
+                    <div class="module-icon"><i class="fa-solid @item.Module.Icon"></i></div>
+                    <div><b>Module @item.Module.DisplayOrder: @item.Module.Title</b><span>@item.CompletedLessons/@item.Lessons.Count bài</span></div>
+                </button>
+            }
+        </aside>
+
+        <main class="course-lessons">
+            @foreach (var item in Model.Modules)
+            {
+                <section id="course-module-@item.Module.DisplayOrder" class="course-module" data-module-index="@item.Module.DisplayOrder - 1" hidden>
+                    <div class="module-heading">
+                        <span>MODULE @item.Module.DisplayOrder</span>
+                        <h2>@item.Module.Title</h2>
+                        <p>@item.Module.Description</p>
+                    </div>
+                    <div class="lesson-grid">
+                        @foreach (var lesson in item.Lessons)
+                        {
+                            var options = lesson.Questions.SelectMany(q => JsonSerializer.Deserialize<List<string>>(q.OptionsJson) ?? []).ToList();
+                            <article class="lesson-card @(lesson.Progress?.IsCompleted == true ? "completed" : "")" id="lesson-@lesson.Lesson.Id">
+                                <div class="lesson-number">@lesson.Lesson.DisplayOrder.ToString("00")</div>
+                                <div class="lesson-main">
+                                    <div class="lesson-label"><i class="fa-solid @(lesson.Progress?.IsCompleted == true ? "fa-circle-check" : "fa-book-open")"></i> @(lesson.Progress?.IsCompleted == true ? "Đã hoàn thành" : "Bài học")</div>
+                                    <h3>@lesson.Lesson.Title</h3>
+                                    <p>@lesson.Lesson.Description</p>
+                                    <div class="lesson-actions">
+                                        <button class="course-btn primary lesson-open" data-lesson-id="@lesson.Lesson.Id"><i class="fa-solid fa-play"></i> @(lesson.Progress?.IsCompleted == true ? "Ôn lại bài" : "Bắt đầu học")</button>
+                                        @if (lesson.Progress?.BestQuizScore > 0) { <span class="lesson-score">Quiz: @lesson.Progress.BestQuizScore%</span> }
+                                    </div>
+                                </div>
+                            </article>
+                            <template id="lesson-data-@lesson.Lesson.Id">
+                                <div class="lesson-detail">
+                                    <h2>@lesson.Lesson.Title</h2>
+                                    <p class="lesson-description">@lesson.Lesson.Description</p>
+                                    <div class="lesson-content">@lesson.Lesson.Content</div>
+                                    @if (lesson.Lesson.LessonType == "board")
+                                    {
+                                        <div class="piece-guide">
+                                            <span><b class="red-piece">帥</b> Tướng</span><span><b class="red-piece">仕</b> Sĩ</span><span><b class="red-piece">相</b> Tượng</span><span><b class="red-piece">俥</b> Xe</span><span><b class="red-piece">炮</b> Pháo</span><span><b class="red-piece">傌</b> Mã</span><span><b class="red-piece">兵</b> Binh</span>
+                                        </div>
+                                        <div class="course-board @(lesson.Lesson.Id == 1 ? "course-board-static" : "")" data-visual-lesson="@lesson.Lesson.Id" aria-label="Bàn cờ minh họa">
+                                            <svg class="course-board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet">
+                                                <rect x="0" y="0" width="900" height="1000" class="board-outer-bg" />
+                                                <rect x="15" y="15" width="870" height="970" class="board-background" />
+                                                <g class="course-board-lines">
+                                                    @for (var row = 0; row < 10; row++) { <line x1="50" y1="@(50 + row * 100)" x2="850" y2="@(50 + row * 100)" /> }
+                                                    <line x1="50" y1="50" x2="50" y2="950" /><line x1="850" y1="50" x2="850" y2="950" />
+                                                    @for (var col = 1; col < 8; col++) { <line x1="@(50 + col * 100)" y1="50" x2="@(50 + col * 100)" y2="450" /><line x1="@(50 + col * 100)" y1="550" x2="@(50 + col * 100)" y2="950" /> }
+                                                </g>
+                                                <g class="course-palace-lines"><line x1="350" y1="50" x2="550" y2="250" /><line x1="550" y1="50" x2="350" y2="250" /><line x1="350" y1="750" x2="550" y2="950" /><line x1="550" y1="750" x2="350" y2="950" /></g>
+                                                <g class="course-river"><text x="250" y="520">楚 河</text><text x="650" y="520">漢 界</text></g>
+                                                <g class="course-moves-layer"></g><g class="course-pieces-layer"></g>
+                                            </svg>
+                                        </div>
+                                        <div class="course-board-toolbar" style="display: flex; gap: 8px; justify-content: center; margin: 12px 0 6px;">
+                                            <button type="button" class="btn-admin btn-admin-sm btn-admin-primary btn-board-reset" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">
+                                                <i class="fa-solid fa-rotate-left"></i> Đặt lại thế cờ
+                                            </button>
+                                            <button type="button" class="btn-admin btn-admin-sm btn-board-copy-fen" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: rgba(255,255,255,0.08); color: #cbd5e1;">
+                                                <i class="fa-regular fa-copy"></i> Sao chép FEN
+                                            </button>
+                                        </div>
+                                        <div class="board-legend"><span class="legend-red"></span> Quân Đỏ <span class="legend-black"></span> Quân Đen
+                                            @if (lesson.Lesson.Id != 1)
+                                            {
+                                                <span class="legend-arrow">➜</span><span>Nước đi hợp lệ</span>
+                                            }
+                                        </div>
+                                        @if (lesson.Lesson.Id == 1)
+                                        {
+                                            <p class="practice-hint"><i class="fa-solid fa-eye"></i> Đây là vị trí khai cuộc chuẩn với đủ 32 quân. Hãy quan sát bàn cờ, sông và hai cung tướng.</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="practice-hint"><i class="fa-solid fa-hand-pointer"></i> <b>Thực hành tương tác:</b> Nhấn chọn quân Đỏ trên bàn cờ để xem các ô đi hợp lệ và tập di chuyển / ăn quân theo luật.</p>
+                                        }
+                                    }
+                                    @if (lesson.Lesson.Id == 2)
+                                    {
+                                        <div class="piece-gallery">
+                                            <div><b class="red-piece">帥</b><b class="black-piece">將</b><span>Tướng</span><small>Đi 1 ô trong cung</small></div>
+                                            <div><b class="red-piece">仕</b><b class="black-piece">士</b><span>Sĩ</span><small>Đi chéo trong cung</small></div>
+                                            <div><b class="red-piece">相</b><b class="black-piece">象</b><span>Tượng</span><small>Chéo 2 ô, không qua sông</small></div>
+                                            <div><b class="red-piece">俥</b><b class="black-piece">車</b><span>Xe</span><small>Ngang/dọc tự do</small></div>
+                                            <div><b class="red-piece">砲</b><b class="black-piece">炮</b><span>Pháo</span><small>Ăn qua đúng 1 ngòi</small></div>
+                                            <div><b class="red-piece">傌</b><b class="black-piece">馬</b><span>Mã</span><small>Chữ L, vướng chân</small></div>
+                                            <div><b class="red-piece">兵</b><b class="black-piece">卒</b><span>Binh</span><small>Qua sông được đi ngang</small></div>
+                                        </div>
+                                    }
+                                    @if (lesson.Questions.Count > 0)
+                                    {
+                                        <div class="quiz-box" data-lesson-id="@lesson.Lesson.Id" data-question-count="@lesson.Questions.Count">
+                                            <h3><i class="fa-solid fa-circle-question"></i> Kiểm tra nhanh</h3>
+                                            @foreach (var question in lesson.Questions)
+                                            {
+                                                var questionOptions = JsonSerializer.Deserialize<List<string>>(question.OptionsJson) ?? [];
+                                                <div class="quiz-question" data-answer="@question.CorrectAnswer">
+                                                    <b>@question.Question</b>
+                                                    <div class="quiz-options">
+                                                        @for (var i = 0; i < questionOptions.Count; i++) { <button type="button" data-option="@i">@questionOptions[i]</button> }
+                                                    </div>
+                                                    <small class="quiz-feedback">@question.Explanation</small>
+                                                </div>
+                                            }
+                                            <button type="button" class="course-btn quiz-submit">Chấm điểm</button>
+                                            <span class="quiz-result"></span>
+                                        </div>
+                                    }
+                                    <p class="completion-note"><i class="fa-solid fa-lock"></i> Bài học chỉ hoàn thành khi bạn trả lời đúng toàn bộ câu hỏi.</p>
+                                </div>
+                            </template>
+                        }
+                    </div>
+                </section>
+            }
+        </main>
+    </div>
+</div>
+
+<div class="course-modal" id="course-modal" aria-hidden="true">
+    <div class="course-modal-content">
+        <button class="modal-close" type="button" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+        <div id="lesson-host"></div>
+    </div>
+</div>
+<form id="course-antiforgery" asp-controller="Course" asp-action="SaveProgress" method="post">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+    <script src="~/js/course.js" asp-append-version="true"></script>
+}

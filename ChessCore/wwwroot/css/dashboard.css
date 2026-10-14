@@ -1,0 +1,201 @@
+.dashboard-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    color: var(--text-main);
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.dashboard-header h1 {
+    font-size: 28px;
+    color: var(--text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dashboard-header h1 i {
+    color: var(--accent-gold);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: var(--bg-navy-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    border-color: var(--accent-gold);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--accent-gold);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 28px;
+}
+
+.stat-info h3 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stat-info .stat-value {
+    margin: 5px 0 0 0;
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--text-main);
+}
+
+.dashboard-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+@media (max-width: 900px) {
+    .dashboard-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.panel-title {
+    font-size: 18px;
+    color: var(--text-main);
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-title i {
+    color: var(--accent-gold);
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.history-item {
+    background: var(--bg-navy-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.history-item:hover {
+    background: var(--bg-navy-light);
+}
+
+.history-item.win { border-left: 4px solid #10b981; }
+.history-item.loss { border-left: 4px solid #ef4444; }
+.history-item.draw { border-left: 4px solid #f59e0b; }
+
+.history-main {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.history-opp {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 16px;
+}
+
+.history-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 15px;
+}
+
+.history-result {
+    font-weight: bold;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 6px;
+}
+
+.history-result.win { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.history-result.loss { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.history-result.draw { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: var(--bg-navy-dark);
+    border-radius: 8px;
+    gap: 12px;
+}
+
+.rank-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-navy-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.rank-1 .rank-badge { background: #fbbf24; color: var(--text-main); }
+.rank-2 .rank-badge { background: #94a3b8; color: var(--text-main); }
+.rank-3 .rank-badge { background: #b45309; color: var(--text-main); }
+
+.lb-player {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.lb-elo {
+    color: var(--accent-gold);
+    font-weight: bold;
+}

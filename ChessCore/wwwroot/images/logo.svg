@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <!-- Gradient viền ngoài vàng đồng hoàng gia -->
+    <linearGradient id="goldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="35%" stop-color="#EAB308" />
+      <stop offset="70%" stop-color="#CA8A04" />
+      <stop offset="100%" stop-color="#854D0E" />
+    </linearGradient>
+
+    <!-- Gradient gỗ gụ đỏ sang trọng -->
+    <radialGradient id="pieceWood" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EF4444" />
+      <stop offset="45%" stop-color="#DC2626" />
+      <stop offset="85%" stop-color="#991B1B" />
+      <stop offset="100%" stop-color="#450A0A" />
+    </radialGradient>
+
+    <!-- Đổ bóng 3D chân thực -->
+    <filter id="shadow3d" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+
+    <!-- Ánh kim vàng cho chữ -->
+    <linearGradient id="goldText" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFBEB" />
+      <stop offset="40%" stop-color="#FEF08A" />
+      <stop offset="80%" stop-color="#FACC15" />
+      <stop offset="100%" stop-color="#CA8A04" />
+    </linearGradient>
+  </defs>
+
+  <!-- Bóng đổ phía dưới quân cờ -->
+  <circle cx="64" cy="68" r="56" fill="rgba(0,0,0,0.4)" filter="url(#shadow3d)" />
+
+  <!-- Vành ngoài vàng óng -->
+  <circle cx="64" cy="64" r="58" fill="url(#goldRim)" stroke="#78350F" stroke-width="2" />
+
+  <!-- Vành rãnh gỗ -->
+  <circle cx="64" cy="64" r="52" fill="#7F1D1D" stroke="#B45309" stroke-width="1.5" />
+
+  <!-- Thân mặt quân cờ sơn mài đỏ -->
+  <circle cx="64" cy="64" r="48" fill="url(#pieceWood)" />
+
+  <!-- Vòng tròn chỉ vàng bên trong -->
+  <circle cx="64" cy="64" r="44" fill="none" stroke="url(#goldRim)" stroke-width="2.5" stroke-dasharray="1000" opacity="0.9" />
+
+  <!-- Chữ "帥" (Tướng Đỏ) thư pháp uy dũng -->
+  <text x="64" y="80" 
+        font-family="'KaiTi', 'STKaiti', 'Microsoft YaHei', 'SimSun', serif" 
+        font-size="48" 
+        font-weight="900" 
+        text-anchor="middle" 
+        fill="url(#goldText)" 
+        stroke="#78350F" 
+        stroke-width="1.5"
+        style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.7)); letter-spacing: 1px;">帥</text>
+
+  <!-- Ánh sáng phản chiếu bóng kính tinh tế góc trên bên trái -->
+  <path d="M 32 30 A 42 42 0 0 1 96 30 A 46 44 0 0 0 32 30 Z" fill="white" opacity="0.22" />
+</svg>

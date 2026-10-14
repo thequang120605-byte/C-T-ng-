@@ -1,0 +1,41 @@
+PASS Initial position has 44 legal red moves
+AI depth=2, ms=142, nodes=937, cutoffs=266, ttHits=0, qNodes=893, completed=2
+PASS AI selects a legal move
+PASS Search restores board and turn
+PASS Evaluation perspectives are opposites
+PASS Capturing a horse adds 400 H1 advantage
+PASS H3 recognizes a friendly defended piece
+PASS Checkmate detected
+PASS Checkmate is a loss
+PASS No-legal-move position without check
+PASS No legal moves is a loss, not draw
+PASS AI scores no moves as loss
+PASS Facing kings detected
+PASS King capture excluded
+AI depth=1, ms=7, nodes=55, cutoffs=5, ttHits=0, qNodes=55, completed=1
+PASS Depth 1 completed: ms=7, nodes=55, cutoffs=5
+AI depth=2, ms=123, nodes=937, cutoffs=266, ttHits=0, qNodes=893, completed=2
+PASS Depth 2 completed: ms=123, nodes=937, cutoffs=266
+AI depth=3, ms=224, nodes=5947, cutoffs=971, ttHits=0, qNodes=5649, completed=3
+PASS Depth 3 completed: ms=224, nodes=5947, cutoffs=971
+AI depth=4, ms=628, nodes=31078, cutoffs=6815, ttHits=739, qNodes=27106, completed=4
+PASS Depth 4 completed: ms=628, nodes=31078, cutoffs=6815
+PASS HTTP/SignalR DTO retains H1 capture delta
+PASS DTO reports opposite perspective scores
+PASS UI camelCase evaluation contract
+PASS DTO distinguishes no moves from checkmate
+PASS DTO reports checkmate
+PASS Current H1 H2 H3 breakdown adds up to the displayed Red advantage
+PASS DTO preserves initial FEN for accurate captured-piece reconstruction
+PASS Breaking the advisor pair carries a meaningful H3 defence penalty
+PASS A developed rook is preferred to a blocked home rook
+PASS Strategic evaluation treats mirrored Red and Black symmetrically
+PASS The poisoned pawn capture is legal, so declining it is a search decision
+AI depth=3, ms=2, nodes=277, cutoffs=57, ttHits=0, qNodes=230, completed=3
+PASS AI does not trade its rook for a defended pawn
+PASS Depth 3 completes with quiescence enabled
+PASS Iterative deepening reports the actual completed depth
+PASS A checkmate at the tactical horizon remains a loss
+AI depth=4, ms=536, nodes=25395, cutoffs=5919, ttHits=456, qNodes=22619, completed=4
+PASS Developed position depth 4 completed: ms=536, nodes=25395, qNodes=22619
+PASS An unnecessary early elephant advance weakens the defensive formation

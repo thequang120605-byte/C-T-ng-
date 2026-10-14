@@ -1,0 +1,90 @@
+@model ChessCore.ViewModels.VerifyOtpViewModel
+
+@{
+    ViewData["Title"] = "Xác nhận OTP";
+}
+
+<div class="auth-page">
+    <div class="auth-box" style="max-width: 500px; min-height: 400px; flex-direction: column; padding: 40px;">
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <i class="fa-solid fa-envelope-circle-check" style="font-size: 64px; color: var(--accent-gold); margin-bottom: 20px;"></i>
+            <h2 style="color: var(--text-main); margin-bottom: 10px;">Xác Thực Email</h2>
+            
+            @if (TempData["OtpMessage"] != null)
+            {
+                <p style="color: #a7f3d0; font-size: 14px;">@TempData["OtpMessage"]</p>
+            }
+
+            @if (TempData["DevOtp"] != null)
+            {
+                <div style="background: rgba(251, 191, 36, 0.2); border: 1px dashed var(--accent-gold); padding: 10px; margin-top: 15px; border-radius: 8px;">
+                    <span style="color: var(--accent-gold-light); font-size: 13px;">[DEV MODE] Mã OTP của bạn là: <strong style="font-size: 18px;">@TempData["DevOtp"]</strong></span>
+                </div>
+            }
+        </div>
+
+        <form asp-controller="Auth" asp-action="VerifyOtp" method="post">
+            <input type="hidden" asp-for="Email" />
+
+            <div class="input-group">
+                <label asp-for="Otp" style="color: var(--text-main); display: block; margin-bottom: 8px;">Nhập mã OTP 6 số</label>
+                <div class="input-icon-wrapper" style="position: relative;">
+                    <i class="fa-solid fa-key" style="position: absolute; left: 14px; top: 15px; color: var(--text-muted);"></i>
+                    <input asp-for="Otp" placeholder="123456" maxlength="6" style="width: 100%; padding: 12px 12px 12px 40px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); font-size: 18px; letter-spacing: 2px; text-align: center;" />
+                </div>
+                <span asp-validation-for="Otp" class="text-danger" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: block;"></span>
+            </div>
+            
+            <div asp-validation-summary="ModelOnly" class="text-danger" style="color: #ef4444; margin-bottom: 15px; text-align: center;"></div>
+
+            <button type="submit" class="btn-auth" style="width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dark)); color: var(--wood-dark); border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px;">
+                XÁC NHẬN <i class="fa-solid fa-check"></i>
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 25px;">
+            <span style="color: var(--text-muted); font-size: 14px;">Mã OTP sẽ hết hạn sau: </span>
+            <span id="countdown-timer" style="color: #ef4444; font-weight: bold; font-size: 16px;">05:00</span>
+        </div>
+
+        <form id="resendForm" asp-controller="Auth" asp-action="ResendOtp" method="post" style="display: none; text-align: center; margin-top: 20px;">
+            <input type="hidden" name="email" value="@Model.Email" />
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 10px;">Chưa nhận được mã?</p>
+            <button type="submit" style="background: none; border: 1px solid var(--border-color); color: var(--accent-gold); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;">
+                <i class="fa-solid fa-rotate-right"></i> GỬI LẠI OTP
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let timeLeft = 300; // 5 phút = 300 giây
+            const timerDisplay = document.getElementById('countdown-timer');
+            const resendForm = document.getElementById('resendForm');
+
+            const countdown = setInterval(function() {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                timerDisplay.textContent = 
+                    (minutes < 10 ? "0" + minutes : minutes) + ":" + 
+                    (seconds < 10 ? "0" + seconds : seconds);
+                    
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    timerDisplay.textContent = "00:00";
+                    timerDisplay.style.color = "var(--text-muted)";
+                    resendForm.style.display = "block";
+                }
+            }, 1000);
+        });
+    </script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+}

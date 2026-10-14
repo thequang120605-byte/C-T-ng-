@@ -1,0 +1,97 @@
+﻿@model ChessCore.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Thống kê";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 data-i18n="menu_stats"><i class="fa-solid fa-chart-pie"></i> Bảng điều khiển</h1>
+        <div style="background: rgba(212,175,55,0.1); color: var(--accent-gold); padding: 8px 15px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(212,175,55,0.3);">
+            <i class="fa-solid fa-trophy"></i> Hạng: @Model.RankIndex
+        </div>
+    </div>
+
+    <!-- STATS GRID -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+            <div class="stat-info">
+                <h3>ĐIỂM ELO</h3>
+                <p class="stat-value">@Model.CurrentUser.Elo</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="color: #10b981; background: rgba(16,185,129,0.1);"><i class="fa-solid fa-medal"></i></div>
+            <div class="stat-info">
+                <h3>TỈ LỆ THẮNG</h3>
+                <p class="stat-value">@Model.WinRate%</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="color: #3b82f6; background: rgba(59,130,246,0.1);"><i class="fa-solid fa-chess"></i></div>
+            <div class="stat-info">
+                <h3>TỔNG SỐ TRẬN</h3>
+                <p class="stat-value">@Model.CurrentUser.GamesPlayed</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="color: #f59e0b; background: rgba(245,158,11,0.1);"><i class="fa-solid fa-puzzle-piece"></i></div>
+            <div class="stat-info">
+                <h3>CỜ THẾ ĐÃ GIẢI</h3>
+                <p class="stat-value">@Model.PuzzlesSolved</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-content">
+        <!-- MATCH HISTORY -->
+        <div class="panel-box">
+            <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đấu gần đây</h2>
+            <div class="history-list">
+                @if (Model.RecentGames.Any())
+                {
+                    foreach (var game in Model.RecentGames)
+                    {
+                        <div class="history-item @game.Result">
+                            <div class="history-main">
+                                <div class="history-opp">vs. @game.OpponentName (Elo: @(game.OpponentElo?.ToString() ?? "?"))</div>
+                                <div class="history-meta">
+                                    <span><i class="fa-regular fa-calendar"></i> @game.PlayedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                    <span><i class="fa-solid fa-chess-board"></i> @game.TotalMoves nước</span>
+                                </div>
+                            </div>
+                            <div class="history-result @game.Result">@game.ResultText</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p style="color: var(--text-muted); text-align: center; padding: 20px;">Bạn chưa chơi trận nào.</p>
+                }
+            </div>
+        </div>
+
+        <!-- LEADERBOARD -->
+        <div class="panel-box">
+            <h2 class="panel-title"><i class="fa-solid fa-ranking-star"></i> Bảng xếp hạng</h2>
+            <div class="leaderboard-list">
+                @foreach (var user in Model.Leaderboard)
+                {
+                    var extraStyle = user.IsCurrentUser ? "border: 1px solid var(--accent-gold); background: rgba(212,175,55,0.05);" : "";
+                    var rankBadgeStyle = user.IsCurrentUser && user.Rank > 3 ? "background: var(--accent-gold); color: white;" : "";
+                    var lbPlayerStyle = user.IsCurrentUser ? "color: var(--accent-gold);" : "";
+
+                    <div class="leaderboard-item rank-@(user.Rank <= 3 ? user.Rank : 0)" style="@extraStyle">
+                        <div class="rank-badge" style="@rankBadgeStyle">@user.Rank</div>
+                        <div class="lb-player" style="@lbPlayerStyle">@user.Username</div>
+                        <div class="lb-elo">@user.Elo</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
