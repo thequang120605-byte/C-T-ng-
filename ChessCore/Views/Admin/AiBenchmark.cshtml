@@ -68,9 +68,9 @@
         </div>
         <div style="font-size: 14px; line-height: 1.8; color: var(--text-main);">
             <ul style="padding-left: 20px;">
-                <li><strong>Cắt tỉa Alpha-Beta:</strong> Khi kết hợp với kỹ thuật sắp xếp nước đi theo độ ưu tiên ăn quân <em>MVV-LVA (Most Valuable Victim - Least Valuable Attacker)</em>, số lượng nhánh phải duyệt giảm từ hàm mũ $O(b^d)$ xuống xấp xỉ $O(b^{d/2})$, cho phép thuật toán đạt tốc độ xử lý trong thời gian thực.</li>
-                <li><strong>Bảng chuyển vị (Transposition Table) với Zobrist Hashing:</strong> Tránh tính toán lại các thế cờ hoán vị (transpositions) xảy ra từ nhiều thứ tự nước đi khác nhau. Tỷ lệ trúng cache tăng dần theo độ sâu, giúp AI tiết kiệm đáng kể thời gian đánh giá hàm lượng giác/vị trí.</li>
-                <li><strong>Ứng dụng thực tế:</strong> Cấp độ 1 phù hợp cho phản hồi tức thời của người mới học; Cấp độ 2-3 cung cấp độ sâu chiến thuật ổn định cho các bài toán phân tích sai lầm sau ván cờ.</li>
+                <li><strong>Cắt tỉa Alpha-Beta:</strong> Khi kết hợp với kỹ thuật sắp xếp nước đi theo độ ưu tiên ăn quân <em>MVV-LVA (Most Valuable Victim - Least Valuable Attacker)</em>, số lượng nhánh phải duyệt giảm từ hàm mũ <code>O(b^d)</code> xuống xấp xỉ <code>O(b^(d/2))</code>, cho phép thuật toán đạt tốc độ xử lý nhanh chóng trong thời gian thực.</li>
+                <li><strong>Bảng chuyển vị (Transposition Table) với Zobrist Hashing:</strong> Tránh tính toán lại các thế cờ hoán vị (transpositions) xảy ra từ nhiều thứ tự nước đi khác nhau. Tỷ lệ trúng cache tăng dần theo độ sâu, giúp AI tiết kiệm đáng kể thời gian đánh giá hàm vị trí quân cờ.</li>
+                <li><strong>Ứng dụng thực tế theo 4 cấp độ:</strong> Cấp độ 1 (Dễ) phản hồi tức thời cho người mới bắt đầu; Cấp độ 2 (Trung bình) và Cấp độ 3 (Khó) cung cấp độ sâu chiến thuật ổn định cho luyện tập và phân tích sai lầm sau ván cờ; Cấp độ 4 (Chuyên gia) tính toán sâu các đòn phối hợp chiến thuật phức tạp.</li>
             </ul>
         </div>
     </div>

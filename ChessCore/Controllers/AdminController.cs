@@ -247,7 +247,7 @@ namespace ChessCore.Controllers
             var sampleBoard = new ChessCore.Engine.Board();
             var benchmarkResults = new List<BenchmarkResultRow>();
 
-            for (int d = 1; d <= 3; d++)
+            for (int d = 1; d <= 4; d++)
             {
                 var engine = new ChessCore.Engine.MinimaxEngine(d);
                 var sw = System.Diagnostics.Stopwatch.StartNew();
