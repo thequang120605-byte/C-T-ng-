@@ -184,6 +184,12 @@ namespace ChessCore.Controllers
             var game =
                 await _gameService.CreateGameAsync(initialFen);
 
+            if (TryGetCurrentUserId(out int userId))
+            {
+                game.RedPlayerId = userId;
+                await _dbContext.SaveChangesAsync();
+            }
+
             var board = GameRules.RebuildBoard(game.InitialFen, null, game.CurrentTurn);
 
             var response =
@@ -504,6 +510,11 @@ namespace ChessCore.Controllers
                 newStatus
             );
 
+            if (newStatus != GameStatus.InProgress)
+            {
+                await UpdateUserStatsOnGameEndAsync(game, newStatus);
+            }
+
             // =================================================
             // LẤY GAME MỚI NHẤT
             // =================================================
@@ -714,6 +725,11 @@ namespace ChessCore.Controllers
                 newStatus
             );
 
+            if (newStatus != GameStatus.InProgress)
+            {
+                await UpdateUserStatsOnGameEndAsync(game, newStatus);
+            }
+
             // =================================================
             // 14. LẤY GAME MỚI NHẤT
             // =================================================
@@ -872,6 +888,9 @@ namespace ChessCore.Controllers
                 newStatus
             );
 
+            // Cập nhật điểm Elo và thống kê cho người chơi nếu kết thúc ván
+            await UpdateUserStatsOnGameEndAsync(game, newStatus);
+
             // =================================================
             // 5. LẤY GAME SAU KHI UPDATE
             // =================================================
@@ -977,6 +996,8 @@ namespace ChessCore.Controllers
                     _dbContext.Games.Update(game);
                     await _dbContext.SaveChangesAsync();
 
+                    await UpdateUserStatsOnGameEndAsync(game, GameStatus.Draw);
+
                     var drawResponse = BuildGameResponse(game, board);
                     await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", drawResponse);
                     await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Máy đã đồng ý hòa ván cờ!" });
@@ -1059,6 +1080,8 @@ namespace ChessCore.Controllers
                 game.Status = GameStatus.Draw;
                 _dbContext.Games.Update(game);
                 await _dbContext.SaveChangesAsync();
+
+                await UpdateUserStatsOnGameEndAsync(game, GameStatus.Draw);
 
                 var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
                 var drawResponse = BuildGameResponse(game, board);
@@ -1336,6 +1359,61 @@ namespace ChessCore.Controllers
                         .ToList()
                     ?? new List<MoveHistoryDto>()
             };
+        }
+
+        private async Task UpdateUserStatsOnGameEndAsync(Game game, GameStatus status)
+        {
+            if (status == GameStatus.InProgress || status == GameStatus.WaitingForPlayers) return;
+
+            if (game.RedPlayerId.HasValue)
+            {
+                var redUser = await _dbContext.Users.FindAsync(game.RedPlayerId.Value);
+                if (redUser != null)
+                {
+                    redUser.GamesPlayed++;
+                    if (status == GameStatus.RedWins)
+                    {
+                        redUser.Wins++;
+                        redUser.Elo += 15;
+                    }
+                    else if (status == GameStatus.BlackWins)
+                    {
+                        redUser.Losses++;
+                        redUser.Elo = Math.Max(0, redUser.Elo - 10);
+                    }
+                    else if (status == GameStatus.Draw)
+                    {
+                        redUser.Draws++;
+                        redUser.Elo += 2;
+                    }
+                }
+            }
+
+            if (game.BlackPlayerId.HasValue)
+            {
+                var blackUser = await _dbContext.Users.FindAsync(game.BlackPlayerId.Value);
+                if (blackUser != null)
+                {
+                    blackUser.GamesPlayed++;
+                    if (status == GameStatus.BlackWins)
+                    {
+                        blackUser.Wins++;
+                        blackUser.Elo += 15;
+                    }
+                    else if (status == GameStatus.RedWins)
+                    {
+                        blackUser.Losses++;
+                        blackUser.Elo = Math.Max(0, blackUser.Elo - 10);
+                    }
+                    else if (status == GameStatus.Draw)
+                    {
+                        blackUser.Draws++;
+                        blackUser.Elo += 2;
+                    }
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

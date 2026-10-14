@@ -308,5 +308,21 @@
 
     <script src="~/js/i18n.js" asp-append-version="true"></script>
     <script src="~/js/settings.js" asp-append-version="true"></script>
+    <script>
+        // Đồng bộ điểm Elo động từ Database lên Navbar Header
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/api/auth/me')
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.isAuthenticated && typeof d.elo !== 'undefined') {
+                        const eloEl = document.getElementById('navbar-user-elo');
+                        if (eloEl) {
+                            eloEl.innerHTML = `<i class="fa-solid fa-star" style="font-size: 9px;"></i> ${d.elo}`;
+                        }
+                    }
+                })
+                .catch(() => {});
+        });
+    </script>
 </body>
 </html>
