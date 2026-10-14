@@ -20,7 +20,8 @@
     font-family: inherit;
 }
 
-.pz-hidden {
+.pz-hidden,
+.hidden {
     display: none !important;
 }
 
@@ -742,6 +743,10 @@
     color: #10b981;
     font-size: 18px;
     font-weight: 900;
+}
+
+.timerush-check.hidden {
+    display: none !important;
 }
 
 .pz-hub-card-info {

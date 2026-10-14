@@ -152,26 +152,28 @@ input:checked + .slider:before {
 .theme-options {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 12px;
 }
 .theme-btn {
-    padding: 10px 8px;
-    border: 1px solid var(--border-color);
+    padding: 12px 10px;
+    border: 1.5px solid var(--border-color);
     background: var(--bg-navy-dark);
-    border-radius: 10px;
+    border-radius: 12px;
     color: var(--text-main);
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    transition: 0.2s;
-    font-size: 13px;
-    font-weight: 500;
+    gap: 8px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    font-size: 13.5px;
+    font-weight: 600;
 }
 .theme-btn:hover {
     background: var(--bg-navy-light);
+    border-color: var(--accent-gold);
     transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
 }
 .theme-btn.active {
     border-color: var(--accent-gold);
@@ -179,12 +181,109 @@ input:checked + .slider:before {
     box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.25);
     font-weight: 700;
 }
-.theme-circle {
-    width: 32px;
-    height: 32px;
+.theme-board-preview {
+    width: 68px;
+    height: 48px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1.5px solid rgba(0, 0, 0, 0.15);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1), 0 3px 8px rgba(0, 0, 0, 0.12);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.theme-btn:hover .theme-board-preview {
+    transform: scale(1.05);
+    box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.15), 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+.preview-grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0.28;
+    background-image: 
+        linear-gradient(to right, currentColor 1px, transparent 1px),
+        linear-gradient(to bottom, currentColor 1px, transparent 1px);
+    background-size: 10px 10px;
+    pointer-events: none;
+}
+
+.preview-piece {
+    position: relative;
+    z-index: 2;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 900;
+    font-family: "SimSun", "STSong", "Songti SC", serif;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.preview-piece.red {
+    background: #fdf2f2;
+    color: #dc2626;
+    border-color: #f87171;
+}
+
+.preview-piece.black {
+    background: #f8fafc;
+    color: #1e293b;
+    border-color: #64748b;
+}
+
+/* Các chất liệu bàn cờ thực tế */
+.theme-preview-wood {
+    background: linear-gradient(135deg, #d4a373, #a26938, #6b4423);
+    color: #4a2810;
+}
+.theme-preview-wood .preview-piece.red { background: #fdf5e6; color: #b91c1c; }
+.theme-preview-wood .preview-piece.black { background: #fdf5e6; color: #1c1917; }
+
+.theme-preview-light {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0, #cbd5e1);
+    color: #475569;
+}
+
+.theme-preview-night {
+    background: linear-gradient(135deg, #1e293b, #0f172a, #020617);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.3);
+}
+.theme-preview-night .preview-piece.red { background: #2d1818; color: #f87171; border-color: #ef4444; }
+.theme-preview-night .preview-piece.black { background: #1e293b; color: #38bdf8; border-color: #0284c7; }
+
+.theme-preview-emerald {
+    background: linear-gradient(135deg, #10b981, #059669, #064e3b);
+    color: #a7f3d0;
+}
+.theme-preview-emerald .preview-piece.red { background: #ecfdf5; color: #b91c1c; }
+.theme-preview-emerald .preview-piece.black { background: #ecfdf5; color: #064e3b; }
+
+.theme-preview-ocean {
+    background: linear-gradient(135deg, #38bdf8, #0284c7, #0c4a6e);
+    color: #bae6fd;
+}
+.theme-preview-ocean .preview-piece.red { background: #f0f9ff; color: #dc2626; }
+.theme-preview-ocean .preview-piece.black { background: #f0f9ff; color: #0369a1; }
+
+.theme-preview-parchment {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7, #d97706);
+    color: #78350f;
+}
+.theme-preview-parchment .preview-piece.red { background: #fffdf5; color: #991b1b; }
+.theme-preview-parchment .preview-piece.black { background: #fffdf5; color: #292524; }
+
+.theme-circle {
+    display: none;
 }
 .settings-footer {
     padding: 16px 24px;

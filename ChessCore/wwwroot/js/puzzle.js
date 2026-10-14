@@ -49,7 +49,15 @@
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   function show(sectionId) {
-    ["pz-hub", "pz-home", "pz-custom-screen", "pz-play", "pz-summary"].forEach((id) => {
+    [
+      "pz-hub",
+      "pz-home",
+      "pz-timerush-screen",
+      "pz-history-screen",
+      "pz-custom-screen",
+      "pz-play",
+      "pz-summary",
+    ].forEach((id) => {
       const el = $(id);
       if (el) el.classList.toggle("pz-hidden", id !== sectionId);
     });
@@ -839,10 +847,6 @@
     }
   });
 
-  $("pz-exit").addEventListener("click", () => {
-    if (busy) return;
-    renderHome();
-  });
 
   $("pz-next").addEventListener("click", async () => {
     if (busy || phase !== "solved") return;
@@ -1105,20 +1109,49 @@
     const summaryText = $("history-summary-text");
     if (!listEl) return;
 
-    listEl.innerHTML = `<div class="pz-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...</div>`;
+    listEl.innerHTML = `<div class="pz-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang nạp lịch sử giải đề...</div>`;
 
     try {
       const res = await fetch(`${API}/history`);
       if (!res.ok) throw new Error("Không thể tải lịch sử giải đề.");
       const data = await res.json();
 
-      if (summaryText) {
-        summaryText.innerHTML = `<i class="fa-solid fa-trophy" style="color: var(--accent-gold);"></i> Tổng số bài đã giải thành công: <strong>${data.totalSolved || 0}</strong> bài`;
+      let items = data.history || [];
+
+      // Nếu là khách hoặc database chưa có attempt log nhưng đã có completed puzzles trong catalog
+      if (items.length === 0 && completed.size > 0 && catalog && catalog.levels) {
+        items = [];
+        completed.forEach((key) => {
+          for (const lv of catalog.levels) {
+            if (lv.keys.includes(key)) {
+              items.push({
+                key: key,
+                title: key,
+                level: lv.level,
+                levelName: lv.name,
+                mateIn: 1,
+                attempts: 1,
+                isCompleted: true,
+                completedAt: "Gần đây"
+              });
+              break;
+            }
+          }
+        });
       }
 
-      const items = data.history || [];
+      const totalSolved = data.totalSolved || items.filter(x => x.isCompleted).length;
+      if (summaryText) {
+        summaryText.innerHTML = `<i class="fa-solid fa-trophy" style="color: var(--accent-gold);"></i> Tổng số bài đã giải thành công: <strong>${totalSolved}</strong> bài`;
+      }
+
       if (items.length === 0) {
-        listEl.innerHTML = `<div class="pz-loading" style="color: var(--text-muted);">Bạn chưa có lịch sử giải đề nào. Hãy bắt đầu giải thử thách hoặc tự tạo đề bài nhé!</div>`;
+        listEl.innerHTML = `
+          <div class="pz-loading" style="padding: 40px 20px; color: var(--text-muted); text-align: center;">
+            <i class="fa-solid fa-chess-board" style="font-size: 36px; color: #cbd5e1; margin-bottom: 12px; display: block;"></i>
+            Bạn chưa giải bài cờ thế nào.<br>
+            Hãy thử sức với chế độ <strong>Thử thách</strong> hoặc <strong>Tạo đề tùy chỉnh</strong> để ghi lại lịch sử nhé!
+          </div>`;
         return;
       }
 
@@ -1129,9 +1162,9 @@
             <div class="pz-result-meta">
               <span><i class="fa-solid fa-shield-halved"></i> ${item.levelName}</span>
               <span><i class="fa-solid fa-bolt"></i> Chiếu bí ${item.mateIn} nước</span>
-              <span><i class="fa-solid fa-rotate-right"></i> ${item.attempts} lần thử</span>
+              <span><i class="fa-solid fa-rotate-right"></i> ${item.attempts || 1} lần thử</span>
               <span style="color: ${item.isCompleted ? "#059669" : "#d97706"};">
-                ${item.isCompleted ? `<i class="fa-solid fa-circle-check"></i> Hoàn thành: ${item.completedAt || ""}` : '<i class="fa-solid fa-clock"></i> Chưa xong'}
+                ${item.isCompleted ? `<i class="fa-solid fa-circle-check"></i> Đã hoàn thành` : '<i class="fa-solid fa-clock"></i> Chưa xong'}
               </span>
             </div>
           </div>
@@ -1280,8 +1313,15 @@
   // Xử lý nút quay về từ màn chơi bài thế
   $("pz-exit").addEventListener("click", () => {
     if (busy) return;
-    if (isCustomMode) {
+    if (isTimeRush) {
+      if (confirm("Bạn có chắc chắn muốn dừng chế độ Chạy đua thời gian?")) {
+        stopTimerush();
+        openTimerushScreen();
+      }
+    } else if (isCustomMode) {
       openCustomGenerator();
+    } else if (activeMode === "history") {
+      openHistoryScreen();
     } else {
       openCampaign();
     }
