@@ -232,8 +232,11 @@
                 <i class="fa-solid fa-chess-board" style="color: var(--accent-gold);"></i> Ván đấu #@Model.GameId (@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm"))
             </h2>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <a href="/Game" class="btn-admin btn-admin-gold" style="padding: 7px 16px; text-decoration: none; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; box-shadow: 0 2px 8px rgba(180, 83, 9, 0.25);">
-                    <i class="fa-solid fa-chess-board"></i> Quay lại Bàn cờ
+                <a href="/Dashboard" class="btn-action-secondary" style="padding: 7px 14px; text-decoration: none; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại Thống kê
+                </a>
+                <a href="/Game" class="btn-action-gold" style="padding: 7px 14px; text-decoration: none; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;">
+                    <i class="fa-solid fa-chess-board"></i> Chơi ván mới
                 </a>
             </div>
         </div>
@@ -321,8 +324,11 @@
 
         <!-- Nút xuất biên bản PGN / In PDF / Quay lại bàn cờ -->
         <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-top: 14px;">
+            <a href="/Dashboard" class="btn-action-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Quay lại Thống kê
+            </a>
             <a href="/Game" class="btn-action-gold">
-                <i class="fa-solid fa-chess-board"></i> Quay lại Bàn cờ
+                <i class="fa-solid fa-chess-board"></i> Chơi ván mới
             </a>
             <button type="button" class="btn-action-secondary" onclick="exportNotation();">
                 <i class="fa-solid fa-file-arrow-down"></i> Xuất PGN / Text

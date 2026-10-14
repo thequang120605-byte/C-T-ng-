@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
@@ -113,6 +113,24 @@ namespace ChessCore.Controllers
             {
                 bool isRed = g.RedPlayerId == userId;
                 var opponent = isRed ? g.BlackPlayer : g.RedPlayer;
+                bool isOnlinePvP = g.RedPlayerId.HasValue && g.BlackPlayerId.HasValue;
+
+                string opponentName;
+                int? opponentElo;
+                string mode;
+
+                if (isOnlinePvP)
+                {
+                    opponentName = opponent != null ? opponent.Username : "Người chơi khác";
+                    opponentElo = opponent?.Elo ?? 1200;
+                    mode = "PvP Online";
+                }
+                else
+                {
+                    opponentName = "Máy (AI)";
+                    opponentElo = 1500;
+                    mode = "Chơi với Máy";
+                }
 
                 string resultClass = "draw";
                 string resultText = "Hòa";
@@ -135,8 +153,9 @@ namespace ChessCore.Controllers
                 vm.RecentGames.Add(new GameHistoryItem
                 {
                     GameId = g.Id,
-                    OpponentName = opponent != null ? opponent.Username : "Đối thủ vô danh",
-                    OpponentElo = opponent?.Elo,
+                    OpponentName = opponentName,
+                    OpponentElo = opponentElo,
+                    GameMode = mode,
                     PlayedAt = g.CreatedAt,
                     TotalMoves = g.Moves.Count,
                     Result = resultClass,

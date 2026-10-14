@@ -83,7 +83,7 @@ namespace ChessCore.Controllers
             };
 
             var orderedMoves = game.Moves.OrderBy(m => m.MoveOrder).ToList();
-            var board = new Board(); // Khởi tạo bàn cờ thế chuẩn ban đầu
+            var board = GameRules.RebuildBoard(game.InitialFen, null, PieceColor.Red);
             var engine = new MinimaxEngine(depth: 2);
 
             int previousEval = 0;
