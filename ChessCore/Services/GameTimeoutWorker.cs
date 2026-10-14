@@ -46,7 +46,7 @@ namespace ChessCore.Services
                     _logger.LogError(ex, "Lỗi trong chu kỳ quét hết giờ ván cờ.");
                 }
 
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(5000, stoppingToken);
             }
         }
 
