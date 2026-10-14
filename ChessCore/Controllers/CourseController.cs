@@ -33,6 +33,13 @@ namespace ChessCore.Controllers
                 : new Dictionary<int, UserCourseProgress>();
 
             var lessons = modules.SelectMany(m => m.Lessons).ToList();
+            var moduleTwo = modules.SingleOrDefault(m => m.Id == 2);
+            var moduleTwoBasicsComplete = moduleTwo is not null &&
+                moduleTwo.Lessons.Where(l => l.DisplayOrder <= 9)
+                    .All(l => progress.TryGetValue(l.Id, out var p) && p.IsCompleted);
+            var moduleTwoSynthesisComplete = moduleTwo is not null &&
+                moduleTwo.Lessons.Where(l => l.DisplayOrder >= 10 && l.DisplayOrder <= 12)
+                    .All(l => progress.TryGetValue(l.Id, out var p) && p.IsCompleted);
             var vm = new CourseIndexViewModel
             {
                 TotalLessons = lessons.Count,
@@ -50,6 +57,9 @@ namespace ChessCore.Controllers
                         Lesson = lesson,
                         Progress = progress.GetValueOrDefault(lesson.Id),
                         Questions = lesson.QuizQuestions.ToList()
+                        ,IsLocked = module.Id == 2 &&
+                            ((lesson.DisplayOrder >= 10 && lesson.DisplayOrder <= 12 && !moduleTwoBasicsComplete) ||
+                             (lesson.DisplayOrder >= 13 && !moduleTwoSynthesisComplete))
                     }).ToList()
                 }).ToList()
             };

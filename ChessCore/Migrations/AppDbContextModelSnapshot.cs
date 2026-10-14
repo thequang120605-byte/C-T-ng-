@@ -178,6 +178,46 @@ namespace ChessCore.Migrations
                         },
                         new
                         {
+                            Id = 16,
+                            Content = "Bài tổng hợp 1 dùng bàn cờ đầy đủ 32 quân để kiểm tra ký hiệu, vị trí ban đầu và hướng di chuyển cơ bản của từng loại quân.",
+                            Description = "Ôn tập đầy đủ 7 loại quân trên bàn cờ khai cuộc.",
+                            DisplayOrder = 10,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Tổng hợp 1: Nhận diện và luật đi"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Content = "Bài tổng hợp 2 dùng bàn cờ đầy đủ 32 quân để kiểm tra vật cản, cách ăn quân và các giới hạn đặc biệt của từng quân.",
+                            Description = "Ôn tập đầy đủ vật cản, ngòi Pháo, chân Mã và luật ăn quân.",
+                            DisplayOrder = 11,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Tổng hợp 2: Cản đường và ăn quân"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Content = "Bài tổng hợp 3 dùng bàn cờ đầy đủ 32 quân để kiểm tra phối hợp lực lượng, an toàn Tướng và các quy tắc thực chiến.",
+                            Description = "Ôn tập toàn bộ quân cờ và cách phối hợp trong thế khai cuộc.",
+                            DisplayOrder = 12,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Tổng hợp 3: Phối hợp thực chiến"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Content = "Bài tổng kết mở sau khi hoàn thành ba bài tổng hợp. Bàn cờ hiển thị đầy đủ 32 quân ở vị trí khai cuộc; bạn có thể chọn quân Đỏ để xem và thực hành các nước đi hợp lệ của Xe, Pháo, Mã, Tượng, Sĩ, Tướng và Binh.",
+                            Description = "Thực hành đầy đủ 32 quân và kiểm tra toàn bộ luật di chuyển.",
+                            DisplayOrder = 13,
+                            LessonType = "board",
+                            ModuleId = 2,
+                            Title = "Tổng kết Module 2: Bàn cờ toàn diện"
+                        },
+                        new
+                        {
                             Id = 6,
                             Content = "Chiếu là khi Tướng đang bị đe dọa bắt ở nước kế tiếp. Chiếu hết là khi bên bị chiếu không còn nước hợp lệ để thoát chiếu.",
                             Description = "Nhận biết tình huống bị chiếu và kết thúc ván.",
@@ -434,6 +474,516 @@ namespace ChessCore.Migrations
                             LessonId = 15,
                             OptionsJson = "[\"Cho các quân hỗ trợ lẫn nhau\",\"Chỉ di chuyển Tướng\",\"Không được ăn quân\"]",
                             Question = "Mục tiêu của bài phối hợp ba quân là gì?"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Bàn cờ có 9 đường dọc.",
+                            LessonId = 16,
+                            OptionsJson = "[\"8\",\"9\",\"10\"]",
+                            Question = "Bàn cờ Tướng có bao nhiêu đường dọc?"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 2,
+                            Explanation = "Mã đi theo hình chữ L.",
+                            LessonId = 16,
+                            OptionsJson = "[\"Mã\",\"Tượng\",\"Sĩ\"]",
+                            Question = "Quân nào đi chữ L?"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            CorrectAnswer = 2,
+                            DisplayOrder = 3,
+                            Explanation = "Tướng Đỏ ở hàng cuối, cột giữa.",
+                            LessonId = 16,
+                            OptionsJson = "[\"Hàng 1 cột 4\",\"Hàng 10 cột 5\",\"Hàng 10 cột 4\"]",
+                            Question = "Tướng Đỏ bắt đầu ở đâu?"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 4,
+                            Explanation = "Sĩ đi chéo một ô trong cung.",
+                            LessonId = 16,
+                            OptionsJson = "[\"Chéo 1 ô trong cung\",\"Ngang 2 ô\",\"Dọc không giới hạn\"]",
+                            Question = "Sĩ di chuyển như thế nào?"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 5,
+                            Explanation = "Tượng không được qua sông.",
+                            LessonId = 16,
+                            OptionsJson = "[\"Có\",\"Không\",\"Chỉ khi ăn quân\"]",
+                            Question = "Tượng có được qua sông không?"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 6,
+                            Explanation = "Binh được đi ngang sau khi qua sông.",
+                            LessonId = 16,
+                            OptionsJson = "[\"Có\",\"Không\",\"Chỉ đi chéo\"]",
+                            Question = "Binh sau khi qua sông được đi ngang không?"
+                        },
+                        new
+                        {
+                            Id = 23,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 7,
+                            Explanation = "Xe đi ngang hoặc dọc trên đường trống.",
+                            LessonId = 16,
+                            OptionsJson = "[\"Xe\",\"Mã\",\"Tốt\"]",
+                            Question = "Quân nào đi ngang dọc không giới hạn?"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Xe bị chặn bởi quân trên đường đi.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Có\",\"Không\",\"Chỉ khi chiếu\"]",
+                            Question = "Xe có được đi xuyên qua quân khác không?"
+                        },
+                        new
+                        {
+                            Id = 25,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 2,
+                            Explanation = "Pháo phải có đúng một quân làm ngòi.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Không cần\",\"Đúng một\",\"Hai hoặc hơn\"]",
+                            Question = "Pháo ăn quân cần bao nhiêu ngòi?"
+                        },
+                        new
+                        {
+                            Id = 26,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 3,
+                            Explanation = "Quân đứng ở chân Mã chặn hướng đi đó.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Chân Mã\",\"Mắt Tượng\",\"Cung\"]",
+                            Question = "Mã bị chặn bởi bộ phận nào?"
+                        },
+                        new
+                        {
+                            Id = 27,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 4,
+                            Explanation = "Quân ở điểm giữa đường chéo chặn mắt Tượng.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Mắt Tượng\",\"Chân Mã\",\"Ngòi\"]",
+                            Question = "Tượng bị chặn bởi gì?"
+                        },
+                        new
+                        {
+                            Id = 28,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 5,
+                            Explanation = "Không thể đi vào ô đang có quân cùng phe.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Có thể ăn\",\"Không được đi vào\",\"Được nhảy qua\"]",
+                            Question = "Quân cùng màu ở ô đích xử lý thế nào?"
+                        },
+                        new
+                        {
+                            Id = 29,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 6,
+                            Explanation = "Binh không bao giờ được đi lùi.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Có\",\"Không\",\"Chỉ sau khi qua sông\"]",
+                            Question = "Binh có được đi lùi không?"
+                        },
+                        new
+                        {
+                            Id = 30,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 7,
+                            Explanation = "Sĩ chỉ hoạt động trong cung.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Có\",\"Không\",\"Chỉ khi ăn quân\"]",
+                            Question = "Sĩ có được ra khỏi cung không?"
+                        },
+                        new
+                        {
+                            Id = 31,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 8,
+                            Explanation = "Pháo cần đúng một ngòi khi ăn.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Pháo\",\"Mã\",\"Tượng\"]",
+                            Question = "Quân nào có thể ăn theo đường thẳng nhưng cần ngòi?"
+                        },
+                        new
+                        {
+                            Id = 32,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 1,
+                            Explanation = "Xe mở đường và quân làm ngòi hỗ trợ Pháo.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Đường đi và ngòi Pháo\",\"Hai quân cùng ô\",\"Không có quân chắn nào\"]",
+                            Question = "Phối hợp Xe và Pháo cần tạo điều kiện gì?"
+                        },
+                        new
+                        {
+                            Id = 33,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 2,
+                            Explanation = "Mã cần ô chân thông thoáng.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Khi không bị cản chân\",\"Khi ở ngoài bàn\",\"Khi bị chặn\"]",
+                            Question = "Mã hỗ trợ tốt nhất khi nào?"
+                        },
+                        new
+                        {
+                            Id = 34,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 3,
+                            Explanation = "Hai Tướng không được đối mặt trực tiếp.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Có quân chắn giữa\",\"Không có quân chắn\",\"Được nhìn nhau\"]",
+                            Question = "Hai Tướng cùng cột cần điều kiện gì?"
+                        },
+                        new
+                        {
+                            Id = 35,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 4,
+                            Explanation = "Các quân phối hợp để tạo ưu thế.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Tạo ưu thế và hỗ trợ nhau\",\"Di chuyển một quân mãi\",\"Bỏ qua Tướng\"]",
+                            Question = "Mục tiêu của phối hợp quân là gì?"
+                        },
+                        new
+                        {
+                            Id = 36,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 5,
+                            Explanation = "Quân bị ăn được loại khỏi trạng thái bàn cờ.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Vẫn ở ô cũ\",\"Bị loại khỏi bàn\",\"Chuyển sang bên kia\"]",
+                            Question = "Khi ăn quân, quân bị ăn sẽ ở đâu?"
+                        },
+                        new
+                        {
+                            Id = 37,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 6,
+                            Explanation = "Pháo Đỏ bắt đầu ở hàng áp chót, cột 1 và 7 theo chỉ số 0.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Hàng 8 cột 2 và 8\",\"Hàng 10 cột 2 và 8\",\"Hàng 7 cột 1 và 7\"]",
+                            Question = "Vị trí khai cuộc của Pháo Đỏ là gì?"
+                        },
+                        new
+                        {
+                            Id = 38,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 7,
+                            Explanation = "Tượng chỉ hoạt động ở nửa bàn của mình.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Tượng\",\"Xe\",\"Mã\"]",
+                            Question = "Quân nào không được qua sông?"
+                        },
+                        new
+                        {
+                            Id = 39,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 8,
+                            Explanation = "Không được để hai Tướng đối mặt cùng cột.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Hợp lệ\",\"Không hợp lệ\",\"Luôn là chiếu hết\"]",
+                            Question = "Nước đi làm lộ mặt Tướng là gì?"
+                        },
+                        new
+                        {
+                            Id = 56,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 8,
+                            Explanation = "Sĩ đi chéo một ô trong cung tướng.",
+                            LessonId = 16,
+                            OptionsJson = "[\"Sĩ\",\"Xe\",\"Pháo\"]",
+                            Question = "Quân nào bảo vệ Tướng trong cung bằng nước đi chéo?"
+                        },
+                        new
+                        {
+                            Id = 57,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 9,
+                            Explanation = "Tượng đi chéo hai ô và chỉ hoạt động ở phần sân của mình.",
+                            LessonId = 16,
+                            OptionsJson = "[\"Tượng\",\"Mã\",\"Binh\"]",
+                            Question = "Quân nào chỉ đi chéo hai ô và không qua sông?"
+                        },
+                        new
+                        {
+                            Id = 58,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 10,
+                            Explanation = "Binh đi thẳng một ô trước khi qua sông.",
+                            LessonId = 16,
+                            OptionsJson = "[\"Binh\",\"Tướng\",\"Sĩ\"]",
+                            Question = "Quân nào đi thẳng trước khi qua sông?"
+                        },
+                        new
+                        {
+                            Id = 59,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 11,
+                            Explanation = "帥 là ký hiệu Tướng Đỏ; 將 là ký hiệu Tướng Đen.",
+                            LessonId = 16,
+                            OptionsJson = "[\"帥\",\"將\",\"仕\"]",
+                            Question = "Ký hiệu nào là Tướng Đỏ?"
+                        },
+                        new
+                        {
+                            Id = 60,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 9,
+                            Explanation = "Xe không được đi xuyên qua bất kỳ quân nào.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Xe\",\"Mã\",\"Pháo khi ăn\"]",
+                            Question = "Quân nào không được nhảy qua quân chắn khi đi thẳng?"
+                        },
+                        new
+                        {
+                            Id = 61,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 10,
+                            Explanation = "Quân ở điểm giữa đường chéo chặn hướng đi của Tượng.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Nước đi chéo đó không hợp lệ\",\"Tượng được nhảy qua\",\"Tượng đổi thành Mã\"]",
+                            Question = "Mắt Tượng bị chặn thì điều gì xảy ra?"
+                        },
+                        new
+                        {
+                            Id = 62,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 11,
+                            Explanation = "Binh chỉ được đi ngang một ô mỗi nước.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Một ô\",\"Hai ô\",\"Không giới hạn\"]",
+                            Question = "Binh sau khi qua sông được đi ngang mấy ô mỗi nước?"
+                        },
+                        new
+                        {
+                            Id = 63,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 12,
+                            Explanation = "Quân cùng màu không thể ăn nhau và ô đó không phải ô đích hợp lệ.",
+                            LessonId = 17,
+                            OptionsJson = "[\"Không\",\"Có\",\"Chỉ khi là Tướng\"]",
+                            Question = "Quân cùng màu ở ô đích có được ăn không?"
+                        },
+                        new
+                        {
+                            Id = 64,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 9,
+                            Explanation = "Pháo cần đúng một quân làm ngòi giữa nó và quân bị ăn.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Một quân đứng giữa Pháo và mục tiêu\",\"Quân ở ngoài bàn\",\"Không cần quân nào\"]",
+                            Question = "Khi phối hợp Xe và Pháo, quân nào có thể tạo ngòi cho Pháo?"
+                        },
+                        new
+                        {
+                            Id = 65,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 10,
+                            Explanation = "Không được thực hiện nước đi làm Tướng Đỏ bị lộ mặt hoặc rơi vào thế nguy hiểm.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Tướng Đỏ không bị lộ mặt hoặc tự chiếu\",\"Chỉ quân Xe\",\"Ô ngoài bàn cờ\"]",
+                            Question = "Nước đi của quân Đỏ phải bảo vệ điều gì?"
+                        },
+                        new
+                        {
+                            Id = 66,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 11,
+                            Explanation = "Xe kiểm soát các đường ngang và dọc khi không bị cản.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Xe\",\"Sĩ\",\"Tượng\"]",
+                            Question = "Quân nào có thể hỗ trợ kiểm soát nhiều đường thẳng?"
+                        },
+                        new
+                        {
+                            Id = 67,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 12,
+                            Explanation = "Quân bị ăn bị loại khỏi trạng thái bàn cờ.",
+                            LessonId = 18,
+                            OptionsJson = "[\"Xóa khỏi bàn cờ\",\"Giữ lại dưới quân ăn\",\"Đổi màu\"]",
+                            Question = "Khi một quân bị ăn, vị trí của quân đó được xử lý thế nào?"
+                        },
+                        new
+                        {
+                            Id = 40,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 1,
+                            Explanation = "Mỗi bên có 16 quân, cả bàn cờ có 32 quân.",
+                            LessonId = 19,
+                            OptionsJson = "[\"16\",\"32\",\"36\"]",
+                            Question = "Bàn cờ khai cuộc có bao nhiêu quân?"
+                        },
+                        new
+                        {
+                            Id = 41,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 2,
+                            Explanation = "Xe đi ngang hoặc dọc trên các đường trống.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Ngang hoặc dọc, không xuyên quân\",\"Chéo hai ô\",\"Theo hình chữ L\"]",
+                            Question = "Xe đi như thế nào?"
+                        },
+                        new
+                        {
+                            Id = 42,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 3,
+                            Explanation = "Pháo đi như Xe khi di chuyển đến ô trống.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Như Xe khi không ăn\",\"Chéo một ô\",\"Nhảy qua hai quân\"]",
+                            Question = "Pháo đi thường như thế nào?"
+                        },
+                        new
+                        {
+                            Id = 43,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 4,
+                            Explanation = "Pháo phải nhảy qua đúng một quân làm ngòi.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Không có\",\"Đúng một\",\"Ít nhất hai\"]",
+                            Question = "Pháo cần bao nhiêu ngòi để ăn quân?"
+                        },
+                        new
+                        {
+                            Id = 44,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 5,
+                            Explanation = "Mã đi hai ô theo một hướng rồi một ô vuông góc.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Chữ L\",\"Đường thẳng\",\"Đường chéo một ô\"]",
+                            Question = "Mã di chuyển theo hình nào?"
+                        },
+                        new
+                        {
+                            Id = 45,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 6,
+                            Explanation = "Quân ở ô chân Mã sẽ chặn hướng đi đó.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Bị cản chân Mã\",\"Có sông trên bàn\",\"Đứng trong cung\"]",
+                            Question = "Điều gì làm Mã không đi được một hướng?"
+                        },
+                        new
+                        {
+                            Id = 46,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 7,
+                            Explanation = "Tượng đi chéo đúng hai ô và không được qua sông.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Một ô ngang\",\"Hai ô chéo\",\"Ba ô dọc\"]",
+                            Question = "Tượng đi bao nhiêu ô mỗi nước?"
+                        },
+                        new
+                        {
+                            Id = 47,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 8,
+                            Explanation = "Nếu mắt Tượng bị chặn thì hướng đó không hợp lệ.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Mắt Tượng\",\"Ngòi Pháo\",\"Cung tướng\"]",
+                            Question = "Điểm giữa đường chéo của Tượng được gọi là gì?"
+                        },
+                        new
+                        {
+                            Id = 48,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 9,
+                            Explanation = "Sĩ chỉ đi chéo một ô trong cung tướng.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Trong cung, chéo một ô\",\"Qua sông, ngang hai ô\",\"Toàn bàn, dọc không giới hạn\"]",
+                            Question = "Sĩ được đi ở đâu?"
+                        },
+                        new
+                        {
+                            Id = 49,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 10,
+                            Explanation = "Tướng chỉ đi ngang hoặc dọc một ô trong cung 3x3.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Ngang hoặc dọc một ô trong cung\",\"Chéo hai ô toàn bàn\",\"Theo hình chữ L\"]",
+                            Question = "Tướng được đi như thế nào?"
+                        },
+                        new
+                        {
+                            Id = 50,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 11,
+                            Explanation = "Binh chỉ đi thẳng về phía trước trước khi qua sông.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Đi thẳng một ô\",\"Đi lùi một ô\",\"Đi chéo hai ô\"]",
+                            Question = "Binh trước khi qua sông được đi thế nào?"
+                        },
+                        new
+                        {
+                            Id = 51,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 12,
+                            Explanation = "Sau khi qua sông, Binh được đi ngang nhưng không được đi lùi.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Đi ngang một ô\",\"Đi lùi một ô\",\"Nhảy qua quân\"]",
+                            Question = "Binh sau khi qua sông được thêm nước đi nào?"
+                        },
+                        new
+                        {
+                            Id = 52,
+                            CorrectAnswer = 1,
+                            DisplayOrder = 13,
+                            Explanation = "Quân cùng màu chiếm ô đích sẽ chặn nước đi.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Có\",\"Không\",\"Chỉ khi chiếu tướng\"]",
+                            Question = "Quân Đỏ có thể đi vào ô đang có quân Đỏ không?"
+                        },
+                        new
+                        {
+                            Id = 53,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 14,
+                            Explanation = "Quân bị ăn được loại khỏi trạng thái bàn cờ.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Bị loại khỏi bàn\",\"Đổi thành quân Đỏ\",\"Đứng chồng lên quân Đỏ\"]",
+                            Question = "Khi quân Đỏ ăn quân Đen, quân Đen sẽ thế nào?"
+                        },
+                        new
+                        {
+                            Id = 54,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 15,
+                            Explanation = "Hai Tướng không được đối mặt trực tiếp; phải có quân chắn giữa.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Ít nhất một quân chắn\",\"Không có quân nào\",\"Một ô trống duy nhất\"]",
+                            Question = "Hai Tướng cùng cột phải có gì ở giữa?"
+                        },
+                        new
+                        {
+                            Id = 55,
+                            CorrectAnswer = 0,
+                            DisplayOrder = 16,
+                            Explanation = "Bàn cờ thông báo hoàn thành và khóa tương tác khi không còn quân Đen.",
+                            LessonId = 19,
+                            OptionsJson = "[\"Hiển thị thông báo kết thúc\",\"Tự động quay về Module 1\",\"Cho quân Đen xuất hiện lại\"]",
+                            Question = "Khi quân Đen bị ăn hết trong bài thực hành, điều gì xảy ra?"
                         },
                         new
                         {
