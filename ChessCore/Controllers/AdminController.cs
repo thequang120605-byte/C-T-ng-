@@ -255,10 +255,29 @@ namespace ChessCore.Controllers
                 sw.Stop();
 
                 var stats = engine.LastStats;
+                string moveNotation = "N/A";
+                if (move != null)
+                {
+                    var piece = sampleBoard.GetPieceAt(move.From.Row, move.From.Col);
+                    string pieceName = piece != null ? piece.Type switch
+                    {
+                        ChessCore.Enums.PieceType.King => "Tướng",
+                        ChessCore.Enums.PieceType.Advisor => "Sĩ",
+                        ChessCore.Enums.PieceType.Elephant => "Tượng",
+                        ChessCore.Enums.PieceType.Horse => "Mã",
+                        ChessCore.Enums.PieceType.Rook => "Xe",
+                        ChessCore.Enums.PieceType.Cannon => "Pháo",
+                        ChessCore.Enums.PieceType.Pawn => "Tốt",
+                        _ => "Quân"
+                    } : "Quân";
+
+                    moveNotation = $"{pieceName} ({move.From.Row},{move.From.Col}) -> ({move.To.Row},{move.To.Col})";
+                }
+
                 benchmarkResults.Add(new BenchmarkResultRow
                 {
                     Depth = d,
-                    BestMove = move != null ? $"({move.From.Row},{move.From.Col}) -> ({move.To.Row},{move.To.Col})" : "N/A",
+                    BestMove = moveNotation,
                     NodesEvaluated = stats.NodesEvaluated,
                     TranspositionHits = stats.TranspositionHits,
                     BetaCutoffs = stats.BetaCutoffs,

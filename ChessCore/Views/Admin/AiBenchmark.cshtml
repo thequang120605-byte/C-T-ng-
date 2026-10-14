@@ -61,24 +61,24 @@
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th style="width: 100px;">Độ sâu (Depth)</th>
-                        <th>Nước đi tốt nhất tìm được</th>
-                        <th style="text-align: right;">Số nút đã duyệt (Nodes)</th>
-                        <th style="text-align: right;">Trúng Bảng chuyển vị (TT Hits)</th>
-                        <th style="text-align: right;">Số lần cắt tỉa Beta (Cutoffs)</th>
-                        <th style="text-align: right;">Thời gian thực thi (ms)</th>
+                        <th style="width: 120px; text-align: center;">Độ sâu (Depth)</th>
+                        <th style="text-align: center;">Nước đi tốt nhất tìm được</th>
+                        <th style="text-align: center;">Số nút đã duyệt (Nodes)</th>
+                        <th style="text-align: center;">Trúng Bảng chuyển vị (TT Hits)</th>
+                        <th style="text-align: center;">Số lần cắt tỉa Beta (Cutoffs)</th>
+                        <th style="text-align: center;">Thời gian thực thi (ms)</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var r in Model.Results)
                     {
                         <tr>
-                            <td><strong style="color: var(--accent-gold-dark); font-size: 16px;">Cấp @r.Depth</strong></td>
-                            <td><code>@r.BestMove</code></td>
-                            <td style="text-align: right; font-weight: 700; color: #2563eb;">@r.NodesEvaluated.ToString("N0")</td>
-                            <td style="text-align: right; font-weight: 700; color: #059669;">@r.TranspositionHits.ToString("N0")</td>
-                            <td style="text-align: right; font-weight: 700; color: #d97706;">@r.BetaCutoffs.ToString("N0")</td>
-                            <td style="text-align: right; font-weight: 700; color: var(--text-main);">@r.ElapsedMs.ToString("F2") ms</td>
+                            <td style="text-align: center;"><strong style="color: var(--accent-gold-dark); font-size: 16px;">Cấp @r.Depth</strong></td>
+                            <td style="text-align: center;"><code style="background: rgba(180, 83, 9, 0.08); color: #b45309; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 14px; border: 1px solid rgba(180, 83, 9, 0.2);">@r.BestMove</code></td>
+                            <td style="text-align: center; font-weight: 700; color: #2563eb;">@r.NodesEvaluated.ToString("N0")</td>
+                            <td style="text-align: center; font-weight: 700; color: #059669;">@r.TranspositionHits.ToString("N0")</td>
+                            <td style="text-align: center; font-weight: 700; color: #d97706;">@r.BetaCutoffs.ToString("N0")</td>
+                            <td style="text-align: center; font-weight: 700; color: var(--text-main);">@r.ElapsedMs.ToString("F2") ms</td>
                         </tr>
                     }
                 </tbody>
