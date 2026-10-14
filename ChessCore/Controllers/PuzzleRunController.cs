@@ -195,7 +195,7 @@ namespace ChessCore.Controllers
             string message = last.Result switch
             {
                 "illegal" => "Nước đi này không hợp lệ.",
-                "wrong" => "Chưa đúng. Hãy thử lại hoặc xem gợi ý.",
+                "wrong" => last.DefenseExplanation ?? "Chưa đúng! Đối phương đã phản đòn hóa giải thế cờ. Hãy thử lại hoặc xem gợi ý.",
                 "correct" => "Chính xác! Tiếp tục tìm nước đi kế tiếp.",
                 _ => "Chiếu bí! Bạn đã hoàn thành bài này.",
             };
@@ -206,9 +206,9 @@ namespace ChessCore.Controllers
                 message,
                 newlyCompleted,
                 reply = last.Reply,
-                state = last.Result == "illegal" || last.Result == "wrong"
+                state = last.Result == "illegal"
                     ? null
-                    : BuildState(last.Board!, attacker, last.Remaining, last.Result == "solved"),
+                    : (last.Board != null ? BuildState(last.Board, attacker, last.Remaining, last.Result == "solved" || last.Result == "wrong") : null),
                 lastMove = request.Moves[^1],
             });
         }
@@ -262,11 +262,13 @@ namespace ChessCore.Controllers
             public Board? Board { get; set; }
             public int Remaining { get; set; }
             public PuzzleMoveDto? Reply { get; set; }
+            public string? DefenseExplanation { get; set; }
         }
 
         /// <summary>
         /// Chấm một nước của bên tấn công. Đúng nếu hợp lệ theo luật VÀ vẫn còn chiếu bí cưỡng bức
         /// trong số nước còn lại — nên mọi biến thể đúng đều được chấp nhận, không chỉ một đáp án cố định.
+        /// Khi người chơi đi sai (wrong): AI bên phòng thủ sẽ tự động phản đòn để hóa giải/ăn quân.
         /// </summary>
         private static StepResult Evaluate(Board board, PieceColor attacker, int remaining, PuzzleMoveDto mv)
         {
@@ -286,8 +288,51 @@ namespace ChessCore.Controllers
                 return new StepResult { Result = "solved", Board = next, Remaining = 0 };
 
             int left = remaining - 1;
-            if (left < 1 || !MateSolver.IsForcedMate(next, attacker, left))
+            bool isMate = left >= 1 && MateSolver.IsForcedMate(next, attacker, left);
+
+            if (!isMate)
+            {
+                // NƯỚC ĐI SAI: AI phòng thủ phản đòn (ăn quân hoặc hóa giải tối ưu)
+                var counterMove = MateSolver.PickBestCounterAttack(next, defender, new Position(mv.ToRow, mv.ToCol));
+                if (counterMove != null)
+                {
+                    Board afterCounter = next.Clone();
+                    Piece? capturedPiece = next.GetPieceAt(counterMove.To.Row, counterMove.To.Col);
+                    Piece? defenderPiece = next.GetPieceAt(counterMove.From.Row, counterMove.From.Col);
+                    afterCounter.ApplyMove(counterMove.From, counterMove.To);
+
+                    string defenseMsg = "Máy đã phản đòn hóa giải nước đi của bạn.";
+                    if (counterMove.To.Row == mv.ToRow && counterMove.To.Col == mv.ToCol && defenderPiece != null)
+                    {
+                        defenseMsg = $"Chưa chính xác! {PieceName(defenderPiece.Type)} đối phương đã lập tức ăn lại quân của bạn.";
+                    }
+                    else if (capturedPiece != null && defenderPiece != null)
+                    {
+                        defenseMsg = $"Chưa chính xác! {PieceName(defenderPiece.Type)} đối phương đã chớp thời cơ ăn {PieceName(capturedPiece.Type)} của bạn.";
+                    }
+                    else if (MoveGenerator.CheckIfInCheck(afterCounter, attacker) && defenderPiece != null)
+                    {
+                        defenseMsg = $"Chưa chính xác! {PieceName(defenderPiece.Type)} đối phương đã phản chiếu Tướng của bạn.";
+                    }
+
+                    return new StepResult
+                    {
+                        Result = "wrong",
+                        Board = afterCounter,
+                        Remaining = left,
+                        Reply = new PuzzleMoveDto
+                        {
+                            FromRow = counterMove.From.Row,
+                            FromCol = counterMove.From.Col,
+                            ToRow = counterMove.To.Row,
+                            ToCol = counterMove.To.Col
+                        },
+                        DefenseExplanation = defenseMsg
+                    };
+                }
+
                 return new StepResult { Result = "wrong" };
+            }
 
             EngineMove? best = MateSolver.PickBestDefense(next, attacker, left);
             if (best == null)

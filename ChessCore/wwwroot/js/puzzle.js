@@ -438,6 +438,22 @@
       phase = "wrong";
       setMsg("wrong", data.message);
       renderBoard();
+
+      // Nếu AI có nước phản đòn, biểu diễn trực quan trên bàn cờ
+      if (data.reply) {
+        await sleep(500);
+        pieces = applyLocal(pieces, data.reply);
+        checkedColor = null;
+        renderBoard();
+        await sleep(250);
+
+        if (data.state && data.state.pieces) {
+          pieces = data.state.pieces.map((p) => ({ ...p }));
+          checkedColor = data.state.checkedColor;
+          renderBoard();
+        }
+      }
+
       updateButtons();
       busy = false;
       return;
@@ -490,7 +506,14 @@
   function setMsg(kind, text) {
     const el = $("pz-msg");
     el.className = `pz-msg ${kind}`;
-    el.textContent = text;
+    const icon = kind === "wrong" 
+      ? '<i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px; font-size: 16px;"></i>' 
+      : kind === "ok" 
+      ? '<i class="fa-solid fa-circle-check" style="margin-right: 8px; font-size: 16px;"></i>' 
+      : kind === "done" 
+      ? '<i class="fa-solid fa-trophy" style="margin-right: 8px; font-size: 16px; color: #d97706;"></i>' 
+      : '<i class="fa-solid fa-circle-info" style="margin-right: 8px; font-size: 16px;"></i>';
+    el.innerHTML = `${icon}${escapeHtml(text)}`;
   }
 
   function levelFullyDone(level) {
