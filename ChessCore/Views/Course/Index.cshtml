@@ -119,27 +119,37 @@
                                                 <g class="course-moves-layer"></g><g class="course-pieces-layer"></g>
                                             </svg>
                                         </div>
-                                        <div class="course-board-toolbar" style="display: flex; gap: 8px; justify-content: center; margin: 12px 0 6px;">
-                                            <button type="button" class="btn-admin btn-admin-sm btn-admin-primary btn-board-reset" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">
-                                                <i class="fa-solid fa-rotate-left"></i> Đặt lại thế cờ
-                                            </button>
-                                            <button type="button" class="btn-admin btn-admin-sm btn-board-copy-fen" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: rgba(255,255,255,0.08); color: #cbd5e1;">
-                                                <i class="fa-regular fa-copy"></i> Sao chép FEN
-                                            </button>
-                                        </div>
-                                        <div class="board-legend"><span class="legend-red"></span> Quân Đỏ <span class="legend-black"></span> Quân Đen
-                                            @if (lesson.Lesson.Id != 1)
-                                            {
-                                                <span class="legend-arrow">➜</span><span>Nước đi hợp lệ</span>
-                                            }
+                                        <div class="course-board-controls">
+                                            <div class="course-board-toolbar">
+                                                <button type="button" class="course-ctrl-btn btn-board-reset" title="Khôi phục trạng thái ban đầu của bài tập">
+                                                    <i class="fa-solid fa-rotate-left"></i> Đặt lại thế cờ
+                                                </button>
+                                                <button type="button" class="course-ctrl-btn secondary btn-board-copy-fen" title="Sao chép chuỗi FEN thế cờ này">
+                                                    <i class="fa-regular fa-copy"></i> Sao chép FEN
+                                                </button>
+                                            </div>
+                                            <div class="board-legend">
+                                                <span class="legend-item"><span class="legend-dot red"></span> Quân Đỏ</span>
+                                                <span class="legend-item"><span class="legend-dot black"></span> Quân Đen</span>
+                                                @if (lesson.Lesson.Id != 1)
+                                                {
+                                                    <span class="legend-item"><span class="legend-dot green"></span> Nước đi hợp lệ</span>
+                                                }
+                                            </div>
                                         </div>
                                         @if (lesson.Lesson.Id == 1)
                                         {
-                                            <p class="practice-hint"><i class="fa-solid fa-eye"></i> Đây là vị trí khai cuộc chuẩn với đủ 32 quân. Hãy quan sát bàn cờ, sông và hai cung tướng.</p>
+                                            <div class="practice-hint-card">
+                                                <div class="hint-icon"><i class="fa-solid fa-lightbulb"></i></div>
+                                                <div class="hint-text">Đây là vị trí khai cuộc chuẩn với đủ 32 quân cờ. Hãy quan sát bàn cờ, dòng sông phân giới và hai cung tướng để nắm vị trí ban đầu.</div>
+                                            </div>
                                         }
                                         else
                                         {
-                                            <p class="practice-hint"><i class="fa-solid fa-hand-pointer"></i> <b>Thực hành tương tác:</b> Nhấn chọn quân Đỏ trên bàn cờ để xem các ô đi hợp lệ và tập di chuyển / ăn quân theo luật.</p>
+                                            <div class="practice-hint-card">
+                                                <div class="hint-icon"><i class="fa-solid fa-hand-pointer"></i></div>
+                                                <div class="hint-text"><b>Thực hành tương tác:</b> Nhấn chọn quân Đỏ trên bàn cờ để xem các ô đi hợp lệ (chấm xanh) và tập di chuyển / ăn quân theo luật.</div>
+                                            </div>
                                         }
                                     }
                                     @if (lesson.Lesson.Id == 2)
@@ -157,23 +167,37 @@
                                     @if (lesson.Questions.Count > 0)
                                     {
                                         <div class="quiz-box" data-lesson-id="@lesson.Lesson.Id" data-question-count="@lesson.Questions.Count">
-                                            <h3><i class="fa-solid fa-circle-question"></i> Kiểm tra nhanh</h3>
+                                            <div class="quiz-header">
+                                                <div class="quiz-header-title">
+                                                    <i class="fa-solid fa-circle-question"></i>
+                                                    <span>Kiểm tra nhanh</span>
+                                                </div>
+                                                <span class="quiz-tag">@lesson.Questions.Count câu hỏi</span>
+                                            </div>
                                             @foreach (var question in lesson.Questions)
                                             {
                                                 var questionOptions = JsonSerializer.Deserialize<List<string>>(question.OptionsJson) ?? [];
                                                 <div class="quiz-question" data-answer="@question.CorrectAnswer">
-                                                    <b>@question.Question</b>
+                                                    <div class="quiz-question-title">@question.Question</div>
                                                     <div class="quiz-options">
-                                                        @for (var i = 0; i < questionOptions.Count; i++) { <button type="button" data-option="@i">@questionOptions[i]</button> }
+                                                        @for (var i = 0; i < questionOptions.Count; i++) { <button type="button" class="quiz-option-btn" data-option="@i">@questionOptions[i]</button> }
                                                     </div>
-                                                    <small class="quiz-feedback">@question.Explanation</small>
+                                                    <div class="quiz-feedback">
+                                                        <i class="fa-solid fa-circle-info"></i> <span>@question.Explanation</span>
+                                                    </div>
                                                 </div>
                                             }
-                                            <button type="button" class="course-btn quiz-submit">Chấm điểm</button>
-                                            <span class="quiz-result"></span>
+                                            <div class="quiz-footer">
+                                                <button type="button" class="quiz-submit-btn">
+                                                    <i class="fa-solid fa-check"></i> Chấm điểm
+                                                </button>
+                                                <span class="quiz-result"></span>
+                                            </div>
                                         </div>
                                     }
-                                    <p class="completion-note"><i class="fa-solid fa-lock"></i> Bài học chỉ hoàn thành khi bạn trả lời đúng toàn bộ câu hỏi.</p>
+                                    <div class="completion-note">
+                                        <i class="fa-solid fa-shield-halved"></i> Bài học chỉ hoàn thành khi bạn trả lời đúng toàn bộ câu hỏi kiểm tra.
+                                    </div>
                                 </div>
                             </template>
                         }

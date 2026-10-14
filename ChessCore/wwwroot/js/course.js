@@ -320,7 +320,7 @@
             option.parentElement.querySelectorAll('button').forEach(item => item.classList.remove('selected'));
             option.classList.add('selected');
         }));
-        host.querySelector('.quiz-submit')?.addEventListener('click', gradeQuiz);
+        (host.querySelector('.quiz-submit-btn') || host.querySelector('.quiz-submit'))?.addEventListener('click', gradeQuiz);
     }));
 
     function gradeQuiz() {
