@@ -590,6 +590,17 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   function initializePage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinRoomCode = urlParams.get("joinRoom");
+    if (joinRoomCode) {
+      if (onlineRoomIdInput) onlineRoomIdInput.value = joinRoomCode;
+      if (playerVsOnlineButton) playerVsOnlineButton.click();
+      setTimeout(() => {
+        if (joinOnlineButton) joinOnlineButton.click();
+      }, 300);
+      return;
+    }
+
     const isOnline = localStorage.getItem("isOnlineMode") === "true";
     const savedGameId = localStorage.getItem("xiangqiGameId");
     if (savedGameId && isOnline) {
@@ -769,6 +780,9 @@ document.addEventListener("DOMContentLoaded", function () {
         console.warn("Lỗi khi cập nhật bảng đánh giá ArenaUI:", err);
       }
     }
+
+    // Cập nhật thanh đánh giá thế trận bên cạnh bàn cờ (Eval Bar)
+    updateEvalBar();
 
     console.log("Bàn cờ đã được cập nhật!");
 
@@ -2277,8 +2291,18 @@ document.addEventListener("DOMContentLoaded", function () {
               localStorage.setItem("onlineOpponentName", result.username);
               if (result.game) updateGameFromApi(result.game);
               if (invitePlayerStatus) {
-                  invitePlayerStatus.textContent = `Đã thêm ${result.username} (${result.playerId}) vào bàn.`;
+                  invitePlayerStatus.textContent = `Đã thêm ${result.username} (${result.playerId}) vào bàn và gửi thông báo thách đấu!`;
               }
+              // Gửi tín hiệu thách đấu thời gian thực qua SignalR
+              if (signalrConnection && signalrConnection.state === signalR.HubConnectionState.Connected) {
+                  const myNameEl = document.querySelector(".user-display-name") || document.getElementById("red-player-name");
+                  const myName = myNameEl ? myNameEl.textContent.trim() : "Đối thủ";
+                  const myPidEl = document.getElementById("current-player-id");
+                  const myPid = myPidEl ? myPidEl.textContent.trim() : "";
+                  const rCode = document.getElementById("display-room-code")?.textContent?.trim() || "";
+                  signalrConnection.invoke("SendChallenge", result.playerId, myName, myPid, rCode).catch(e => console.warn("Lỗi gửi SignalR thách đấu:", e));
+              }
+              showToast(`Đã gửi lời thách đấu tới ${result.username}!`, "success");
               opponentPlayerIdInput.value = "";
           } catch (e) {
               if (invitePlayerStatus) invitePlayerStatus.textContent = e.message || "Không thể mời người chơi.";
@@ -3311,11 +3335,65 @@ document.addEventListener("DOMContentLoaded", function() {
             try {
                 const res = await fetch(`${API_BASE_URL}/${gameId}/fen`);
                 if (!res.ok) throw new Error("Không thể lấy FEN.");
-                const fen = await res.text();
-                await navigator.clipboard.writeText(fen);
+                const data = await res.json();
+                const fen = data.fen || data;
+                await navigator.clipboard.writeText(typeof fen === "string" ? fen : JSON.stringify(fen));
                 showToast("Đã sao chép chuỗi FEN vào bộ nhớ tạm!", "success");
             } catch (err) {
                 showToast("Lỗi khi sao chép FEN: " + err.message, "danger");
+            }
+        });
+    }
+
+    // Nhập thế cờ từ FEN (Import FEN)
+    const importFenBtn = document.getElementById("import-fen-btn");
+    const importFenModal = document.getElementById("import-fen-modal");
+    const importFenCancelBtn = document.getElementById("import-fen-cancel-btn");
+    const importFenSubmitBtn = document.getElementById("import-fen-submit-btn");
+    const importFenInput = document.getElementById("import-fen-input");
+
+    if (importFenBtn && importFenModal) {
+        importFenBtn.addEventListener("click", function() {
+            importFenModal.classList.remove("hidden");
+            if (importFenInput) importFenInput.focus();
+        });
+    }
+    if (importFenCancelBtn && importFenModal) {
+        importFenCancelBtn.addEventListener("click", function() {
+            importFenModal.classList.add("hidden");
+        });
+    }
+    document.querySelectorAll(".fen-preset-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            if (importFenInput) {
+                importFenInput.value = this.dataset.fen || "";
+            }
+        });
+    });
+    if (importFenSubmitBtn && importFenModal) {
+        importFenSubmitBtn.addEventListener("click", async function() {
+            const fenVal = (importFenInput?.value || "").trim();
+            if (!fenVal) {
+                showToast("Vui lòng nhập chuỗi FEN hợp lệ!", "warning");
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE_URL}?initialFen=${encodeURIComponent(fenVal)}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err || "Chuỗi FEN không hợp lệ.");
+                }
+                const data = await res.json();
+                gameId = data.id;
+                localStorage.setItem("xiangqiGameId", gameId);
+                importFenModal.classList.add("hidden");
+                updateGameFromApi(data);
+                showToast("Đã thiết lập ván cờ từ FEN thành công!", "success");
+            } catch (err) {
+                showToast("Lỗi nạp FEN: " + err.message, "danger");
             }
         });
     }

@@ -55,6 +55,66 @@
     setText("lm-desc", last ? `${square(last.fromX, last.fromY)} → ${square(last.toX, last.toY)}` : lm.moveDescription);
     for (const key of ["h1", "h2", "h3"]) setText(`lm-${key}`, signed(lm[`delta${key.toUpperCase()}`]));
     setText("lm-total", signed(lm.totalDelta));
+
+    // Hệ thống Nhận diện Khai cuộc & Trợ lý Huấn luyện viên AI (Opening Book & AI Coach)
+    renderOpeningAndCoach(data);
+  }
+
+  function renderOpeningAndCoach(data) {
+    const moves = ordered(data.moves);
+    let bookName = "Khai cuộc: Tự do";
+    let eco = "A00";
+    let advice = "Huấn luyện viên: Hãy phát triển các quân chủ lực Xe, Pháo, Mã để kiểm soát không gian bàn cờ.";
+
+    if (!moves.length) {
+      bookName = "Khai cuộc: Bàn cờ chuẩn";
+      eco = "EC-00";
+      advice = "Khai cuộc là giai đoạn điều động quân. Ưu tiên: Xuất Xe sớm, đưa Pháo vào vị trí chiến lược, lên Mã giữ Tốt.";
+    } else {
+      const first = moves[0];
+      // Đỏ đi trước
+      if (first.pieceType === "Cannon") {
+        if (first.toX === 7 && first.toY === 4) {
+          bookName = "Khai cuộc: Trung Pháo (Pháo Đầu)";
+          eco = "EC-01";
+          advice = "Đỏ đóng Pháo đầu nhằm kiểm soát trung lộ và uy hiếp Tướng. Đen có thể đối phó bằng Bình Phong Mã hoặc Thuận Pháo.";
+        } else if (first.toY === 1 || first.toY === 7) {
+          bookName = "Khai cuộc: Quá Cung Pháo";
+          eco = "EC-02";
+          advice = "Quá Cung Pháo phòng thủ kín đáo và chuyển hướng tấn công biên linh hoạt.";
+        } else {
+          bookName = "Khai cuộc: Sĩ Giác Pháo";
+          eco = "EC-03";
+          advice = "Pháo gác góc sĩ củng cố cung thành và chuẩn bị đưa Xe ra lộ thông.";
+        }
+      } else if (first.pieceType === "Elephant") {
+        bookName = "Khai cuộc: Phi Tượng Cuộc";
+        eco = "EC-04";
+        advice = "Phi Tượng thế trận vững chắc như bàn thạch, chú trọng phòng ngự phản công.";
+      } else if (first.pieceType === "Horse") {
+        bookName = "Khai cuộc: Khởi Mã Cuộc";
+        eco = "EC-05";
+        advice = "Khởi Mã sớm tạo sự chủ động kiểm soát sông, thích hợp với lối đánh dẻo dai.";
+      } else if (first.pieceType === "Pawn") {
+        bookName = "Khai cuộc: Tiên Nhân Chỉ Lộ";
+        eco = "EC-06";
+        advice = "Tiến Tốt đầu tiên thăm dò ý định đối thủ, có thể linh hoạt chuyển thành Trung Pháo hoặc Tán Thủ.";
+      }
+
+      // Đánh giá thế trận cho lời khuyên chiến thuật
+      const score = data.redScore || 0;
+      if (score > 150) {
+        advice += " [Ưu thế rõ ràng]: Tấn công dồn dập, ép đối thủ vào thế bị động.";
+      } else if (score < -150) {
+        advice += " [Thế bị động]: Hãy chú ý phòng thủ cung Tướng, cẩn thận các ngòi Pháo và góc Mã của đối phương.";
+      } else if (data.isCheck) {
+        advice = "⚠️ Đang bị Chiếu Tướng! Hãy ưu tiên tìm nước cản chiếu hoặc di chuyển Tướng an toàn ngay lập tức.";
+      }
+    }
+
+    setText("opening-book-name", bookName);
+    setText("opening-book-eco", eco);
+    setText("ai-coach-advice", advice);
   }
 
   function renderHistory(moves) {

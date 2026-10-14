@@ -92,6 +92,54 @@
         </div>
     </div>
 
+    <!-- DANH HIỆU & HUY HIỆU THÀNH TỰU (ACHIEVEMENTS & BADGES) -->
+    <div class="account-badges-section" style="margin-bottom: 28px;">
+        <div class="badges-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="margin: 0; font-size: 18px; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-medal text-gold"></i>
+                <span>Danh hiệu & Huy hiệu Thành tựu</span>
+            </h3>
+            <span style="font-size: 13px; color: var(--text-muted); background: var(--bg-navy-dark); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 20px;">
+                Đã mở khóa: <strong style="color: var(--accent-gold);">@(Model.Badges.Count(b => b.IsUnlocked))/8</strong> huy hiệu
+            </span>
+        </div>
+
+        <div class="badges-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
+            @foreach (var badge in Model.Badges)
+            {
+                <div class="badge-item-card @(badge.IsUnlocked ? "unlocked" : "locked")" 
+                     style="background: var(--bg-navy-panel); border: 1px solid @(badge.IsUnlocked ? "rgba(212, 175, 55, 0.35)" : "var(--border-color)"); border-radius: 12px; padding: 16px; display: flex; gap: 14px; align-items: flex-start; transition: transform 0.2s, box-shadow 0.2s; position: relative; opacity: @(badge.IsUnlocked ? "1" : "0.65");">
+                    
+                    <div class="badge-icon-wrap" style="width: 44px; height: 44px; min-width: 44px; border-radius: 10px; background: @(badge.IsUnlocked ? badge.Color : "#334155"); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; box-shadow: @(badge.IsUnlocked ? $"0 4px 12px {badge.Color}44" : "none");">
+                        <i class="fa-solid @badge.Icon"></i>
+                    </div>
+
+                    <div class="badge-details" style="flex: 1; min-width: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 6px;">
+                            <strong style="font-size: 14px; color: @(badge.IsUnlocked ? "var(--text-main)" : "var(--text-muted)"); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                @badge.Title
+                            </strong>
+                            @if (badge.IsUnlocked)
+                            {
+                                <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);"><i class="fa-solid fa-check"></i> Đạt</span>
+                            }
+                            else
+                            {
+                                <span style="font-size: 10px; font-weight: 600; color: var(--text-muted); background: var(--bg-navy-dark); padding: 2px 6px; border-radius: 4px;"><i class="fa-solid fa-lock"></i> Khóa</span>
+                            }
+                        </div>
+                        <p style="margin: 0 0 6px 0; font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                            @badge.Description
+                        </p>
+                        <div style="font-size: 11px; font-weight: 600; color: @(badge.IsUnlocked ? "var(--accent-gold)" : "var(--text-muted)");">
+                            Tiến độ: @badge.ProgressText
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
     <!-- FORMS ROW -->
     <div class="account-forms-grid">
         <!-- ĐỔI TÊN HIỂN THỊ -->

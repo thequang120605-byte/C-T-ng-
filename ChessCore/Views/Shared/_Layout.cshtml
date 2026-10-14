@@ -227,6 +227,51 @@
                 toast.classList.remove('show');
             }, 2200);
         }
+
+        // Lắng nghe lời mời thách đấu thời gian thực qua SignalR
+        document.addEventListener('DOMContentLoaded', function() {
+            var pidEl = document.getElementById('current-player-id');
+            var myPid = pidEl ? pidEl.textContent.trim() : null;
+            if (myPid && window.signalR) {
+                var globalHub = new signalR.HubConnectionBuilder()
+                    .withUrl("/gameHub")
+                    .withAutomaticReconnect()
+                    .build();
+
+                globalHub.start().then(function() {
+                    globalHub.invoke("RegisterUser", myPid).catch(function(e){ console.warn("Lỗi đăng ký ID thách đấu:", e); });
+                }).catch(function(err){ console.warn("SignalR kết nối thất bại:", err); });
+
+                globalHub.on("ReceiveChallenge", function(data) {
+                    showChallengeModal(data);
+                });
+            }
+        });
+
+        function showChallengeModal(data) {
+            var modal = document.getElementById('incoming-challenge-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'incoming-challenge-modal';
+                modal.style.cssText = "position: fixed; top: 24px; right: 24px; z-index: 10000; background: var(--bg-navy-panel, #1e293b); border: 2px solid var(--accent-gold, #d4af37); border-radius: 12px; padding: 18px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #fff; max-width: 360px; animation: slideIn 0.3s ease;";
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <i class="fa-solid fa-gamepad" style="color: var(--accent-gold, #d4af37); font-size: 22px;"></i>
+                    <strong style="font-size: 15px;">LỜI MỜI THÁCH ĐẤU!</strong>
+                </div>
+                <p style="font-size: 13px; margin: 0 0 12px 0; color: #cbd5e1;">
+                    Người chơi <strong style="color: #38bdf8;">${data.fromPlayerName}</strong> (${data.fromPlayerId}) mời bạn vào ván cờ.
+                </p>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button type="button" onclick="this.closest('#incoming-challenge-modal').remove()" style="padding: 6px 12px; border: 1px solid #64748b; background: transparent; color: #94a3b8; border-radius: 6px; cursor: pointer; font-size: 12px;">Từ chối</button>
+                    <a href="/Game?joinRoom=${encodeURIComponent(data.roomCode)}" style="padding: 6px 14px; background: #22c55e; color: #fff; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-check"></i> Chấp nhận
+                    </a>
+                </div>
+            `;
+        }
     </script>
 
 

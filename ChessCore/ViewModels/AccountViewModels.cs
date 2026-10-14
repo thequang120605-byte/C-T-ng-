@@ -18,6 +18,18 @@ namespace ChessCore.ViewModels
         public int PuzzlesSolved { get; set; }
         public int CompletedCourses { get; set; }
         public DateTime CreatedAt { get; set; }
+        public List<AccountBadgeItem> Badges { get; set; } = new();
+    }
+
+    public class AccountBadgeItem
+    {
+        public string Id { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string Color { get; set; } = "";
+        public bool IsUnlocked { get; set; }
+        public string ProgressText { get; set; } = "";
     }
 
     public class UpdateProfileViewModel

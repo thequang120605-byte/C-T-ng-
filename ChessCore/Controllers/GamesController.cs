@@ -166,9 +166,10 @@ namespace ChessCore.Controllers
             return int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
         }
 
-        private bool CanAccessOnlineGame(Game game)
+        private bool CanAccessOnlineGame(Game game, bool readOnly = false)
         {
             if (!game.RedPlayerId.HasValue && !game.BlackPlayerId.HasValue) return true;
+            if (readOnly) return true; // Cho phép khán giả xem ván cờ (Spectator Mode)
             return TryGetCurrentUserId(out var userId) &&
                 (game.RedPlayerId == userId || game.BlackPlayerId == userId);
         }
@@ -227,7 +228,7 @@ namespace ChessCore.Controllers
                 });
             }
 
-            if (!CanAccessOnlineGame(game)) return Unauthorized();
+            if (!CanAccessOnlineGame(game, readOnly: true)) return Unauthorized();
 
             var board =
                 GameRules.RebuildBoard(
@@ -1111,7 +1112,7 @@ namespace ChessCore.Controllers
                 return NotFound(new { message = $"Không tìm thấy ván cờ với ID {id}" });
             }
 
-            if (!CanAccessOnlineGame(game)) return Unauthorized();
+            if (!CanAccessOnlineGame(game, readOnly: true)) return Unauthorized();
 
             var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
             var fen = board.ToFen();
@@ -1127,7 +1128,7 @@ namespace ChessCore.Controllers
         {
             var game = await _gameService.GetGameByIdAsync(id);
             if (game == null) return NotFound();
-            if (!CanAccessOnlineGame(game)) return Unauthorized();
+            if (!CanAccessOnlineGame(game, readOnly: true)) return Unauthorized();
 
             var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
             

@@ -59,6 +59,91 @@ namespace ChessCore.Controllers
 
             double winRate = user.GamesPlayed > 0 ? Math.Round((double)user.Wins / user.GamesPlayed * 100, 1) : 0;
 
+            // Hệ thống Danh hiệu & Huy hiệu Thành tựu (Achievements & Badges)
+            var badges = new List<AccountBadgeItem>
+            {
+                new AccountBadgeItem
+                {
+                    Id = "first_game",
+                    Title = "Khai Cục Đầu Tiên",
+                    Description = "Hoàn thành ván cờ đầu tiên trên hệ thống",
+                    Icon = "fa-chess-board",
+                    Color = "#3b82f6",
+                    IsUnlocked = user.GamesPlayed >= 1,
+                    ProgressText = $"{Math.Min(user.GamesPlayed, 1)}/1 ván"
+                },
+                new AccountBadgeItem
+                {
+                    Id = "veteran",
+                    Title = "Kỳ Thủ Dày Dạn",
+                    Description = "Tham gia từ 10 ván cờ trở lên",
+                    Icon = "fa-shield-halved",
+                    Color = "#6366f1",
+                    IsUnlocked = user.GamesPlayed >= 10,
+                    ProgressText = $"{Math.Min(user.GamesPlayed, 10)}/10 ván"
+                },
+                new AccountBadgeItem
+                {
+                    Id = "first_win",
+                    Title = "Khởi Hoàn Ca",
+                    Description = "Giành chiến thắng ván cờ đầu tiên",
+                    Icon = "fa-trophy",
+                    Color = "#eab308",
+                    IsUnlocked = user.Wins >= 1,
+                    ProgressText = $"{Math.Min(user.Wins, 1)}/1 chiến thắng"
+                },
+                new AccountBadgeItem
+                {
+                    Id = "grandmaster",
+                    Title = "Chiến Tướng Bất Bại",
+                    Description = "Đạt từ 5 chiến thắng trở lên",
+                    Icon = "fa-crown",
+                    Color = "#f59e0b",
+                    IsUnlocked = user.Wins >= 5,
+                    ProgressText = $"{Math.Min(user.Wins, 5)}/5 chiến thắng"
+                },
+                new AccountBadgeItem
+                {
+                    Id = "puzzle_solver",
+                    Title = "Nhập Môn Phá Trận",
+                    Description = "Giải thành công ít nhất 1 thế cờ",
+                    Icon = "fa-puzzle-piece",
+                    Color = "#10b981",
+                    IsUnlocked = puzzlesSolved >= 1,
+                    ProgressText = $"{Math.Min(puzzlesSolved, 1)}/1 thế cờ"
+                },
+                new AccountBadgeItem
+                {
+                    Id = "puzzle_master",
+                    Title = "Bậc Thầy Cờ Thế",
+                    Description = "Hóa giải thành công 5 thế cờ hóc búa",
+                    Icon = "fa-wand-magic-sparkles",
+                    Color = "#8b5cf6",
+                    IsUnlocked = puzzlesSolved >= 5,
+                    ProgressText = $"{Math.Min(puzzlesSolved, 5)}/5 thế cờ"
+                },
+                new AccountBadgeItem
+                {
+                    Id = "course_graduate",
+                    Title = "Hàn Lâm Kỳ Viện",
+                    Description = "Hoàn thành toàn bộ 4 Module khóa học căn bản",
+                    Icon = "fa-graduation-cap",
+                    Color = "#ec4899",
+                    IsUnlocked = completedCourses >= 4,
+                    ProgressText = $"{completedCourses}/4 Module"
+                },
+                new AccountBadgeItem
+                {
+                    Id = "elo_expert",
+                    Title = "Danh Bất Hư Truyền",
+                    Description = "Đạt cột mốc 1300 điểm Elo danh giá",
+                    Icon = "fa-star",
+                    Color = "#f97316",
+                    IsUnlocked = user.Elo >= 1300,
+                    ProgressText = $"{user.Elo}/1300 Elo"
+                }
+            };
+
             var model = new AccountProfileViewModel
             {
                 Id = user.Id,
@@ -74,7 +159,8 @@ namespace ChessCore.Controllers
                 WinRate = winRate,
                 PuzzlesSolved = puzzlesSolved,
                 CompletedCourses = completedCourses,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                Badges = badges
             };
 
             return View(model);
