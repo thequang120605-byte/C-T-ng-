@@ -76,14 +76,21 @@
                         @foreach (var lesson in item.Lessons)
                         {
                             var options = lesson.Questions.SelectMany(q => JsonSerializer.Deserialize<List<string>>(q.OptionsJson) ?? []).ToList();
-                            <article class="lesson-card @(lesson.Progress?.IsCompleted == true ? "completed" : "")" id="lesson-@lesson.Lesson.Id">
+                            <article class="lesson-card @(lesson.Progress?.IsCompleted == true ? "completed" : "") @(lesson.IsLocked ? "lesson-locked lesson-synthesis" : "") @(lesson.Lesson.DisplayOrder == 13 ? "lesson-final" : "")" id="lesson-@lesson.Lesson.Id">
                                 <div class="lesson-number">@lesson.Lesson.DisplayOrder.ToString("00")</div>
                                 <div class="lesson-main">
                                     <div class="lesson-label"><i class="fa-solid @(lesson.Progress?.IsCompleted == true ? "fa-circle-check" : "fa-book-open")"></i> @(lesson.Progress?.IsCompleted == true ? "Đã hoàn thành" : "Bài học")</div>
                                     <h3>@lesson.Lesson.Title</h3>
                                     <p>@lesson.Lesson.Description</p>
                                     <div class="lesson-actions">
-                                        <button class="course-btn primary lesson-open" data-lesson-id="@lesson.Lesson.Id"><i class="fa-solid fa-play"></i> @(lesson.Progress?.IsCompleted == true ? "Ôn lại bài" : "Bắt đầu học")</button>
+                                        @if (lesson.IsLocked)
+                                        {
+                                            <button type="button" class="course-btn lesson-locked-button" disabled><i class="fa-solid fa-lock"></i> @(lesson.Lesson.DisplayOrder == 13 ? "Mở khóa sau 3 bài tổng hợp" : "Mở khóa sau 9 bài Module 2")</button>
+                                        }
+                                        else
+                                        {
+                                            <button class="course-btn primary lesson-open" data-lesson-id="@lesson.Lesson.Id"><i class="fa-solid fa-play"></i> @(lesson.Progress?.IsCompleted == true ? "Ôn lại bài" : "Bắt đầu học")</button>
+                                        }
                                         @if (lesson.Progress?.BestQuizScore > 0) { <span class="lesson-score">Quiz: @lesson.Progress.BestQuizScore%</span> }
                                     </div>
                                 </div>

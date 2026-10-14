@@ -23,6 +23,7 @@ namespace ChessCore.ViewModels
         public CourseLesson Lesson { get; init; } = null!;
         public UserCourseProgress? Progress { get; init; }
         public IReadOnlyList<CourseQuizQuestion> Questions { get; init; } = [];
+        public bool IsLocked { get; init; }
     }
 
     public class CourseProgressRequest

@@ -37,7 +37,11 @@
         12: { pieces: [{ at: 81, type: 'Elephant', text: '相', color: 'red' }, { at: 4, type: 'King', text: '將', color: 'black' }] },
         13: { pieces: [{ at: 54, type: 'Pawn', text: '兵', color: 'red' }, { at: 31, type: 'Pawn', text: '卒', color: 'black' }] },
         14: { pieces: [{ at: 81, type: 'Rook', text: '俥', color: 'red' }, { at: 73, type: 'Cannon', text: '砲', color: 'red' }, { at: 18, type: 'Pawn', text: '卒', color: 'black' }] },
-        15: { pieces: [{ at: 81, type: 'Rook', text: '俥', color: 'red' }, { at: 73, type: 'Cannon', text: '砲', color: 'red' }, { at: 82, type: 'Horse', text: '傌', color: 'red' }, { at: 18, type: 'Pawn', text: '卒', color: 'black' }, { at: 4, type: 'King', text: '將', color: 'black' }] }
+        15: { pieces: [{ at: 81, type: 'Rook', text: '俥', color: 'red' }, { at: 73, type: 'Cannon', text: '砲', color: 'red' }, { at: 82, type: 'Horse', text: '傌', color: 'red' }, { at: 18, type: 'Pawn', text: '卒', color: 'black' }, { at: 4, type: 'King', text: '將', color: 'black' }] },
+        16: { pieces: createInitialPieces() },
+        17: { pieces: createInitialPieces() },
+        18: { pieces: createInitialPieces() },
+        19: { pieces: createInitialPieces() }
     };
 
     function setupLessonBoard(board) {
@@ -241,19 +245,32 @@
 
     const moduleButtons = [...document.querySelectorAll('.module-summary')];
     const modules = [...document.querySelectorAll('.course-module')];
+    const selectedModuleStorageKey = 'course.selectedModuleIndex';
+
     function selectModule(index) {
+        if (index < 0 || index >= modules.length) return;
         moduleButtons.forEach((button, buttonIndex) => {
             const active = buttonIndex === index;
             button.classList.toggle('active', active);
             button.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
         modules.forEach((module, moduleIndex) => { module.hidden = moduleIndex !== index; });
+        window.localStorage.setItem(selectedModuleStorageKey, String(index));
     }
     moduleButtons.forEach((button, index) => button.addEventListener('click', () => selectModule(index)));
-    if (moduleButtons.length) selectModule(0);
+    if (moduleButtons.length) {
+        const savedModuleIndex = Number.parseInt(window.localStorage.getItem(selectedModuleStorageKey) ?? '', 10);
+        const initialModuleIndex = Number.isInteger(savedModuleIndex) && savedModuleIndex >= 0 && savedModuleIndex < modules.length
+            ? savedModuleIndex
+            : 0;
+        selectModule(initialModuleIndex);
+    }
 
     document.querySelectorAll('.lesson-open').forEach(button => button.addEventListener('click', () => {
         currentLessonId = Number(button.dataset.lessonId);
+        const currentModule = button.closest('.course-module');
+        const currentModuleIndex = currentModule ? modules.indexOf(currentModule) : -1;
+        if (currentModuleIndex >= 0) selectModule(currentModuleIndex);
         const template = document.getElementById('lesson-data-' + currentLessonId);
         host.replaceChildren(template.content.cloneNode(true));
         modal.classList.add('show');
