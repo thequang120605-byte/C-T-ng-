@@ -234,6 +234,50 @@ namespace ChessCore.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+        // ==========================================
+        // 5. ĐO LƯỜNG & THỰC NGHIỆM HIỆU NĂNG AI (KLCN)
+        // ==========================================
+        [HttpGet]
+        public async Task<IActionResult> AiBenchmark()
+        {
+            if (!await IsAdminUserAsync()) return View("AccessDenied");
+
+            // Chạy kiểm thử mẫu trên thế cờ chuẩn với các độ sâu 1, 2, 3
+            var sampleBoard = new ChessCore.Engine.Board();
+            var benchmarkResults = new List<BenchmarkResultRow>();
+
+            for (int d = 1; d <= 3; d++)
+            {
+                var engine = new ChessCore.Engine.MinimaxEngine(d);
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                var move = engine.FindBestMove(sampleBoard, ChessCore.Enums.PieceColor.Red);
+                sw.Stop();
+
+                var stats = engine.LastStats;
+                benchmarkResults.Add(new BenchmarkResultRow
+                {
+                    Depth = d,
+                    BestMove = move != null ? $"({move.From.Row},{move.From.Col}) -> ({move.To.Row},{move.To.Col})" : "N/A",
+                    NodesEvaluated = stats.NodesEvaluated,
+                    TranspositionHits = stats.TranspositionHits,
+                    BetaCutoffs = stats.BetaCutoffs,
+                    ElapsedMs = sw.Elapsed.TotalMilliseconds
+                });
+            }
+
+            return View(benchmarkResults);
+        }
+    }
+
+    public class BenchmarkResultRow
+    {
+        public int Depth { get; set; }
+        public string BestMove { get; set; } = "";
+        public long NodesEvaluated { get; set; }
+        public long TranspositionHits { get; set; }
+        public long BetaCutoffs { get; set; }
+        public double ElapsedMs { get; set; }
     }
 
     public class AdminDashboardViewModel

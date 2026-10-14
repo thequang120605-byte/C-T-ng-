@@ -97,10 +97,56 @@ namespace ChessCore.Controllers
             return Ok(new { progress.IsCompleted, progress.BestQuizScore });
         }
 
+        // =========================================================
+        // GIAI ĐOẠN 3: CHỨNG CHỈ HOÀN THÀNH KHÓA HỌC (E-CERTIFICATE)
+        // =========================================================
+        [HttpGet("Course/Certificate")]
+        public async Task<IActionResult> Certificate()
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Auth");
+            }
+
+            var user = await _context.Users.FindAsync(userId.Value);
+            if (user == null) return NotFound();
+
+            var totalLessons = await _context.CourseLessons.CountAsync();
+            var completedCount = await _context.UserCourseProgresses
+                .CountAsync(p => p.UserId == userId.Value && p.IsCompleted);
+
+            var vm = new CourseCertificateViewModel
+            {
+                StudentName = user.Username,
+                PlayerId = user.PlayerId,
+                Email = user.Email,
+                TotalLessons = totalLessons,
+                CompletedLessons = completedCount,
+                IsEligible = completedCount >= totalLessons && totalLessons > 0,
+                IssueDate = DateTime.Now,
+                CertificateCode = $"CERT-CT-{user.Id:D4}-{DateTime.Now.Year}"
+            };
+
+            return View(vm);
+        }
+
         private int? GetUserId()
         {
             var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
             return int.TryParse(value, out var id) ? id : null;
         }
+    }
+
+    public class CourseCertificateViewModel
+    {
+        public string StudentName { get; set; } = "";
+        public string PlayerId { get; set; } = "";
+        public string Email { get; set; } = "";
+        public int TotalLessons { get; set; }
+        public int CompletedLessons { get; set; }
+        public bool IsEligible { get; set; }
+        public DateTime IssueDate { get; set; }
+        public string CertificateCode { get; set; } = "";
     }
 }

@@ -1,0 +1,77 @@
+@model List<ChessCore.Controllers.BenchmarkResultRow>
+@{
+    ViewData["Title"] = "Thực nghiệm & Đo lường Hiệu năng AI - Admin";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fa-solid fa-microchip"></i> Thực nghiệm Thuật toán AI Minimax (Khóa Luận)</h1>
+        <div class="admin-tabs">
+            <a href="/Admin" class="admin-tab-btn"><i class="fa-solid fa-chart-pie"></i> Tổng quan</a>
+            <a href="/Admin/Puzzles" class="admin-tab-btn"><i class="fa-solid fa-puzzle-piece"></i> Quản lý Cờ thế</a>
+            <a href="/Admin/Courses" class="admin-tab-btn"><i class="fa-solid fa-graduation-cap"></i> Quản lý Khóa học</a>
+            <a href="/Admin/AiBenchmark" class="admin-tab-btn active"><i class="fa-solid fa-microchip"></i> Hiệu năng AI</a>
+        </div>
+    </div>
+
+    <div class="admin-alert admin-alert-success">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>Đã tích hợp <strong>Zobrist Hashing (64-bit)</strong>, <strong>Bảng chuyển vị (Transposition Table)</strong> và <strong>Cắt tỉa Alpha-Beta kết hợp MVV-LVA Move Ordering</strong>. Dưới đây là số liệu thực nghiệm đo lường trực tiếp trên máy chủ.</span>
+    </div>
+
+    <!-- Bảng so sánh các cấp độ duyệt -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2><i class="fa-solid fa-table-columns" style="color: var(--accent-gold);"></i> Bảng số liệu thực nghiệm theo Độ sâu (Depth)</h2>
+            <a href="/Admin/AiBenchmark" class="btn-admin btn-admin-gold btn-admin-sm">
+                <i class="fa-solid fa-rotate"></i> Chạy lại Benchmark
+            </a>
+        </div>
+
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 100px;">Độ sâu (Depth)</th>
+                        <th>Nước đi tốt nhất tìm được</th>
+                        <th style="text-align: right;">Số nút đã duyệt (Nodes)</th>
+                        <th style="text-align: right;">Trúng Bảng chuyển vị (TT Hits)</th>
+                        <th style="text-align: right;">Số lần cắt tỉa Beta (Cutoffs)</th>
+                        <th style="text-align: right;">Thời gian thực thi (ms)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td><strong style="color: var(--accent-gold-dark); font-size: 16px;">Cấp @r.Depth</strong></td>
+                            <td><code>@r.BestMove</code></td>
+                            <td style="text-align: right; font-weight: 700; color: #2563eb;">@r.NodesEvaluated.ToString("N0")</td>
+                            <td style="text-align: right; font-weight: 700; color: #059669;">@r.TranspositionHits.ToString("N0")</td>
+                            <td style="text-align: right; font-weight: 700; color: #d97706;">@r.BetaCutoffs.ToString("N0")</td>
+                            <td style="text-align: right; font-weight: 700; color: var(--text-main);">@r.ElapsedMs.ToString("F2") ms</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Phân tích học thuật dành cho báo cáo Khóa luận -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2><i class="fa-solid fa-graduation-cap" style="color: var(--accent-gold);"></i> Nhận xét & Đánh giá học thuật (Sử dụng cho Báo cáo / Luận văn)</h2>
+        </div>
+        <div style="font-size: 14px; line-height: 1.8; color: var(--text-main);">
+            <ul style="padding-left: 20px;">
+                <li><strong>Cắt tỉa Alpha-Beta:</strong> Khi kết hợp với kỹ thuật sắp xếp nước đi theo độ ưu tiên ăn quân <em>MVV-LVA (Most Valuable Victim - Least Valuable Attacker)</em>, số lượng nhánh phải duyệt giảm từ hàm mũ $O(b^d)$ xuống xấp xỉ $O(b^{d/2})$, cho phép thuật toán đạt tốc độ xử lý trong thời gian thực.</li>
+                <li><strong>Bảng chuyển vị (Transposition Table) với Zobrist Hashing:</strong> Tránh tính toán lại các thế cờ hoán vị (transpositions) xảy ra từ nhiều thứ tự nước đi khác nhau. Tỷ lệ trúng cache tăng dần theo độ sâu, giúp AI tiết kiệm đáng kể thời gian đánh giá hàm lượng giác/vị trí.</li>
+                <li><strong>Ứng dụng thực tế:</strong> Cấp độ 1 phù hợp cho phản hồi tức thời của người mới học; Cấp độ 2-3 cung cấp độ sâu chiến thuật ổn định cho các bài toán phân tích sai lầm sau ván cờ.</li>
+            </ul>
+        </div>
+    </div>
+</div>

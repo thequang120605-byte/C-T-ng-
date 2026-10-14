@@ -1,0 +1,199 @@
+@model ChessCore.Controllers.CourseCertificateViewModel
+@{
+    ViewData["Title"] = "Chứng chỉ Khóa học Cờ Tướng";
+}
+
+@section Styles {
+    <style>
+        .cert-container {
+            max-width: 900px;
+            margin: 30px auto 60px;
+            padding: 0 20px;
+        }
+
+        .cert-frame {
+            background: #ffffff;
+            border: 12px double #b45309;
+            border-radius: 12px;
+            padding: 50px 40px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            position: relative;
+            color: #1e293b;
+        }
+
+        .cert-frame::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 2px solid #f59e0b;
+            pointer-events: none;
+        }
+
+        .cert-logo {
+            font-size: 48px;
+            color: #b45309;
+            margin-bottom: 12px;
+        }
+
+        .cert-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #78350f;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .cert-subtitle {
+            font-size: 16px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+        }
+
+        .cert-awarded {
+            font-size: 15px;
+            color: #475569;
+            margin-bottom: 10px;
+        }
+
+        .cert-name {
+            font-size: 36px;
+            font-weight: 900;
+            color: #b45309;
+            font-family: 'Playfair Display', Georgia, serif;
+            margin-bottom: 16px;
+            text-decoration: underline;
+            text-decoration-color: #fcd34d;
+        }
+
+        .cert-desc {
+            font-size: 15px;
+            line-height: 1.8;
+            max-width: 650px;
+            margin: 0 auto 36px;
+            color: #334155;
+        }
+
+        .cert-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px dashed #cbd5e1;
+        }
+
+        .cert-signature {
+            text-align: center;
+        }
+
+        .signature-line {
+            width: 180px;
+            height: 1px;
+            background: #94a3b8;
+            margin: 50px auto 8px;
+        }
+
+        .cert-badge {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #f59e0b, #b45309);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            box-shadow: 0 6px 15px rgba(180, 83, 9, 0.3);
+            border: 3px solid #ffffff;
+        }
+
+        .cert-actions {
+            margin-top: 24px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        @@media print {
+            body * {
+                visibility: hidden;
+            }
+            .cert-frame, .cert-frame * {
+                visibility: visible;
+            }
+            .cert-frame {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+            }
+            .cert-actions {
+                display: none;
+            }
+        }
+    </style>
+}
+
+<div class="cert-container">
+    @if (!Model.IsEligible)
+    {
+        <div class="admin-alert admin-alert-danger" style="margin-bottom: 24px; text-align: left;">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <div>
+                <strong>Chưa đủ điều kiện nhận chứng chỉ:</strong>
+                Bạn đã hoàn thành <b>@Model.CompletedLessons/@Model.TotalLessons</b> bài học. Vui lòng hoàn thành 100% bài học và câu hỏi kiểm tra để mở khóa chứng chỉ nhé!
+                <div style="margin-top: 8px;">
+                    <a href="/Course" class="btn-admin btn-admin-gold btn-admin-sm"><i class="fa-solid fa-arrow-left"></i> Tiếp tục học bài</a>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="cert-frame">
+        <div class="cert-logo"><i class="fa-solid fa-chess-knight"></i></div>
+        <div class="cert-title">CHỨNG NHẬN KỲ THỦ NHẬP MÔN</div>
+        <div class="cert-subtitle">Học viện Cờ Tướng Pro • Xiangqi Academy</div>
+
+        <div class="cert-awarded">Chứng nhận này trân trọng trao tặng cho</div>
+        <div class="cert-name">@Model.StudentName</div>
+
+        <div class="cert-desc">
+            Đã hoàn thành xuất sắc toàn bộ khóa học <strong>"Học Cờ Tướng Từ Con Số Không"</strong>, nắm vững quy tắc di chuyển 7 binh chủng, các thế sát pháp căn bản và vượt qua hệ thống kiểm tra đánh giá của học viện.
+        </div>
+
+        <div class="cert-footer">
+            <div class="cert-signature">
+                <div style="font-size: 13px; color: #64748b;">Mã chứng chỉ: <b>@Model.CertificateCode</b></div>
+                <div style="font-size: 13px; color: #64748b;">Mã học viên: <b>@Model.PlayerId</b></div>
+                <div style="font-size: 13px; color: #64748b;">Ngày cấp: <b>@Model.IssueDate.ToString("dd/MM/yyyy")</b></div>
+            </div>
+
+            <div class="cert-badge">
+                <i class="fa-solid fa-award" style="font-size: 24px; margin-bottom: 2px;"></i>
+                <span>XÁC THỰC</span>
+            </div>
+
+            <div class="cert-signature">
+                <div class="signature-line"></div>
+                <div style="font-weight: 700; color: #78350f;">Hội Đồng Giám Khảo</div>
+                <div style="font-size: 12px; color: #64748b;">Cờ Tướng Pro Academy</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cert-actions">
+        <button type="button" class="btn-admin btn-admin-gold" onclick="window.print();">
+            <i class="fa-solid fa-print"></i> In / Xuất PDF Chứng chỉ
+        </button>
+        <a href="/Course" class="btn-admin btn-admin-primary">
+            <i class="fa-solid fa-graduation-cap"></i> Về danh sách Khóa học
+        </a>
+    </div>
+</div>

@@ -1,0 +1,403 @@
+@model ChessCore.Controllers.GameReviewViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Phân tích ván cờ #" + Model.GameId;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" />
+    <style>
+        .review-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 800px 1fr;
+            gap: 24px;
+        }
+
+        .review-board-card {
+            background: var(--bg-navy-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .review-analysis-card {
+            background: var(--bg-navy-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            max-height: 85vh;
+        }
+
+        .accuracy-box {
+            display: flex;
+            justify-content: space-around;
+            background: var(--bg-navy-light);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .accuracy-item {
+            text-align: center;
+        }
+
+        .accuracy-score {
+            font-size: 26px;
+            font-weight: 800;
+        }
+
+        /* Eval Bar */
+        .eval-bar-wrapper {
+            width: 100%;
+            height: 12px;
+            background: #1e293b;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 12px 0 20px;
+            display: flex;
+        }
+
+        .eval-bar-red {
+            background: linear-gradient(90deg, #ef4444, #f97316);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .eval-bar-black {
+            background: #334155;
+            height: 100%;
+            flex: 1;
+        }
+
+        .move-history-scroll {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-navy-dark);
+        }
+
+        .review-move-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .review-move-item:hover, .review-move-item.active {
+            background: var(--bg-navy-light);
+        }
+
+        .badge-judgment {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+        .badge-Brilliant { background: rgba(168, 85, 247, 0.2); color: #9333ea; }
+        .badge-Best { background: rgba(16, 185, 129, 0.2); color: #059669; }
+        .badge-Good { background: rgba(59, 130, 246, 0.2); color: #2563eb; }
+        .badge-Inaccuracy { background: rgba(234, 179, 8, 0.2); color: #d97706; }
+        .badge-Blunder { background: rgba(239, 68, 68, 0.2); color: #dc2626; }
+
+        .review-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .btn-replay {
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-navy-panel);
+            color: var(--text-main);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-replay:hover {
+            background: var(--bg-navy-light);
+            border-color: var(--accent-gold);
+        }
+
+        @@media (max-width: 1024px) {
+            .review-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<div class="review-container">
+    <!-- CỘT TRÁI: BÀN CỜ REPLAY -->
+    <div class="review-board-card">
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 14px;">
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--text-main); margin: 0;">
+                <i class="fa-solid fa-chess-board" style="color: var(--accent-gold);"></i> Ván đấu #@Model.GameId (@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm"))
+            </h2>
+            <a href="/Game" class="btn-secondary" style="padding: 6px 14px; text-decoration: none; font-size: 13px;">
+                <i class="fa-solid fa-arrow-left"></i> Về Sàn đấu
+            </a>
+        </div>
+
+        <!-- Eval Bar -->
+        <div style="width: 100%; display: flex; justify-content: space-between; font-size: 12px; font-weight: bold;">
+            <span style="color: #ef4444;"><i class="fa-solid fa-circle"></i> @Model.RedPlayerName (Đỏ)</span>
+            <span id="eval-score-text" style="color: var(--text-main);">Cân bằng (+0.0)</span>
+            <span style="color: #64748b;"><i class="fa-solid fa-circle"></i> @Model.BlackPlayerName (Đen)</span>
+        </div>
+        <div class="eval-bar-wrapper">
+            <div id="eval-bar-red" class="eval-bar-red" style="width: 50%;"></div>
+            <div class="eval-bar-black"></div>
+        </div>
+
+        <!-- Bàn cờ SVG -->
+        <div style="width: 100%; max-width: 600px; aspect-ratio: 9/10; position: relative;">
+            <svg id="replay-board-svg" class="board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet">
+                <rect x="0" y="0" width="900" height="1000" class="board-outer-bg" />
+                <rect x="15" y="15" width="870" height="970" class="board-background" />
+                <g class="board-lines">
+                    @for (var row = 0; row < 10; row++) { <line x1="50" y1="@(50 + row * 100)" x2="850" y2="@(50 + row * 100)" /> }
+                    <line x1="50" y1="50" x2="50" y2="950" /><line x1="850" y1="50" x2="850" y2="950" />
+                    @for (var col = 1; col < 8; col++) { <line x1="@(50 + col * 100)" y1="50" x2="@(50 + col * 100)" y2="450" /><line x1="@(50 + col * 100)" y1="550" x2="@(50 + col * 100)" y2="950" /> }
+                </g>
+                <g class="palace-lines"><line x1="350" y1="50" x2="550" y2="250" /><line x1="550" y1="50" x2="350" y2="250" /><line x1="350" y1="750" x2="550" y2="950" /><line x1="550" y1="750" x2="350" y2="950" /></g>
+                <g class="river-text"><text x="250" y="520">楚 河</text><text x="650" y="520">漢 界</text></g>
+                <g id="replay-moves-layer"></g><g id="replay-pieces-layer"></g>
+            </svg>
+        </div>
+
+        <!-- Bộ nút điều hướng Replay -->
+        <div class="review-controls">
+            <button type="button" class="btn-replay" id="btn-first" title="Về đầu"><i class="fa-solid fa-backward-step"></i></button>
+            <button type="button" class="btn-replay" id="btn-prev" title="Nước trước"><i class="fa-solid fa-chevron-left"></i></button>
+            <button type="button" class="btn-replay" id="btn-play" title="Tự động chạy"><i class="fa-solid fa-play"></i></button>
+            <button type="button" class="btn-replay" id="btn-next" title="Nước kế tiếp"><i class="fa-solid fa-chevron-right"></i></button>
+            <button type="button" class="btn-replay" id="btn-last" title="Về cuối"><i class="fa-solid fa-forward-step"></i></button>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI: BÁO CÁO PHÂN TÍCH AI & DANH SÁCH NƯỚC ĐI -->
+    <div class="review-analysis-card">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--text-main);">
+            <i class="fa-solid fa-brain" style="color: var(--accent-gold);"></i> Báo cáo Phân tích từ AI
+        </h3>
+
+        <!-- Chỉ số độ chính xác (Accuracy) -->
+        <div class="accuracy-box">
+            <div class="accuracy-item">
+                <div style="font-size: 12px; color: #ef4444; font-weight: bold; margin-bottom: 4px;">ĐỎ (@Model.RedPlayerName)</div>
+                <div class="accuracy-score" style="color: #ef4444;">@Model.AccuracyRed%</div>
+                <small style="color: var(--text-muted); font-size: 11px;">Độ chuẩn xác</small>
+            </div>
+            <div style="width: 1px; background: var(--border-color);"></div>
+            <div class="accuracy-item">
+                <div style="font-size: 12px; color: #3b82f6; font-weight: bold; margin-bottom: 4px;">ĐEN (@Model.BlackPlayerName)</div>
+                <div class="accuracy-score" style="color: #3b82f6;">@Model.AccuracyBlack%</div>
+                <small style="color: var(--text-muted); font-size: 11px;">Độ chuẩn xác</small>
+            </div>
+        </div>
+
+        <!-- Nhận xét nước cờ hiện tại -->
+        <div id="move-comment-box" style="background: var(--bg-navy-light); border-left: 4px solid var(--accent-gold); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; min-height: 54px;">
+            <div id="comment-title" style="font-weight: 700; font-size: 13px; color: var(--text-main); margin-bottom: 4px;">Khởi đầu ván cờ</div>
+            <div id="comment-text" style="font-size: 13px; color: var(--text-muted);">Hãy bấm các nút điều hướng hoặc chọn nước đi bên dưới để xem AI nhận xét.</div>
+        </div>
+
+        <!-- Danh sách cuộn nước đi -->
+        <div class="move-history-scroll" id="moves-list">
+            @for (int i = 0; i < Model.AnalyzedMoves.Count; i++)
+            {
+                var m = Model.AnalyzedMoves[i];
+                <div class="review-move-item" data-index="@i" onclick="goToStep(@i);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 12px; font-weight: bold; color: var(--text-muted); width: 28px;">#@m.MoveOrder</span>
+                        <strong style="color: @(m.PieceColor == "Red" ? "#ef4444" : "var(--text-main)");">@m.Notation</strong>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge-judgment badge-@m.Judgment">@m.Judgment</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Nút xuất biên bản PGN / In PDF (Giai đoạn 3) -->
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button type="button" class="btn-admin btn-admin-gold btn-admin-sm" onclick="exportNotation();">
+                <i class="fa-solid fa-file-arrow-down"></i> Xuất biên bản PGN / Text
+            </button>
+            <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="window.print();">
+                <i class="fa-solid fa-print"></i> In ván cờ
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const analyzedMoves = @Html.Raw(JsonSerializer.Serialize(Model.AnalyzedMoves));
+        let currentStep = -1;
+        let isPlaying = false;
+        let playInterval = null;
+
+        // Trạng thái ban đầu bàn cờ
+        const initialPieces = [
+            { row: 0, col: 0, type: 'Rook', text: '車', color: 'Black' },
+            { row: 0, col: 1, type: 'Horse', text: '馬', color: 'Black' },
+            { row: 0, col: 2, type: 'Elephant', text: '象', color: 'Black' },
+            { row: 0, col: 3, type: 'Advisor', text: '士', color: 'Black' },
+            { row: 0, col: 4, type: 'King', text: '將', color: 'Black' },
+            { row: 0, col: 5, type: 'Advisor', text: '士', color: 'Black' },
+            { row: 0, col: 6, type: 'Elephant', text: '象', color: 'Black' },
+            { row: 0, col: 7, type: 'Horse', text: '馬', color: 'Black' },
+            { row: 0, col: 8, type: 'Rook', text: '車', color: 'Black' },
+            { row: 2, col: 1, type: 'Cannon', text: '炮', color: 'Black' },
+            { row: 2, col: 7, type: 'Cannon', text: '炮', color: 'Black' },
+            { row: 3, col: 0, type: 'Pawn', text: '卒', color: 'Black' },
+            { row: 3, col: 2, type: 'Pawn', text: '卒', color: 'Black' },
+            { row: 3, col: 4, type: 'Pawn', text: '卒', color: 'Black' },
+            { row: 3, col: 6, type: 'Pawn', text: '卒', color: 'Black' },
+            { row: 3, col: 8, type: 'Pawn', text: '卒', color: 'Black' },
+
+            { row: 9, col: 0, type: 'Rook', text: '俥', color: 'Red' },
+            { row: 9, col: 1, type: 'Horse', text: '傌', color: 'Red' },
+            { row: 9, col: 2, type: 'Elephant', text: '相', color: 'Red' },
+            { row: 9, col: 3, type: 'Advisor', text: '仕', color: 'Red' },
+            { row: 9, col: 4, type: 'King', text: '帥', color: 'Red' },
+            { row: 9, col: 5, type: 'Advisor', text: '仕', color: 'Red' },
+            { row: 9, col: 6, type: 'Elephant', text: '相', color: 'Red' },
+            { row: 9, col: 7, type: 'Horse', text: '傌', color: 'Red' },
+            { row: 9, col: 8, type: 'Rook', text: '俥', color: 'Red' },
+            { row: 7, col: 1, type: 'Cannon', text: '砲', color: 'Red' },
+            { row: 7, col: 7, type: 'Cannon', text: '砲', color: 'Red' },
+            { row: 6, col: 0, type: 'Pawn', text: '兵', color: 'Red' },
+            { row: 6, col: 2, type: 'Pawn', text: '兵', color: 'Red' },
+            { row: 6, col: 4, type: 'Pawn', text: '兵', color: 'Red' },
+            { row: 6, col: 6, type: 'Pawn', text: '兵', color: 'Red' },
+            { row: 6, col: 8, type: 'Pawn', text: '兵', color: 'Red' }
+        ];
+
+        function renderBoardAtStep(step) {
+            const pieces = initialPieces.map(p => ({ ...p }));
+
+            for (let i = 0; i <= step; i++) {
+                const m = analyzedMoves[i];
+                // Xóa quân bị bắt tại đích
+                const capIdx = pieces.findIndex(p => p.row === m.ToX && p.col === m.ToY);
+                if (capIdx !== -1) pieces.splice(capIdx, 1);
+
+                // Di chuyển quân
+                const mover = pieces.find(p => p.row === m.FromX && p.col === m.FromY);
+                if (mover) {
+                    mover.row = m.ToX;
+                    mover.col = m.ToY;
+                }
+            }
+
+            // Vẽ lên SVG
+            const layer = document.getElementById('replay-pieces-layer');
+            layer.replaceChildren();
+
+            pieces.forEach(p => {
+                const x = 50 + p.col * 100;
+                const y = 50 + p.row * 100;
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', `course-piece ${p.color.toLowerCase()}`);
+                g.innerHTML = `<circle cx="${x}" cy="${y}" r="42"></circle><text x="${x}" y="${y + 2}">${p.text}</text>`;
+                layer.appendChild(g);
+            });
+
+            // Cập nhật Eval bar
+            const evalText = document.getElementById('eval-score-text');
+            const evalBarRed = document.getElementById('eval-bar-red');
+            if (step >= 0 && step < analyzedMoves.length) {
+                const moveData = analyzedMoves[step];
+                const score = moveData.EvalScore;
+                evalText.textContent = `Điểm thế trận: ${(score / 100).toFixed(1)}`;
+                
+                // Quy đổi sang phần trăm (từ -1000 đến +1000)
+                let pct = 50 + (score / 20);
+                pct = Math.max(5, Math.min(95, pct));
+                evalBarRed.style.width = pct + '%';
+
+                // Cập nhật nhận xét AI
+                document.getElementById('comment-title').textContent = `Nước #${moveData.MoveOrder}: ${moveData.Notation} (${moveData.Judgment})`;
+                document.getElementById('comment-text').textContent = moveData.Comment;
+            } else {
+                evalText.textContent = 'Cân bằng (+0.0)';
+                evalBarRed.style.width = '50%';
+                document.getElementById('comment-title').textContent = 'Khởi đầu ván cờ';
+                document.getElementById('comment-text').textContent = 'Hãy bấm các nút điều hướng hoặc chọn nước đi bên dưới để xem AI nhận xét.';
+            }
+
+            // Highlight danh sách nước đi
+            document.querySelectorAll('.review-move-item').forEach((el, idx) => {
+                el.classList.toggle('active', idx === step);
+            });
+        }
+
+        function goToStep(step) {
+            currentStep = Math.max(-1, Math.min(analyzedMoves.length - 1, step));
+            renderBoardAtStep(currentStep);
+        }
+
+        document.getElementById('btn-first').onclick = () => goToStep(-1);
+        document.getElementById('btn-prev').onclick = () => goToStep(currentStep - 1);
+        document.getElementById('btn-next').onclick = () => goToStep(currentStep + 1);
+        document.getElementById('btn-last').onclick = () => goToStep(analyzedMoves.length - 1);
+
+        document.getElementById('btn-play').onclick = function() {
+            if (isPlaying) {
+                clearInterval(playInterval);
+                isPlaying = false;
+                this.innerHTML = '<i class="fa-solid fa-play"></i>';
+            } else {
+                isPlaying = true;
+                this.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                playInterval = setInterval(() => {
+                    if (currentStep < analyzedMoves.length - 1) {
+                        goToStep(currentStep + 1);
+                    } else {
+                        clearInterval(playInterval);
+                        isPlaying = false;
+                        document.getElementById('btn-play').innerHTML = '<i class="fa-solid fa-play"></i>';
+                    }
+                }, 1200);
+            }
+        };
+
+        function exportNotation() {
+            let txt = `[Ván cờ Cờ Tướng Pro #${@Model.GameId}]\n[Ngày: ${new Date().toLocaleDateString()}]\n[Đỏ: @Model.RedPlayerName]\n[Đen: @Model.BlackPlayerName]\n\n`;
+            analyzedMoves.forEach(m => {
+                txt += `${m.MoveOrder}. ${m.Notation} (${m.Judgment})\n`;
+            });
+
+            const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `BienBan_VanCo_${@Model.GameId}.txt`;
+            a.click();
+        }
+
+        // Render trạng thái đầu tiên
+        goToStep(analyzedMoves.length > 0 ? 0 : -1);
+    </script>
+}

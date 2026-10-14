@@ -1046,10 +1046,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     resultTitle.textContent = title;
-
     winnerName.textContent = winner;
-
     resultMessage.textContent = message;
+
+    const reviewBtn = document.getElementById("result-review-btn");
+    if (reviewBtn) {
+      if (gameId) {
+        reviewBtn.href = `/Game/Review/${gameId}`;
+        reviewBtn.style.display = "inline-flex";
+      } else {
+        reviewBtn.style.display = "none";
+      }
+    }
 
     gameResultModal.classList.remove("hidden");
   }

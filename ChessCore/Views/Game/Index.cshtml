@@ -319,9 +319,12 @@
         <h2 id="result-title">KẾT THÚC VÁN CỜ</h2>
         <h3 id="winner-name" class="winner-name">QUÂN ĐỎ THẮNG</h3>
         <p id="result-message">Chúc mừng bạn đã giành chiến thắng!</p>
-        <div class="modal-actions">
-            <button id="result-new-game-btn" class="btn-primary">Ván mới</button>
-            <button id="result-close-btn" class="btn-secondary">Đóng</button>
+        <div class="modal-actions" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+            <button id="result-new-game-btn" class="btn-primary" style="padding: 10px 18px;">Ván mới</button>
+            <a id="result-review-btn" href="#" class="btn-primary" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;">
+                <i class="fa-solid fa-chart-line"></i> Phân tích ván cờ
+            </a>
+            <button id="result-close-btn" class="btn-secondary" style="padding: 10px 18px;">Đóng</button>
         </div>
     </div>
 </div>

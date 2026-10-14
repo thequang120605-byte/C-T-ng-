@@ -1,228 +1,255 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using ChessCore.Enums;
 using ChessCore.Models;
 
 namespace ChessCore.Engine
 {
+    public enum HashEntryType : byte
+    {
+        Exact,
+        Alpha,
+        Beta
+    }
+
+    public struct TranspositionEntry
+    {
+        public ulong Hash;
+        public int Score;
+        public int Depth;
+        public HashEntryType Flag;
+    }
+
+    public class EngineEvaluationStats
+    {
+        public long NodesEvaluated { get; set; }
+        public long TranspositionHits { get; set; }
+        public long BetaCutoffs { get; set; }
+        public double ElapsedMilliseconds { get; set; }
+        public int Depth { get; set; }
+    }
+
     public class MinimaxEngine
     {
         private readonly int _depth;
+        private const int TableSize = 1048576;
+        private static readonly TranspositionEntry[] TranspositionTable = new TranspositionEntry[TableSize];
+
+        public EngineEvaluationStats LastStats { get; private set; } = new();
 
         public MinimaxEngine(int depth = 2)
         {
             _depth = Math.Max(1, depth);
         }
 
-        public EngineMove? FindBestMove(
-            Board board,
-            PieceColor computerColor)
+        public EngineMove? FindBestMove(Board board, PieceColor computerColor)
         {
-            List<EngineMove> moves =
-                GetAllLegalMoves(
-                    board,
-                    computerColor);
+            var sw = Stopwatch.StartNew();
+            LastStats = new EngineEvaluationStats { Depth = _depth };
 
-            if (moves.Count == 0)
-                return null;
+            List<EngineMove> moves = GetAllLegalMoves(board, computerColor);
+            if (moves.Count == 0) return null;
+
+            // Sắp xếp nước đi theo MVV-LVA
+            OrderMoves(board, moves);
 
             EngineMove? bestMove = null;
-
-            int bestScore =
-                int.MinValue;
+            int bestScore = int.MinValue;
+            int alpha = int.MinValue;
+            int beta = int.MaxValue;
 
             foreach (EngineMove move in moves)
             {
-                Board simulatedBoard =
-                    CloneBoard(board);
+                Board simulatedBoard = CloneBoard(board);
+                ApplyMove(simulatedBoard, move);
 
-                ApplyMove(
-                    simulatedBoard,
-                    move);
-
-                int score =
-                    Minimax(
-                        simulatedBoard,
-                        _depth - 1,
-                        false,
-                        computerColor);
+                int score = AlphaBeta(simulatedBoard, _depth - 1, alpha, beta, false, computerColor);
 
                 if (score > bestScore)
                 {
                     bestScore = score;
                     bestMove = move;
                 }
+
+                alpha = Math.Max(alpha, bestScore);
+                if (alpha >= beta)
+                {
+                    LastStats.BetaCutoffs++;
+                    break;
+                }
             }
 
-            return bestMove;
+            sw.Stop();
+            LastStats.ElapsedMilliseconds = sw.Elapsed.TotalMilliseconds;
+            return bestMove ?? moves[0];
         }
 
-        /// <summary>
-        /// Điểm của thế cờ theo góc nhìn <paramref name="perspective"/>
-        /// (dùng cho thanh phân tích). Tìm kiếm theo độ sâu của engine.
-        /// </summary>
-        public int EvaluatePosition(
-            Board board,
-            PieceColor perspective)
+        public int EvaluatePosition(Board board, PieceColor perspective)
         {
             bool maximizing = board.CurrentTurn == perspective;
-
-            return Minimax(
-                board,
-                _depth,
-                maximizing,
-                perspective);
+            return AlphaBeta(board, _depth, int.MinValue, int.MaxValue, maximizing, perspective);
         }
 
-        private int Minimax(
+        private int AlphaBeta(
             Board board,
             int depth,
+            int alpha,
+            int beta,
             bool maximizing,
             PieceColor computerColor)
         {
-            PieceColor opponentColor =
-                computerColor == PieceColor.Red
-                    ? PieceColor.Black
-                    : PieceColor.Red;
+            LastStats.NodesEvaluated++;
 
-            if (BoardEvaluator.IsCheckmate(
-                board,
-                opponentColor))
-            {
+            PieceColor opponentColor = computerColor == PieceColor.Red ? PieceColor.Black : PieceColor.Red;
+
+            if (BoardEvaluator.IsCheckmate(board, opponentColor))
                 return 1000000 + depth;
-            }
 
-            if (BoardEvaluator.IsCheckmate(
-                board,
-                computerColor))
-            {
+            if (BoardEvaluator.IsCheckmate(board, computerColor))
                 return -1000000 - depth;
-            }
 
-            if (BoardEvaluator.IsStalemate(
-                    board,
-                    computerColor) ||
-                BoardEvaluator.IsStalemate(
-                    board,
-                    opponentColor))
-            {
+            if (BoardEvaluator.IsStalemate(board, computerColor) || BoardEvaluator.IsStalemate(board, opponentColor))
                 return 0;
-            }
 
             if (depth <= 0)
             {
-                return BoardEvaluator.Evaluate(
-                    board,
-                    computerColor);
+                return BoardEvaluator.Evaluate(board, computerColor);
             }
 
-            PieceColor sideToMove =
-                maximizing
-                    ? computerColor
-                    : opponentColor;
+            // Tra cứu Bảng chuyển vị
+            ulong hash = ZobristHashing.ComputeHash(board);
+            int index = (int)(hash % (ulong)TableSize);
+            ref TranspositionEntry entry = ref TranspositionTable[index];
 
-            List<EngineMove> moves =
-                GetAllLegalMoves(
-                    board,
-                    sideToMove);
+            if (entry.Hash == hash && entry.Depth >= depth)
+            {
+                LastStats.TranspositionHits++;
+                if (entry.Flag == HashEntryType.Exact)
+                    return entry.Score;
+                if (entry.Flag == HashEntryType.Alpha && entry.Score <= alpha)
+                    return alpha;
+                if (entry.Flag == HashEntryType.Beta && entry.Score >= beta)
+                    return beta;
+            }
+
+            int originalAlpha = alpha;
+            PieceColor sideToMove = maximizing ? computerColor : opponentColor;
+            List<EngineMove> moves = GetAllLegalMoves(board, sideToMove);
 
             if (moves.Count == 0)
             {
-                return BoardEvaluator.Evaluate(
-                    board,
-                    computerColor);
+                return BoardEvaluator.Evaluate(board, computerColor);
             }
+
+            OrderMoves(board, moves);
+
+            int bestScore = maximizing ? int.MinValue : int.MaxValue;
 
             if (maximizing)
             {
-                int bestScore =
-                    int.MinValue;
-
                 foreach (EngineMove move in moves)
                 {
-                    Board nextBoard =
-                        CloneBoard(board);
+                    Board nextBoard = CloneBoard(board);
+                    ApplyMove(nextBoard, move);
 
-                    ApplyMove(
-                        nextBoard,
-                        move);
+                    int score = AlphaBeta(nextBoard, depth - 1, alpha, beta, false, computerColor);
+                    bestScore = Math.Max(bestScore, score);
+                    alpha = Math.Max(alpha, bestScore);
 
-                    int score =
-                        Minimax(
-                            nextBoard,
-                            depth - 1,
-                            false,
-                            computerColor);
-
-                    bestScore =
-                        Math.Max(
-                            bestScore,
-                            score);
+                    if (alpha >= beta)
+                    {
+                        LastStats.BetaCutoffs++;
+                        break;
+                    }
                 }
-
-                return bestScore;
             }
-
-            int worstScore =
-                int.MaxValue;
-
-            foreach (EngineMove move in moves)
+            else
             {
-                Board nextBoard =
-                    CloneBoard(board);
+                foreach (EngineMove move in moves)
+                {
+                    Board nextBoard = CloneBoard(board);
+                    ApplyMove(nextBoard, move);
 
-                ApplyMove(
-                    nextBoard,
-                    move);
+                    int score = AlphaBeta(nextBoard, depth - 1, alpha, beta, true, computerColor);
+                    bestScore = Math.Min(bestScore, score);
+                    beta = Math.Min(beta, bestScore);
 
-                int score =
-                    Minimax(
-                        nextBoard,
-                        depth - 1,
-                        true,
-                        computerColor);
-
-                worstScore =
-                    Math.Min(
-                        worstScore,
-                        score);
+                    if (alpha >= beta)
+                    {
+                        LastStats.BetaCutoffs++;
+                        break;
+                    }
+                }
             }
 
-            return worstScore;
+            entry.Hash = hash;
+            entry.Score = bestScore;
+            entry.Depth = depth;
+            if (bestScore <= originalAlpha)
+                entry.Flag = HashEntryType.Alpha;
+            else if (bestScore >= beta)
+                entry.Flag = HashEntryType.Beta;
+            else
+                entry.Flag = HashEntryType.Exact;
+
+            return bestScore;
         }
 
-        private List<EngineMove> GetAllLegalMoves(
-            Board board,
-            PieceColor color)
+        private void OrderMoves(Board board, List<EngineMove> moves)
         {
-            List<EngineMove> moves =
-                new List<EngineMove>();
+            moves.Sort((a, b) =>
+            {
+                int scoreA = 0;
+                int scoreB = 0;
+
+                Piece? targetA = board.GetPieceAt(a.To.Row, a.To.Col);
+                if (targetA != null)
+                {
+                    Piece? moverA = board.GetPieceAt(a.From.Row, a.From.Col);
+                    scoreA = GetPieceValue(targetA.Type) * 10 - (moverA != null ? GetPieceValue(moverA.Type) : 0);
+                }
+
+                Piece? targetB = board.GetPieceAt(b.To.Row, b.To.Col);
+                if (targetB != null)
+                {
+                    Piece? moverB = board.GetPieceAt(b.From.Row, b.From.Col);
+                    scoreB = GetPieceValue(targetB.Type) * 10 - (moverB != null ? GetPieceValue(moverB.Type) : 0);
+                }
+
+                return scoreB.CompareTo(scoreA);
+            });
+        }
+
+        private static int GetPieceValue(PieceType type)
+        {
+            return type switch
+            {
+                PieceType.King => 100000,
+                PieceType.Rook => 900,
+                PieceType.Cannon => 450,
+                PieceType.Horse => 400,
+                PieceType.Elephant => 200,
+                PieceType.Advisor => 200,
+                PieceType.Pawn => 100,
+                _ => 0
+            };
+        }
+
+        private List<EngineMove> GetAllLegalMoves(Board board, PieceColor color)
+        {
+            List<EngineMove> moves = new List<EngineMove>();
 
             for (int row = 0; row < 10; row++)
             {
                 for (int col = 0; col < 9; col++)
                 {
-                    Piece? piece =
-                        board.GetPieceAt(
-                            row,
-                            col);
-
-                    if (piece == null)
+                    Piece? piece = board.GetPieceAt(row, col);
+                    if (piece == null || piece.Color != color)
                         continue;
 
-                    if (piece.Color != color)
-                        continue;
-
-                    Position from =
-                        new Position(
-                            row,
-                            col);
-
-                    List<EngineMove> pieceMoves =
-                        MoveGenerator.GetValidMoves(
-                            board,
-                            from);
-
+                    Position from = new Position(row, col);
+                    List<EngineMove> pieceMoves = MoveGenerator.GetValidMoves(board, from);
                     moves.AddRange(pieceMoves);
                 }
             }
@@ -230,64 +257,37 @@ namespace ChessCore.Engine
             return moves;
         }
 
-        private static Board CloneBoard(
-            Board source)
+        private static Board CloneBoard(Board source)
         {
-            Board clone =
-                new Board();
+            Board clone = new Board();
 
             for (int row = 0; row < 10; row++)
             {
                 for (int col = 0; col < 9; col++)
                 {
-                    Piece? piece =
-                        source.GetPieceAt(
-                            row,
-                            col);
-
+                    Piece? piece = source.GetPieceAt(row, col);
                     if (piece == null)
                     {
-                        clone.Grid[row, col] =
-                            null;
+                        clone.Grid[row, col] = null;
                     }
                     else
                     {
-                        clone.Grid[row, col] =
-                            new Piece(
-                                piece.Type,
-                                piece.Color);
+                        clone.Grid[row, col] = new Piece(piece.Type, piece.Color);
                     }
                 }
             }
 
-            // Quan trọng:
-            // Giữ nguyên lượt hiện tại của bàn cờ
-            clone.SetCurrentTurn(
-                source.CurrentTurn);
-
+            clone.SetCurrentTurn(source.CurrentTurn);
             return clone;
         }
 
-        private static void ApplyMove(
-            Board board,
-            EngineMove move)
+        private static void ApplyMove(Board board, EngineMove move)
         {
-            Piece? piece =
-                board.GetPieceAt(
-                    move.From.Row,
-                    move.From.Col);
+            Piece? piece = board.GetPieceAt(move.From.Row, move.From.Col);
+            if (piece == null) return;
 
-            if (piece == null)
-                return;
-
-            board.Grid[
-                move.To.Row,
-                move.To.Col] = piece;
-
-            board.Grid[
-                move.From.Row,
-                move.From.Col] = null;
-
+            board.Grid[move.To.Row, move.To.Col] = piece;
+            board.Grid[move.From.Row, move.From.Col] = null;
             board.SwitchTurn();
         }
     }

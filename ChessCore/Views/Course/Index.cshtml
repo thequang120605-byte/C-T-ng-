@@ -19,7 +19,15 @@
             <div class="progress-ring" style="--progress: @Model.ProgressPercent%;">
                 <strong>@Model.ProgressPercent%</strong>
             </div>
-            <div><b>Tiến độ khóa học</b><span>@Model.CompletedLessons/@Model.TotalLessons bài đã hoàn thành</span></div>
+            <div>
+                <b>Tiến độ khóa học</b>
+                <span>@Model.CompletedLessons/@Model.TotalLessons bài đã hoàn thành</span>
+                <div style="margin-top: 6px;">
+                    <a href="/Course/Certificate" class="btn-admin btn-admin-gold btn-admin-sm" style="font-size: 11px; padding: 4px 10px; border-radius: 6px;">
+                        <i class="fa-solid fa-award"></i> Chứng chỉ
+                    </a>
+                </div>
+            </div>
         </div>
     </section>
 
