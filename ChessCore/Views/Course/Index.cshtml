@@ -19,18 +19,28 @@
             <div class="progress-ring" style="--progress: @Model.ProgressPercent%;">
                 <strong>@Model.ProgressPercent%</strong>
             </div>
-            <div>
-                <b>Tiến độ khóa học</b>
-                <span>@Model.CompletedLessons/@Model.TotalLessons bài đã hoàn thành</span>
-                <div style="margin-top: 8px;">
-                    <a href="/Course/Certificate" class="btn-cert-badge" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #b45309); color: #ffffff; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 12px rgba(180, 83, 9, 0.25); transition: all 0.2s ease; border: 1px solid rgba(255,255,255,0.2);">
-                        <i class="fa-solid fa-award" style="color: #fef08a;"></i> 
-                        <span>Chứng chỉ hoàn thành</span>
-                        @if (Model.ProgressPercent >= 100)
-                        {
-                            <span style="background: #22c55e; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 2px;">Khả dụng</span>
-                        }
-                    </a>
+            <div class="progress-info-col">
+                <div class="progress-title">Tiến độ khóa học</div>
+                <div class="progress-count">
+                    <strong>@Model.CompletedLessons/@Model.TotalLessons</strong> bài • <strong>@Model.CompletedModulesCount/4</strong> Module
+                </div>
+                <div class="cert-btn-wrapper">
+                    @if (Model.CanUnlockCertificate)
+                    {
+                        <a href="/Course/Certificate" class="btn-cert-badge unlocked" title="Chứng chỉ hoàn thành đã sẵn sàng!">
+                            <i class="fa-solid fa-award cert-icon"></i> 
+                            <span class="cert-text">Chứng chỉ hoàn thành</span>
+                            <span class="cert-status-badge">Mở khóa</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="btn-cert-badge locked" title="Cần hoàn thành đủ 4 Module để mở khóa chứng chỉ (@Model.CompletedModulesCount/4 Module)">
+                            <i class="fa-solid fa-lock cert-icon"></i> 
+                            <span class="cert-text">Chứng chỉ hoàn thành</span>
+                            <span class="cert-status-badge locked">Cần 4/4 Module</span>
+                        </div>
+                    }
                 </div>
             </div>
         </div>

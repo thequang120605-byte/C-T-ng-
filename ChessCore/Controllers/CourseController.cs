@@ -122,9 +122,30 @@ namespace ChessCore.Controllers
             var user = await _context.Users.FindAsync(userId.Value);
             if (user == null) return NotFound();
 
-            var totalLessons = await _context.CourseLessons.CountAsync();
-            var completedCount = await _context.UserCourseProgresses
-                .CountAsync(p => p.UserId == userId.Value && p.IsCompleted);
+            var modules = await _context.CourseModules
+                .Include(m => m.Lessons)
+                .OrderBy(m => m.DisplayOrder)
+                .ToListAsync();
+
+            var totalLessons = modules.SelectMany(m => m.Lessons).Count();
+            var completedLessonIds = await _context.UserCourseProgresses
+                .Where(p => p.UserId == userId.Value && p.IsCompleted)
+                .Select(p => p.LessonId)
+                .ToListAsync();
+
+            var completedSet = new HashSet<int>(completedLessonIds);
+
+            // Kiểm tra ràng buộc hoàn thành đủ cả 4 module
+            bool allModulesCompleted = modules.Count >= 4 && modules.All(m => 
+                m.Lessons.Count > 0 && m.Lessons.All(l => completedSet.Contains(l.Id)));
+
+            bool isEligible = allModulesCompleted && totalLessons > 0;
+
+            if (!isEligible)
+            {
+                TempData["CertificateLockMessage"] = "Bạn cần hoàn thành đầy đủ cả 4 Module để được cấp Chứng chỉ hoàn thành.";
+                return RedirectToAction("Index");
+            }
 
             var vm = new CourseCertificateViewModel
             {
@@ -132,8 +153,8 @@ namespace ChessCore.Controllers
                 PlayerId = user.PlayerId,
                 Email = user.Email,
                 TotalLessons = totalLessons,
-                CompletedLessons = completedCount,
-                IsEligible = completedCount >= totalLessons && totalLessons > 0,
+                CompletedLessons = completedSet.Count,
+                IsEligible = true,
                 IssueDate = DateTime.Now,
                 CertificateCode = $"CERT-CT-{user.Id:D4}-{DateTime.Now.Year}"
             };

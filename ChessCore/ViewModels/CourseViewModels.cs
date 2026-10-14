@@ -9,6 +9,8 @@ namespace ChessCore.ViewModels
         public int TotalLessons { get; init; }
         public int ProgressPercent => TotalLessons == 0 ? 0 : (int)Math.Round(CompletedLessons * 100d / TotalLessons);
         public int? ContinueLessonId { get; init; }
+        public int CompletedModulesCount => Modules.Count(m => m.Lessons.Count > 0 && m.CompletedLessons >= m.Lessons.Count);
+        public bool CanUnlockCertificate => Modules.Count >= 4 && Modules.All(m => m.Lessons.Count > 0 && m.CompletedLessons >= m.Lessons.Count);
     }
 
     public class CourseModuleViewModel
