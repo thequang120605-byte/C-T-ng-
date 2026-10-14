@@ -2928,6 +2928,14 @@ document.addEventListener("DOMContentLoaded", function () {
       const hintData = await res.json();
       console.log("Nước đi gợi ý:", hintData);
 
+      // Cập nhật lại số điểm trên Header người dùng ngay lập tức
+      if (hintData.remainingElo !== undefined && hintData.remainingElo !== null) {
+        const eloBadge = document.getElementById("navbar-user-elo");
+        if (eloBadge) {
+          eloBadge.innerHTML = `<i class="fa-solid fa-star" style="font-size: 9px;"></i> ${hintData.remainingElo}`;
+        }
+      }
+
       // Hiển thị gợi ý trực quan trên bàn cờ theo chế độ
       await highlightHintMove(hintData, mode);
       playSound('move');

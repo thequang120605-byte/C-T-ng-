@@ -102,7 +102,10 @@
                                 <span class="status-indicator-dot" title="Đang trực tuyến"></span>
                             </div>
                             <div class="user-meta">
-                                <span class="user-display-name">@User.Identity.Name</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="user-display-name">@User.Identity.Name</span>
+                                    <span id="navbar-user-elo" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent-gold); color: var(--accent-gold-light); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px;" title="Điểm Elo / Tích lũy"><i class="fa-solid fa-star" style="font-size: 9px;"></i> @(User.Claims.FirstOrDefault(c => c.Type == "Elo")?.Value ?? "1200")</span>
+                                </div>
                                 <div class="user-id-chip" title="Nhấn để sao chép mã ID người chơi" onclick="copyPlayerId('@playerIdClaim');">
                                     <i class="fa-solid fa-id-badge id-icon"></i>
                                     <span class="id-text">ID: <strong id="current-player-id">@playerIdClaim</strong></span>

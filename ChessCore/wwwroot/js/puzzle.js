@@ -721,6 +721,12 @@
       if (data.available) {
         hintFrom = { row: data.fromRow, col: data.fromCol };
         const pointNote = data.pointsDeducted ? ` (-${data.pointsDeducted}đ)` : "";
+        if (data.remainingElo !== undefined && data.remainingElo !== null) {
+          const eloBadge = document.getElementById("navbar-user-elo");
+          if (eloBadge) {
+            eloBadge.innerHTML = `<i class="fa-solid fa-star" style="font-size: 9px;"></i> ${data.remainingElo}`;
+          }
+        }
         if (mode === "move") {
           hintTo = { row: data.toRow, col: data.toCol };
           setMsg("info", `💡 Gợi ý nước đi${pointNote}: Hãy đi ${data.pieceType || 'quân'} (${data.fromRow},${data.fromCol}) ➜ (${data.toRow},${data.toCol})`);

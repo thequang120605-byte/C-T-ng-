@@ -474,5 +474,39 @@ namespace ChessCore.Controllers
                 return false;
             }
         }
+
+        [HttpGet("api/auth/me")]
+        public async Task<IActionResult> GetCurrentUserInfo()
+        {
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
+            {
+                return Ok(new { isAuthenticated = false, elo = 1200 });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId))
+            {
+                return Ok(new { isAuthenticated = false, elo = 1200 });
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return Ok(new { isAuthenticated = false, elo = 1200 });
+            }
+
+            return Ok(new
+            {
+                isAuthenticated = true,
+                id = user.Id,
+                username = user.Username,
+                playerId = user.PlayerId,
+                elo = user.Elo,
+                wins = user.Wins,
+                losses = user.Losses,
+                draws = user.Draws
+            });
+        }
     }
 }
+
