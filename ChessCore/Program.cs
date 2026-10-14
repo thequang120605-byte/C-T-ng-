@@ -126,7 +126,7 @@ app.MapHub<ChessCore.Hubs.GameHub>("/gameHub");
 // Route cho giao diện MVC
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Game}/{action=Index}/{id?}"
+    pattern: "{controller=Home}/{action=Index}/{id?}"
 );
 
 app.Run();
