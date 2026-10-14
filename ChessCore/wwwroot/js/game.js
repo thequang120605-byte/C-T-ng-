@@ -173,6 +173,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const newGameButton = document.getElementById("new-game-btn");
 
+  const undoButton = document.getElementById("undo-btn");
+  const moveHistoryContainer = document.getElementById("move-history-container");
   const resignButton = document.getElementById("resign-btn");
 
   const resultNewGameButton = document.getElementById("result-new-game-btn");
@@ -679,6 +681,8 @@ document.addEventListener("DOMContentLoaded", function () {
     checkGameResult();
     
     updateEvalBar();
+
+    renderMoveHistory(data.moves);
 
     console.log("Bàn cờ đã được cập nhật!");
 
@@ -1657,6 +1661,10 @@ document.addEventListener("DOMContentLoaded", function () {
         piecesLayer.innerHTML = "";
       }
 
+      if (moveHistoryContainer) {
+        moveHistoryContainer.innerHTML = '<div class="empty-history">Chưa có nước đi nào</div>';
+      }
+
       await createGame();
     } catch (error) {
       console.error("Lỗi tạo ván mới:", error);
@@ -1760,6 +1768,105 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Lỗi đầu hàng:", error);
 
       alert(error.message);
+    }
+  }
+
+  // =====================================================
+  // MOVE HISTORY RENDERING & NOTATION
+  // =====================================================
+
+  const PIECE_NAMES_VI = {
+    "King": "Tướng",
+    "Advisor": "Sĩ",
+    "Elephant": "Tượng",
+    "Horse": "Mã",
+    "Rook": "Xe",
+    "Cannon": "Pháo",
+    "Pawn": "Tốt"
+  };
+
+  function formatMoveNotation(m) {
+    const piece = PIECE_NAMES_VI[m.pieceType] || m.pieceType || "Quân";
+    const colorTag = m.pieceColor === "Red" ? "Đỏ" : "Đen";
+    return `${piece} (${m.fromX},${m.fromY}) ➜ (${m.toX},${m.toY})`;
+  }
+
+  function renderMoveHistory(moves) {
+    if (!moveHistoryContainer) return;
+
+    if (!moves || moves.length === 0) {
+      moveHistoryContainer.innerHTML = '<div class="empty-history">Chưa có nước đi nào</div>';
+      return;
+    }
+
+    let html = '';
+    // Ghép theo từng hiệp (Cặp nước Đỏ - Đen)
+    for (let i = 0; i < moves.length; i += 2) {
+      const moveNum = Math.floor(i / 2) + 1;
+      const redMove = moves[i];
+      const blackMove = i + 1 < moves.length ? moves[i + 1] : null;
+
+      html += `<div style="display: grid; grid-template-columns: 36px 1fr 1fr; gap: 8px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center; font-size: 13px;">`;
+      html += `<span style="color: var(--text-muted); font-weight: 700;">${moveNum}.</span>`;
+      
+      if (redMove) {
+        html += `<span style="color: #ef4444; font-weight: 600;">${formatMoveNotation(redMove)}</span>`;
+      } else {
+        html += `<span></span>`;
+      }
+
+      if (blackMove) {
+        html += `<span style="color: #60a5fa; font-weight: 600;">${formatMoveNotation(blackMove)}</span>`;
+      } else {
+        html += `<span></span>`;
+      }
+
+      html += `</div>`;
+    }
+
+    moveHistoryContainer.innerHTML = html;
+    moveHistoryContainer.scrollTop = moveHistoryContainer.scrollHeight;
+  }
+
+  // =====================================================
+  // UNDO (ĐI LẠI)
+  // =====================================================
+
+  let isUndoing = false;
+
+  async function handleUndo() {
+    if (!gameId || gameStatus !== "InProgress") {
+      alert("Chỉ có thể xin đi lại khi ván cờ đang diễn ra!");
+      return;
+    }
+
+    if (isComputerThinking) {
+      alert("Máy đang tính nước đi, vui lòng đợi trong giây lát!");
+      return;
+    }
+
+    if (isUndoing) return;
+
+    try {
+      isUndoing = true;
+      const isPvE = VS_COMPUTER;
+      const response = await fetch(`${API_BASE_URL}/${gameId}/undo?isPvE=${isPvE}`, {
+        method: "POST"
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => null);
+        throw new Error(err?.message || "Không thể đi lại vào lúc này.");
+      }
+
+      const data = await response.json();
+      clearSelection();
+      updateGameFromApi(data);
+    } catch (error) {
+      console.error("Lỗi xin đi lại:", error);
+      alert(error.message);
+    } finally {
+      isUndoing = false;
     }
   }
 
@@ -2243,6 +2350,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
       pendingExitAction = null;
       closeResignModal();
+    });
+  }
+
+  // =====================================================
+  // UNDO (ĐI LẠI) LISTENER
+  // =====================================================
+
+  if (undoButton) {
+    undoButton.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      await handleUndo();
     });
   }
 
