@@ -1809,13 +1809,13 @@ document.addEventListener("DOMContentLoaded", function () {
       html += `<span style="color: var(--text-muted); font-weight: 700;">${moveNum}.</span>`;
       
       if (redMove) {
-        html += `<span style="color: #ef4444; font-weight: 600;">${formatMoveNotation(redMove)}</span>`;
+        html += `<span style="color: #c00000; font-weight: 700;">${formatMoveNotation(redMove)}</span>`;
       } else {
         html += `<span></span>`;
       }
 
       if (blackMove) {
-        html += `<span style="color: #60a5fa; font-weight: 600;">${formatMoveNotation(blackMove)}</span>`;
+        html += `<span style="color: #0f172a; font-weight: 700;">${formatMoveNotation(blackMove)}</span>`;
       } else {
         html += `<span></span>`;
       }
