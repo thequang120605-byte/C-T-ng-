@@ -84,10 +84,22 @@
             </div>
         </div>
 
-        <!-- LEADERBOARD -->
+        <!-- LEADERBOARD WITH TABS -->
         <div class="panel-box">
-            <h2 class="panel-title"><i class="fa-solid fa-ranking-star"></i> Bảng xếp hạng</h2>
-            <div class="leaderboard-list">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2 class="panel-title" style="margin: 0;"><i class="fa-solid fa-ranking-star"></i> Bảng xếp hạng</h2>
+                <div style="display: flex; gap: 6px; background: var(--bg-navy-dark); padding: 3px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <button type="button" id="tab-btn-elo" class="lb-tab-btn active" onclick="switchLbTab('elo')">
+                        <i class="fa-solid fa-star"></i> Điểm Elo
+                    </button>
+                    <button type="button" id="tab-btn-puzzle" class="lb-tab-btn" onclick="switchLbTab('puzzle')">
+                        <i class="fa-solid fa-puzzle-piece"></i> Cờ thế
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: ELO CHƠI CỜ -->
+            <div id="lb-tab-elo" class="leaderboard-list">
                 @foreach (var user in Model.Leaderboard)
                 {
                     var extraStyle = user.IsCurrentUser ? "border: 1px solid var(--accent-gold); background: rgba(212,175,55,0.05);" : "";
@@ -97,10 +109,54 @@
                     <div class="leaderboard-item rank-@(user.Rank <= 3 ? user.Rank : 0)" style="@extraStyle">
                         <div class="rank-badge" style="@rankBadgeStyle">@user.Rank</div>
                         <div class="lb-player" style="@lbPlayerStyle">@user.Username</div>
-                        <div class="lb-elo">@user.Elo</div>
+                        <div class="lb-elo"><i class="fa-solid fa-star" style="font-size: 11px; color: var(--accent-gold);"></i> @user.Elo</div>
                     </div>
                 }
             </div>
+
+            <!-- TAB 2: CAO THỦ CỜ THẾ -->
+            <div id="lb-tab-puzzle" class="leaderboard-list" style="display: none;">
+                @if (Model.PuzzleLeaderboard.Any())
+                {
+                    foreach (var user in Model.PuzzleLeaderboard)
+                    {
+                        var extraStyle = user.IsCurrentUser ? "border: 1px solid var(--accent-gold); background: rgba(212,175,55,0.05);" : "";
+                        var rankBadgeStyle = user.IsCurrentUser && user.Rank > 3 ? "background: var(--accent-gold); color: white;" : "";
+                        var lbPlayerStyle = user.IsCurrentUser ? "color: var(--accent-gold);" : "";
+
+                        <div class="leaderboard-item rank-@(user.Rank <= 3 ? user.Rank : 0)" style="@extraStyle">
+                            <div class="rank-badge" style="@rankBadgeStyle">@user.Rank</div>
+                            <div class="lb-player" style="@lbPlayerStyle">@user.Username</div>
+                            <div class="lb-elo" style="color: #10b981;"><i class="fa-solid fa-check" style="font-size: 11px;"></i> @user.SolvedCount bài</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p style="color: var(--text-muted); text-align: center; padding: 20px;">Chưa có dữ liệu bảng xếp hạng cờ thế.</p>
+                }
+            </div>
         </div>
+
+        <script>
+            function switchLbTab(type) {
+                var eloTab = document.getElementById('lb-tab-elo');
+                var pzTab = document.getElementById('lb-tab-puzzle');
+                var eloBtn = document.getElementById('tab-btn-elo');
+                var pzBtn = document.getElementById('tab-btn-puzzle');
+
+                if (type === 'elo') {
+                    eloTab.style.display = 'flex';
+                    pzTab.style.display = 'none';
+                    eloBtn.classList.add('active');
+                    pzBtn.classList.remove('active');
+                } else {
+                    eloTab.style.display = 'none';
+                    pzTab.style.display = 'flex';
+                    pzBtn.classList.add('active');
+                    eloBtn.classList.remove('active');
+                }
+            }
+        </script>
     </div>
 </div>

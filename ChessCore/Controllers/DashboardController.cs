@@ -99,6 +99,42 @@ namespace ChessCore.Controllers
                 lbItem.Username += " (Bạn)";
             }
 
+            // Fetch Puzzle Leaderboard (Top người giải cờ thế nhiều nhất)
+            var topPuzzleUsers = await _context.PuzzleProgresses
+                .Where(p => p.CompletedAt != null)
+                .GroupBy(p => p.UserId)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    SolvedCount = g.Count()
+                })
+                .OrderByDescending(x => x.SolvedCount)
+                .Take(10)
+                .ToListAsync();
+
+            if (topPuzzleUsers.Any())
+            {
+                var userIds = topPuzzleUsers.Select(x => x.UserId).ToList();
+                var pzUsers = await _context.Users
+                    .Where(u => userIds.Contains(u.Id))
+                    .ToDictionaryAsync(u => u.Id, u => u.Username);
+
+                int pzRank = 1;
+                foreach (var pu in topPuzzleUsers)
+                {
+                    string uName = pzUsers.TryGetValue(pu.UserId, out var n) ? n : $"Kỳ thủ #{pu.UserId}";
+                    if (pu.UserId == userId) uName += " (Bạn)";
+
+                    vm.PuzzleLeaderboard.Add(new PuzzleLeaderboardItem
+                    {
+                        Rank = pzRank++,
+                        Username = uName,
+                        SolvedCount = pu.SolvedCount,
+                        IsCurrentUser = (pu.UserId == userId)
+                    });
+                }
+            }
+
             // Fetch Recent Games
             var recentGames = await _context.Games
                 .Include(g => g.RedPlayer)

@@ -396,6 +396,43 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL TỔNG KẾT THỜI GIAN (TIME RUSH RESULT MODAL) -->
+    <div id="pz-modal-timerush-result" class="pz-modal-overlay">
+        <div class="pz-modal-card pz-result-modal-card">
+            <div class="timerush-modal-trophy">
+                <div class="trophy-circle">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+            </div>
+            <h3 class="timerush-modal-title">Kết Quả Thử Thách</h3>
+            <p id="timerush-result-reason" class="timerush-modal-subtitle">Hết thời gian thử thách!</p>
+
+            <div class="timerush-stats-grid">
+                <div class="tr-stat-box">
+                    <span class="tr-stat-num" id="tr-res-score">0</span>
+                    <span class="tr-stat-lbl">Bài giải đúng</span>
+                </div>
+                <div class="tr-stat-box">
+                    <span class="tr-stat-num" id="tr-res-time">03:00</span>
+                    <span class="tr-stat-lbl">Chế độ</span>
+                </div>
+                <div class="tr-stat-box">
+                    <span class="tr-stat-num" id="tr-res-elo" style="color: #10b981;">+0</span>
+                    <span class="tr-stat-lbl">Elo tích lũy</span>
+                </div>
+            </div>
+
+            <div class="timerush-modal-actions">
+                <button type="button" class="pz-btn pz-btn-secondary" id="btn-tr-res-hub">
+                    <i class="fa-solid fa-house"></i> Về chọn chế độ
+                </button>
+                <button type="button" class="pz-btn pz-btn-danger" id="btn-tr-res-retry">
+                    <i class="fa-solid fa-rotate-left"></i> Chơi lại ngay
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

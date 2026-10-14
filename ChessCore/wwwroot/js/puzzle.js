@@ -46,6 +46,105 @@
   let activeMode = "hub"; // "hub" | "campaign" | "custom"
   let isCustomMode = false;
 
+  // =====================================================
+  // HỆ THỐNG ÂM THANH CHÂN THỰC (WEB AUDIO SYNTHESIZER)
+  // =====================================================
+  const SoundFX = {
+    ctx: null,
+    init() {
+      if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    },
+    isMuted() {
+      return localStorage.getItem("chess_sound") === "false";
+    },
+    playMove() {
+      if (this.isMuted()) return;
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(360, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.08);
+    },
+    playCapture() {
+      if (this.isMuted()) return;
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(450, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.12);
+    },
+    playCheck() {
+      if (this.isMuted()) return;
+      this.init();
+      if (!this.ctx) return;
+      [580, 880].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "sawtooth";
+        const t = this.ctx.currentTime + idx * 0.07;
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.25, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.12);
+      });
+    },
+    playWrong() {
+      if (this.isMuted()) return;
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(90, this.ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.2);
+    },
+    playWin() {
+      if (this.isMuted()) return;
+      this.init();
+      if (!this.ctx) return;
+      [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "triangle";
+        const t = this.ctx.currentTime + idx * 0.09;
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.25);
+      });
+    }
+  };
+
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   function show(sectionId) {
@@ -557,11 +656,19 @@
     }
 
     // Hiện nước đi của người chơi.
+    const isCapture = pieces.some((p) => p.row === mv.toRow && p.col === mv.toCol);
     pieces = applyLocal(pieces, mv);
     checkedColor = null;
 
+    if (isCapture) {
+      SoundFX.playCapture();
+    } else {
+      SoundFX.playMove();
+    }
+
     if (data.result === "wrong") {
       phase = "wrong";
+      SoundFX.playWrong();
       setMsg("wrong", data.message);
       renderBoard();
 
@@ -577,12 +684,14 @@
         await sleep(500);
         pieces = applyLocal(pieces, data.reply);
         checkedColor = null;
+        SoundFX.playMove();
         renderBoard();
         await sleep(250);
 
         if (data.state && data.state.pieces) {
           pieces = data.state.pieces.map((p) => ({ ...p }));
           checkedColor = data.state.checkedColor;
+          if (checkedColor) SoundFX.playCheck();
           renderBoard();
         }
       }
@@ -600,11 +709,13 @@
       await sleep(450);
       pieces = applyLocal(pieces, data.reply);
       checkedColor = null;
+      SoundFX.playMove();
       renderBoard();
       await sleep(250);
       pieces = data.state.pieces.map((p) => ({ ...p })); // trạng thái chuẩn từ server
       legalMoves = data.state.legalMoves;
       checkedColor = data.state.checkedColor;
+      if (checkedColor) SoundFX.playCheck();
       renderBoard();
       busy = false;
       return;
@@ -615,6 +726,7 @@
     legalMoves = [];
     checkedColor = data.state.checkedColor;
     phase = "solved";
+    SoundFX.playWin();
     markCompleted(puzzle.key);
     renderBoard();
 
@@ -1089,9 +1201,58 @@
   }
 
   function endTimerush(reason) {
+    const finalScore = timerushScore;
+    const finalType = timerushType;
     stopTimerush();
-    alert(`🏁 KẾT THÚC THỬ THÁCH THỜI GIAN!\n${reason}\n\nĐiểm số của bạn: ${timerushScore} bài giải đúng!`);
-    openHub();
+
+    // Tính điểm Elo thưởng: mỗi câu đúng +5 Elo trong Time Rush
+    const earnedElo = finalScore * 5;
+
+    const modal = $("pz-modal-timerush-result");
+    const reasonEl = $("timerush-result-reason");
+    const scoreEl = $("tr-res-score");
+    const timeEl = $("tr-res-time");
+    const eloEl = $("tr-res-elo");
+
+    if (reasonEl) reasonEl.textContent = reason || "Bạn đã hoàn thành lượt chạy đua!";
+    if (scoreEl) scoreEl.textContent = finalScore;
+    if (timeEl) {
+      timeEl.textContent = finalType === "3min" ? "3 Phút" : finalType === "5min" ? "5 Phút" : "Sinh Tồn";
+    }
+    if (eloEl) {
+      eloEl.textContent = `+${earnedElo}`;
+    }
+
+    if (modal) {
+      modal.classList.add("show");
+    }
+
+    // Cập nhật lại navbar Elo nếu có thưởng
+    if (earnedElo > 0) {
+      const eloBadge = $("navbar-user-elo");
+      if (eloBadge) {
+        const curElo = parseInt(eloBadge.textContent.replace(/\D/g, ""), 10) || 1200;
+        eloBadge.innerHTML = `<i class="fa-solid fa-star" style="font-size: 9px;"></i> ${curElo + earnedElo}`;
+      }
+    }
+  }
+
+  // Sự kiện nút trong modal kết quả
+  const btnTrResHub = $("btn-tr-res-hub");
+  const btnTrResRetry = $("btn-tr-res-retry");
+  if (btnTrResHub) {
+    btnTrResHub.addEventListener("click", () => {
+      const modal = $("pz-modal-timerush-result");
+      if (modal) modal.classList.remove("show");
+      openHub();
+    });
+  }
+  if (btnTrResRetry) {
+    btnTrResRetry.addEventListener("click", () => {
+      const modal = $("pz-modal-timerush-result");
+      if (modal) modal.classList.remove("show");
+      startTimerushMode();
+    });
   }
 
   function loadNextTimerushPuzzle() {

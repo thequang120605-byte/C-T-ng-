@@ -13,6 +13,15 @@ namespace ChessCore.ViewModels
         public int RankIndex { get; set; }
         public List<GameHistoryItem> RecentGames { get; set; } = new List<GameHistoryItem>();
         public List<LeaderboardItem> Leaderboard { get; set; } = new List<LeaderboardItem>();
+        public List<PuzzleLeaderboardItem> PuzzleLeaderboard { get; set; } = new List<PuzzleLeaderboardItem>();
+    }
+
+    public class PuzzleLeaderboardItem
+    {
+        public int Rank { get; set; }
+        public string Username { get; set; }
+        public int SolvedCount { get; set; }
+        public bool IsCurrentUser { get; set; }
     }
 
     public class GameHistoryItem
