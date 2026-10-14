@@ -102,13 +102,13 @@
                         var initial = !string.IsNullOrEmpty(User.Identity.Name) ? User.Identity.Name.Substring(0, 1).ToUpper() : "U";
 
                         <div class="navbar-user-card" id="navbar-user-card">
-                            <a href="/Account" class="user-avatar-badge" title="Quản lý tài khoản: @User.Identity.Name" style="text-decoration: none; cursor: pointer;">
+                            <a href="/Account" class="user-avatar-badge" title="Tài khoản: @User.Identity.Name (Nhấn để quản lý)" style="text-decoration: none; cursor: pointer;">
                                 <span class="avatar-initial">@initial</span>
                                 <span class="status-indicator-dot" title="Đang trực tuyến"></span>
                             </a>
                             <div class="user-meta">
                                 <div style="display: flex; align-items: center; gap: 6px;">
-                                    <a href="/Account" class="user-display-name" style="text-decoration: none; color: inherit;" title="Xem thông tin tài khoản">@User.Identity.Name</a>
+                                    <a href="/Account" class="user-display-name" style="text-decoration: none; color: inherit;" title="Xem hồ sơ tài khoản">@User.Identity.Name</a>
                                     <span id="navbar-user-elo" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent-gold); color: var(--accent-gold-light); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px;" title="Điểm Elo / Tích lũy"><i class="fa-solid fa-star" style="font-size: 9px;"></i> @(User.Claims.FirstOrDefault(c => c.Type == "Elo")?.Value ?? "1200")</span>
                                 </div>
                                 <div class="user-id-chip" title="Nhấn để sao chép mã ID người chơi" onclick="copyPlayerId('@playerIdClaim');">
@@ -118,9 +118,6 @@
                                 </div>
                             </div>
                             <div class="user-actions">
-                                <a href="/Account" class="btn-user-profile" title="Hồ sơ tài khoản" style="color: var(--text-muted); padding: 6px 8px; font-size: 14px; text-decoration: none; transition: color 0.2s;">
-                                    <i class="fa-solid fa-user-gear"></i>
-                                </a>
                                 <button type="button" class="btn-user-logout" onclick="document.getElementById('logout-modal').classList.add('show');" title="Đăng xuất">
                                     <i class="fa-solid fa-arrow-right-from-bracket"></i>
                                 </button>
