@@ -448,9 +448,9 @@
 ========================================================= */
 .game-layout {
     display: grid;
-    grid-template-columns: minmax(420px, 600px) 360px;
+    grid-template-columns: minmax(440px, 620px) 420px;
     gap: 24px;
-    max-width: 1060px;
+    max-width: 1180px;
     width: 100%;
 }
 

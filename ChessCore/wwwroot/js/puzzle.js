@@ -287,6 +287,7 @@
     attackerMoves = [];
     selected = null;
     hintFrom = null;
+    hintTo = null;
     phase = "playing";
     renderBoard();
   }
@@ -313,6 +314,8 @@
   function renderBoard() {
     piecesLayer.innerHTML = "";
     movesLayer.innerHTML = "";
+    const hintLayer = $("hint-layer");
+    if (hintLayer) hintLayer.innerHTML = "";
 
     pieces.forEach((p) => {
       const color = p.color.toLowerCase();
@@ -407,6 +410,7 @@
         const endX = toPos.x - (dx / dist) * endOffset;
         const endY = toPos.y - (dy / dist) * endOffset;
 
+        const targetLayer = $("hint-layer") || movesLayer;
         const arrowLine = document.createElementNS(SVG_NS, "line");
         arrowLine.setAttribute("x1", startX);
         arrowLine.setAttribute("y1", startY);
@@ -414,9 +418,10 @@
         arrowLine.setAttribute("y2", endY);
         arrowLine.setAttribute("class", "hint-arrow");
         arrowLine.setAttribute("marker-end", "url(#pz-hint-arrowhead)");
-        movesLayer.appendChild(arrowLine);
+        targetLayer.appendChild(arrowLine);
       }
 
+      const targetLayer = $("hint-layer") || movesLayer;
       const targetCircle = document.createElementNS(SVG_NS, "circle");
       targetCircle.setAttribute("cx", toPos.x);
       targetCircle.setAttribute("cy", toPos.y);
@@ -427,7 +432,7 @@
         ev.stopPropagation();
         submitMove({ fromRow: hintFrom.row, fromCol: hintFrom.col, toRow: hintTo.row, toCol: hintTo.col });
       });
-      movesLayer.appendChild(targetCircle);
+      targetLayer.appendChild(targetCircle);
     }
   }
 
@@ -436,6 +441,7 @@
 
     if (p.color === puzzle.attacker) {
       hintFrom = null;
+      hintTo = null;
       selected = selected && selected.row === p.row && selected.col === p.col ? null : { row: p.row, col: p.col };
       renderBoard();
       return;
@@ -471,6 +477,7 @@
     busy = true;
     selected = null;
     hintFrom = null;
+    hintTo = null;
     movesLayer.innerHTML = "";
 
     const moves = attackerMoves.concat([mv]);

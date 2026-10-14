@@ -218,6 +218,7 @@
                         <!-- LAYER -->
                         <g id="moves-layer"></g>
                         <g id="pieces-layer"></g>
+                        <g id="hint-layer"></g>
                     </svg>
 
                     <!-- CHIẾU TƯỚNG OVERLAY -->
@@ -323,18 +324,18 @@
                             <span>Gợi ý <i class="fa-solid fa-caret-up" style="font-size: 10px;"></i></span>
                         </button>
                         <div id="hint-dropdown" class="hint-dropdown-menu hidden">
-                            <button id="hint-piece-btn" type="button" class="hint-dropdown-item" title="Chỉ làm nổi bật quân cờ nên đi (-5 điểm)">
+                            <button id="hint-piece-btn" type="button" class="hint-dropdown-item" title="Chỉ làm nổi bật quân cờ nên đi">
                                 <i class="fa-solid fa-chess-knight" style="color: #38bdf8; font-size: 16px;"></i>
                                 <div>
                                     <span>Gợi ý quân cờ</span>
-                                    <small>Chỉ highlight quân cần đi (-5đ)</small>
+                                    <small>Chỉ highlight quân cần đi</small>
                                 </div>
                             </button>
-                            <button id="hint-full-btn" type="button" class="hint-dropdown-item" title="Highlight quân cờ và vẽ nước đi đích (-10 điểm)">
+                            <button id="hint-full-btn" type="button" class="hint-dropdown-item" title="Highlight quân cờ và vẽ nước đi đích">
                                 <i class="fa-solid fa-location-arrow" style="color: #f59e0b; font-size: 16px;"></i>
                                 <div>
                                     <span>Gợi ý có nước đi</span>
-                                    <small>Vẽ đường đi tối ưu (-10đ)</small>
+                                    <small>Vẽ đường đi và ô đích</small>
                                 </div>
                             </button>
                         </div>

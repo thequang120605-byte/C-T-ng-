@@ -1582,6 +1582,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (movesLayer) {
       movesLayer.innerHTML = "";
     }
+    const hintLayer = document.getElementById("hint-layer");
+    if (hintLayer) {
+      hintLayer.innerHTML = "";
+    }
   }
 
   // =====================================================
@@ -1902,17 +1906,17 @@ document.addEventListener("DOMContentLoaded", function () {
       const redMove = moves[i];
       const blackMove = i + 1 < moves.length ? moves[i + 1] : null;
 
-      html += `<div style="display: grid; grid-template-columns: 28px 1fr 1fr; gap: 6px; padding: 5px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center; font-size: 12.5px; white-space: nowrap;">`;
+      html += `<div style="display: grid; grid-template-columns: 28px 1fr 1fr; gap: 8px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); align-items: center; font-size: 13px; white-space: nowrap;">`;
       html += `<span style="color: var(--text-muted); font-weight: 700;">${moveNum}.</span>`;
       
       if (redMove) {
-        html += `<span style="color: #c00000; font-weight: 700; overflow: hidden; text-overflow: ellipsis;" title="${formatMoveNotation(redMove)}">${formatMoveNotation(redMove)}</span>`;
+        html += `<span style="color: #c00000; font-weight: 700;" title="${formatMoveNotation(redMove)}">${formatMoveNotation(redMove)}</span>`;
       } else {
         html += `<span></span>`;
       }
 
       if (blackMove) {
-        html += `<span style="color: #0f172a; font-weight: 700; overflow: hidden; text-overflow: ellipsis;" title="${formatMoveNotation(blackMove)}">${formatMoveNotation(blackMove)}</span>`;
+        html += `<span style="color: #0f172a; font-weight: 700;" title="${formatMoveNotation(blackMove)}">${formatMoveNotation(blackMove)}</span>`;
       } else {
         html += `<span></span>`;
       }
@@ -2904,7 +2908,7 @@ document.addEventListener("DOMContentLoaded", function () {
         hintButton.style.opacity = "0.6";
       }
 
-      showToast(mode === "piece" ? "Đang tìm quân cờ tối ưu (-5đ)..." : "Đang tính nước đi tối ưu (-10đ)...", "info");
+      showToast(mode === "piece" ? "Đang tìm quân cờ tối ưu..." : "Đang tính nước đi tối ưu...", "info");
 
       const res = await fetch(`${API_BASE_URL}/${gameId}/hint`);
       if (!res.ok) {
@@ -2916,7 +2920,7 @@ document.addEventListener("DOMContentLoaded", function () {
       console.log("Nước đi gợi ý:", hintData);
 
       // Hiển thị gợi ý trực quan trên bàn cờ theo chế độ
-      highlightHintMove(hintData, mode);
+      await highlightHintMove(hintData, mode);
       playSound('move');
     } catch (err) {
       console.error("Lỗi lấy gợi ý:", err);
@@ -2930,7 +2934,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function highlightHintMove(hintData, mode = "full") {
+  async function highlightHintMove(hintData, mode = "full") {
     clearSelection();
     clearMoveHighlights();
 
@@ -2962,7 +2966,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const toPos = getPosition(toX, toY);
 
     if (mode === "full") {
-      if (movesLayer) {
+      const targetLayer = document.getElementById("hint-layer") || movesLayer;
+      if (targetLayer) {
         // Đảm bảo có marker arrowhead trong SVG defs
         const boardSvg = document.getElementById("board-svg");
         if (boardSvg && !document.getElementById("hint-arrowhead")) {
@@ -2985,7 +2990,7 @@ document.addEventListener("DOMContentLoaded", function () {
           defs.appendChild(marker);
         }
 
-        // 2. Tính toán điểm đầu và điểm cuối của mũi tên (để không đè trọn tâm quân cờ)
+        // 2. Tính toán điểm đầu và điểm cuối của mũi tên
         const dx = toPos.x - fromPos.x;
         const dy = toPos.y - fromPos.y;
         const dist = Math.hypot(dx, dy);
@@ -3006,7 +3011,7 @@ document.addEventListener("DOMContentLoaded", function () {
           arrowLine.setAttribute("y2", endY);
           arrowLine.setAttribute("class", "hint-arrow");
           arrowLine.setAttribute("marker-end", "url(#hint-arrowhead)");
-          movesLayer.appendChild(arrowLine);
+          targetLayer.appendChild(arrowLine);
         }
 
         // 3. Vòng tròn đích đến có thể click trực tiếp để đi nước này
@@ -3025,7 +3030,7 @@ document.addEventListener("DOMContentLoaded", function () {
             await makeMove(toX, toY);
           }
         });
-        movesLayer.appendChild(targetCircle);
+        targetLayer.appendChild(targetCircle);
       }
     }
 
@@ -3034,6 +3039,9 @@ document.addEventListener("DOMContentLoaded", function () {
       selectedPieceData = pieceObj;
       selectedPieceElement = sourcePieceElement;
       selectedPieceElement.classList.add("selected");
+      if (mode === "full") {
+        await fetchValidMoves(fromX, fromY);
+      }
     }
 
     // 5. Cập nhật dòng trạng thái và hiển thị toast đẹp mắt
