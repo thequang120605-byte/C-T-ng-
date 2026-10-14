@@ -42,13 +42,13 @@ namespace ChessCore.Controllers
             }
 
             // Đếm số cờ thế đã giải
-            int puzzlesSolved = await _context.UserPuzzleProgresses
-                .CountAsync(p => p.UserId == user.Id && p.IsSolved);
+            int puzzlesSolved = await _context.PuzzleProgresses
+                .CountAsync(p => p.UserId == user.Id && p.CompletedAt != null);
 
             // Đếm số module khóa học hoàn thành
             var completedLessonIds = await _context.UserCourseProgresses
                 .Where(p => p.UserId == user.Id && p.IsCompleted)
-                .Select(p => p.CourseLessonId)
+                .Select(p => p.LessonId)
                 .ToListAsync();
 
             var modules = await _context.CourseModules
