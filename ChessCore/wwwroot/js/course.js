@@ -255,6 +255,24 @@
 
         host.querySelectorAll('.course-board').forEach(setupLessonBoard);
 
+        host.querySelectorAll('.btn-board-reset').forEach(btn => btn.addEventListener('click', () => {
+            const board = host.querySelector('.course-board');
+            if (board) setupLessonBoard(board);
+        }));
+
+        host.querySelectorAll('.btn-board-copy-fen').forEach(btn => btn.addEventListener('click', () => {
+            const visual = lessonBoards[currentLessonId];
+            if (navigator.clipboard) {
+                const fenText = currentLessonId === 1 
+                    ? 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1' 
+                    : 'Thế cờ bài học #' + currentLessonId;
+                navigator.clipboard.writeText(fenText).then(() => {
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép!';
+                    setTimeout(() => btn.innerHTML = '<i class="fa-regular fa-copy"></i> Sao chép FEN', 1800);
+                });
+            }
+        }));
+
         host.querySelectorAll('.quiz-options button').forEach(option => option.addEventListener('click', () => {
             option.parentElement.querySelectorAll('button').forEach(item => item.classList.remove('selected'));
             option.classList.add('selected');

@@ -99,6 +99,14 @@
                                                 <g class="course-moves-layer"></g><g class="course-pieces-layer"></g>
                                             </svg>
                                         </div>
+                                        <div class="course-board-toolbar" style="display: flex; gap: 8px; justify-content: center; margin: 12px 0 6px;">
+                                            <button type="button" class="btn-admin btn-admin-sm btn-admin-primary btn-board-reset" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">
+                                                <i class="fa-solid fa-rotate-left"></i> Đặt lại thế cờ
+                                            </button>
+                                            <button type="button" class="btn-admin btn-admin-sm btn-board-copy-fen" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background: rgba(255,255,255,0.08); color: #cbd5e1;">
+                                                <i class="fa-regular fa-copy"></i> Sao chép FEN
+                                            </button>
+                                        </div>
                                         <div class="board-legend"><span class="legend-red"></span> Quân Đỏ <span class="legend-black"></span> Quân Đen
                                             @if (lesson.Lesson.Id != 1)
                                             {
@@ -111,7 +119,7 @@
                                         }
                                         else
                                         {
-                                            <p class="practice-hint"><i class="fa-solid fa-hand-pointer"></i> Chọn quân Đỏ để xem nước đi hợp lệ và thực hành di chuyển.</p>
+                                            <p class="practice-hint"><i class="fa-solid fa-hand-pointer"></i> <b>Thực hành tương tác:</b> Nhấn chọn quân Đỏ trên bàn cờ để xem các ô đi hợp lệ và tập di chuyển / ăn quân theo luật.</p>
                                         }
                                     }
                                     @if (lesson.Lesson.Id == 2)

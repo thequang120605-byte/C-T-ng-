@@ -1,0 +1,151 @@
+@model ChessCore.Controllers.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Quản trị hệ thống";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fa-solid fa-gauge-high"></i> Bảng điều khiển Quản trị viên</h1>
+        <div class="admin-tabs">
+            <a href="/Admin" class="admin-tab-btn active"><i class="fa-solid fa-chart-pie"></i> Tổng quan</a>
+            <a href="/Admin/Puzzles" class="admin-tab-btn"><i class="fa-solid fa-puzzle-piece"></i> Quản lý Cờ thế</a>
+            <a href="/Admin/Courses" class="admin-tab-btn"><i class="fa-solid fa-graduation-cap"></i> Quản lý Khóa học</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="admin-alert admin-alert-success">
+            <i class="fa-solid fa-circle-check"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="admin-alert admin-alert-danger">
+            <i class="fa-solid fa-triangle-exclamation"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <!-- Stat Cards -->
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card users">
+            <div class="admin-stat-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="admin-stat-info">
+                <span>Tổng Người Dùng</span>
+                <strong>@Model.TotalUsers</strong>
+            </div>
+        </div>
+        <div class="admin-stat-card games">
+            <div class="admin-stat-icon"><i class="fa-solid fa-chess"></i></div>
+            <div class="admin-stat-info">
+                <span>Ván Đấu Đã Tạo</span>
+                <strong>@Model.TotalGames</strong>
+            </div>
+        </div>
+        <div class="admin-stat-card puzzles">
+            <div class="admin-stat-icon"><i class="fa-solid fa-puzzle-piece"></i></div>
+            <div class="admin-stat-info">
+                <span>Thế Cờ Trong Kho</span>
+                <strong>@Model.TotalPuzzles</strong>
+            </div>
+        </div>
+        <div class="admin-stat-card lessons">
+            <div class="admin-stat-icon"><i class="fa-solid fa-book-bookmark"></i></div>
+            <div class="admin-stat-info">
+                <span>Bài Học (@Model.TotalModules Modules)</span>
+                <strong>@Model.TotalLessons</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2 Column Section -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px;">
+        <!-- Recent Users -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h2><i class="fa-solid fa-user-clock" style="color: #60a5fa;"></i> Tài khoản mới đăng ký</h2>
+            </div>
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Tài khoản</th>
+                            <th>Mã ID</th>
+                            <th>Elo</th>
+                            <th>Vai trò</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in Model.RecentUsers)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@u.Username</strong>
+                                    <div style="font-size: 11px; color: #64748b;">@u.Email</div>
+                                </td>
+                                <td><code style="color: #38bdf8;">@u.PlayerId</code></td>
+                                <td><strong style="color: #facc15;">@u.Elo</strong></td>
+                                <td>
+                                    <span class="role-badge @(u.Role?.ToLower() == "admin" ? "admin" : "player")">
+                                        @(u.Role ?? "Player")
+                                    </span>
+                                </td>
+                                <td>
+                                    <form asp-controller="Admin" asp-action="ToggleAdminRole" method="post" style="display: inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@u.Id" />
+                                        <button type="submit" class="btn-admin btn-admin-sm @(u.Role == "Admin" ? "btn-admin-danger" : "btn-admin-primary")" title="Đổi quyền Admin / Player">
+                                            @(u.Role == "Admin" ? "Hạ quyền" : "Cấp Admin")
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Puzzles -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h2><i class="fa-solid fa-fire" style="color: #facc15;"></i> Cờ thế mới nhất</h2>
+                <a href="/Admin/Puzzles" class="btn-admin btn-admin-gold btn-admin-sm">
+                    <i class="fa-solid fa-plus"></i> Quản lý toàn bộ
+                </a>
+            </div>
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Màn</th>
+                            <th>Tiêu đề</th>
+                            <th>Độ khó</th>
+                            <th>Sát pháp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.RecentPuzzles)
+                        {
+                            <tr>
+                                <td><strong style="color: #38bdf8;">#@p.Level</strong></td>
+                                <td><strong>@p.Title</strong></td>
+                                <td>
+                                    <span style="font-size: 12px; color: @(p.Difficulty == 1 ? "#34d399" : (p.Difficulty == 2 ? "#facc15" : "#f87171"));">
+                                        @(p.Difficulty == 1 ? "Dễ" : (p.Difficulty == 2 ? "Trung bình" : "Khó"))
+                                    </span>
+                                </td>
+                                <td><span style="color: #94a3b8;">@(p.MateIn) nước</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
