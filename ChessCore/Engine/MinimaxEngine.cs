@@ -1,294 +1,220 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using ChessCore.Enums;
 using ChessCore.Models;
 
-namespace ChessCore.Engine
+namespace ChessCore.Engine;
+
+public class EngineEvaluationStats
 {
-    public enum HashEntryType : byte
+    public long NodesEvaluated { get; set; }
+    public long TranspositionHits { get; set; }
+    public long BetaCutoffs { get; set; }
+    public double ElapsedMilliseconds { get; set; }
+    public int Depth { get; set; }
+    public int CompletedDepth { get; set; }
+    public long QuiescenceNodes { get; set; }
+}
+
+public class MinimaxEngine
+{
+    private const int MateScore = 1000000;
+    // Extra tactical plies, not a replacement for requested full-width depth.
+    public const int QuiescenceCaptureDepth = 4;
+    public const int MaxQuiescencePly = 8;
+    private readonly EngineMove?[,] _killers = new EngineMove?[32, 2];
+    private readonly int[,,] _history = new int[2, 90, 90];
+    private readonly int _depth;
+    // A table belongs to one search/perspective. No cross-request shared writes.
+    private readonly Dictionary<(ulong Hash, int Depth), Entry> _table = new();
+    private readonly record struct Entry(int Score, int Flag, EngineMove? BestMove);
+    public EngineEvaluationStats LastStats { get; private set; } = new();
+    public long NodesSearched => LastStats.NodesEvaluated;
+    public long Cutoffs => LastStats.BetaCutoffs;
+
+    public MinimaxEngine(int depth = 2) => _depth = Math.Clamp(depth, 1, 4);
+
+    public EngineMove? FindBestMove(Board board, PieceColor computerColor)
     {
-        Exact,
-        Alpha,
-        Beta
+        var watch = Stopwatch.StartNew();
+        LastStats = new() { Depth = _depth };
+        _table.Clear();
+        // The caller's board (including side to move) is never modified.
+        var searchBoard = board.Clone();
+        searchBoard.SetCurrentTurn(computerColor);
+        var moves = GameRules.GetAllLegalMoves(searchBoard, computerColor);
+        EngineMove? bestMove = null;
+        // Iterative deepening supplies a principal move for ordering. Each iteration
+        // completes to its full depth; it does not silently replace depth 4 by depth 2.
+        Array.Clear(_killers);
+        Array.Clear(_history);
+        for (int depth = 1; depth <= _depth && moves.Count > 0; depth++)
+        {
+            OrderMoves(searchBoard, moves, bestMove, 0);
+            int best = -MateScore * 2, alpha = best;
+            EngineMove? iterationBest = null;
+            foreach (var move in moves)
+            {
+                var captured = MakeMove(searchBoard, move);
+                int score;
+                try { score = Search(searchBoard, depth - 1, alpha, MateScore * 2, computerColor, 1); }
+                finally { UndoMove(searchBoard, move, captured); }
+                if (score > best) { best = score; iterationBest = move; }
+                alpha = Math.Max(alpha, best);
+            }
+            bestMove = iterationBest;
+            LastStats.CompletedDepth = depth;
+        }
+        watch.Stop();
+        LastStats.ElapsedMilliseconds = watch.Elapsed.TotalMilliseconds;
+        Console.WriteLine($"AI depth={_depth}, ms={LastStats.ElapsedMilliseconds:F0}, nodes={NodesSearched}, cutoffs={Cutoffs}, ttHits={LastStats.TranspositionHits}, qNodes={LastStats.QuiescenceNodes}, completed={LastStats.CompletedDepth}");
+        return bestMove;
     }
 
-    public struct TranspositionEntry
+    public int EvaluatePosition(Board board, PieceColor perspective)
     {
-        public ulong Hash;
-        public int Score;
-        public int Depth;
-        public HashEntryType Flag;
+        LastStats = new() { Depth = _depth };
+        _table.Clear();
+        Array.Clear(_killers);
+        Array.Clear(_history);
+        var watch = Stopwatch.StartNew();
+        int score = Search(board.Clone(), _depth, -MateScore * 2, MateScore * 2, perspective, 0);
+        LastStats.CompletedDepth = _depth;
+        LastStats.ElapsedMilliseconds = watch.Elapsed.TotalMilliseconds;
+        return score;
     }
 
-    public class EngineEvaluationStats
+    private int Search(Board board, int depth, int alpha, int beta, PieceColor perspective, int ply)
     {
-        public long NodesEvaluated { get; set; }
-        public long TranspositionHits { get; set; }
-        public long BetaCutoffs { get; set; }
-        public double ElapsedMilliseconds { get; set; }
-        public int Depth { get; set; }
+        if (depth == 0) return Quiescence(board, alpha, beta, perspective, ply, 0);
+        LastStats.NodesEvaluated++;
+        var side = board.CurrentTurn;
+        // Xiangqi: the side to move loses if it has no legal move, even without check.
+        if (!GameRules.HasLegalMove(board, side))
+            return side == perspective ? -MateScore + ply : MateScore - ply;
+
+        var key = (ZobristHashing.ComputeHash(board), depth);
+        int originalAlpha = alpha, originalBeta = beta;
+        EngineMove? preferred = null;
+        if (_table.TryGetValue(key, out var entry))
+        {
+            preferred = entry.BestMove;
+            int cached = FromTableScore(entry.Score, ply);
+            LastStats.TranspositionHits++;
+            if (entry.Flag == 0) return cached;
+            if (entry.Flag == 1) alpha = Math.Max(alpha, cached);
+            else beta = Math.Min(beta, cached);
+            if (alpha >= beta) return cached;
+        }
+        bool maximizing = side == perspective;
+        int best = maximizing ? -MateScore * 2 : MateScore * 2;
+        var moves = GameRules.GetAllLegalMoves(board, side);
+        OrderMoves(board, moves, preferred, ply);
+        EngineMove? bestMove = null;
+        foreach (var move in moves)
+        {
+            var captured = MakeMove(board, move);
+            int score;
+            try { score = Search(board, depth - 1, alpha, beta, perspective, ply + 1); }
+            finally { UndoMove(board, move, captured); }
+            if ((maximizing && score > best) || (!maximizing && score < best))
+            { best = score; bestMove = move; }
+            if (maximizing) alpha = Math.Max(alpha, best); else beta = Math.Min(beta, best);
+            if (alpha >= beta)
+            {
+                LastStats.BetaCutoffs++;
+                if (captured == null) RecordQuietCutoff(board, move, depth, ply);
+                break;
+            }
+        }
+        if (_table.Count < 250000)
+            _table[key] = new(ToTableScore(best, ply), best <= originalAlpha ? 2 : best >= originalBeta ? 1 : 0, bestMove);
+        return best;
     }
 
-    public class MinimaxEngine
+    private static Piece? MakeMove(Board board, EngineMove move)
     {
-        private readonly int _depth;
-        private const int TableSize = 1048576;
-        private static readonly TranspositionEntry[] TranspositionTable = new TranspositionEntry[TableSize];
+        var captured = board.Grid[move.To.Row, move.To.Col];
+        board.Grid[move.To.Row, move.To.Col] = board.Grid[move.From.Row, move.From.Col];
+        board.Grid[move.From.Row, move.From.Col] = null;
+        board.SwitchTurn();
+        return captured;
+    }
 
-        public EngineEvaluationStats LastStats { get; private set; } = new();
+    private static void UndoMove(Board board, EngineMove move, Piece? captured)
+    {
+        board.SwitchTurn();
+        board.Grid[move.From.Row, move.From.Col] = board.Grid[move.To.Row, move.To.Col];
+        board.Grid[move.To.Row, move.To.Col] = captured;
+    }
 
-        public MinimaxEngine(int depth = 2)
+    // At a quiet horizon we allow stand-pat; when checked we search ALL evasions.
+    // No delta-pruning of sacrifices: a cheap-looking capture can be a real tactic.
+    private int Quiescence(Board board, int alpha, int beta, PieceColor perspective, int ply, int qPly)
+    {
+        LastStats.NodesEvaluated++;
+        LastStats.QuiescenceNodes++;
+        bool maximizing = board.CurrentTurn == perspective;
+        bool inCheck = MoveGenerator.CheckIfInCheck(board, board.CurrentTurn);
+        var moves = GameRules.GetAllLegalMoves(board, board.CurrentTurn);
+        if (moves.Count == 0) return maximizing ? -MateScore + ply : MateScore - ply;
+        int standPat = BoardEvaluator.Evaluate(board, perspective);
+        // A finite tactical horizon is necessary for sequences of repeated checks.
+        if (qPly >= MaxQuiescencePly) return standPat;
+        int best = maximizing ? -MateScore * 2 : MateScore * 2;
+        if (!inCheck)
         {
-            _depth = Math.Max(1, depth);
+            best = standPat;
+            if (maximizing) { if (best >= beta) return best; alpha = Math.Max(alpha, best); }
+            else { if (best <= alpha) return best; beta = Math.Min(beta, best); }
+            if (qPly >= QuiescenceCaptureDepth) return best;
+            moves.RemoveAll(m => board.Grid[m.To.Row, m.To.Col] == null);
         }
-
-        public EngineMove? FindBestMove(Board board, PieceColor computerColor)
+        OrderMoves(board, moves, null, ply);
+        foreach (var move in moves)
         {
-            var sw = Stopwatch.StartNew();
-            LastStats = new EngineEvaluationStats { Depth = _depth };
-
-            List<EngineMove> moves = GetAllLegalMoves(board, computerColor);
-            if (moves.Count == 0) return null;
-
-            // Sắp xếp nước đi theo MVV-LVA
-            OrderMoves(board, moves);
-
-            EngineMove? bestMove = null;
-            int bestScore = int.MinValue;
-            int alpha = int.MinValue;
-            int beta = int.MaxValue;
-
-            foreach (EngineMove move in moves)
-            {
-                Board simulatedBoard = CloneBoard(board);
-                ApplyMove(simulatedBoard, move);
-
-                int score = AlphaBeta(simulatedBoard, _depth - 1, alpha, beta, false, computerColor);
-
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestMove = move;
-                }
-
-                alpha = Math.Max(alpha, bestScore);
-                if (alpha >= beta)
-                {
-                    LastStats.BetaCutoffs++;
-                    break;
-                }
-            }
-
-            sw.Stop();
-            LastStats.ElapsedMilliseconds = sw.Elapsed.TotalMilliseconds;
-            return bestMove ?? moves[0];
+            var captured = MakeMove(board, move);
+            int score;
+            try { score = Quiescence(board, alpha, beta, perspective, ply + 1, qPly + 1); }
+            finally { UndoMove(board, move, captured); }
+            best = maximizing ? Math.Max(best, score) : Math.Min(best, score);
+            if (maximizing) alpha = Math.Max(alpha, best); else beta = Math.Min(beta, best);
+            if (alpha >= beta) { LastStats.BetaCutoffs++; break; }
         }
+        return best;
+    }
 
-        public int EvaluatePosition(Board board, PieceColor perspective)
-        {
-            bool maximizing = board.CurrentTurn == perspective;
-            return AlphaBeta(board, _depth, int.MinValue, int.MaxValue, maximizing, perspective);
-        }
+    private static int ToTableScore(int score, int ply) => score > MateScore - 1000 ? score + ply : score < -MateScore + 1000 ? score - ply : score;
+    private static int FromTableScore(int score, int ply) => score > MateScore - 1000 ? score - ply : score < -MateScore + 1000 ? score + ply : score;
+    private static bool SameMove(EngineMove? a, EngineMove? b) => a != null && b != null && a.From == b.From && a.To == b.To;
 
-        private int AlphaBeta(
-            Board board,
-            int depth,
-            int alpha,
-            int beta,
-            bool maximizing,
-            PieceColor computerColor)
-        {
-            LastStats.NodesEvaluated++;
+    private void RecordQuietCutoff(Board board, EngineMove move, int depth, int ply)
+    {
+        if (ply < 32 && !SameMove(move, _killers[ply, 0]))
+        { _killers[ply, 1] = _killers[ply, 0]; _killers[ply, 0] = move; }
+        int side = board.CurrentTurn == PieceColor.Red ? 0 : 1;
+        int from = move.From.Row * 9 + move.From.Col, to = move.To.Row * 9 + move.To.Col;
+        _history[side, from, to] = Math.Min(20000, _history[side, from, to] + depth * depth);
+    }
 
-            PieceColor opponentColor = computerColor == PieceColor.Red ? PieceColor.Black : PieceColor.Red;
+    private void OrderMoves(Board board, List<EngineMove> moves, EngineMove? preferred, int ply)
+    {
+        // Cache ordering scores once; the comparison delegate must not rescan the board.
+        var ranked = moves.Select(m => (Move: m, Score: MoveScore(board, m, preferred, ply))).ToList();
+        ranked.Sort((a, b) => b.Score.CompareTo(a.Score));
+        for (int i = 0; i < ranked.Count; i++) moves[i] = ranked[i].Move;
+    }
 
-            if (BoardEvaluator.IsCheckmate(board, opponentColor))
-                return 1000000 + depth;
-
-            if (BoardEvaluator.IsCheckmate(board, computerColor))
-                return -1000000 - depth;
-
-            if (BoardEvaluator.IsStalemate(board, computerColor) || BoardEvaluator.IsStalemate(board, opponentColor))
-                return 0;
-
-            if (depth <= 0)
-            {
-                return BoardEvaluator.Evaluate(board, computerColor);
-            }
-
-            // Tra cứu Bảng chuyển vị
-            ulong hash = ZobristHashing.ComputeHash(board);
-            int index = (int)(hash % (ulong)TableSize);
-            ref TranspositionEntry entry = ref TranspositionTable[index];
-
-            if (entry.Hash == hash && entry.Depth >= depth)
-            {
-                LastStats.TranspositionHits++;
-                if (entry.Flag == HashEntryType.Exact)
-                    return entry.Score;
-                if (entry.Flag == HashEntryType.Alpha && entry.Score <= alpha)
-                    return alpha;
-                if (entry.Flag == HashEntryType.Beta && entry.Score >= beta)
-                    return beta;
-            }
-
-            int originalAlpha = alpha;
-            PieceColor sideToMove = maximizing ? computerColor : opponentColor;
-            List<EngineMove> moves = GetAllLegalMoves(board, sideToMove);
-
-            if (moves.Count == 0)
-            {
-                return BoardEvaluator.Evaluate(board, computerColor);
-            }
-
-            OrderMoves(board, moves);
-
-            int bestScore = maximizing ? int.MinValue : int.MaxValue;
-
-            if (maximizing)
-            {
-                foreach (EngineMove move in moves)
-                {
-                    Board nextBoard = CloneBoard(board);
-                    ApplyMove(nextBoard, move);
-
-                    int score = AlphaBeta(nextBoard, depth - 1, alpha, beta, false, computerColor);
-                    bestScore = Math.Max(bestScore, score);
-                    alpha = Math.Max(alpha, bestScore);
-
-                    if (alpha >= beta)
-                    {
-                        LastStats.BetaCutoffs++;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                foreach (EngineMove move in moves)
-                {
-                    Board nextBoard = CloneBoard(board);
-                    ApplyMove(nextBoard, move);
-
-                    int score = AlphaBeta(nextBoard, depth - 1, alpha, beta, true, computerColor);
-                    bestScore = Math.Min(bestScore, score);
-                    beta = Math.Min(beta, bestScore);
-
-                    if (alpha >= beta)
-                    {
-                        LastStats.BetaCutoffs++;
-                        break;
-                    }
-                }
-            }
-
-            entry.Hash = hash;
-            entry.Score = bestScore;
-            entry.Depth = depth;
-            if (bestScore <= originalAlpha)
-                entry.Flag = HashEntryType.Alpha;
-            else if (bestScore >= beta)
-                entry.Flag = HashEntryType.Beta;
-            else
-                entry.Flag = HashEntryType.Exact;
-
-            return bestScore;
-        }
-
-        private void OrderMoves(Board board, List<EngineMove> moves)
-        {
-            moves.Sort((a, b) =>
-            {
-                int scoreA = 0;
-                int scoreB = 0;
-
-                Piece? targetA = board.GetPieceAt(a.To.Row, a.To.Col);
-                if (targetA != null)
-                {
-                    Piece? moverA = board.GetPieceAt(a.From.Row, a.From.Col);
-                    scoreA = GetPieceValue(targetA.Type) * 10 - (moverA != null ? GetPieceValue(moverA.Type) : 0);
-                }
-
-                Piece? targetB = board.GetPieceAt(b.To.Row, b.To.Col);
-                if (targetB != null)
-                {
-                    Piece? moverB = board.GetPieceAt(b.From.Row, b.From.Col);
-                    scoreB = GetPieceValue(targetB.Type) * 10 - (moverB != null ? GetPieceValue(moverB.Type) : 0);
-                }
-
-                return scoreB.CompareTo(scoreA);
-            });
-        }
-
-        private static int GetPieceValue(PieceType type)
-        {
-            return type switch
-            {
-                PieceType.King => 100000,
-                PieceType.Rook => 900,
-                PieceType.Cannon => 450,
-                PieceType.Horse => 400,
-                PieceType.Elephant => 200,
-                PieceType.Advisor => 200,
-                PieceType.Pawn => 100,
-                _ => 0
-            };
-        }
-
-        private List<EngineMove> GetAllLegalMoves(Board board, PieceColor color)
-        {
-            List<EngineMove> moves = new List<EngineMove>();
-
-            for (int row = 0; row < 10; row++)
-            {
-                for (int col = 0; col < 9; col++)
-                {
-                    Piece? piece = board.GetPieceAt(row, col);
-                    if (piece == null || piece.Color != color)
-                        continue;
-
-                    Position from = new Position(row, col);
-                    List<EngineMove> pieceMoves = MoveGenerator.GetValidMoves(board, from);
-                    moves.AddRange(pieceMoves);
-                }
-            }
-
-            return moves;
-        }
-
-        private static Board CloneBoard(Board source)
-        {
-            Board clone = new Board();
-
-            for (int row = 0; row < 10; row++)
-            {
-                for (int col = 0; col < 9; col++)
-                {
-                    Piece? piece = source.GetPieceAt(row, col);
-                    if (piece == null)
-                    {
-                        clone.Grid[row, col] = null;
-                    }
-                    else
-                    {
-                        clone.Grid[row, col] = new Piece(piece.Type, piece.Color);
-                    }
-                }
-            }
-
-            clone.SetCurrentTurn(source.CurrentTurn);
-            return clone;
-        }
-
-        private static void ApplyMove(Board board, EngineMove move)
-        {
-            Piece? piece = board.GetPieceAt(move.From.Row, move.From.Col);
-            if (piece == null) return;
-
-            board.Grid[move.To.Row, move.To.Col] = piece;
-            board.Grid[move.From.Row, move.From.Col] = null;
-            board.SwitchTurn();
-        }
+    private int MoveScore(Board board, EngineMove move, EngineMove? preferred, int ply)
+    {
+        if (SameMove(move, preferred)) return 1000000;
+        var victim = board.Grid[move.To.Row, move.To.Col];
+        var attacker = board.Grid[move.From.Row, move.From.Col];
+        // Captures first is only a SEARCH ORDER, never a bonus in the returned value.
+        if (victim != null) return 100000 + BoardEvaluator.GetPieceValue(victim.Type, victim.Color, move.To.Row) * 10
+            - (attacker == null ? 0 : BoardEvaluator.GetPieceValue(attacker.Type));
+        if (ply < 32 && SameMove(move, _killers[ply, 0])) return 80000;
+        if (ply < 32 && SameMove(move, _killers[ply, 1])) return 70000;
+        int side = board.CurrentTurn == PieceColor.Red ? 0 : 1;
+        return _history[side, move.From.Row * 9 + move.From.Col, move.To.Row * 9 + move.To.Col];
     }
 }

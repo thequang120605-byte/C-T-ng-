@@ -7,6 +7,40 @@ namespace ChessCore.Engine
 {
     public static class MoveGenerator
     {
+        // Lấy toàn bộ nước đi hợp lệ của một bên.
+        // Dùng cho checkmate / hết nước đi / AI.
+        public static List<EngineMove> GetAllValidMoves(
+            Board board,
+            PieceColor color)
+        {
+            List<EngineMove> moves = new List<EngineMove>();
+
+            for (int row = 0; row < 10; row++)
+            {
+                for (int col = 0; col < 9; col++)
+                {
+                    Piece? piece = board.GetPieceAt(row, col);
+
+                    if (piece == null || piece.Color != color)
+                        continue;
+
+                    moves.AddRange(
+                        GetValidMoves(
+                            board,
+                            new Position(row, col)));
+                }
+            }
+
+            return moves;
+        }
+
+        public static bool HasAnyLegalMoves(
+            Board board,
+            PieceColor color)
+        {
+            return GameRules.HasLegalMove(board, color);
+        }
+
         public static List<EngineMove> GetValidMoves(
             Board board,
             Position from)
@@ -33,6 +67,11 @@ namespace ChessCore.Engine
                     board.GetPieceAt(
                         move.To.Row,
                         move.To.Col);
+
+                // Theo luật, không có nước "ăn Tướng".
+                // Ván cờ kết thúc bằng chiếu bí / hết nước đi.
+                if (captured != null && captured.Type == PieceType.King)
+                    continue;
 
                 board.Grid[
                     move.To.Row,
@@ -64,125 +103,60 @@ namespace ChessCore.Engine
             return legalMoves;
         }
 
-        public static bool CheckIfInCheck(
-            Board board,
-            PieceColor color)
+        public static bool CheckIfInCheck(Board board, PieceColor color)
         {
-            Position? kingPos = null;
-            Position? opponentKingPos = null;
-
-            PieceColor opponentColor =
-                color == PieceColor.Red
-                    ? PieceColor.Black
-                    : PieceColor.Red;
-
-            // ==============================
-            // TÌM HAI TƯỚNG
-            // ==============================
-
             for (int r = 0; r < 10; r++)
-            {
                 for (int c = 0; c < 9; c++)
                 {
-                    Piece? piece =
-                        board.GetPieceAt(r, c);
-
-                    if (piece == null)
-                        continue;
-
-                    if (piece.Type != PieceType.King)
-                        continue;
-
-                    if (piece.Color == color)
-                    {
-                        kingPos =
-                            new Position(r, c);
-                    }
-                    else
-                    {
-                        opponentKingPos =
-                            new Position(r, c);
-                    }
+                    var p = board.GetPieceAt(r, c);
+                    if (p?.Type == PieceType.King && p.Color == color)
+                        return IsSquareAttacked(board, r, c, color == PieceColor.Red ? PieceColor.Black : PieceColor.Red);
                 }
-            }
+            return true; // A missing king is never a safe position.
+        }
 
-            if (!kingPos.HasValue)
-                return false;
-
-            // ==============================
-            // HAI TƯỚNG ĐỐI MẶT
-            // ==============================
-
-            if (opponentKingPos.HasValue &&
-                kingPos.Value.Col ==
-                opponentKingPos.Value.Col)
-            {
-                int minRow =
-                    Math.Min(
-                        kingPos.Value.Row,
-                        opponentKingPos.Value.Row);
-
-                int maxRow =
-                    Math.Max(
-                        kingPos.Value.Row,
-                        opponentKingPos.Value.Row);
-
-                bool hasObstacle = false;
-
-                for (
-                    int r = minRow + 1;
-                    r < maxRow;
-                    r++)
-                {
-                    if (board.GetPieceAt(
-                        r,
-                        kingPos.Value.Col) != null)
-                    {
-                        hasObstacle = true;
-                        break;
-                    }
-                }
-
-                if (!hasObstacle)
-                    return true;
-            }
-
-            // ==============================
-            // KIỂM TRA QUÂN ĐỊCH TẤN CÔNG
-            // ==============================
-
+        // Geometric attacks include friendly occupied targets, so H3 can count defenders.
+        public static bool IsSquareAttacked(Board board, int row, int col, PieceColor color)
+        {
             for (int r = 0; r < 10; r++)
-            {
                 for (int c = 0; c < 9; c++)
                 {
-                    Piece? piece =
-                        board.GetPieceAt(r, c);
-
-                    if (piece == null)
-                        continue;
-
-                    if (piece.Color != opponentColor)
-                        continue;
-
-                    Position from =
-                        new Position(r, c);
-
-                    List<EngineMove> threats =
-                        GetPseudoLegalMoves(
-                            board,
-                            from);
-
-                    foreach (EngineMove threat in threats)
+                    var p = board.GetPieceAt(r, c);
+                    if (p == null || p.Color != color || (r == row && c == col)) continue;
+                    int dr = row - r, dc = col - c;
+                    int ar = Math.Abs(dr), ac = Math.Abs(dc);
+                    switch (p.Type)
                     {
-                        if (threat.To.Equals(
-                            kingPos.Value))
-                        {
-                            return true;
-                        }
+                        case PieceType.Horse:
+                            if (ar == 2 && ac == 1 && board.GetPieceAt(r + Math.Sign(dr), c) == null) return true;
+                            if (ar == 1 && ac == 2 && board.GetPieceAt(r, c + Math.Sign(dc)) == null) return true;
+                            break;
+                        case PieceType.Elephant:
+                            if (ar == 2 && ac == 2 && (color == PieceColor.Red ? row >= 5 : row <= 4)
+                                && board.GetPieceAt(r + dr / 2, c + dc / 2) == null) return true;
+                            break;
+                        case PieceType.Advisor:
+                            if (ar == 1 && ac == 1 && IsInPalace(row, col, color)) return true;
+                            break;
+                        case PieceType.Pawn:
+                            if (dc == 0 && dr == (color == PieceColor.Red ? -1 : 1)) return true;
+                            if (dr == 0 && ac == 1 && (color == PieceColor.Red ? r <= 4 : r >= 5)) return true;
+                            break;
+                        case PieceType.King:
+                            if (ar + ac == 1 && IsInPalace(row, col, color)) return true;
+                            if (dc != 0 || board.GetPieceAt(row, col)?.Type != PieceType.King) break;
+                            goto case PieceType.Rook;
+                        case PieceType.Rook:
+                        case PieceType.Cannon:
+                            if (dr != 0 && dc != 0) break;
+                            int screens = 0;
+                            int sr = Math.Sign(dr), sc = Math.Sign(dc);
+                            for (int rr = r + sr, cc = c + sc; rr != row || cc != col; rr += sr, cc += sc)
+                                if (board.GetPieceAt(rr, cc) != null) screens++;
+                            if (screens == (p.Type == PieceType.Cannon ? 1 : 0)) return true;
+                            break;
                     }
                 }
-            }
-
             return false;
         }
 

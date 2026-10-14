@@ -3,6 +3,16 @@ using System.Collections.Generic;
 
 namespace ChessCore.DTOs
 {
+    public class LastMoveEvaluationDto
+    {
+        public string PieceName { get; set; } = string.Empty;
+        public string MoveDescription { get; set; } = string.Empty;
+        public int DeltaH1 { get; set; } // Thay doi chenh lech vat chat theo ben vua di
+        public int DeltaH2 { get; set; } // Điểm vị trí / cơ động
+        public int DeltaH3 { get; set; } // Điểm chiến thuật
+        public int TotalDelta => DeltaH1 + DeltaH2 + DeltaH3;
+    }
+
     public class PieceDto
     {
         public int Row { get; set; }
@@ -41,6 +51,14 @@ namespace ChessCore.DTOs
     }
 
 
+    public class HeuristicEvaluationDto
+    {
+        // All three components are from Red's perspective, in raw heuristic points.
+        public int H1 { get; set; }
+        public int H2 { get; set; }
+        public int H3 { get; set; }
+    }
+
     public class GameResponseDto
     {
         public int Id { get; set; }
@@ -54,6 +72,14 @@ namespace ChessCore.DTOs
         public string CurrentTurn { get; set; }
             = string.Empty;
         public bool IsCheck { get; set; }
+        public bool HasNoLegalMoves { get; set; }
+        public bool IsCheckmate { get; set; }
+        public string EndReason { get; set; } = string.Empty;
+        public string? InitialFen { get; set; }
+        public HeuristicEvaluationDto Evaluation { get; set; } = new();
+        public int RedScore { get; set; }
+        public int BlackScore { get; set; }
+        public LastMoveEvaluationDto? LastMoveEval { get; set; }
         public DateTime CreatedAt { get; set; }
 
         public DateTime? LastMoveAt { get; set; }
