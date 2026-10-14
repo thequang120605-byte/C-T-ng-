@@ -761,6 +761,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     renderMoveHistory(data.moves);
 
+    // Cập nhật Đánh giá thế trận (H1, H2, H3, Thước đo ưu thế) từ ArenaUI
+    if (window.ArenaUI && typeof window.ArenaUI.update === "function") {
+      try {
+        window.ArenaUI.update(data);
+      } catch (err) {
+        console.warn("Lỗi khi cập nhật bảng đánh giá ArenaUI:", err);
+      }
+    }
+
     console.log("Bàn cờ đã được cập nhật!");
 
     if (VS_COMPUTER && gameStatus === "InProgress" && currentTurn === "Black") {

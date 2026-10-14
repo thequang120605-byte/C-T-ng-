@@ -162,16 +162,35 @@
     if (indicator) { indicator.classList.toggle("turn-red", state.turn === "Red"); indicator.classList.toggle("turn-black", state.turn === "Black"); }
   }
 
-  const lastMoveToggle = byId("last-move-toggle");
-  lastMoveToggle?.addEventListener("click", () => {
-    const open = lastMoveToggle.getAttribute("aria-expanded") !== "true";
-    lastMoveToggle.setAttribute("aria-expanded", String(open));
-    byId("last-move-box")?.classList.toggle("is-open", open);
-  });
+  function setupEventListeners() {
+    const toggle = byId("last-move-toggle");
+    if (toggle && !toggle._hasArenaListener) {
+      toggle._hasArenaListener = true;
+      toggle.addEventListener("click", () => {
+        const open = toggle.getAttribute("aria-expanded") !== "true";
+        toggle.setAttribute("aria-expanded", String(open));
+        const box = byId("last-move-box");
+        if (box) {
+          box.classList.toggle("is-open", open);
+          if (box.hasAttribute("hidden")) {
+            box.hidden = false;
+          }
+        }
+      });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupEventListeners);
+  } else {
+    setupEventListeners();
+  }
+
   document.addEventListener("keydown", event => {
     if (event.key === "Escape") {
       byId("last-move-box")?.classList.remove("is-open");
-      lastMoveToggle?.setAttribute("aria-expanded", "false");
+      const toggle = byId("last-move-toggle");
+      toggle?.setAttribute("aria-expanded", "false");
     }
   });
 

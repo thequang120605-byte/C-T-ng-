@@ -1127,3 +1127,262 @@
     color: var(--text-muted);
 }
 
+/* =========================================================
+   EVALUATION PANEL & HEURISTIC METRICS (H1, H2, H3)
+========================================================= */
+.evaluation-panel {
+    background-color: var(--bg-navy-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.section-title-row h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.small-badge {
+    border-radius: 5px;
+    padding: 3px 6px;
+    background: var(--bg-navy-light);
+    border: 1px solid var(--border-color);
+    color: var(--accent-gold);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.last-move-toggle {
+    background: var(--bg-navy-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.last-move-toggle:hover:not(:disabled) {
+    color: var(--text-main);
+    border-color: var(--accent-gold);
+}
+
+.last-move-toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.advantage-summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.advantage-summary strong {
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.advantage-meter {
+    height: 8px;
+    position: relative;
+    border-radius: 4px;
+    background: #1e293b;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.advantage-red, .heuristic-meter span {
+    display: block;
+    height: 100%;
+    width: 50%;
+    background: #ef4444;
+    transition: width 0.35s ease;
+}
+
+.meter-center {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.advantage-legend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 6px 0 14px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.advantage-legend > span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.advantage-legend strong {
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.side-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 3px;
+}
+
+.red-dot { background: #ef4444; }
+.black-dot { background: #64748b; }
+
+.heuristic-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.heuristic-card {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-navy-dark);
+}
+
+.heuristic-code {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-gold);
+    letter-spacing: 0.5px;
+}
+
+.heuristic-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.heuristic-card strong {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.heuristic-meter {
+    height: 3px;
+    border-radius: 2px;
+    background: #334155;
+    overflow: hidden;
+}
+
+.evaluation-help {
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.evaluation-help summary {
+    cursor: pointer;
+    width: fit-content;
+    color: var(--accent-gold);
+}
+
+.evaluation-help p {
+    margin: 6px 0;
+    font-size: 11px;
+}
+
+.last-move-summary {
+    margin-top: 12px;
+    padding: 10px 0 0;
+    border-top: 1px dashed var(--border-color);
+}
+
+.last-move-summary[hidden] {
+    display: none;
+}
+
+.last-move-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.last-move-summary p {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 6px 0 8px;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.last-move-summary p span {
+    color: var(--accent-gold);
+    font-family: monospace;
+}
+
+.delta-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.delta-badges > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: var(--bg-navy-dark);
+    border: 1px solid var(--border-color);
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.delta-badges b {
+    color: var(--text-main);
+}
+
+.delta-badges .delta-total {
+    color: var(--accent-gold);
+    border-color: var(--accent-gold);
+    font-weight: 700;
+}
+
+.delta-caption {
+    display: block;
+    margin-top: 6px;
+    font-size: 10px;
+    color: var(--text-muted);
+}
+

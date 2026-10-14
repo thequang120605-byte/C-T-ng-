@@ -302,6 +302,62 @@
                 </div>
             </div>
 
+            <!-- ĐÁNH GIÁ THẾ TRẬN & HEURISTIC -->
+            <section class="panel-box evaluation-panel" aria-labelledby="evaluation-title">
+                <div class="section-title-row">
+                    <h3 id="evaluation-title"><i class="fa-solid fa-chart-simple text-gold"></i> Đánh giá thế trận</h3>
+                    <button id="last-move-toggle" class="last-move-toggle" type="button" aria-controls="last-move-box" aria-expanded="false">Nước vừa đi</button>
+                    <span class="small-badge">H1 + H2 + H3</span>
+                </div>
+                <div class="advantage-summary">
+                    <span id="advantage-label">Thế trận cân bằng</span>
+                    <strong id="advantage-score">0.00</strong>
+                </div>
+                <div id="advantage-meter" class="advantage-meter" role="meter" aria-label="Ưu thế thế trận về phía Đỏ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+                    <span id="advantage-red" class="advantage-red" style="width:50%"></span>
+                    <span class="meter-center"></span>
+                </div>
+                <div class="advantage-legend">
+                    <span><i class="side-dot red-dot"></i> Đỏ <strong id="red-score">0</strong></span>
+                    <span>Đen <strong id="black-score">0</strong> <i class="side-dot black-dot"></i></span>
+                </div>
+                <div class="heuristic-cards">
+                    <div class="heuristic-card">
+                        <span class="heuristic-code">H1</span>
+                        <span class="heuristic-name">Vật chất</span>
+                        <strong id="h1-value">0</strong>
+                        <div id="h1-meter" class="heuristic-meter" role="meter" aria-label="Ưu thế H1 về phía Đỏ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span></span></div>
+                    </div>
+                    <div class="heuristic-card">
+                        <span class="heuristic-code">H2</span>
+                        <span class="heuristic-name">Vị trí</span>
+                        <strong id="h2-value">0</strong>
+                        <div id="h2-meter" class="heuristic-meter" role="meter" aria-label="Ưu thế H2 về phía Đỏ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span></span></div>
+                    </div>
+                    <div class="heuristic-card">
+                        <span class="heuristic-code">H3</span>
+                        <span class="heuristic-name">Chiến thuật</span>
+                        <strong id="h3-value">0</strong>
+                        <div id="h3-meter" class="heuristic-meter" role="meter" aria-label="Ưu thế H3 về phía Đỏ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span></span></div>
+                    </div>
+                </div>
+                <details class="evaluation-help">
+                    <summary>Cách đọc chỉ số</summary>
+                    <p>Thanh đỏ tăng khi Đỏ có ưu thế, phần còn lại thuộc Đen. 100 điểm tương đương giá trị một Tốt trước sông.</p>
+                </details>
+                <div id="last-move-box" class="last-move-summary" hidden>
+                    <span class="last-move-label">NƯỚC VỪA ĐI</span>
+                    <p><strong id="lm-piece"></strong><span id="lm-desc"></span></p>
+                    <div class="delta-badges">
+                        <span>H1 <b id="lm-h1">0</b></span>
+                        <span>H2 <b id="lm-h2">0</b></span>
+                        <span>H3 <b id="lm-h3">0</b></span>
+                        <span class="delta-total">Tổng <b id="lm-total">0</b></span>
+                    </div>
+                    <span class="delta-caption">Thay đổi ưu thế của bên vừa đi</span>
+                </div>
+            </section>
+
             <div class="panel-box move-history-box">
                 <div class="status-header">
                     <i class="fa-solid fa-list-ol"></i> Lịch sử nước đi
@@ -431,4 +487,5 @@
 
 <!-- SCRIPTS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+<script src="~/js/arena-ui.js" asp-append-version="true"></script>
 <script src="~/js/game.js" asp-append-version="true"></script>
