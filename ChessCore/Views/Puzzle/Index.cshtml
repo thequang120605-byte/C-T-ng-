@@ -76,13 +76,63 @@
 
                 <div class="pz-msg info" id="pz-msg">Hãy chọn quân cờ để đi.</div>
 
+                <div class="pz-nav-row" style="display: flex; gap: 8px; margin-top: 4px;">
+                    <button type="button" class="pz-btn pz-btn-secondary" id="pz-prev-puzzle" title="Bài trước" style="flex: 1; padding: 8px 12px; font-size: 13px;">
+                        <i class="fa-solid fa-backward-step"></i> Bài trước
+                    </button>
+                    <button type="button" class="pz-btn pz-btn-secondary" id="pz-select-puzzle" title="Danh sách các bài" style="padding: 8px 14px; font-size: 13px;">
+                        <i class="fa-solid fa-list-check"></i> Chọn bài
+                    </button>
+                    <button type="button" class="pz-btn pz-btn-secondary" id="pz-skip-puzzle" title="Bài kế tiếp" style="flex: 1; padding: 8px 12px; font-size: 13px;">
+                        Bài sau <i class="fa-solid fa-forward-step"></i>
+                    </button>
+                </div>
+
                 <div class="pz-actions">
                     <button type="button" class="pz-btn pz-btn-primary pz-btn-block pz-hidden" id="pz-next">Chơi tiếp</button>
                     <button type="button" class="pz-btn pz-btn-danger pz-btn-block pz-hidden" id="pz-retry">Thử lại</button>
-                    <button type="button" class="pz-btn pz-btn-secondary pz-btn-block" id="pz-hint">Gợi ý</button>
-                    <button type="button" class="pz-btn pz-btn-secondary pz-btn-block" id="pz-exit">Thoát</button>
+                    <div class="pz-hint-group" style="position: relative; width: 100%;">
+                        <button type="button" class="pz-btn pz-btn-secondary pz-btn-block" id="pz-hint">
+                            <i class="fa-solid fa-lightbulb" style="color: var(--accent-gold);"></i> Gợi ý
+                        </button>
+                        <div id="pz-hint-dropdown" class="hint-dropdown-menu hidden" style="width: 100%; bottom: 100%; left: 0; transform: translateY(-8px);">
+                            <button id="pz-hint-piece-btn" type="button" class="hint-dropdown-item" title="Chỉ highlight quân cờ cần đi (-5 điểm)">
+                                <i class="fa-solid fa-chess-knight" style="color: #38bdf8; font-size: 16px;"></i>
+                                <div>
+                                    <span>Gợi ý quân cờ</span>
+                                    <small>Chỉ highlight quân cần đi (-5đ)</small>
+                                </div>
+                            </button>
+                            <button id="pz-hint-move-btn" type="button" class="hint-dropdown-item" title="Highlight quân cờ và vẽ nước đi (-10 điểm)">
+                                <i class="fa-solid fa-location-arrow" style="color: #f59e0b; font-size: 16px;"></i>
+                                <div>
+                                    <span>Gợi ý có nước đi</span>
+                                    <small>Vẽ đường đi tối ưu (-10đ)</small>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="pz-btn pz-btn-secondary pz-btn-block" id="pz-exit">
+                        <i class="fa-solid fa-arrow-left"></i> Về danh sách cấp độ
+                    </button>
                 </div>
             </aside>
+        </div>
+
+        <!-- MODAL CHỌN BÀI TRONG CẤP ĐỘ -->
+        <div id="pz-modal-puzzles" class="modal-overlay hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+            <div class="pz-card" style="width: 90%; max-width: 550px; max-height: 80vh; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <h3 id="pz-modal-level-title" style="margin: 0; color: var(--accent-gold); font-size: 18px;"><i class="fa-solid fa-list-ol"></i> Danh sách bài thế</h3>
+                    <button id="pz-modal-close" type="button" class="btn-secondary" style="background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;">&times;</button>
+                </div>
+                <div id="pz-modal-grid" class="pz-puzzle-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; overflow-y: auto; padding: 6px; max-height: 50vh;">
+                    <!-- Sẽ render các nút bài 1, 2, 3... tại đây -->
+                </div>
+                <div style="text-align: right; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                    <button id="pz-modal-close-btn" type="button" class="pz-btn pz-btn-secondary" style="padding: 6px 16px; font-size: 13px;">Đóng</button>
+                </div>
+            </div>
         </div>
     </section>
 

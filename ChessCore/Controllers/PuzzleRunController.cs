@@ -243,11 +243,16 @@ namespace ChessCore.Controllers
                 return Ok(new { available = false, message = "Chưa có gợi ý cho thế cờ này." });
 
             Piece piece = board.Grid[hint.From.Row, hint.From.Col];
+            Piece? targetPiece = board.Grid[hint.To.Row, hint.To.Col];
             return Ok(new
             {
                 available = true,
                 fromRow = hint.From.Row,
                 fromCol = hint.From.Col,
+                toRow = hint.To.Row,
+                toCol = hint.To.Col,
+                pieceType = piece.Type.ToString(),
+                targetPieceType = targetPiece?.Type.ToString(),
                 message = $"Gợi ý: hãy xem xét nước đi của quân {PieceName(piece.Type)} đang được đánh dấu.",
             });
         }

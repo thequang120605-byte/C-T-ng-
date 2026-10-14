@@ -113,3 +113,50 @@
 @media (max-width: 900px) {
     .pz-layout { grid-template-columns: 1fr; }
 }
+
+/* PUZZLE SELECTOR ITEM */
+.pz-pick-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 6px;
+    background: var(--bg-navy-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-main);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    text-align: center;
+    position: relative;
+}
+
+.pz-pick-btn:hover {
+    border-color: var(--accent-gold);
+    background: rgba(245, 158, 11, 0.1);
+    transform: translateY(-2px);
+}
+
+.pz-pick-btn.current {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.18);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.pz-pick-btn.done {
+    border-color: #10b981;
+    color: #6ee7b7;
+}
+
+.pz-pick-btn.done::after {
+    content: "✓";
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 10px;
+    color: #10b981;
+    font-weight: 900;
+}
+

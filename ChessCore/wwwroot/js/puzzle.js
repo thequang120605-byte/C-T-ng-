@@ -31,6 +31,7 @@
   let phase = "idle"; // idle | playing | wrong | solved
   let flip = false;
   let hintFrom = null;
+  let hintTo = null;
   let checkedColor = null;
   let currentLevel = 1;
   let initialPieces = [];
@@ -177,10 +178,12 @@
         let action = "";
         if (!unlocked) {
           action = `<div class="pz-lock"><i class="fa-solid fa-lock"></i> Hoàn thành ${catalog.unlockPercent}% các bài ở cấp trước để mở</div>`;
-        } else if (hasNext) {
-          action = `<button type="button" class="pz-btn pz-btn-secondary pz-btn-block" data-level="${l.level}">${done > 0 ? "Tiếp tục cấp này" : "Vào cấp này"}</button>`;
         } else {
-          action = `<div class="pz-lock" style="color:#6ee7b7"><i class="fa-solid fa-circle-check"></i> Đã hoàn thành</div>`;
+          action = `
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="pz-btn pz-btn-secondary" style="flex: 1;" data-level="${l.level}">${done > 0 && hasNext ? "Tiếp tục" : (hasNext ? "Vào chơi" : "Chơi lại")}</button>
+              <button type="button" class="pz-btn pz-btn-secondary" data-pick-level="${l.level}" title="Xem danh sách bài"><i class="fa-solid fa-list-ol"></i> Chọn bài</button>
+            </div>`;
         }
         return `<div class="pz-card pz-level ${unlocked ? "" : "locked"}">
           <h3>Cấp ${l.level} — ${escapeHtml(l.name)}</h3>
@@ -210,6 +213,9 @@
     if (startBtn) startBtn.addEventListener("click", () => startFlow());
     body.querySelectorAll("[data-level]").forEach((b) =>
       b.addEventListener("click", () => startFlow(parseInt(b.dataset.level, 10))),
+    );
+    body.querySelectorAll("[data-pick-level]").forEach((b) =>
+      b.addEventListener("click", () => openPuzzleSelectorModal(parseInt(b.dataset.pickLevel, 10))),
     );
   }
 
@@ -361,6 +367,67 @@
           });
           movesLayer.appendChild(dot);
         });
+    }
+
+    if (hintFrom && hintTo && phase === "playing") {
+      const fromPos = pos(hintFrom.row, hintFrom.col);
+      const toPos = pos(hintTo.row, hintTo.col);
+
+      // Đảm bảo có marker arrowhead trong SVG defs
+      const boardSvg = $("board-svg");
+      if (boardSvg && !document.getElementById("pz-hint-arrowhead")) {
+        let defs = boardSvg.querySelector("defs");
+        if (!defs) {
+          defs = document.createElementNS(SVG_NS, "defs");
+          boardSvg.insertBefore(defs, boardSvg.firstChild);
+        }
+        const marker = document.createElementNS(SVG_NS, "marker");
+        marker.setAttribute("id", "pz-hint-arrowhead");
+        marker.setAttribute("markerWidth", "8");
+        marker.setAttribute("markerHeight", "8");
+        marker.setAttribute("refX", "6");
+        marker.setAttribute("refY", "4");
+        marker.setAttribute("orient", "auto");
+        const path = document.createElementNS(SVG_NS, "path");
+        path.setAttribute("d", "M 1 1 L 7 4 L 1 7 Z");
+        path.setAttribute("fill", "#f59e0b");
+        marker.appendChild(path);
+        defs.appendChild(marker);
+      }
+
+      const dx = toPos.x - fromPos.x;
+      const dy = toPos.y - fromPos.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 0) {
+        const startOffset = 38;
+        const endOffset = 36;
+        const startX = fromPos.x + (dx / dist) * startOffset;
+        const startY = fromPos.y + (dy / dist) * startOffset;
+        const endX = toPos.x - (dx / dist) * endOffset;
+        const endY = toPos.y - (dy / dist) * endOffset;
+
+        const arrowLine = document.createElementNS(SVG_NS, "line");
+        arrowLine.setAttribute("x1", startX);
+        arrowLine.setAttribute("y1", startY);
+        arrowLine.setAttribute("x2", endX);
+        arrowLine.setAttribute("y2", endY);
+        arrowLine.setAttribute("class", "hint-arrow");
+        arrowLine.setAttribute("marker-end", "url(#pz-hint-arrowhead)");
+        movesLayer.appendChild(arrowLine);
+      }
+
+      const targetCircle = document.createElementNS(SVG_NS, "circle");
+      targetCircle.setAttribute("cx", toPos.x);
+      targetCircle.setAttribute("cy", toPos.y);
+      targetCircle.setAttribute("r", 28);
+      targetCircle.setAttribute("class", "hint-target-circle");
+      targetCircle.setAttribute("title", "Bấm vào đây để đi nước gợi ý!");
+      targetCircle.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        submitMove({ fromRow: hintFrom.row, fromCol: hintFrom.col, toRow: hintTo.row, toCol: hintTo.col });
+      });
+      movesLayer.appendChild(targetCircle);
     }
   }
 
@@ -538,9 +605,104 @@
     updateButtons();
   });
 
-  $("pz-hint").addEventListener("click", async () => {
+  // =====================================================
+  // CHỌN BÀI & ĐIỀU HƯỚNG BÀI CỜ THẾ
+  // =====================================================
+
+  function openPuzzleSelectorModal(targetLevel) {
+    const lv = catalog.levels.find((l) => l.level === (targetLevel || currentLevel));
+    if (!lv) return;
+
+    const modal = $("pz-modal-puzzles");
+    const title = $("pz-modal-level-title");
+    const grid = $("pz-modal-grid");
+    if (!modal || !grid) return;
+
+    title.innerHTML = `<i class="fa-solid fa-list-ol"></i> Cấp ${lv.level} — ${escapeHtml(lv.name)}`;
+    grid.innerHTML = "";
+
+    lv.keys.forEach((k, idx) => {
+      const num = idx + 1;
+      const isDone = completed.has(k);
+      const isCurrent = puzzle && puzzle.key === k;
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `pz-pick-btn ${isDone ? "done" : ""} ${isCurrent ? "current" : ""}`;
+      btn.innerHTML = `<span style="font-size: 16px;">Bài ${num}</span>`;
+      btn.title = `Bài ${num}${isDone ? " (Đã giải thành công)" : ""}`;
+
+      btn.addEventListener("click", () => {
+        modal.classList.add("hidden");
+        startPuzzle(k);
+      });
+
+      grid.appendChild(btn);
+    });
+
+    modal.classList.remove("hidden");
+  }
+
+  function closePuzzleSelectorModal() {
+    const modal = $("pz-modal-puzzles");
+    if (modal) modal.classList.add("hidden");
+  }
+
+  const pzModalClose = $("pz-modal-close");
+  const pzModalCloseBtn = $("pz-modal-close-btn");
+  const pzSelectPuzzle = $("pz-select-puzzle");
+  if (pzModalClose) pzModalClose.addEventListener("click", closePuzzleSelectorModal);
+  if (pzModalCloseBtn) pzModalCloseBtn.addEventListener("click", closePuzzleSelectorModal);
+  if (pzSelectPuzzle) pzSelectPuzzle.addEventListener("click", () => openPuzzleSelectorModal(puzzle ? puzzle.level : currentLevel));
+
+  // Bài trước / Bài sau
+  function navigatePuzzle(direction) {
+    if (busy || !puzzle) return;
+    const lv = catalog.levels.find((l) => l.level === puzzle.level);
+    if (!lv) return;
+
+    const currentIdx = lv.keys.indexOf(puzzle.key);
+    if (currentIdx === -1) return;
+
+    const newIdx = currentIdx + direction;
+    if (newIdx < 0) {
+      setMsg("info", "Đây là bài đầu tiên trong cấp này!");
+      return;
+    }
+    if (newIdx >= lv.keys.length) {
+      setMsg("info", "Đây là bài cuối cùng trong cấp này!");
+      return;
+    }
+
+    startPuzzle(lv.keys[newIdx]);
+  }
+
+  const pzPrevBtn = $("pz-prev-puzzle");
+  const pzSkipBtn = $("pz-skip-puzzle");
+  if (pzPrevBtn) pzPrevBtn.addEventListener("click", () => navigatePuzzle(-1));
+  if (pzSkipBtn) pzSkipBtn.addEventListener("click", () => navigatePuzzle(1));
+
+  // =====================================================
+  // GỢI Ý (2 CẤP ĐỘ: QUÂN CỜ HOẶC NƯỚC ĐI)
+  // =====================================================
+
+  const pzHintBtn = $("pz-hint");
+  const pzHintDropdown = $("pz-hint-dropdown");
+  const pzHintPieceBtn = $("pz-hint-piece-btn");
+  const pzHintMoveBtn = $("pz-hint-move-btn");
+
+  if (pzHintBtn) {
+    pzHintBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (pzHintDropdown) pzHintDropdown.classList.toggle("hidden");
+    });
+  }
+
+  async function handlePuzzleHint(mode = "move") {
+    if (pzHintDropdown) pzHintDropdown.classList.add("hidden");
     if (busy || phase !== "playing") return;
     busy = true;
+
     try {
       const res = await fetch(`${API}/puzzles/${encodeURIComponent(puzzle.key)}/hint`, {
         method: "POST",
@@ -551,14 +713,44 @@
       if (!res.ok) throw new Error(data.message || "Không lấy được gợi ý.");
       if (data.available) {
         hintFrom = { row: data.fromRow, col: data.fromCol };
+        if (mode === "move") {
+          hintTo = { row: data.toRow, col: data.toCol };
+          setMsg("info", `💡 Gợi ý nước đi: Hãy đi ${data.pieceType || 'quân'} (${data.fromRow},${data.fromCol}) ➜ (${data.toRow},${data.toCol})`);
+        } else {
+          hintTo = null; // Chỉ highlight quân
+          setMsg("info", `💡 Gợi ý quân cờ: Hãy di chuyển ${data.pieceType || 'quân'} tại ô (${data.fromRow},${data.fromCol})`);
+        }
         selected = null;
         renderBoard();
+      } else {
+        setMsg("info", data.message);
       }
-      setMsg("info", data.message);
     } catch (e) {
       setMsg("wrong", e.message);
     }
     busy = false;
+  }
+
+  if (pzHintPieceBtn) {
+    pzHintPieceBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      handlePuzzleHint("piece");
+    });
+  }
+
+  if (pzHintMoveBtn) {
+    pzHintMoveBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      handlePuzzleHint("move");
+    });
+  }
+
+  document.addEventListener("click", (ev) => {
+    if (pzHintDropdown && !pzHintDropdown.classList.contains("hidden")) {
+      if (!pzHintDropdown.contains(ev.target) && ev.target !== pzHintBtn && !pzHintBtn.contains(ev.target)) {
+        pzHintDropdown.classList.add("hidden");
+      }
+    }
   });
 
   $("pz-exit").addEventListener("click", () => {

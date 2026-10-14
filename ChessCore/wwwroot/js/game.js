@@ -2,6 +2,38 @@ document.addEventListener("DOMContentLoaded", function () {
   const SVG_NS = "http://www.w3.org/2000/svg";
 
   // =====================================================
+  // UI TOAST NOTIFICATION (Thay thế alert trình duyệt)
+  // =====================================================
+  let toastTimer = null;
+  function showToast(message, type = "info") {
+    let toast = document.getElementById("game-ui-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "game-ui-toast";
+      toast.className = "game-ui-toast";
+      document.body.appendChild(toast);
+    }
+
+    let icon = '<i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i>';
+    if (type === "warning") {
+      icon = '<i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b;"></i>';
+    } else if (type === "danger" || type === "error") {
+      icon = '<i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i>';
+    } else if (type === "success") {
+      icon = '<i class="fa-solid fa-circle-check" style="color: #10b981;"></i>';
+    }
+
+    toast.className = `game-ui-toast ${type === "error" ? "danger" : type}`;
+    toast.innerHTML = `${icon} <span>${message}</span>`;
+    toast.classList.add("show");
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 3800);
+  }
+
+  // =====================================================
   // SIGNALR (SAFE INITIALIZATION & REALTIME GROUP)
   // =====================================================
   let connection = null;
@@ -39,7 +71,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       connection.on("DrawDeclined", function (data) {
           if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
-              alert(data.message || "Đối thủ đã từ chối lời xin hòa.");
+              showToast(data.message || "Đối thủ đã từ chối lời xin hòa.", "warning");
               closeDrawOfferModal();
           }
       });
@@ -623,7 +655,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (error) {
       console.error("Lỗi tạo game:", error);
 
-      alert(`Không thể tạo ván cờ: ${error.message || "Vui lòng kiểm tra lại kết nối."}`);
+      showToast(`Không thể tạo ván cờ: ${error.message || "Vui lòng kiểm tra lại kết nối."}`, "danger");
     } finally {
       isCreatingGame = false;
     }
@@ -1679,7 +1711,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (error) {
       console.error("Lỗi di chuyển:", error);
 
-      alert(error.message);
+      showToast(error.message, "warning");
     } finally {
       isMakingMove = false;
     }
@@ -1831,7 +1863,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (error) {
       console.error("Lỗi đầu hàng:", error);
 
-      alert(error.message);
+      showToast(error.message, "warning");
     }
   }
 
@@ -1870,17 +1902,17 @@ document.addEventListener("DOMContentLoaded", function () {
       const redMove = moves[i];
       const blackMove = i + 1 < moves.length ? moves[i + 1] : null;
 
-      html += `<div style="display: grid; grid-template-columns: 36px 1fr 1fr; gap: 8px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center; font-size: 13px;">`;
+      html += `<div style="display: grid; grid-template-columns: 28px 1fr 1fr; gap: 6px; padding: 5px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center; font-size: 12.5px; white-space: nowrap;">`;
       html += `<span style="color: var(--text-muted); font-weight: 700;">${moveNum}.</span>`;
       
       if (redMove) {
-        html += `<span style="color: #c00000; font-weight: 700;">${formatMoveNotation(redMove)}</span>`;
+        html += `<span style="color: #c00000; font-weight: 700; overflow: hidden; text-overflow: ellipsis;" title="${formatMoveNotation(redMove)}">${formatMoveNotation(redMove)}</span>`;
       } else {
         html += `<span></span>`;
       }
 
       if (blackMove) {
-        html += `<span style="color: #0f172a; font-weight: 700;">${formatMoveNotation(blackMove)}</span>`;
+        html += `<span style="color: #0f172a; font-weight: 700; overflow: hidden; text-overflow: ellipsis;" title="${formatMoveNotation(blackMove)}">${formatMoveNotation(blackMove)}</span>`;
       } else {
         html += `<span></span>`;
       }
@@ -1901,22 +1933,22 @@ document.addEventListener("DOMContentLoaded", function () {
   async function handleUndo() {
     const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
     if (isOnline) {
-      alert("Chế độ chơi Online không hỗ trợ chức năng đi lại!");
+      showToast("Chế độ chơi Online không hỗ trợ chức năng đi lại!", "warning");
       return;
     }
 
     if (!gameId || gameStatus !== "InProgress") {
-      alert("Chỉ có thể xin đi lại khi ván cờ đang diễn ra!");
+      showToast("Chỉ có thể xin đi lại khi ván cờ đang diễn ra!", "warning");
       return;
     }
 
     if (undoCount >= MAX_UNDO_LIMIT) {
-      alert(`Bạn đã sử dụng hết số lần đi lại cho phép trong ván này (tối đa ${MAX_UNDO_LIMIT} lần)!`);
+      showToast(`Bạn đã sử dụng hết số lần đi lại cho phép trong ván này (tối đa ${MAX_UNDO_LIMIT} lần)!`, "warning");
       return;
     }
 
     if (isComputerThinking) {
-      alert("Máy đang tính nước đi, vui lòng đợi trong giây lát!");
+      showToast("Máy đang tính nước đi, vui lòng đợi trong giây lát!", "warning");
       return;
     }
 
@@ -1941,7 +1973,7 @@ document.addEventListener("DOMContentLoaded", function () {
       updateUndoButtonUI();
     } catch (error) {
       console.error("Lỗi xin đi lại:", error);
-      alert(error.message);
+      showToast(error.message, "danger");
     } finally {
       isUndoing = false;
     }
@@ -1987,7 +2019,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        alert(data.message || "Không thể gửi yêu cầu xin hòa.");
+        showToast(data.message || "Không thể gửi yêu cầu xin hòa.", "warning");
         return;
       }
 
@@ -1997,13 +2029,13 @@ document.addEventListener("DOMContentLoaded", function () {
           updateGameFromApi(data.game);
         }
       } else if (data.accepted === false) {
-        alert(data.message || "Máy đã từ chối lời xin hòa. Hãy tiếp tục thi đấu!");
+        showToast(data.message || "Máy đã từ chối lời xin hòa. Hãy tiếp tục thi đấu!", "warning");
       } else {
         showGameNotification("🤝", "XIN HÒA", data.message || "Đã gửi đề nghị hòa. Chờ đối thủ trong 15s...", 3500);
       }
     } catch (error) {
       console.error("Lỗi gửi đề nghị xin hòa:", error);
-      alert("Lỗi kết nối khi gửi đề nghị xin hòa.");
+      showToast("Lỗi kết nối khi gửi đề nghị xin hòa.", "danger");
     }
   }
 
@@ -2067,7 +2099,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        alert(data.message || "Không thể phản hồi yêu cầu xin hòa.");
+        showToast(data.message || "Không thể phản hồi yêu cầu xin hòa.", "warning");
         return;
       }
 
@@ -2143,7 +2175,7 @@ document.addEventListener("DOMContentLoaded", function () {
     playerVsOnlineButton.addEventListener("click", function (event) {
       event.stopPropagation();
       if (!isAuthenticated) {
-        alert("Bạn cần đăng nhập để chơi online.");
+        showToast("Bạn cần đăng nhập để chơi online.", "warning");
         window.location.href = "/Auth/Login?returnUrl=%2FGame";
         return;
       }
@@ -2198,7 +2230,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (invitePlayerStatus) invitePlayerStatus.textContent = "Bàn đang chờ đối thủ tham gia.";
       } catch (e) {
           console.error(e);
-          alert(e.message || "Lỗi tạo bàn.");
+          showToast(e.message || "Lỗi tạo bàn.", "danger");
       } finally {
           isCreatingGame = false;
       }
@@ -2209,7 +2241,7 @@ document.addEventListener("DOMContentLoaded", function () {
           event.stopPropagation();
           const playerId = opponentPlayerIdInput.value.trim();
           if (!playerId) {
-              alert("Vui lòng nhập ID người chơi cần mời.");
+              showToast("Vui lòng nhập ID người chơi cần mời.", "warning");
               opponentPlayerIdInput.focus();
               return;
           }
@@ -2255,7 +2287,7 @@ document.addEventListener("DOMContentLoaded", function () {
           event.stopPropagation();
           const roomId = onlineRoomIdInput.value.trim();
           if (!roomId) {
-              alert("Vui lòng nhập mã bàn đối thủ cung cấp.");
+              showToast("Vui lòng nhập mã bàn đối thủ cung cấp.", "warning");
               onlineRoomIdInput.focus();
               return;
           }
@@ -2294,7 +2326,7 @@ document.addEventListener("DOMContentLoaded", function () {
               if (invitePanel) invitePanel.classList.add("hidden");
           } catch (e) {
               console.error(e);
-              alert(e.message || "Không tìm thấy bàn hoặc lỗi kết nối.");
+              showToast(e.message || "Không tìm thấy bàn hoặc lỗi kết nối.", "danger");
           }
       });
   }
@@ -2841,16 +2873,25 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
   // AI HINT (GỢI Ý NƯỚC ĐI TỐI ƯU)
   // =====================================================
+  // AI HINT (GỢI Ý QUÂN CỜ & GỢI Ý CÓ NƯỚC ĐI)
+  // =====================================================
   let isHinting = false;
+  const hintDropdown = document.getElementById("hint-dropdown");
+  const hintPieceBtn = document.getElementById("hint-piece-btn");
+  const hintFullBtn = document.getElementById("hint-full-btn");
 
-  async function handleGetHint() {
+  async function handleGetHint(mode = "full") {
+    if (hintDropdown) {
+      hintDropdown.classList.add("hidden");
+    }
+
     if (!gameId || gameStatus !== "InProgress") {
-      alert("Chỉ có thể lấy gợi ý khi ván cờ đang diễn ra!");
+      showToast("Chỉ có thể lấy gợi ý khi ván cờ đang diễn ra!", "warning");
       return;
     }
 
     if (isComputerThinking) {
-      alert("Máy đang tính nước đi, vui lòng đợi trong giây lát!");
+      showToast("Máy đang tính nước đi, vui lòng đợi trong giây lát!", "warning");
       return;
     }
 
@@ -2863,6 +2904,8 @@ document.addEventListener("DOMContentLoaded", function () {
         hintButton.style.opacity = "0.6";
       }
 
+      showToast(mode === "piece" ? "Đang tìm quân cờ tối ưu (-5đ)..." : "Đang tính nước đi tối ưu (-10đ)...", "info");
+
       const res = await fetch(`${API_BASE_URL}/${gameId}/hint`);
       if (!res.ok) {
         const err = await res.json().catch(() => null);
@@ -2872,12 +2915,12 @@ document.addEventListener("DOMContentLoaded", function () {
       const hintData = await res.json();
       console.log("Nước đi gợi ý:", hintData);
 
-      // Hiển thị gợi ý trực quan trên bàn cờ
-      highlightHintMove(hintData);
+      // Hiển thị gợi ý trực quan trên bàn cờ theo chế độ
+      highlightHintMove(hintData, mode);
       playSound('move');
     } catch (err) {
       console.error("Lỗi lấy gợi ý:", err);
-      alert(err.message || "Lỗi lấy gợi ý.");
+      showToast(err.message || "Lỗi lấy gợi ý.", "danger");
     } finally {
       isHinting = false;
       if (hintButton) {
@@ -2887,7 +2930,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function highlightHintMove(hintData) {
+  function highlightHintMove(hintData, mode = "full") {
     clearSelection();
     clearMoveHighlights();
 
@@ -2918,71 +2961,72 @@ document.addEventListener("DOMContentLoaded", function () {
     const fromPos = getPosition(fromX, fromY);
     const toPos = getPosition(toX, toY);
 
-    if (movesLayer) {
-      // Đảm bảo có marker arrowhead trong SVG defs
-      const boardSvg = document.getElementById("board-svg");
-      if (boardSvg && !document.getElementById("hint-arrowhead")) {
-        let defs = boardSvg.querySelector("defs");
-        if (!defs) {
-          defs = document.createElementNS(SVG_NS, "defs");
-          boardSvg.insertBefore(defs, boardSvg.firstChild);
+    if (mode === "full") {
+      if (movesLayer) {
+        // Đảm bảo có marker arrowhead trong SVG defs
+        const boardSvg = document.getElementById("board-svg");
+        if (boardSvg && !document.getElementById("hint-arrowhead")) {
+          let defs = boardSvg.querySelector("defs");
+          if (!defs) {
+            defs = document.createElementNS(SVG_NS, "defs");
+            boardSvg.insertBefore(defs, boardSvg.firstChild);
+          }
+          const marker = document.createElementNS(SVG_NS, "marker");
+          marker.setAttribute("id", "hint-arrowhead");
+          marker.setAttribute("markerWidth", "8");
+          marker.setAttribute("markerHeight", "8");
+          marker.setAttribute("refX", "6");
+          marker.setAttribute("refY", "4");
+          marker.setAttribute("orient", "auto");
+          const path = document.createElementNS(SVG_NS, "path");
+          path.setAttribute("d", "M 1 1 L 7 4 L 1 7 Z");
+          path.setAttribute("fill", "#f59e0b");
+          marker.appendChild(path);
+          defs.appendChild(marker);
         }
-        const marker = document.createElementNS(SVG_NS, "marker");
-        marker.setAttribute("id", "hint-arrowhead");
-        marker.setAttribute("markerWidth", "8");
-        marker.setAttribute("markerHeight", "8");
-        marker.setAttribute("refX", "6");
-        marker.setAttribute("refY", "4");
-        marker.setAttribute("orient", "auto");
-        const path = document.createElementNS(SVG_NS, "path");
-        path.setAttribute("d", "M 1 1 L 7 4 L 1 7 Z");
-        path.setAttribute("fill", "#f59e0b");
-        marker.appendChild(path);
-        defs.appendChild(marker);
-      }
 
-      // 2. Tính toán điểm đầu và điểm cuối của mũi tên (để không đè trọn tâm quân cờ)
-      const dx = toPos.x - fromPos.x;
-      const dy = toPos.y - fromPos.y;
-      const dist = Math.hypot(dx, dy);
+        // 2. Tính toán điểm đầu và điểm cuối của mũi tên (để không đè trọn tâm quân cờ)
+        const dx = toPos.x - fromPos.x;
+        const dy = toPos.y - fromPos.y;
+        const dist = Math.hypot(dx, dy);
 
-      if (dist > 0) {
-        const startOffset = 38;
-        const endOffset = 36;
-        const startX = fromPos.x + (dx / dist) * startOffset;
-        const startY = fromPos.y + (dy / dist) * startOffset;
-        const endX = toPos.x - (dx / dist) * endOffset;
-        const endY = toPos.y - (dy / dist) * endOffset;
+        if (dist > 0) {
+          const startOffset = 38;
+          const endOffset = 36;
+          const startX = fromPos.x + (dx / dist) * startOffset;
+          const startY = fromPos.y + (dy / dist) * startOffset;
+          const endX = toPos.x - (dx / dist) * endOffset;
+          const endY = toPos.y - (dy / dist) * endOffset;
 
-        // Vẽ đường mũi tên chỉ hướng
-        const arrowLine = document.createElementNS(SVG_NS, "line");
-        arrowLine.setAttribute("x1", startX);
-        arrowLine.setAttribute("y1", startY);
-        arrowLine.setAttribute("x2", endX);
-        arrowLine.setAttribute("y2", endY);
-        arrowLine.setAttribute("class", "hint-arrow");
-        arrowLine.setAttribute("marker-end", "url(#hint-arrowhead)");
-        movesLayer.appendChild(arrowLine);
-      }
-
-      // 3. Vòng tròn đích đến có thể click trực tiếp để đi nước này
-      const targetCircle = document.createElementNS(SVG_NS, "circle");
-      targetCircle.setAttribute("cx", toPos.x);
-      targetCircle.setAttribute("cy", toPos.y);
-      targetCircle.setAttribute("r", 28);
-      targetCircle.setAttribute("class", "hint-target-circle");
-      targetCircle.setAttribute("title", "Bấm vào đây để thực hiện ngay nước đi gợi ý này!");
-
-      targetCircle.addEventListener("click", async function (event) {
-        event.stopPropagation();
-        // Chọn quân cờ gợi ý và thực hiện ngay nước đi
-        if (pieceObj) {
-          selectedPieceData = pieceObj;
-          selectedPieceElement = sourcePieceElement;
-          await makeMove(toX, toY);
+          // Vẽ đường mũi tên chỉ hướng
+          const arrowLine = document.createElementNS(SVG_NS, "line");
+          arrowLine.setAttribute("x1", startX);
+          arrowLine.setAttribute("y1", startY);
+          arrowLine.setAttribute("x2", endX);
+          arrowLine.setAttribute("y2", endY);
+          arrowLine.setAttribute("class", "hint-arrow");
+          arrowLine.setAttribute("marker-end", "url(#hint-arrowhead)");
+          movesLayer.appendChild(arrowLine);
         }
-      });
-      movesLayer.appendChild(targetCircle);
+
+        // 3. Vòng tròn đích đến có thể click trực tiếp để đi nước này
+        const targetCircle = document.createElementNS(SVG_NS, "circle");
+        targetCircle.setAttribute("cx", toPos.x);
+        targetCircle.setAttribute("cy", toPos.y);
+        targetCircle.setAttribute("r", 28);
+        targetCircle.setAttribute("class", "hint-target-circle");
+        targetCircle.setAttribute("title", "Bấm vào đây để thực hiện ngay nước đi gợi ý này!");
+
+        targetCircle.addEventListener("click", async function (event) {
+          event.stopPropagation();
+          if (pieceObj) {
+            selectedPieceData = pieceObj;
+            selectedPieceElement = sourcePieceElement;
+            await makeMove(toX, toY);
+          }
+        });
+        movesLayer.appendChild(targetCircle);
+      }
     }
 
     // 4. Nếu người chơi bấm vào chính quân cờ gợi ý, tự động load các nước hợp lệ
@@ -2992,25 +3036,61 @@ document.addEventListener("DOMContentLoaded", function () {
       selectedPieceElement.classList.add("selected");
     }
 
-    // 5. Cập nhật dòng trạng thái hoặc toast nhẹ nhàng không che bàn cờ
+    // 5. Cập nhật dòng trạng thái và hiển thị toast đẹp mắt
     const turnStatus = document.getElementById("turn-status");
-    if (turnStatus) {
-      const origText = turnStatus.textContent;
-      turnStatus.innerHTML = `<span style="color: #f59e0b; font-weight: 800;">💡 Gợi ý:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1}) ➜ cột ${9 - toY >= 1 ? 9 - toY : toY + 1} (Bấm ô vàng để đi)`;
-      setTimeout(() => {
-        if (gameStatus === "InProgress") {
-          updateTurnStatus();
-        }
-      }, 7000);
+    if (mode === "piece") {
+      showToast(`💡 Gợi ý quân: Hãy đi quân ${pieceName} tại ô (${fromX}, ${fromY})`, "info");
+      if (turnStatus) {
+        turnStatus.innerHTML = `<span style="color: #38bdf8; font-weight: 800;">💡 Gợi ý quân:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1})`;
+        setTimeout(() => {
+          if (gameStatus === "InProgress") {
+            updateTurnStatus();
+          }
+        }, 7000);
+      }
+    } else {
+      showToast(`🎯 Gợi ý nước đi: ${pieceName} (${fromX}, ${fromY}) ➜ (${toX}, ${toY})`, "success");
+      if (turnStatus) {
+        turnStatus.innerHTML = `<span style="color: #f59e0b; font-weight: 800;">💡 Gợi ý nước:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1}) ➜ cột ${9 - toY >= 1 ? 9 - toY : toY + 1} (Bấm ô vàng)`;
+        setTimeout(() => {
+          if (gameStatus === "InProgress") {
+            updateTurnStatus();
+          }
+        }, 7000);
+      }
     }
   }
 
   if (hintButton) {
-    hintButton.addEventListener("click", async function (event) {
+    hintButton.addEventListener("click", function (event) {
       event.stopPropagation();
-      await handleGetHint();
+      if (hintDropdown) {
+        hintDropdown.classList.toggle("hidden");
+      }
     });
   }
+
+  if (hintPieceBtn) {
+    hintPieceBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      await handleGetHint("piece");
+    });
+  }
+
+  if (hintFullBtn) {
+    hintFullBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      await handleGetHint("full");
+    });
+  }
+
+  document.addEventListener("click", function (event) {
+    if (hintDropdown && !hintDropdown.classList.contains("hidden")) {
+      if (!hintDropdown.contains(event.target) && event.target !== hintButton && !hintButton.contains(event.target)) {
+        hintDropdown.classList.add("hidden");
+      }
+    }
+  });
 
   // =====================================================
   // ONLINE CHAT & OPEN ROOMS
