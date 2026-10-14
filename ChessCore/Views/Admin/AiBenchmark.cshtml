@@ -23,27 +23,31 @@
         <span>Đã tích hợp <strong>Zobrist Hashing (64-bit)</strong>, <strong>Bảng chuyển vị (Transposition Table)</strong> và <strong>Cắt tỉa Alpha-Beta kết hợp MVV-LVA Move Ordering</strong>. Dưới đây là số liệu thực nghiệm đo lường trực tiếp trên máy chủ.</span>
     </div>
 
-    <!-- Cấu hình phần cứng & môi trường thực nghiệm -->
+    <!-- Yêu cầu cấu hình hệ thống khuyến nghị để vận hành Web & AI Realtime -->
     <div class="admin-card" style="margin-bottom: 24px;">
         <div class="admin-card-header">
-            <h2><i class="fa-solid fa-server" style="color: var(--accent-gold);"></i> Môi trường & Cấu hình Thực nghiệm (Hardware & Runtime Environment)</h2>
+            <h2><i class="fa-solid fa-server" style="color: var(--accent-gold);"></i> Cấu hình Khuyến nghị Vận hành Hệ thống & Realtime (Production Requirements)</h2>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; padding: 12px 0;">
-            <div style="background: var(--bg-hover); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-microchip" style="margin-right: 6px;"></i> CPU / Số luồng xử lý</div>
-                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-top: 4px;">@Model.ProcessorCount Luồng Logical (@Model.ProcessArchitecture)</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; padding: 12px 0;">
+            <div style="background: var(--bg-hover); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-microchip" style="margin-right: 6px;"></i> Cấu hình CPU (Server / Cloud)</div>
+                <div style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 6px;">Tối thiểu 2 vCPU <span style="font-size: 13px; font-weight: 400; color: #059669;">(Khuyên dùng: 4 vCPU)</span></div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">Đáp ứng tính toán Minimax Cấp 1-4 song song nhiều phòng chơi và xử lý SignalR WebSockets mượt mà.</div>
             </div>
-            <div style="background: var(--bg-hover); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-memory" style="margin-right: 6px;"></i> Bộ nhớ RAM Khả dụng</div>
-                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-top: 4px;">@((Model.MaxMemoryLimitMb / 1024.0).ToString("F1")) GB RAM <span style="font-size: 12px; font-weight: 400; color: var(--text-muted);">(Alloc: @Model.TotalMemoryAllocatedMb MB)</span></div>
+            <div style="background: var(--bg-hover); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-memory" style="margin-right: 6px;"></i> Bộ nhớ RAM Khuyến nghị</div>
+                <div style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 6px;">Tối thiểu 2 GB <span style="font-size: 13px; font-weight: 400; color: #059669;">(Khuyên dùng: 4 GB)</span></div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">Phục vụ bảng chuyển vị Transposition Table (Zobrist Cache), bộ đệm kết nối SignalR và Entity Framework.</div>
             </div>
-            <div style="background: var(--bg-hover); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-brands fa-windows" style="margin-right: 6px;"></i> Hệ điều hành (OS)</div>
-                <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-top: 4px; word-break: break-word;">@Model.OsDescription</div>
+            <div style="background: var(--bg-hover); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-bolt" style="margin-right: 6px;"></i> Kết nối & Mạng Realtime</div>
+                <div style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 6px;">SignalR WebSocket <span style="font-size: 13px; font-weight: 400; color: #2563eb;">(Độ trễ &lt; 50ms)</span></div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">Băng thông tối thiểu 10 Mbps, hỗ trợ Full-Duplex WebSockets truyền nhận nước cờ tức thì giữa người chơi.</div>
             </div>
-            <div style="background: var(--bg-hover); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-code" style="margin-right: 6px;"></i> Nền tảng thực thi (Framework)</div>
-                <div style="font-size: 15px; font-weight: 700; color: #2563eb; margin-top: 4px;">@Model.FrameworkDescription</div>
+            <div style="background: var(--bg-hover); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-layer-group" style="margin-right: 6px;"></i> Môi trường & Hệ điều hành</div>
+                <div style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 6px;">.NET 9 Runtime <span style="font-size: 13px; font-weight: 400; color: var(--text-muted);">(Linux / Windows / Docker)</span></div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">Hỗ trợ triển khai đa nền tảng (Ubuntu 22.04 LTS, Windows Server, Docker container) kết hợp MySQL 8.0+.</div>
             </div>
         </div>
     </div>
