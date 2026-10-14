@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 110" width="160" height="110">
+  <defs>
+    <linearGradient id="parchmentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="50%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+    <radialGradient id="pieceParchment" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="80%" stop-color="#fefce8"/>
+      <stop offset="100%" stop-color="#fef08a"/>
+    </radialGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#78350f" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <rect width="160" height="110" rx="8" fill="url(#parchmentGrad)" stroke="#d97706" stroke-width="1.2"/>
+  
+  <rect x="8" y="8" width="144" height="94" rx="4" fill="none" stroke="#b45309" stroke-width="1.5" opacity="0.6"/>
+  <line x1="8" y1="36" x2="152" y2="36" stroke="#b45309" stroke-width="1" opacity="0.4"/>
+  <line x1="8" y1="55" x2="152" y2="55" stroke="#b45309" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.6"/>
+  <line x1="8" y1="74" x2="152" y2="74" stroke="#b45309" stroke-width="1" opacity="0.4"/>
+
+  <line x1="44" y1="8" x2="44" y2="102" stroke="#b45309" stroke-width="1" opacity="0.4"/>
+  <line x1="80" y1="8" x2="80" y2="102" stroke="#b45309" stroke-width="1" opacity="0.4"/>
+  <line x1="116" y1="8" x2="116" y2="102" stroke="#b45309" stroke-width="1" opacity="0.4"/>
+
+  <text x="80" y="58" font-size="9" fill="#92400e" font-weight="bold" font-family="'KaiTi', serif" text-anchor="middle" opacity="0.8">楚 河 · 漢 界</text>
+
+  <g filter="url(#shadow)">
+    <circle cx="50" cy="55" r="18" fill="url(#pieceParchment)" stroke="#991b1b" stroke-width="1.5"/>
+    <circle cx="50" cy="55" r="15" fill="none" stroke="#f87171" stroke-width="0.8" opacity="0.6"/>
+    <text x="50" y="61" font-size="16" fill="#991b1b" font-family="'SimSun', serif" font-weight="900" text-anchor="middle">帥</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <circle cx="110" cy="55" r="18" fill="url(#pieceParchment)" stroke="#451a03" stroke-width="1.5"/>
+    <circle cx="110" cy="55" r="15" fill="none" stroke="#78350f" stroke-width="0.8" opacity="0.6"/>
+    <text x="110" y="61" font-size="16" fill="#451a03" font-family="'SimSun', serif" font-weight="900" text-anchor="middle">卒</text>
+  </g>
+</svg>

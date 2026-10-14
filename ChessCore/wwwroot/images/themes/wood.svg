@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 110" width="160" height="110">
+  <defs>
+    <linearGradient id="woodGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e8bf81"/>
+      <stop offset="50%" stop-color="#c99557"/>
+      <stop offset="100%" stop-color="#935d28"/>
+    </linearGradient>
+    <radialGradient id="pieceWood" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#fff5e6"/>
+      <stop offset="85%" stop-color="#ecd6b7"/>
+      <stop offset="100%" stop-color="#cbb18a"/>
+    </radialGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Nền bàn cờ gỗ -->
+  <rect width="160" height="110" rx="8" fill="url(#woodGrad)"/>
+  
+  <!-- Viền và đường kẻ bàn cờ -->
+  <rect x="8" y="8" width="144" height="94" rx="4" fill="none" stroke="#5a3818" stroke-width="2"/>
+  <line x1="8" y1="36" x2="152" y2="36" stroke="#5a3818" stroke-width="1" opacity="0.6"/>
+  <line x1="8" y1="55" x2="152" y2="55" stroke="#5a3818" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.5"/>
+  <line x1="8" y1="74" x2="152" y2="74" stroke="#5a3818" stroke-width="1" opacity="0.6"/>
+
+  <line x1="44" y1="8" x2="44" y2="102" stroke="#5a3818" stroke-width="1" opacity="0.6"/>
+  <line x1="80" y1="8" x2="80" y2="102" stroke="#5a3818" stroke-width="1" opacity="0.6"/>
+  <line x1="116" y1="8" x2="116" y2="102" stroke="#5a3818" stroke-width="1" opacity="0.6"/>
+
+  <!-- Sông Sở Hà Hán Giới (mờ nhẹ) -->
+  <text x="80" y="58" font-size="9" fill="#5a3818" font-weight="bold" font-family="'KaiTi', serif" text-anchor="middle" opacity="0.45">楚 河 · 漢 界</text>
+
+  <!-- Quân cờ Đỏ (帥) -->
+  <g filter="url(#shadow)">
+    <circle cx="50" cy="55" r="18" fill="url(#pieceWood)" stroke="#8b4513" stroke-width="1.5"/>
+    <circle cx="50" cy="55" r="15" fill="none" stroke="#8b4513" stroke-width="0.8" opacity="0.6"/>
+    <text x="50" y="61" font-size="16" fill="#c00" font-family="'SimSun', serif" font-weight="900" text-anchor="middle">帥</text>
+  </g>
+
+  <!-- Quân cờ Đen (將) -->
+  <g filter="url(#shadow)">
+    <circle cx="110" cy="55" r="18" fill="url(#pieceWood)" stroke="#3a2515" stroke-width="1.5"/>
+    <circle cx="110" cy="55" r="15" fill="none" stroke="#3a2515" stroke-width="0.8" opacity="0.6"/>
+    <text x="110" y="61" font-size="16" fill="#111" font-family="'SimSun', serif" font-weight="900" text-anchor="middle">將</text>
+  </g>
+</svg>

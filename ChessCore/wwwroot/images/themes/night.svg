@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 110" width="160" height="110">
+  <defs>
+    <linearGradient id="nightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="60%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <radialGradient id="pieceNight" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="70%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </radialGradient>
+    <filter id="neonRed" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#ef4444" flood-opacity="0.6"/>
+    </filter>
+    <filter id="neonBlue" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#38bdf8" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <rect width="160" height="110" rx="8" fill="url(#nightGrad)" stroke="#38bdf8" stroke-width="1.2" stroke-opacity="0.3"/>
+  
+  <rect x="8" y="8" width="144" height="94" rx="4" fill="none" stroke="#334155" stroke-width="1.5"/>
+  <line x1="8" y1="36" x2="152" y2="36" stroke="#1e293b" stroke-width="1"/>
+  <line x1="8" y1="55" x2="152" y2="55" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>
+  <line x1="8" y1="74" x2="152" y2="74" stroke="#1e293b" stroke-width="1"/>
+
+  <line x1="44" y1="8" x2="44" y2="102" stroke="#1e293b" stroke-width="1"/>
+  <line x1="80" y1="8" x2="80" y2="102" stroke="#1e293b" stroke-width="1"/>
+  <line x1="116" y1="8" x2="116" y2="102" stroke="#1e293b" stroke-width="1"/>
+
+  <text x="80" y="58" font-size="9" fill="#38bdf8" font-weight="bold" font-family="'KaiTi', serif" text-anchor="middle" opacity="0.5">楚 河 · 漢 界</text>
+
+  <g filter="url(#neonRed)">
+    <circle cx="50" cy="55" r="18" fill="url(#pieceNight)" stroke="#ef4444" stroke-width="1.5"/>
+    <circle cx="50" cy="55" r="15" fill="none" stroke="#f87171" stroke-width="0.8" opacity="0.5"/>
+    <text x="50" y="61" font-size="16" fill="#f87171" font-family="'SimSun', serif" font-weight="900" text-anchor="middle">炮</text>
+  </g>
+
+  <g filter="url(#neonBlue)">
+    <circle cx="110" cy="55" r="18" fill="url(#pieceNight)" stroke="#38bdf8" stroke-width="1.5"/>
+    <circle cx="110" cy="55" r="15" fill="none" stroke="#7dd3fc" stroke-width="0.8" opacity="0.5"/>
+    <text x="110" y="61" font-size="16" fill="#38bdf8" font-family="'SimSun', serif" font-weight="900" text-anchor="middle">兵</text>
+  </g>
+</svg>
