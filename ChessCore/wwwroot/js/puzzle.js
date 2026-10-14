@@ -43,12 +43,16 @@
   // TIỆN ÍCH
   // =====================================================
 
+  let activeMode = "hub"; // "hub" | "campaign" | "custom"
+  let isCustomMode = false;
+
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   function show(sectionId) {
-    ["pz-home", "pz-play", "pz-summary"].forEach((id) =>
-      $(id).classList.toggle("pz-hidden", id !== sectionId),
-    );
+    ["pz-hub", "pz-home", "pz-custom-screen", "pz-play", "pz-summary"].forEach((id) => {
+      const el = $(id);
+      if (el) el.classList.toggle("pz-hidden", id !== sectionId);
+    });
     window.scrollTo({ top: 0 });
   }
 
@@ -226,18 +230,38 @@
   function startFlow(onlyLevel) {
     let target = null;
 
-    // Ưu tiên khôi phục bài đang giải dở.
-    const saved = localStorage.getItem(LS_CURRENT);
-    if (!onlyLevel && saved && !completed.has(saved)) {
-      for (const lv of catalog.levels) {
-        if (lv.keys.includes(saved) && isUnlocked(lv.level)) {
-          target = { key: saved, level: lv.level };
-          break;
+    // Nếu chỉ định cấp độ cụ thể (vd: bấm "Chơi lại" hoặc "Tiếp tục" ở thẻ Cấp 1, Cấp 2...)
+    if (onlyLevel) {
+      const lv = catalog.levels.find((l) => l.level === onlyLevel);
+      if (lv && lv.keys.length > 0) {
+        // Tìm bài chưa hoàn thành trong cấp này
+        const unfinishedKey = lv.keys.find((k) => !completed.has(k));
+        if (unfinishedKey) {
+          target = { key: unfinishedKey, level: lv.level };
+        } else {
+          // Nếu đã hoàn thành hết cấp độ này (Chơi lại) -> bắt đầu lại từ bài đầu tiên của cấp!
+          target = { key: lv.keys[0], level: lv.level };
         }
+      }
+    } else {
+      // Ưu tiên khôi phục bài đang giải dở.
+      const saved = localStorage.getItem(LS_CURRENT);
+      if (saved && !completed.has(saved)) {
+        for (const lv of catalog.levels) {
+          if (lv.keys.includes(saved) && isUnlocked(lv.level)) {
+            target = { key: saved, level: lv.level };
+            break;
+          }
+        }
+      }
+
+      if (!target) target = pickNext();
+      if (!target && catalog.levels.length > 0 && catalog.levels[0].keys.length > 0) {
+        // Nếu đã hoàn thành tất cả -> chơi lại từ bài 1 Cấp 1
+        target = { key: catalog.levels[0].keys[0], level: catalog.levels[0].level };
       }
     }
 
-    if (!target) target = pickNext(onlyLevel);
     if (!target) {
       renderHome();
       return;
@@ -246,14 +270,16 @@
     startPuzzle(target.key);
   }
 
-  async function startPuzzle(key) {
+  async function startPuzzle(key, isCustom = false) {
     busy = true;
+    isCustomMode = isCustom;
     setMsg("info", "Đang tải bài...");
     show("pz-play");
 
     let data;
     try {
-      const res = await fetch(`${API}/puzzles/${encodeURIComponent(key)}`, { cache: "no-store" });
+      const url = `${API}/puzzles/${encodeURIComponent(key)}` + (isCustom ? "?isCustom=true" : "");
+      const res = await fetch(url, { cache: "no-store" });
       data = await res.json();
       if (!res.ok) throw new Error(data.message || "Không tải được bài Cờ Thế.");
     } catch (e) {
@@ -292,10 +318,15 @@
     renderBoard();
   }
 
+  function cleanTitle(title) {
+    if (!title) return "";
+    return title.replace(/\s*\([Bb]ài\s*\d+\)/g, "").trim();
+  }
+
   function renderInfo() {
     const lv = catalog.levels.find((l) => l.level === puzzle.level);
     $("pz-badge").textContent = `Cấp ${puzzle.level} — ${puzzle.levelName} · Bài ${puzzle.number}/${puzzle.levelTotal}`;
-    $("pz-puzzle-title").textContent = puzzle.title;
+    $("pz-puzzle-title").textContent = cleanTitle(puzzle.title);
     $("pz-goal").innerHTML = `<b>Mục tiêu:</b> ${escapeHtml(puzzle.goal)}.`;
     updateLevelProgress(lv);
   }
@@ -378,24 +409,26 @@
 
       // Đảm bảo có marker arrowhead trong SVG defs
       const boardSvg = $("board-svg");
-      if (boardSvg && !document.getElementById("pz-hint-arrowhead")) {
+      if (boardSvg) {
         let defs = boardSvg.querySelector("defs");
         if (!defs) {
           defs = document.createElementNS(SVG_NS, "defs");
           boardSvg.insertBefore(defs, boardSvg.firstChild);
         }
-        const marker = document.createElementNS(SVG_NS, "marker");
-        marker.setAttribute("id", "pz-hint-arrowhead");
-        marker.setAttribute("markerWidth", "8");
-        marker.setAttribute("markerHeight", "8");
-        marker.setAttribute("refX", "6");
-        marker.setAttribute("refY", "4");
-        marker.setAttribute("orient", "auto");
-        const path = document.createElementNS(SVG_NS, "path");
-        path.setAttribute("d", "M 1 1 L 7 4 L 1 7 Z");
-        path.setAttribute("fill", "#f59e0b");
-        marker.appendChild(path);
-        defs.appendChild(marker);
+        if (!document.getElementById("pz-hint-arrowhead")) {
+          const marker = document.createElementNS(SVG_NS, "marker");
+          marker.setAttribute("id", "pz-hint-arrowhead");
+          marker.setAttribute("markerWidth", "10");
+          marker.setAttribute("markerHeight", "10");
+          marker.setAttribute("refX", "7");
+          marker.setAttribute("refY", "5");
+          marker.setAttribute("orient", "auto");
+          const path = document.createElementNS(SVG_NS, "path");
+          path.setAttribute("d", "M 0 1 L 9 5 L 0 9 L 2.5 5 Z");
+          path.setAttribute("fill", "#f59e0b");
+          marker.appendChild(path);
+          defs.appendChild(marker);
+        }
       }
 
       const dx = toPos.x - fromPos.x;
@@ -403,14 +436,25 @@
       const dist = Math.hypot(dx, dy);
 
       if (dist > 0) {
-        const startOffset = 38;
-        const endOffset = 36;
+        const startOffset = 36;
+        const endOffset = 34;
         const startX = fromPos.x + (dx / dist) * startOffset;
         const startY = fromPos.y + (dy / dist) * startOffset;
         const endX = toPos.x - (dx / dist) * endOffset;
         const endY = toPos.y - (dy / dist) * endOffset;
 
         const targetLayer = $("hint-layer") || movesLayer;
+        
+        // Viền nền tương phản cao
+        const arrowOutline = document.createElementNS(SVG_NS, "line");
+        arrowOutline.setAttribute("x1", startX);
+        arrowOutline.setAttribute("y1", startY);
+        arrowOutline.setAttribute("x2", endX);
+        arrowOutline.setAttribute("y2", endY);
+        arrowOutline.setAttribute("class", "hint-arrow-bg");
+        targetLayer.appendChild(arrowOutline);
+
+        // Mũi tên chỉ thẳng đích
         const arrowLine = document.createElementNS(SVG_NS, "line");
         arrowLine.setAttribute("x1", startX);
         arrowLine.setAttribute("y1", startY);
@@ -513,6 +557,13 @@
       setMsg("wrong", data.message);
       renderBoard();
 
+      // Nếu đang trong chế độ Sinh tồn (Survival) và đi sai -> Kết thúc ngay!
+      if (isTimeRush && timerushType === "survival") {
+        setTimeout(() => {
+          endTimerush("Bạn đã đi sai 1 nước trong chế độ Sinh tồn!");
+        }, 1200);
+      }
+
       // Nếu AI có nước phản đòn, biểu diễn trực quan trên bàn cờ
       if (data.reply) {
         await sleep(500);
@@ -558,6 +609,17 @@
     phase = "solved";
     markCompleted(puzzle.key);
     renderBoard();
+
+    if (isTimeRush) {
+      timerushScore++;
+      updateTimerushUI();
+      setMsg("done", `🎯 Xuất sắc! Bạn đã giải xong (${timerushScore} bài). Đang tải bài tiếp theo...`);
+      setTimeout(() => {
+        loadNextTimerushPuzzle();
+      }, 1000);
+      busy = false;
+      return;
+    }
 
     const lv = catalog.levels.find((l) => l.level === puzzle.level);
     updateLevelProgress(lv);
@@ -636,23 +698,33 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = `pz-pick-btn ${isDone ? "done" : ""} ${isCurrent ? "current" : ""}`;
-      btn.innerHTML = `<span style="font-size: 16px;">Bài ${num}</span>`;
+      btn.innerHTML = `<span style="font-size: 15px; font-weight: 800;">Bài ${num}</span>`;
       btn.title = `Bài ${num}${isDone ? " (Đã giải thành công)" : ""}`;
 
       btn.addEventListener("click", () => {
-        modal.classList.add("hidden");
+        closePuzzleSelectorModal();
         startPuzzle(k);
       });
 
       grid.appendChild(btn);
     });
 
-    modal.classList.remove("hidden");
+    modal.classList.add("show");
   }
 
   function closePuzzleSelectorModal() {
     const modal = $("pz-modal-puzzles");
-    if (modal) modal.classList.add("hidden");
+    if (modal) modal.classList.remove("show");
+  }
+
+  // Đóng modal khi bấm ra ngoài vùng card
+  const modalElem = $("pz-modal-puzzles");
+  if (modalElem) {
+    modalElem.addEventListener("click", (e) => {
+      if (e.target === modalElem) {
+        closePuzzleSelectorModal();
+      }
+    });
   }
 
   const pzModalClose = $("pz-modal-close");
@@ -720,7 +792,7 @@
       if (!res.ok) throw new Error(data.message || "Không lấy được gợi ý.");
       if (data.available) {
         hintFrom = { row: data.fromRow, col: data.fromCol };
-        const pointNote = data.pointsDeducted ? ` (-${data.pointsDeducted}đ)` : "";
+        const pointNote = data.pointsDeducted ? ` (-${data.pointsDeducted} Elo)` : "";
         if (data.remainingElo !== undefined && data.remainingElo !== null) {
           const eloBadge = document.getElementById("navbar-user-elo");
           if (eloBadge) {
@@ -729,10 +801,10 @@
         }
         if (mode === "move") {
           hintTo = { row: data.toRow, col: data.toCol };
-          setMsg("info", `💡 Gợi ý nước đi${pointNote}: Hãy đi ${data.pieceType || 'quân'} (${data.fromRow},${data.fromCol}) ➜ (${data.toRow},${data.toCol})`);
+          setMsg("info", `🎯 Gợi ý nước đi${pointNote}: Hãy đi ${data.pieceType || 'quân'} (${data.fromRow}, ${data.fromCol}) ➜ (${data.toRow}, ${data.toCol})`);
         } else {
           hintTo = null; // Chỉ highlight quân
-          setMsg("info", `💡 Gợi ý quân cờ${pointNote}: Hãy di chuyển ${data.pieceType || 'quân'} tại ô (${data.fromRow},${data.fromCol})`);
+          setMsg("info", `💡 Gợi ý quân cờ${pointNote}: Hãy di chuyển ${data.pieceType || 'quân'} tại ô (${data.fromRow}, ${data.fromCol})`);
         }
         selected = null;
         renderBoard();
@@ -852,6 +924,370 @@
   }
 
   // =====================================================
+  // CHẾ ĐỘ: HUB, CAMPAIGN, CUSTOM, TIMERUSH, HISTORY
+  // =====================================================
+
+  let isTimeRush = false;
+  let timerushType = "3min"; // "3min" | "5min" | "survival"
+  let timerushSeconds = 180;
+  let timerushInterval = null;
+  let timerushScore = 0;
+  let timerushPuzzles = [];
+  let timerushIndex = 0;
+
+  function openHub() {
+    activeMode = "hub";
+    stopTimerush();
+    show("pz-hub");
+  }
+
+  function openCampaign() {
+    activeMode = "campaign";
+    isCustomMode = false;
+    stopTimerush();
+    show("pz-home");
+    renderHome();
+  }
+
+  function openCustomGenerator() {
+    activeMode = "custom";
+    stopTimerush();
+    show("pz-custom-screen");
+    executeCustomSearch();
+  }
+
+  function openTimerushScreen() {
+    activeMode = "timerush";
+    stopTimerush();
+    show("pz-timerush-screen");
+  }
+
+  function openHistoryScreen() {
+    activeMode = "history";
+    stopTimerush();
+    show("pz-history-screen");
+    loadHistoryData();
+  }
+
+  // Bắt sự kiện trên màn hình Hub
+  const btnModeCampaign = $("btn-mode-campaign");
+  const btnModeTimerush = $("btn-mode-timerush");
+  const btnModeCustom = $("btn-mode-custom");
+  const btnModeHistory = $("btn-mode-history");
+  const btnCampaignBack = $("btn-campaign-back-to-hub");
+  const btnCustomBack = $("btn-custom-back-to-hub");
+  const btnTimerushBack = $("btn-timerush-back-to-hub");
+  const btnHistoryBack = $("btn-history-back-to-hub");
+
+  if (btnModeCampaign) btnModeCampaign.addEventListener("click", openCampaign);
+  if (btnModeTimerush) btnModeTimerush.addEventListener("click", openTimerushScreen);
+  if (btnModeCustom) btnModeCustom.addEventListener("click", openCustomGenerator);
+  if (btnModeHistory) btnModeHistory.addEventListener("click", openHistoryScreen);
+
+  if (btnCampaignBack) btnCampaignBack.addEventListener("click", openHub);
+  if (btnCustomBack) btnCustomBack.addEventListener("click", openHub);
+  if (btnTimerushBack) btnTimerushBack.addEventListener("click", openHub);
+  if (btnHistoryBack) btnHistoryBack.addEventListener("click", openHub);
+
+  // CHỌN CHẾ ĐỘ CHẠY ĐUA THỜI GIAN
+  document.querySelectorAll(".timerush-choice").forEach((card) => {
+    card.addEventListener("click", () => {
+      document.querySelectorAll(".timerush-choice").forEach((c) => {
+        c.classList.remove("active");
+        c.querySelector(".timerush-check")?.classList.add("hidden");
+      });
+      card.classList.add("active");
+      card.querySelector(".timerush-check")?.classList.remove("hidden");
+      timerushType = card.dataset.type || "3min";
+    });
+  });
+
+  const btnStartTimerush = $("btn-start-timerush");
+  if (btnStartTimerush) {
+    btnStartTimerush.addEventListener("click", async () => {
+      await startTimerushMode();
+    });
+  }
+
+  async function startTimerushMode() {
+    isTimeRush = true;
+    timerushScore = 0;
+    timerushIndex = 0;
+
+    if (timerushType === "3min") timerushSeconds = 180;
+    else if (timerushType === "5min") timerushSeconds = 300;
+    else timerushSeconds = 9999; // Sinh tồn
+
+    const timerBanner = $("pz-timer-banner");
+    if (timerBanner) timerBanner.classList.remove("hidden");
+
+    const modeTitle = $("timerush-mode-title");
+    if (modeTitle) {
+      modeTitle.textContent = timerushType === "3min"
+        ? "Siêu tốc 3 phút"
+        : timerushType === "5min"
+        ? "Tập trung 5 phút"
+        : "Sinh tồn (1 lỗi là thua)";
+    }
+
+    updateTimerushUI();
+
+    // Lấy danh sách câu đố ngẫu nhiên từ cấp 1 đến cấp 4
+    try {
+      const res = await fetch(`${API}/custom-search?minElo=700&maxElo=1800&type=all`);
+      const data = await res.json();
+      timerushPuzzles = (data.puzzles || []).sort(() => Math.random() - 0.5);
+    } catch (e) {
+      timerushPuzzles = [];
+    }
+
+    if (timerushPuzzles.length === 0) {
+      alert("Chưa nạp đủ bài tập cờ thế để bắt đầu.");
+      return;
+    }
+
+    // Bắt đầu đếm ngược
+    clearInterval(timerushInterval);
+    if (timerushType !== "survival") {
+      timerushInterval = setInterval(() => {
+        timerushSeconds--;
+        updateTimerushUI();
+        if (timerushSeconds <= 0) {
+          endTimerush("Hết thời gian! Bạn đã hoàn thành xuất sắc bài thi.");
+        }
+      }, 1000);
+    }
+
+    loadNextTimerushPuzzle();
+  }
+
+  function updateTimerushUI() {
+    const scoreVal = $("timerush-score-val");
+    if (scoreVal) scoreVal.textContent = timerushScore;
+
+    const countdown = $("timerush-countdown");
+    if (countdown) {
+      if (timerushType === "survival") {
+        countdown.textContent = "♥ 1";
+      } else {
+        const m = Math.floor(timerushSeconds / 60);
+        const s = timerushSeconds % 60;
+        countdown.textContent = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+      }
+    }
+  }
+
+  function stopTimerush() {
+    isTimeRush = false;
+    clearInterval(timerushInterval);
+    const timerBanner = $("pz-timer-banner");
+    if (timerBanner) timerBanner.classList.add("hidden");
+  }
+
+  function endTimerush(reason) {
+    stopTimerush();
+    alert(`🏁 KẾT THÚC THỬ THÁCH THỜI GIAN!\n${reason}\n\nĐiểm số của bạn: ${timerushScore} bài giải đúng!`);
+    openHub();
+  }
+
+  function loadNextTimerushPuzzle() {
+    if (timerushIndex >= timerushPuzzles.length) {
+      endTimerush("Chúc mừng! Bạn đã hoàn thành toàn bộ kho bài tập!");
+      return;
+    }
+    const current = timerushPuzzles[timerushIndex++];
+    startPuzzle(current.key, true);
+  }
+
+  // TẢI DỮ LIỆU LỊCH SỬ GIẢI ĐỀ
+  async function loadHistoryData() {
+    const listEl = $("history-items-list");
+    const summaryText = $("history-summary-text");
+    if (!listEl) return;
+
+    listEl.innerHTML = `<div class="pz-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...</div>`;
+
+    try {
+      const res = await fetch(`${API}/history`);
+      if (!res.ok) throw new Error("Không thể tải lịch sử giải đề.");
+      const data = await res.json();
+
+      if (summaryText) {
+        summaryText.innerHTML = `<i class="fa-solid fa-trophy" style="color: var(--accent-gold);"></i> Tổng số bài đã giải thành công: <strong>${data.totalSolved || 0}</strong> bài`;
+      }
+
+      const items = data.history || [];
+      if (items.length === 0) {
+        listEl.innerHTML = `<div class="pz-loading" style="color: var(--text-muted);">Bạn chưa có lịch sử giải đề nào. Hãy bắt đầu giải thử thách hoặc tự tạo đề bài nhé!</div>`;
+        return;
+      }
+
+      listEl.innerHTML = items.map((item) => `
+        <div class="pz-result-item" style="border-left: 4px solid ${item.isCompleted ? "#10b981" : "#f59e0b"};">
+          <div class="pz-result-info">
+            <span class="pz-result-title">${cleanTitle(item.title)}</span>
+            <div class="pz-result-meta">
+              <span><i class="fa-solid fa-shield-halved"></i> ${item.levelName}</span>
+              <span><i class="fa-solid fa-bolt"></i> Chiếu bí ${item.mateIn} nước</span>
+              <span><i class="fa-solid fa-rotate-right"></i> ${item.attempts} lần thử</span>
+              <span style="color: ${item.isCompleted ? "#059669" : "#d97706"};">
+                ${item.isCompleted ? `<i class="fa-solid fa-circle-check"></i> Hoàn thành: ${item.completedAt || ""}` : '<i class="fa-solid fa-clock"></i> Chưa xong'}
+              </span>
+            </div>
+          </div>
+          <button type="button" class="pz-btn pz-btn-secondary btn-replay-history" data-key="${item.key}" style="padding: 6px 14px; font-size: 13px;">
+            <i class="fa-solid fa-rotate-left"></i> Giải lại
+          </button>
+        </div>
+      `).join("");
+
+      listEl.querySelectorAll(".btn-replay-history").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          startPuzzle(btn.dataset.key, true);
+        });
+      });
+    } catch (e) {
+      listEl.innerHTML = `<div class="pz-error">${escapeHtml(e.message)}</div>`;
+    }
+  }
+
+  // SỰ KIỆN BỘ LỌC TÙY CHỈNH
+  const eloSlider = $("custom-elo-slider");
+  const eloDisplay = $("custom-elo-display");
+  const mateSelectGroup = $("custom-mate-select");
+  let selectedMateIn = 0;
+
+  const ELO_LABELS = {
+    1: "700 (Người mới) - 900 (Nhập môn)",
+    2: "900 (Nhập môn) - 1200 (Cơ bản)",
+    3: "1200 (Cơ bản) - 1500 (Trung cấp)",
+    4: "1500 (Trung cấp) - 1800 (Nâng cao)",
+    5: "1800 (Nâng cao) - 2200+ (Cao thủ)",
+  };
+
+  const ELO_RANGES = {
+    1: { min: 700, max: 950 },
+    2: { min: 950, max: 1250 },
+    3: { min: 1250, max: 1550 },
+    4: { min: 1550, max: 1850 },
+    5: { min: 1850, max: 2400 },
+  };
+
+  if (eloSlider && eloDisplay) {
+    eloSlider.addEventListener("input", () => {
+      const val = parseInt(eloSlider.value, 10);
+      eloDisplay.textContent = ELO_LABELS[val] || "Tất cả";
+      executeCustomSearch();
+    });
+  }
+
+  if (mateSelectGroup) {
+    mateSelectGroup.querySelectorAll(".pz-pill-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        mateSelectGroup.querySelectorAll(".pz-pill-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedMateIn = parseInt(btn.dataset.mate, 10);
+        executeCustomSearch();
+      });
+    });
+  }
+
+  document.querySelectorAll('input[name="custom-type"]').forEach((radio) => {
+    radio.addEventListener("change", executeCustomSearch);
+  });
+
+  const btnCustomSearchPlay = $("btn-custom-search-play");
+  if (btnCustomSearchPlay) {
+    btnCustomSearchPlay.addEventListener("click", () => {
+      executeCustomSearch(false);
+    });
+  }
+
+  let customPuzzlesCache = [];
+
+  async function executeCustomSearch(autoPlayFirst = false) {
+    const listEl = $("custom-results-list");
+    const countEl = $("custom-results-count");
+    if (!listEl) return;
+
+    listEl.innerHTML = `<div class="pz-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang lọc bài phù hợp...</div>`;
+    if (countEl) countEl.textContent = "Đang tìm kiếm bài tập...";
+
+    const sliderVal = eloSlider ? parseInt(eloSlider.value, 10) : 2;
+    const range = ELO_RANGES[sliderVal] || { min: 800, max: 1800 };
+    const typeChecked = document.querySelector('input[name="custom-type"]:checked');
+    const selectedType = typeChecked ? typeChecked.value : "all";
+
+    try {
+      const params = new URLSearchParams({
+        minElo: range.min,
+        maxElo: range.max,
+        type: selectedType,
+      });
+      if (selectedMateIn > 0) {
+        params.append("mateIn", selectedMateIn);
+      }
+
+      const res = await fetch(`${API}/custom-search?${params.toString()}`);
+      if (!res.ok) throw new Error("Lỗi khi tìm bài tập tùy chỉnh.");
+      const data = await res.json();
+      customPuzzlesCache = data.puzzles || [];
+
+      if (countEl) {
+        countEl.innerHTML = `<i class="fa-solid fa-list-check" style="color: var(--accent-gold);"></i> Tìm thấy <strong>${customPuzzlesCache.length}</strong> bài tập phù hợp`;
+      }
+
+      if (customPuzzlesCache.length === 0) {
+        listEl.innerHTML = `<div class="pz-loading" style="color: var(--text-muted);">Không tìm thấy bài tập thỏa mãn bộ lọc này. Hãy thử nới rộng khoảng Elo hoặc chọn 'Tất cả'.</div>`;
+        return;
+      }
+
+      if (autoPlayFirst && customPuzzlesCache.length > 0) {
+        startPuzzle(customPuzzlesCache[0].key, true);
+        return;
+      }
+
+      listEl.innerHTML = customPuzzlesCache.map((p, idx) => {
+        const isDone = data.completedKeys && data.completedKeys.includes(p.key);
+        return `
+          <div class="pz-result-item" data-key="${p.key}">
+            <div class="pz-result-info">
+              <span class="pz-result-title">${cleanTitle(p.title) || `Bài thế ${idx + 1}`}</span>
+              <div class="pz-result-meta">
+                <span><i class="fa-solid fa-bolt"></i> Chiếu bí ${p.mateIn} nước</span>
+                <span><i class="fa-solid fa-chess"></i> ${p.pieces} quân</span>
+                <span><i class="fa-solid fa-shield-halved"></i> ${p.levelName}</span>
+                ${isDone ? '<span style="color: #10b981; background: #ecfdf5;"><i class="fa-solid fa-check"></i> Đã giải</span>' : ""}
+              </div>
+            </div>
+            <button type="button" class="pz-btn pz-btn-secondary btn-play-custom-puzzle" data-key="${p.key}" style="padding: 6px 14px; font-size: 13px;">
+              <i class="fa-solid fa-play"></i> Giải ngay
+            </button>
+          </div>
+        `;
+      }).join("");
+
+      listEl.querySelectorAll(".btn-play-custom-puzzle").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          startPuzzle(btn.dataset.key, true);
+        });
+      });
+    } catch (e) {
+      listEl.innerHTML = `<div class="pz-error">${escapeHtml(e.message)}</div>`;
+    }
+  }
+
+  // Xử lý nút quay về từ màn chơi bài thế
+  $("pz-exit").addEventListener("click", () => {
+    if (busy) return;
+    if (isCustomMode) {
+      openCustomGenerator();
+    } else {
+      openCampaign();
+    }
+  });
+
+  // =====================================================
   // KHỞI ĐỘNG
   // =====================================================
 
@@ -863,5 +1299,11 @@
     }
   });
 
-  renderHome();
+  // Mặc định tải danh mục và hiển thị Hub chọn chế độ
+  loadCatalog().then(() => {
+    openHub();
+  }).catch((e) => {
+    console.error("Lỗi nạp danh mục:", e);
+    openHub();
+  });
 })();

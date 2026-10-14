@@ -710,12 +710,20 @@
     }
 }
 
+.hint-arrow-bg {
+    stroke: rgba(0, 0, 0, 0.6);
+    stroke-width: 9;
+    stroke-linecap: round;
+    pointer-events: none;
+}
+
 .hint-arrow {
-    stroke: #f59e0b;
+    stroke: #fbbf24;
     stroke-width: 5;
     stroke-linecap: round;
-    stroke-dasharray: 10 6;
-    animation: hintDash 1s linear infinite;
+    stroke-dasharray: 12 6;
+    animation: hintDash 0.8s linear infinite;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
     pointer-events: none;
 }
 

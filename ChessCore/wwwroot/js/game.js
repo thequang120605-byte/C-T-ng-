@@ -2987,40 +2987,51 @@ document.addEventListener("DOMContentLoaded", function () {
       if (targetLayer) {
         // Đảm bảo có marker arrowhead trong SVG defs
         const boardSvg = document.getElementById("board-svg");
-        if (boardSvg && !document.getElementById("hint-arrowhead")) {
+        if (boardSvg) {
           let defs = boardSvg.querySelector("defs");
           if (!defs) {
             defs = document.createElementNS(SVG_NS, "defs");
             boardSvg.insertBefore(defs, boardSvg.firstChild);
           }
-          const marker = document.createElementNS(SVG_NS, "marker");
-          marker.setAttribute("id", "hint-arrowhead");
-          marker.setAttribute("markerWidth", "8");
-          marker.setAttribute("markerHeight", "8");
-          marker.setAttribute("refX", "6");
-          marker.setAttribute("refY", "4");
-          marker.setAttribute("orient", "auto");
-          const path = document.createElementNS(SVG_NS, "path");
-          path.setAttribute("d", "M 1 1 L 7 4 L 1 7 Z");
-          path.setAttribute("fill", "#f59e0b");
-          marker.appendChild(path);
-          defs.appendChild(marker);
+          if (!document.getElementById("hint-arrowhead")) {
+            const marker = document.createElementNS(SVG_NS, "marker");
+            marker.setAttribute("id", "hint-arrowhead");
+            marker.setAttribute("markerWidth", "10");
+            marker.setAttribute("markerHeight", "10");
+            marker.setAttribute("refX", "7");
+            marker.setAttribute("refY", "5");
+            marker.setAttribute("orient", "auto");
+            const path = document.createElementNS(SVG_NS, "path");
+            path.setAttribute("d", "M 0 1 L 9 5 L 0 9 L 2.5 5 Z");
+            path.setAttribute("fill", "#f59e0b");
+            marker.appendChild(path);
+            defs.appendChild(marker);
+          }
         }
 
-        // 2. Tính toán điểm đầu và điểm cuối của mũi tên
+        // 2. Tính toán điểm đầu và điểm cuối của mũi tên chỉ thẳng đích
         const dx = toPos.x - fromPos.x;
         const dy = toPos.y - fromPos.y;
         const dist = Math.hypot(dx, dy);
 
         if (dist > 0) {
-          const startOffset = 38;
-          const endOffset = 36;
+          const startOffset = 36;
+          const endOffset = 34;
           const startX = fromPos.x + (dx / dist) * startOffset;
           const startY = fromPos.y + (dy / dist) * startOffset;
           const endX = toPos.x - (dx / dist) * endOffset;
           const endY = toPos.y - (dy / dist) * endOffset;
 
-          // Vẽ đường mũi tên chỉ hướng
+          // Đường viền nền ngoài tăng tương phản rõ rệt trên mọi bàn cờ
+          const arrowOutline = document.createElementNS(SVG_NS, "line");
+          arrowOutline.setAttribute("x1", startX);
+          arrowOutline.setAttribute("y1", startY);
+          arrowOutline.setAttribute("x2", endX);
+          arrowOutline.setAttribute("y2", endY);
+          arrowOutline.setAttribute("class", "hint-arrow-bg");
+          targetLayer.appendChild(arrowOutline);
+
+          // Vẽ đường mũi tên vàng chỉ thẳng tới đích
           const arrowLine = document.createElementNS(SVG_NS, "line");
           arrowLine.setAttribute("x1", startX);
           arrowLine.setAttribute("y1", startY);
@@ -3031,13 +3042,13 @@ document.addEventListener("DOMContentLoaded", function () {
           targetLayer.appendChild(arrowLine);
         }
 
-        // 3. Vòng tròn đích đến có thể click trực tiếp để đi nước này
+        // 3. Vòng tròn đích đến nổi bật, bấm vào là đi ngay tới đích
         const targetCircle = document.createElementNS(SVG_NS, "circle");
         targetCircle.setAttribute("cx", toPos.x);
         targetCircle.setAttribute("cy", toPos.y);
         targetCircle.setAttribute("r", 28);
         targetCircle.setAttribute("class", "hint-target-circle");
-        targetCircle.setAttribute("title", "Bấm vào đây để thực hiện ngay nước đi gợi ý này!");
+        targetCircle.setAttribute("title", `Nước gợi ý: Đi tới ô (${toX}, ${toY}). Bấm để đi ngay!`);
 
         targetCircle.addEventListener("click", async function (event) {
           event.stopPropagation();
@@ -3051,23 +3062,20 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-    // 4. Nếu người chơi bấm vào chính quân cờ gợi ý, tự động load các nước hợp lệ
+    // 4. Chọn quân cờ gợi ý nhưng KHÔNG load danh sách các chấm xanh khác để tránh rối mắt
     if (sourcePieceElement && pieceObj) {
       selectedPieceData = pieceObj;
       selectedPieceElement = sourcePieceElement;
       selectedPieceElement.classList.add("selected");
-      if (mode === "full") {
-        await fetchValidMoves(fromX, fromY);
-      }
     }
 
-    // 5. Cập nhật dòng trạng thái và hiển thị toast đẹp mắt
-    const pointNote = hintData.pointsDeducted ? ` (-${hintData.pointsDeducted}đ)` : "";
+    // 5. Cập nhật dòng trạng thái và hiển thị toast đẹp mắt kèm số điểm Elo
+    const pointNote = hintData.pointsDeducted ? ` (-${hintData.pointsDeducted} Elo)` : "";
     const turnStatus = document.getElementById("turn-status");
     if (mode === "piece") {
       showToast(`💡 Gợi ý quân${pointNote}: Hãy đi quân ${pieceName} tại ô (${fromX}, ${fromY})`, "info");
       if (turnStatus) {
-        turnStatus.innerHTML = `<span style="color: #38bdf8; font-weight: 800;">💡 Gợi ý quân${pointNote}:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1})`;
+        turnStatus.innerHTML = `<span style="color: #38bdf8; font-weight: 800;">💡 Gợi ý quân${pointNote}:</span> ${pieceName} (Cột ${9 - fromY >= 1 ? 9 - fromY : fromY + 1})`;
         setTimeout(() => {
           if (gameStatus === "InProgress") {
             updateTurnStatus();
@@ -3077,7 +3085,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       showToast(`🎯 Gợi ý nước đi${pointNote}: ${pieceName} (${fromX}, ${fromY}) ➜ (${toX}, ${toY})`, "success");
       if (turnStatus) {
-        turnStatus.innerHTML = `<span style="color: #f59e0b; font-weight: 800;">💡 Gợi ý nước${pointNote}:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1}) ➜ cột ${9 - toY >= 1 ? 9 - toY : toY + 1} (Bấm ô vàng)`;
+        turnStatus.innerHTML = `<span style="color: #f59e0b; font-weight: 800;">🎯 Nước tối ưu${pointNote}:</span> ${pieceName} ➜ (${toX}, ${toY}) (Bấm vào đích màu vàng)`;
         setTimeout(() => {
           if (gameStatus === "InProgress") {
             updateTurnStatus();

@@ -7,9 +7,230 @@
 
 <div class="pz-wrap" id="pz-root">
 
-    <!-- ===================== TRANG CHÍNH ===================== -->
-    <section id="pz-home">
-        <h1 class="pz-title"><i class="fa-solid fa-puzzle-piece"></i> Luyện giải Cờ Thế</h1>
+    <!-- ===================== MÀN HÌNH CHỌN CHẾ ĐỘ CỜ THẾ (HUB) ===================== -->
+    <section id="pz-hub" class="pz-hub-screen">
+        <div class="pz-hub-header">
+            <div class="pz-hub-icon-wrap">
+                <i class="fa-solid fa-puzzle-piece pz-hub-icon"></i>
+            </div>
+            <h1 class="pz-hub-title">Cờ Thế</h1>
+            <p class="pz-hub-desc">Rèn luyện kỹ năng sát cục, giải các thế cờ tinh xảo từ cổ điển tới hiện đại</p>
+        </div>
+
+        <div class="pz-hub-grid">
+            <!-- CHẾ ĐỘ 1: THỬ THÁCH (VƯỢT MÀN) -->
+            <button type="button" class="pz-hub-card active" id="btn-mode-campaign">
+                <div class="pz-hub-card-icon">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                </div>
+                <div class="pz-hub-card-info">
+                    <h3>Thử thách</h3>
+                    <p>Giải các bài tập cờ tướng tinh xảo theo cấp độ (Cấp 1 - 5)</p>
+                </div>
+                <i class="fa-solid fa-chevron-right pz-hub-card-arrow"></i>
+            </button>
+
+            <!-- CHẾ ĐỘ 2: GIẢI ĐỀ TÍNH THỜI GIAN -->
+            <button type="button" class="pz-hub-card" id="btn-mode-timerush">
+                <div class="pz-hub-card-icon timer">
+                    <i class="fa-solid fa-stopwatch"></i>
+                </div>
+                <div class="pz-hub-card-info">
+                    <h3>Giải đề tính thời gian</h3>
+                    <p>Chạy đua với thời gian: Siêu tốc 3 phút, Tập trung 5 phút hoặc Sinh tồn</p>
+                </div>
+                <i class="fa-solid fa-chevron-right pz-hub-card-arrow"></i>
+            </button>
+
+            <!-- CHẾ ĐỘ 3: TẠO ĐỀ TÙY CHỈNH -->
+            <button type="button" class="pz-hub-card" id="btn-mode-custom">
+                <div class="pz-hub-card-icon custom">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div class="pz-hub-card-info">
+                    <h3>Tạo đề bài tùy chỉnh</h3>
+                    <p>Lọc bài tập theo điểm số Elo, số nước chiếu bí và chiến thuật</p>
+                </div>
+                <i class="fa-solid fa-chevron-right pz-hub-card-arrow"></i>
+            </button>
+
+            <!-- CHẾ ĐỘ 4: LỊCH SỬ GIẢI ĐỀ -->
+            <button type="button" class="pz-hub-card" id="btn-mode-history">
+                <div class="pz-hub-card-icon history">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div class="pz-hub-card-info">
+                    <h3>Lịch sử giải đề</h3>
+                    <p>Xem lại hành trình, kết quả và bài giải cờ thế của bạn</p>
+                </div>
+                <i class="fa-solid fa-chevron-right pz-hub-card-arrow"></i>
+            </button>
+        </div>
+    </section>
+
+    <!-- ===================== MÀN HÌNH GIẢI ĐỀ TÍNH THỜI GIAN (TIMER RUSH) ===================== -->
+    <section id="pz-timerush-screen" class="pz-hidden">
+        <div class="pz-custom-layout">
+            <div class="pz-custom-header">
+                <button type="button" class="pz-btn pz-btn-back" id="btn-timerush-back-to-hub">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại
+                </button>
+                <h2><i class="fa-solid fa-stopwatch" style="color: #ef4444;"></i> Giải đề tính thời gian</h2>
+            </div>
+
+            <div class="pz-hub-grid" style="max-width: 600px; margin: 20px auto;">
+                <div class="pz-hub-card active timerush-choice" data-type="3min">
+                    <div class="pz-hub-card-icon timer" style="background: #dc2626;">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <div class="pz-hub-card-info">
+                        <h3>Chế độ siêu tốc 3 phút</h3>
+                        <p>Giải nhanh, suy nghĩ còn nhanh hơn! Vượt qua càng nhiều bài càng tốt.</p>
+                    </div>
+                    <i class="fa-solid fa-check timerush-check"></i>
+                </div>
+
+                <div class="pz-hub-card timerush-choice" data-type="5min">
+                    <div class="pz-hub-card-icon timer" style="background: #d97706;">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                    <div class="pz-hub-card-info">
+                        <h3>Chế độ tập trung 5 phút</h3>
+                        <p>Thời gian thoải mái hơn, giải được nhiều câu đố để ghi điểm cao.</p>
+                    </div>
+                    <i class="fa-solid fa-check timerush-check hidden"></i>
+                </div>
+
+                <div class="pz-hub-card timerush-choice" data-type="survival">
+                    <div class="pz-hub-card-icon timer" style="background: #7c3aed;">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                    <div class="pz-hub-card-info">
+                        <h3>Chế độ sinh tồn</h3>
+                        <p>Sai một lần là kết thúc. Bạn có thể trụ được bao nhiêu thế cờ?</p>
+                    </div>
+                    <i class="fa-solid fa-check timerush-check hidden"></i>
+                </div>
+
+                <button type="button" class="pz-btn pz-btn-danger pz-btn-block" id="btn-start-timerush" style="padding: 14px; font-size: 16px; margin-top: 10px;">
+                    <i class="fa-solid fa-play"></i> BẮT ĐẦU CHẠY ĐUA
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== MÀN HÌNH LỊCH SỬ GIẢI ĐỀ ===================== -->
+    <section id="pz-history-screen" class="pz-hidden">
+        <div class="pz-custom-layout">
+            <div class="pz-custom-header">
+                <button type="button" class="pz-btn pz-btn-back" id="btn-history-back-to-hub">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại
+                </button>
+                <h2><i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-gold);"></i> Lịch sử giải đề</h2>
+            </div>
+
+            <div class="pz-card" style="margin-top: 10px;">
+                <div class="pz-results-header">
+                    <span id="history-summary-text" style="font-weight: 700; color: var(--text-main);">Đang tải lịch sử...</span>
+                </div>
+                <div id="history-items-list" class="pz-custom-results-list" style="max-height: 600px;">
+                    <!-- Lịch sử sẽ render ở đây -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== MÀN HÌNH TẠO ĐỀ TÙY CHỈNH (CUSTOM GENERATOR) ===================== -->
+    <section id="pz-custom-screen" class="pz-hidden">
+        <div class="pz-custom-layout">
+            <div class="pz-custom-header">
+                <button type="button" class="pz-btn pz-btn-back" id="btn-custom-back-to-hub">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại
+                </button>
+                <h2><i class="fa-solid fa-sliders" style="color: var(--accent-gold);"></i> Tạo đề bài tùy chỉnh</h2>
+            </div>
+
+            <div class="pz-custom-content">
+                <!-- PANEL BỘ LỌC BÊN PHẢI -->
+                <div class="pz-card pz-filter-card">
+                    <!-- ĐỘ KHÓ / DẢI ELO -->
+                    <div class="pz-filter-group">
+                        <div class="pz-filter-label-row">
+                            <label><i class="fa-solid fa-gauge-high"></i> Độ khó (Điểm Elo):</label>
+                            <span id="custom-elo-display" class="pz-filter-val">800 (Nhập môn) - 1650 (Nâng cao)</span>
+                        </div>
+                        <div class="pz-range-wrap">
+                            <input type="range" id="custom-elo-slider" min="1" max="5" value="2" step="1" class="pz-slider" />
+                            <div class="pz-slider-labels">
+                                <span>Người mới<br><small>700</small></span>
+                                <span>Nhập môn<br><small>1000</small></span>
+                                <span>Trung cấp<br><small>1400</small></span>
+                                <span>Nâng cao<br><small>1700</small></span>
+                                <span>Cao thủ<br><small>2000+</small></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LOẠI THẾ CỜ -->
+                    <div class="pz-filter-group">
+                        <label><i class="fa-solid fa-shapes"></i> Loại thế cờ / Chiến thuật:</label>
+                        <div class="pz-radio-group">
+                            <label class="pz-radio-label">
+                                <input type="radio" name="custom-type" value="all" checked />
+                                <span>Tất cả</span>
+                            </label>
+                            <label class="pz-radio-label">
+                                <input type="radio" name="custom-type" value="checkmate" />
+                                <span>Chiếu bí</span>
+                            </label>
+                            <label class="pz-radio-label">
+                                <input type="radio" name="custom-type" value="endgame" />
+                                <span>Tàn cuộc (&le; 6 quân)</span>
+                            </label>
+                            <label class="pz-radio-label">
+                                <input type="radio" name="custom-type" value="tactics" />
+                                <span>Trung cuộc tinh xảo</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- SỐ NƯỚC CHIẾU BÍ -->
+                    <div class="pz-filter-group">
+                        <label><i class="fa-solid fa-bolt"></i> Số nước chiếu sát (Mate in):</label>
+                        <div class="pz-pill-select" id="custom-mate-select">
+                            <button type="button" class="pz-pill-btn active" data-mate="0">Bất kỳ</button>
+                            <button type="button" class="pz-pill-btn" data-mate="1">1 Nước</button>
+                            <button type="button" class="pz-pill-btn" data-mate="2">2 Nước</button>
+                            <button type="button" class="pz-pill-btn" data-mate="3">3 Nước</button>
+                        </div>
+                    </div>
+
+                    <button type="button" class="pz-btn pz-btn-primary pz-btn-block" id="btn-custom-search-play">
+                        <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm đề bài
+                    </button>
+                </div>
+
+                <!-- DANH SÁCH BÀI TẬP TÌM ĐƯỢC -->
+                <div class="pz-card pz-custom-results-card">
+                    <div class="pz-results-header">
+                        <span id="custom-results-count" style="font-weight: 700; color: var(--text-main);">Đang lọc bài tập...</span>
+                    </div>
+                    <div id="custom-results-list" class="pz-custom-results-list">
+                        <!-- Danh sách bài phù hợp sẽ render ở đây -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== TRANG CHÍNH THỬ THÁCH (CAMPAIGN) ===================== -->
+    <section id="pz-home" class="pz-hidden">
+        <div style="margin-bottom: 14px;">
+            <button type="button" class="pz-btn pz-btn-back" id="btn-campaign-back-to-hub">
+                <i class="fa-solid fa-arrow-left"></i> Về chọn chế độ
+            </button>
+        </div>
+        <h1 class="pz-title"><i class="fa-solid fa-puzzle-piece"></i> Thử thách Cờ Thế</h1>
         <p class="pz-sub">Giải liên tiếp các thế cờ từ dễ đến khó. Hoàn thành đủ bài ở mỗi cấp để mở cấp tiếp theo.</p>
 
         <div id="pz-home-body"><div class="pz-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...</div></div>
@@ -67,80 +288,114 @@
             </div>
 
             <aside class="pz-panel">
-                <div class="pz-card">
-                    <div class="pz-badge" id="pz-badge"></div>
-                    <h2 class="pz-puzzle-title" id="pz-puzzle-title"></h2>
-                    <p class="pz-goal" id="pz-goal"></p>
-                    <div class="pz-bar"><span id="pz-level-bar" style="width:0%"></span></div>
-                    <div class="pz-verified" id="pz-level-text" style="margin-top:6px"></div>
+                <!-- BANNER GIẢI ĐỀ TÍNH THỜI GIAN (CHỈ HIỂN THỊ KHI Ở CHẾ ĐỘ TIMER RUSH) -->
+                <div id="pz-timer-banner" class="pz-card pz-timer-card hidden" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-stopwatch" style="font-size: 24px;"></i>
+                        <div>
+                            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; opacity: 0.9;" id="timerush-mode-title">Chế độ 3 phút</div>
+                            <div style="font-size: 14px; font-weight: 800;">Đã giải: <span id="timerush-score-val">0</span> bài</div>
+                        </div>
+                    </div>
+                    <div id="timerush-countdown" style="font-size: 26px; font-weight: 900; font-family: monospace; background: rgba(0,0,0,0.25); padding: 2px 10px; border-radius: 8px;">03:00</div>
                 </div>
 
-                <div class="pz-msg info" id="pz-msg">Hãy chọn quân cờ để đi.</div>
-
-                <div class="pz-nav-row" style="display: flex; gap: 8px; margin-top: 4px;">
-                    <button type="button" class="pz-btn pz-btn-secondary" id="pz-prev-puzzle" title="Bài trước" style="flex: 1; padding: 8px 12px; font-size: 13px;">
-                        <i class="fa-solid fa-backward-step"></i> Bài trước
-                    </button>
-                    <button type="button" class="pz-btn pz-btn-secondary" id="pz-select-puzzle" title="Danh sách các bài" style="padding: 8px 14px; font-size: 13px;">
-                        <i class="fa-solid fa-list-check"></i> Chọn bài
-                    </button>
-                    <button type="button" class="pz-btn pz-btn-secondary" id="pz-skip-puzzle" title="Bài kế tiếp" style="flex: 1; padding: 8px 12px; font-size: 13px;">
-                        Bài sau <i class="fa-solid fa-forward-step"></i>
-                    </button>
+                <!-- THÔNG TIN THẾ CỜ -->
+                <div class="pz-card pz-info-card">
+                    <div class="pz-header-row">
+                        <div class="pz-badge-pill" id="pz-badge">Cấp 1 — Bài 1</div>
+                        <div class="pz-stat-badge" id="pz-level-text">Tiến độ: 0/0</div>
+                    </div>
+                    <h2 class="pz-puzzle-title" id="pz-puzzle-title">Tiêu đề bài thế</h2>
+                    <div class="pz-goal-box">
+                        <i class="fa-solid fa-bullseye pz-goal-icon"></i>
+                        <span class="pz-goal" id="pz-goal">Mục tiêu: Đỏ đi trước, chiếu bí.</span>
+                    </div>
+                    <div class="pz-bar-wrapper">
+                        <div class="pz-bar"><span id="pz-level-bar" style="width:0%"></span></div>
+                    </div>
                 </div>
 
-                <div class="pz-actions">
-                    <button type="button" class="pz-btn pz-btn-primary pz-btn-block pz-hidden" id="pz-next">Chơi tiếp</button>
-                    <button type="button" class="pz-btn pz-btn-danger pz-btn-block pz-hidden" id="pz-retry">Thử lại</button>
-                    <div class="pz-hint-group" style="position: relative; width: 100%;">
-                        <button type="button" class="pz-btn pz-btn-secondary pz-btn-block" id="pz-hint">
-                            <i class="fa-solid fa-lightbulb" style="color: var(--accent-gold);"></i> Gợi ý
+                <!-- THÔNG BÁO / HƯỚNG DẪN BƯỚC ĐI -->
+                <div class="pz-msg info" id="pz-msg">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Hãy chọn quân cờ để đi.</span>
+                </div>
+
+                <!-- THANH ĐIỀU HƯỚNG BÀI THẾ -->
+                <div class="pz-card pz-nav-card">
+                    <div class="pz-nav-title"><i class="fa-solid fa-compass"></i> Điều hướng bài thế</div>
+                    <div class="pz-nav-row">
+                        <button type="button" class="pz-nav-btn" id="pz-prev-puzzle" title="Bài trước">
+                            <i class="fa-solid fa-backward-step"></i> Bài trước
                         </button>
-                        <div id="pz-hint-dropdown" class="hint-dropdown-menu hidden" style="width: 100%; bottom: 100%; left: 0; transform: translateY(-8px);">
-                            <button id="pz-hint-piece-btn" type="button" class="hint-dropdown-item" title="Chỉ highlight quân cờ cần đi">
+                        <button type="button" class="pz-nav-btn pz-nav-btn-main" id="pz-select-puzzle" title="Danh sách các bài">
+                            <i class="fa-solid fa-list-check"></i> Chọn bài
+                        </button>
+                        <button type="button" class="pz-nav-btn" id="pz-skip-puzzle" title="Bài kế tiếp">
+                            Bài sau <i class="fa-solid fa-forward-step"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- NÚT THAO TÁC / GỢI Ý / ĐI TIẾP -->
+                <div class="pz-card pz-action-card">
+                    <button type="button" class="pz-btn pz-btn-primary pz-btn-block pz-hidden" id="pz-next">
+                        <i class="fa-solid fa-forward"></i> Chơi tiếp
+                    </button>
+                    <button type="button" class="pz-btn pz-btn-danger pz-btn-block pz-hidden" id="pz-retry">
+                        <i class="fa-solid fa-rotate-left"></i> Thử lại thế này
+                    </button>
+                    <div class="pz-hint-group">
+                        <button type="button" class="pz-btn pz-btn-hint pz-btn-block" id="pz-hint">
+                            <i class="fa-solid fa-lightbulb"></i> Gợi ý nước đi <i class="fa-solid fa-caret-up"></i>
+                        </button>
+                        <div id="pz-hint-dropdown" class="hint-dropdown-menu hidden">
+                            <button id="pz-hint-piece-btn" type="button" class="hint-dropdown-item" title="Chỉ highlight quân cờ cần đi (-5 Elo)">
                                 <i class="fa-solid fa-chess-knight" style="color: #38bdf8; font-size: 16px;"></i>
                                 <div>
                                     <span>Gợi ý quân cờ</span>
-                                    <small>Chỉ highlight quân cần đi</small>
+                                    <small>Chỉ highlight quân (-5 Elo)</small>
                                 </div>
                             </button>
-                            <button id="pz-hint-move-btn" type="button" class="hint-dropdown-item" title="Highlight quân cờ và vẽ nước đi">
+                            <button id="pz-hint-move-btn" type="button" class="hint-dropdown-item" title="Mũi tên chỉ thẳng đích (-10 Elo)">
                                 <i class="fa-solid fa-location-arrow" style="color: #f59e0b; font-size: 16px;"></i>
                                 <div>
                                     <span>Gợi ý có nước đi</span>
-                                    <small>Vẽ đường đi và ô đích</small>
+                                    <small>Mũi tên chỉ thẳng đích (-10 Elo)</small>
                                 </div>
                             </button>
                         </div>
                     </div>
-                    <button type="button" class="pz-btn pz-btn-secondary pz-btn-block" id="pz-exit">
+                    <button type="button" class="pz-btn pz-btn-back pz-btn-block" id="pz-exit">
                         <i class="fa-solid fa-arrow-left"></i> Về danh sách cấp độ
                     </button>
                 </div>
             </aside>
         </div>
 
-        <!-- MODAL CHỌN BÀI TRONG CẤP ĐỘ -->
-        <div id="pz-modal-puzzles" class="modal-overlay hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-            <div class="pz-card" style="width: 90%; max-width: 550px; max-height: 80vh; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                    <h3 id="pz-modal-level-title" style="margin: 0; color: var(--accent-gold); font-size: 18px;"><i class="fa-solid fa-list-ol"></i> Danh sách bài thế</h3>
-                    <button id="pz-modal-close" type="button" class="btn-secondary" style="background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;">&times;</button>
-                </div>
-                <div id="pz-modal-grid" class="pz-puzzle-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; overflow-y: auto; padding: 6px; max-height: 50vh;">
-                    <!-- Sẽ render các nút bài 1, 2, 3... tại đây -->
-                </div>
-                <div style="text-align: right; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                    <button id="pz-modal-close-btn" type="button" class="pz-btn pz-btn-secondary" style="padding: 6px 16px; font-size: 13px;">Đóng</button>
-                </div>
-            </div>
-        </div>
     </section>
 
     <!-- ===================== TỔNG KẾT CẤP ĐỘ ===================== -->
     <section id="pz-summary" class="pz-hidden">
         <div class="pz-card pz-summary" id="pz-summary-body"></div>
     </section>
+
+    <!-- MODAL CHỌN BÀI TRONG CẤP ĐỘ -->
+    <div id="pz-modal-puzzles" class="pz-modal-overlay">
+        <div class="pz-modal-card">
+            <div class="pz-modal-header">
+                <h3 id="pz-modal-level-title" class="pz-modal-title"><i class="fa-solid fa-list-ol"></i> Danh sách bài thế</h3>
+                <button id="pz-modal-close" type="button" class="pz-modal-close-icon" title="Đóng">&times;</button>
+            </div>
+            <div id="pz-modal-grid" class="pz-modal-grid-wrap">
+                <!-- Sẽ render các nút bài 1, 2, 3... tại đây -->
+            </div>
+            <div class="pz-modal-footer">
+                <button id="pz-modal-close-btn" type="button" class="pz-btn pz-btn-secondary" style="padding: 6px 16px; font-size: 13px;">Đóng</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

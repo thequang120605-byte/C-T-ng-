@@ -109,18 +109,154 @@ namespace ChessCore.Controllers
         }
 
         // =====================================================
+        // TẠO ĐỀ TÙY CHỈNH / TÌM KIẾM BÀI TẬP CỜ THẾ
+        // =====================================================
+
+        [HttpGet("custom-search")]
+        public async Task<IActionResult> CustomSearch(
+            [FromQuery] int minElo = 700,
+            [FromQuery] int maxElo = 2200,
+            [FromQuery] string? type = "all", // "all", "checkmate", "tactics", "endgame"
+            [FromQuery] int? mateIn = null)
+        {
+            if (!_campaign.Ready)
+                return StatusCode(503, new { message = "Hệ thống đang nạp kho cờ thế." });
+
+            var query = _campaign.Playable.AsEnumerable();
+
+            // Ánh xạ dải Elo sang cấp độ (Level 1: 800, Level 2: 1100, Level 3: 1400, Level 4: 1650, Level 5: 1900+)
+            query = query.Where(p =>
+            {
+                int estimatedElo = p.Level switch
+                {
+                    1 => 800,
+                    2 => 1100,
+                    3 => 1400,
+                    4 => 1650,
+                    5 => 1900,
+                    _ => 1000
+                };
+                return estimatedElo >= minElo - 200 && estimatedElo <= maxElo + 200;
+            });
+
+            if (mateIn.HasValue && mateIn.Value > 0)
+            {
+                query = query.Where(p => p.MateIn == mateIn.Value);
+            }
+
+            if (!string.IsNullOrEmpty(type) && type != "all")
+            {
+                if (type == "checkmate")
+                {
+                    query = query.Where(p => p.MateIn > 0);
+                }
+                else if (type == "endgame")
+                {
+                    query = query.Where(p => p.Pieces <= 6);
+                }
+                else if (type == "tactics")
+                {
+                    query = query.Where(p => p.Pieces > 6 || p.Source == "advanced");
+                }
+            }
+
+            var results = query.Take(100).Select(p => new
+            {
+                key = p.Key,
+                title = p.Title,
+                level = p.Level,
+                levelName = PuzzleCampaignService.Levels[p.Level - 1].Name,
+                mateIn = p.MateIn,
+                pieces = p.Pieces,
+                source = p.Source,
+                attacker = p.Attacker.ToString(),
+                estimatedElo = p.Level switch
+                {
+                    1 => 800,
+                    2 => 1100,
+                    3 => 1400,
+                    4 => 1650,
+                    5 => 1900,
+                    _ => 1000
+                }
+            }).ToList();
+
+            int? userId = CurrentUserId();
+            var done = await LoadCompleted(userId);
+
+            return Ok(new
+            {
+                count = results.Count,
+                puzzles = results,
+                completedKeys = done
+            });
+        }
+
+        // =====================================================
+        // LỊCH SỬ GIẢI ĐỀ CỜ THẾ
+        // =====================================================
+
+        [HttpGet("history")]
+        public async Task<IActionResult> GetHistory()
+        {
+            int? userId = CurrentUserId();
+            if (userId == null)
+            {
+                return Ok(new
+                {
+                    loggedIn = false,
+                    history = new List<object>(),
+                    message = "Người chơi khách sẽ xem lịch sử lưu trên trình duyệt."
+                });
+            }
+
+            var records = await _db.PuzzleProgresses
+                .Where(p => p.UserId == userId.Value)
+                .OrderByDescending(p => p.UpdatedAt)
+                .Take(50)
+                .ToListAsync();
+
+            var list = records.Select(r =>
+            {
+                var entry = _campaign.Ready ? _campaign.Get(r.PuzzleKey) : null;
+                return new
+                {
+                    key = r.PuzzleKey,
+                    title = entry?.Title ?? r.PuzzleKey,
+                    level = entry?.Level ?? 1,
+                    levelName = entry != null && entry.Level > 0 && entry.Level <= PuzzleCampaignService.Levels.Length
+                        ? PuzzleCampaignService.Levels[entry.Level - 1].Name
+                        : "Cờ thế",
+                    mateIn = entry?.MateIn ?? 1,
+                    pieces = entry?.Pieces ?? 0,
+                    attempts = r.Attempts,
+                    isCompleted = r.CompletedAt != null,
+                    completedAt = r.CompletedAt?.ToString("dd/MM/yyyy HH:mm"),
+                    updatedAt = r.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                };
+            }).ToList();
+
+            return Ok(new
+            {
+                loggedIn = true,
+                totalSolved = records.Count(r => r.CompletedAt != null),
+                history = list
+            });
+        }
+
+        // =====================================================
         // PUZZLE DETAIL
         // =====================================================
 
         [HttpGet("puzzles/{key}")]
-        public async Task<IActionResult> GetPuzzle(string key)
+        public async Task<IActionResult> GetPuzzle(string key, [FromQuery] bool isCustom = false)
         {
             var entry = _campaign.Ready ? _campaign.Get(key) : null;
             if (entry == null || entry.Level == 0)
                 return NotFound(new { message = "Không tìm thấy bài Cờ Thế này." });
 
             int? userId = CurrentUserId();
-            if (userId != null)
+            if (userId != null && !isCustom)
             {
                 var done = await LoadCompleted(userId);
                 if (!_campaign.IsLevelUnlocked(entry.Level, done))
