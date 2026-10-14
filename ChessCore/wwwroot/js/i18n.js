@@ -1,4 +1,4 @@
-﻿const i18n = {
+const i18n = {
     'vi': {
         'menu_home': 'Trang chủ',
         'menu_play': 'Chơi cờ',
@@ -7,7 +7,7 @@
         'menu_course': 'Khóa học',
         'menu_settings': 'Cài đặt',
         'settings_title': 'Cài đặt hệ thống',
-        'settings_theme_title': 'Giao diện (Đang phát triển)',
+        'settings_theme_title': 'Giao diện màu sắc',
         'theme_wood': 'Gỗ Cổ Điển',
         'theme_night': 'Night Mode',
         'theme_light': 'Sáng Sủa',

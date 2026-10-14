@@ -150,29 +150,34 @@ input:checked + .slider:before {
 }
 /* Theme options */
 .theme-options {
-    display: flex;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
 }
 .theme-btn {
-    flex: 1;
-    padding: 10px;
+    padding: 10px 8px;
     border: 1px solid var(--border-color);
-    background: transparent;
-    border-radius: 8px;
+    background: var(--bg-navy-dark);
+    border-radius: 10px;
     color: var(--text-main);
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     transition: 0.2s;
+    font-size: 13px;
+    font-weight: 500;
 }
 .theme-btn:hover {
     background: var(--bg-navy-light);
+    transform: translateY(-2px);
 }
 .theme-btn.active {
     border-color: var(--accent-gold);
-    background: rgba(217, 119, 6, 0.1);
+    background: rgba(217, 119, 6, 0.12);
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.25);
+    font-weight: 700;
 }
 .theme-circle {
     width: 32px;
@@ -253,4 +258,46 @@ body[data-theme="wood"] {
     --wood-light: #e7c28e;
     --wood-dark: #5c4033;
     --border-color: #e8ddc7;
+}
+
+body[data-theme="emerald"] {
+    --bg-navy-dark: #064e3b;
+    --bg-navy-panel: #065f46;
+    --bg-navy-light: #047857;
+    --text-main: #f0fdf4;
+    --text-muted: #a7f3d0;
+    --accent-gold: #34d399;
+    --accent-gold-light: #6ee7b7;
+    --accent-gold-dark: #059669;
+    --wood-light: #d1fae5;
+    --wood-dark: #064e3b;
+    --border-color: rgba(167, 243, 208, 0.2);
+}
+
+body[data-theme="ocean"] {
+    --bg-navy-dark: #0c4a6e;
+    --bg-navy-panel: #075985;
+    --bg-navy-light: #0369a1;
+    --text-main: #f0f9ff;
+    --text-muted: #bae6fd;
+    --accent-gold: #38bdf8;
+    --accent-gold-light: #7dd3fc;
+    --accent-gold-dark: #0284c7;
+    --wood-light: #e0f2fe;
+    --wood-dark: #082f49;
+    --border-color: rgba(186, 230, 253, 0.2);
+}
+
+body[data-theme="parchment"] {
+    --bg-navy-dark: #faf5ed;
+    --bg-navy-panel: #ffffff;
+    --bg-navy-light: #f3eae0;
+    --text-main: #451a03;
+    --text-muted: #854d0e;
+    --accent-gold: #92400e;
+    --accent-gold-light: #b45309;
+    --accent-gold-dark: #78350f;
+    --wood-light: #fef3c7;
+    --wood-dark: #78350f;
+    --border-color: #e7dac9;
 }
