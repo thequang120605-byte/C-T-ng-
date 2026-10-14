@@ -11,8 +11,13 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
-.pz-wrap *, .pz-modal-overlay * {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+.pz-wrap input,
+.pz-wrap button,
+.pz-wrap select,
+.pz-wrap textarea,
+.pz-modal-overlay input,
+.pz-modal-overlay button {
+    font-family: inherit;
 }
 
 .pz-hidden {
