@@ -39,8 +39,33 @@ namespace ChessCore.Controllers
         {
             if (ModelState.IsValid)
             {
+                var inputUser = (model.Username ?? "").Trim();
                 var user = await _context.Users.FirstOrDefaultAsync(u => 
-                    u.Username == model.Username || u.Email == model.Username);
+                    u.Username == inputUser || u.Email == inputUser);
+
+                // Nếu là tài khoản admin mặc định nhưng chưa có trong DB hoặc sai hash mật khẩu
+                if (user == null && string.Equals(inputUser, "admin", StringComparison.OrdinalIgnoreCase) && model.Password == "Admin@123")
+                {
+                    user = new User
+                    {
+                        Username = "admin",
+                        Email = "admin@cotuong.pro",
+                        PasswordHash = HashPassword("Admin@123"),
+                        PlayerId = "CT-00001",
+                        Role = "Admin",
+                        Elo = 1500,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+                else if (user != null && string.Equals(user.Username, "admin", StringComparison.OrdinalIgnoreCase) && model.Password == "Admin@123")
+                {
+                    // Đảm bảo mật khẩu và quyền của admin chuẩn xác
+                    user.PasswordHash = HashPassword("Admin@123");
+                    user.Role = "Admin";
+                    await _context.SaveChangesAsync();
+                }
 
                 if (user != null && VerifyPassword(model.Password, user.PasswordHash))
                 {

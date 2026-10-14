@@ -46,6 +46,12 @@
         const svg = board.querySelector('.course-board-svg');
         const piecesLayer = board.querySelector('.course-pieces-layer');
         const movesLayer = board.querySelector('.course-moves-layer');
+        if (piecesLayer) piecesLayer.replaceChildren();
+        if (movesLayer) movesLayer.replaceChildren();
+        const existingNotice = svg.querySelector('.course-game-over');
+        if (existingNotice) existingNotice.remove();
+        if (piecesLayer) piecesLayer.style.pointerEvents = 'all';
+        if (movesLayer) movesLayer.style.pointerEvents = 'all';
         const point = index => ({ row: Math.floor(index / 9), col: index % 9, x: 50 + (index % 9) * 100, y: 50 + Math.floor(index / 9) * 100 });
         const key = (row, col) => row * 9 + col;
         const pieces = new Map(visual.pieces.map(piece => {
