@@ -54,21 +54,21 @@
                     @foreach (var p in Model)
                     {
                         <tr>
-                            <td><strong style="color: #38bdf8;">#@p.Level</strong></td>
+                            <td><strong style="color: var(--accent-gold-dark);">#@p.Level</strong></td>
                             <td>
                                 <strong>@p.Title</strong>
-                                <div style="font-size: 11px; color: #64748b; max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                <div style="font-size: 11px; color: var(--text-muted); max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                                     @p.Description
                                 </div>
                             </td>
                             <td>
-                                <span style="font-size: 12px; font-weight: 600; color: @(p.Difficulty == 1 ? "#34d399" : (p.Difficulty == 2 ? "#facc15" : "#f87171"));">
+                                <span style="font-size: 12px; font-weight: 600; color: @(p.Difficulty == 1 ? "#059669" : (p.Difficulty == 2 ? "#d97706" : "#dc2626"));">
                                     @(p.Difficulty == 1 ? "Dễ" : (p.Difficulty == 2 ? "Trung bình" : "Khó"))
                                 </span>
                             </td>
-                            <td><span style="color: #cbd5e1;">@p.MateIn nước</span></td>
+                            <td><span style="color: var(--text-main);">@p.MateIn nước</span></td>
                             <td>
-                                <code style="font-size: 11px; color: #a5b4fc; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; display: inline-block; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@p.Fen">
+                                <code class="admin-code-fen" title="@p.Fen">
                                     @p.Fen
                                 </code>
                             </td>

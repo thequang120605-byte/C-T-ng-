@@ -65,28 +65,28 @@
                         @foreach (var lesson in module.Lessons.OrderBy(l => l.DisplayOrder))
                         {
                             <tr>
-                                <td><strong style="color: #38bdf8;">#@lesson.DisplayOrder</strong></td>
+                                <td><strong style="color: var(--accent-gold-dark);">#@lesson.DisplayOrder</strong></td>
                                 <td>
                                     <strong>@lesson.Title</strong>
-                                    <div style="font-size: 11px; color: #64748b; max-width: 320px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                    <div style="font-size: 11px; color: var(--text-muted); max-width: 320px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                                         @lesson.Description
                                     </div>
                                 </td>
                                 <td>
-                                    <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                                    <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--bg-navy-light); color: var(--accent-gold-dark); border: 1px solid var(--border-color); font-weight: 600;">
                                         @(lesson.LessonType == "board" ? "Bàn cờ thực hành" : "Lý thuyết")
                                     </span>
                                 </td>
                                 <td>
                                     @if (!string.IsNullOrEmpty(lesson.BoardPosition))
                                     {
-                                        <code style="font-size: 11px; color: #a5b4fc; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; display: inline-block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@lesson.BoardPosition">
+                                        <code class="admin-code-fen" title="@lesson.BoardPosition">
                                             @lesson.BoardPosition
                                         </code>
                                     }
                                     else
                                     {
-                                        <span style="color: #64748b; font-size: 12px;">(Không có)</span>
+                                        <span style="color: var(--text-muted); font-size: 12px;">(Không có)</span>
                                     }
                                 </td>
                                 <td style="text-align: center;">

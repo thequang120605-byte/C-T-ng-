@@ -55,9 +55,9 @@
                 </a>
                 @if (string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
                 {
-                    <a href="/Admin" class="nav-item @(isAdmin ? "active" : "")" style="color: #facc15;">
+                    <a href="/Admin" class="nav-item @(isAdmin ? "active" : "")">
                         <i class="fa-solid fa-gauge-high"></i>
-                        <span>Quản trị</span>
+                        <span data-i18n="menu_admin">Quản trị</span>
                     </a>
                 }
             </nav>

@@ -86,10 +86,10 @@
                             <tr>
                                 <td>
                                     <strong>@u.Username</strong>
-                                    <div style="font-size: 11px; color: #64748b;">@u.Email</div>
+                                    <div style="font-size: 11px; color: var(--text-muted);">@u.Email</div>
                                 </td>
-                                <td><code style="color: #38bdf8;">@u.PlayerId</code></td>
-                                <td><strong style="color: #facc15;">@u.Elo</strong></td>
+                                <td><code style="color: var(--accent-gold-dark); background: var(--bg-navy-light); padding: 2px 6px; border-radius: 4px;">@u.PlayerId</code></td>
+                                <td><strong style="color: var(--accent-gold);">@u.Elo</strong></td>
                                 <td>
                                     <span class="role-badge @(u.Role?.ToLower() == "admin" ? "admin" : "player")">
                                         @(u.Role ?? "Player")
@@ -133,14 +133,14 @@
                         @foreach (var p in Model.RecentPuzzles)
                         {
                             <tr>
-                                <td><strong style="color: #38bdf8;">#@p.Level</strong></td>
+                                <td><strong style="color: var(--accent-gold-dark);">#@p.Level</strong></td>
                                 <td><strong>@p.Title</strong></td>
                                 <td>
-                                    <span style="font-size: 12px; color: @(p.Difficulty == 1 ? "#34d399" : (p.Difficulty == 2 ? "#facc15" : "#f87171"));">
+                                    <span style="font-size: 12px; font-weight: 600; color: @(p.Difficulty == 1 ? "#059669" : (p.Difficulty == 2 ? "#d97706" : "#dc2626"));">
                                         @(p.Difficulty == 1 ? "Dễ" : (p.Difficulty == 2 ? "Trung bình" : "Khó"))
                                     </span>
                                 </td>
-                                <td><span style="color: #94a3b8;">@(p.MateIn) nước</span></td>
+                                <td><span style="color: var(--text-muted);">@(p.MateIn) nước</span></td>
                             </tr>
                         }
                     </tbody>
