@@ -20,6 +20,7 @@ namespace ChessCore.ViewModels
         public int GameId { get; set; }
         public string OpponentName { get; set; }
         public int? OpponentElo { get; set; }
+        public int PlayerElo { get; set; }
         public string GameMode { get; set; } = "PvE"; // "PvE" hoặc "PvP"
         public DateTime PlayedAt { get; set; }
         public int TotalMoves { get; set; }

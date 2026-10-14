@@ -128,7 +128,7 @@ namespace ChessCore.Controllers
                 else
                 {
                     opponentName = "Máy (AI)";
-                    opponentElo = 1500;
+                    opponentElo = null; // Máy không có điểm Elo người chơi
                     mode = "Chơi với Máy";
                 }
 
@@ -155,6 +155,7 @@ namespace ChessCore.Controllers
                     GameId = g.Id,
                     OpponentName = opponentName,
                     OpponentElo = opponentElo,
+                    PlayerElo = currentUser.Elo,
                     GameMode = mode,
                     PlayedAt = g.CreatedAt,
                     TotalMoves = g.Moves.Count,
