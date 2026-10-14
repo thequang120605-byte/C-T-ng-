@@ -5,85 +5,163 @@
 
 @section Styles {
     <style>
+        @@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Playfair+Display:ital,wght@0,600;0,800;1,400&display=swap');
+
         .cert-container {
-            max-width: 900px;
+            max-width: 960px;
             margin: 30px auto 60px;
             padding: 0 20px;
         }
 
         .cert-frame {
-            background: #ffffff;
-            border: 12px double #b45309;
-            border-radius: 12px;
-            padding: 50px 40px;
+            background: #fffdfa;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(245, 230, 200, 0.35) 0%, rgba(254, 249, 238, 0.8) 100%),
+                repeating-linear-gradient(45deg, rgba(217, 119, 6, 0.015) 0px, rgba(217, 119, 6, 0.015) 2px, transparent 2px, transparent 10px);
+            border: 14px solid #78350f;
+            border-radius: 16px;
+            padding: 60px 50px 50px;
             text-align: center;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 25px 60px -15px rgba(120, 53, 15, 0.25), 0 0 0 3px #d97706;
             position: relative;
             color: #1e293b;
+            overflow: hidden;
         }
 
+        /* Viền kim loại mạ vàng kép tinh xảo */
         .cert-frame::before {
             content: '';
             position: absolute;
-            inset: 6px;
-            border: 2px solid #f59e0b;
+            inset: 10px;
+            border: 2px solid #b45309;
+            outline: 1px solid #fcd34d;
+            outline-offset: -5px;
             pointer-events: none;
+            border-radius: 8px;
+        }
+
+        /* Góc họa tiết cổ điển */
+        .cert-corner {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            border: 3px solid #b45309;
+            pointer-events: none;
+        }
+        .cert-corner-tl { top: 18px; left: 18px; border-right: none; border-bottom: none; }
+        .cert-corner-tr { top: 18px; right: 18px; border-left: none; border-bottom: none; }
+        .cert-corner-bl { bottom: 18px; left: 18px; border-right: none; border-top: none; }
+        .cert-corner-br { bottom: 18px; right: 18px; border-left: none; border-top: none; }
+
+        /* Hình chìm bàn cờ mờ ở giữa chứng chỉ */
+        .cert-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 280px;
+            color: rgba(180, 83, 9, 0.035);
+            pointer-events: none;
+            font-family: 'Playfair Display', serif;
+            z-index: 0;
+            user-select: none;
+        }
+
+        .cert-content-wrapper {
+            position: relative;
+            z-index: 1;
         }
 
         .cert-logo {
-            font-size: 48px;
+            font-size: 42px;
             color: #b45309;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
+            display: inline-block;
+            background: linear-gradient(135deg, #f59e0b, #78350f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .cert-title {
             font-size: 32px;
-            font-weight: 800;
+            font-weight: 900;
             color: #78350f;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 4px;
+            font-family: 'Cinzel', serif;
             margin-bottom: 6px;
+            text-shadow: 0 1px 2px rgba(120, 53, 15, 0.1);
         }
 
         .cert-subtitle {
-            font-size: 16px;
-            color: #64748b;
+            font-size: 14px;
+            font-weight: 700;
+            color: #92400e;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 30px;
+            letter-spacing: 3px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .cert-subtitle::before, .cert-subtitle::after {
+            content: '';
+            height: 1px;
+            width: 50px;
+            background: linear-gradient(to right, transparent, #b45309);
+        }
+        .cert-subtitle::after {
+            background: linear-gradient(to left, transparent, #b45309);
         }
 
         .cert-awarded {
             font-size: 15px;
-            color: #475569;
-            margin-bottom: 10px;
+            font-style: italic;
+            color: #64748b;
+            font-family: 'Playfair Display', Georgia, serif;
+            margin-bottom: 12px;
         }
 
         .cert-name {
-            font-size: 36px;
-            font-weight: 900;
-            color: #b45309;
+            font-size: 40px;
+            font-weight: 800;
+            color: #854d0e;
             font-family: 'Playfair Display', Georgia, serif;
-            margin-bottom: 16px;
-            text-decoration: underline;
-            text-decoration-color: #fcd34d;
+            margin-bottom: 20px;
+            display: inline-block;
+            padding: 4px 30px;
+            border-bottom: 2px solid #ca8a04;
+            letter-spacing: 1px;
         }
 
         .cert-desc {
             font-size: 15px;
             line-height: 1.8;
-            max-width: 650px;
+            max-width: 680px;
             margin: 0 auto 36px;
             color: #334155;
+            font-family: 'Segoe UI', system-ui, sans-serif;
         }
 
         .cert-footer {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px dashed #cbd5e1;
+            margin-top: 36px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(180, 83, 9, 0.2);
+        }
+
+        .cert-meta {
+            text-align: left;
+            font-size: 12.5px;
+            color: #64748b;
+            line-height: 1.6;
+        }
+        .cert-meta b {
+            color: #1e293b;
         }
 
         .cert-signature {
@@ -91,33 +169,45 @@
         }
 
         .signature-line {
-            width: 180px;
-            height: 1px;
+            width: 170px;
+            height: 1.5px;
             background: #94a3b8;
-            margin: 50px auto 8px;
+            margin: 40px auto 8px;
         }
 
-        .cert-badge {
-            width: 90px;
-            height: 90px;
-            background: linear-gradient(135deg, #f59e0b, #b45309);
+        /* Con dấu sáp hoàng kim nổi bật */
+        .cert-seal {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle at 35% 35%, #fbbf24, #b45309 70%, #78350f 100%);
             border-radius: 50%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #ffffff;
-            font-size: 11px;
+            color: #fffbeb;
+            font-size: 10.5px;
             font-weight: 800;
-            box-shadow: 0 6px 15px rgba(180, 83, 9, 0.3);
-            border: 3px solid #ffffff;
+            box-shadow: 0 10px 25px rgba(180, 83, 9, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.5);
+            border: 3px solid #fef3c7;
+            position: relative;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cert-seal::after {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border: 1px dashed rgba(254, 243, 199, 0.6);
+            border-radius: 50%;
         }
 
         .cert-actions {
-            margin-top: 24px;
+            margin-top: 28px;
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 14px;
         }
 
         @@media print {
@@ -134,8 +224,8 @@
                 width: 100%;
                 box-shadow: none;
             }
-            .cert-actions {
-                display: none;
+            .cert-actions, .admin-alert {
+                display: none !important;
             }
         }
     </style>
@@ -157,33 +247,46 @@
     }
 
     <div class="cert-frame">
-        <div class="cert-logo"><i class="fa-solid fa-chess-knight"></i></div>
-        <div class="cert-title">CHỨNG NHẬN KỲ THỦ NHẬP MÔN</div>
-        <div class="cert-subtitle">Học viện Cờ Tướng Pro • Xiangqi Academy</div>
+        <!-- 4 góc họa tiết cổ kính -->
+        <div class="cert-corner cert-corner-tl"></div>
+        <div class="cert-corner cert-corner-tr"></div>
+        <div class="cert-corner cert-corner-bl"></div>
+        <div class="cert-corner cert-corner-br"></div>
 
-        <div class="cert-awarded">Chứng nhận này trân trọng trao tặng cho</div>
-        <div class="cert-name">@Model.StudentName</div>
+        <!-- Chữ chìm watermark -->
+        <div class="cert-watermark">棋</div>
 
-        <div class="cert-desc">
-            Đã hoàn thành xuất sắc toàn bộ khóa học <strong>"Học Cờ Tướng Từ Con Số Không"</strong>, nắm vững quy tắc di chuyển 7 binh chủng, các thế sát pháp căn bản và vượt qua hệ thống kiểm tra đánh giá của học viện.
-        </div>
+        <div class="cert-content-wrapper">
+            <div class="cert-logo"><i class="fa-solid fa-chess-knight"></i></div>
+            <div class="cert-title">CHỨNG NHẬN KỲ THỦ NHẬP MÔN</div>
+            <div class="cert-subtitle">Học viện Cờ Tướng Pro • Xiangqi Academy</div>
 
-        <div class="cert-footer">
-            <div class="cert-signature">
-                <div style="font-size: 13px; color: #64748b;">Mã chứng chỉ: <b>@Model.CertificateCode</b></div>
-                <div style="font-size: 13px; color: #64748b;">Mã học viên: <b>@Model.PlayerId</b></div>
-                <div style="font-size: 13px; color: #64748b;">Ngày cấp: <b>@Model.IssueDate.ToString("dd/MM/yyyy")</b></div>
+            <div class="cert-awarded">Chứng nhận này trân trọng trao tặng cho</div>
+            <div class="cert-name">@Model.StudentName</div>
+
+            <div class="cert-desc">
+                Đã hoàn thành xuất sắc toàn bộ khóa học <strong>"Học Cờ Tướng Từ Con Số Không"</strong>, nắm vững quy tắc di chuyển 7 binh chủng, các thế sát pháp căn bản và vượt qua hệ thống kiểm tra đánh giá của học viện.
             </div>
 
-            <div class="cert-badge">
-                <i class="fa-solid fa-award" style="font-size: 24px; margin-bottom: 2px;"></i>
-                <span>XÁC THỰC</span>
-            </div>
+            <div class="cert-footer">
+                <div class="cert-meta">
+                    <div>Mã chứng chỉ: <b>@Model.CertificateCode</b></div>
+                    <div>Mã học viên: <b>@Model.PlayerId</b></div>
+                    <div>Ngày cấp: <b>@Model.IssueDate.ToString("dd/MM/yyyy")</b></div>
+                    <div>Xác thực số: <span style="font-family: monospace; color: #b45309;">@(Model.CertificateCode.Replace("-", "").ToUpper())</span></div>
+                </div>
 
-            <div class="cert-signature">
-                <div class="signature-line"></div>
-                <div style="font-weight: 700; color: #78350f;">Hội Đồng Giám Khảo</div>
-                <div style="font-size: 12px; color: #64748b;">Cờ Tướng Pro Academy</div>
+                <div class="cert-seal">
+                    <i class="fa-solid fa-award" style="font-size: 26px; margin-bottom: 2px; color: #fef08a;"></i>
+                    <span>XÁC THỰC</span>
+                    <small style="font-size: 8px; opacity: 0.9;">OFFICIAL</small>
+                </div>
+
+                <div class="cert-signature">
+                    <div class="signature-line"></div>
+                    <div style="font-weight: 800; color: #78350f; font-family: 'Cinzel', serif;">HỘI ĐỒNG GIÁM KHẢO</div>
+                    <div style="font-size: 12px; color: #64748b; font-style: italic;">Cờ Tướng Pro Academy</div>
+                </div>
             </div>
         </div>
     </div>

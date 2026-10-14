@@ -22,9 +22,14 @@
             <div>
                 <b>Tiến độ khóa học</b>
                 <span>@Model.CompletedLessons/@Model.TotalLessons bài đã hoàn thành</span>
-                <div style="margin-top: 6px;">
-                    <a href="/Course/Certificate" class="btn-admin btn-admin-gold btn-admin-sm" style="font-size: 11px; padding: 4px 10px; border-radius: 6px;">
-                        <i class="fa-solid fa-award"></i> Chứng chỉ
+                <div style="margin-top: 8px;">
+                    <a href="/Course/Certificate" class="btn-cert-badge" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #b45309); color: #ffffff; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 12px rgba(180, 83, 9, 0.25); transition: all 0.2s ease; border: 1px solid rgba(255,255,255,0.2);">
+                        <i class="fa-solid fa-award" style="color: #fef08a;"></i> 
+                        <span>Chứng chỉ hoàn thành</span>
+                        @if (Model.ProgressPercent >= 100)
+                        {
+                            <span style="background: #22c55e; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 2px;">Khả dụng</span>
+                        }
                     </a>
                 </div>
             </div>
