@@ -491,6 +491,13 @@ namespace ChessCore.Controllers
             board.SetCurrentTurn(nextTurn);
             GameStatus newStatus = GameRules.StatusAfterMove(board);
 
+            // Kiểm tra luật lặp lại thế cờ và luật Chiếu dai
+            var repCheck = GameRules.CheckRepetitionRule(game.InitialFen, game.Moves);
+            if (repCheck.HasViolation)
+            {
+                newStatus = repCheck.ResultStatus;
+            }
+
             await _gameService.UpdateGameTurnAndStatusAsync(
                 id,
                 nextTurn,
@@ -693,6 +700,13 @@ namespace ChessCore.Controllers
             PieceColor nextTurn = GameRules.Opponent(engineColor);
             board.SetCurrentTurn(nextTurn);
             GameStatus newStatus = GameRules.StatusAfterMove(board);
+
+            // Kiểm tra luật lặp lại thế cờ và luật Chiếu dai
+            var repCheck = GameRules.CheckRepetitionRule(game.InitialFen, game.Moves);
+            if (repCheck.HasViolation)
+            {
+                newStatus = repCheck.ResultStatus;
+            }
 
             await _gameService.UpdateGameTurnAndStatusAsync(
                 id,
@@ -1106,7 +1120,7 @@ namespace ChessCore.Controllers
         // GỢI Ý NƯỚC ĐI TỐI ƯU CHO LƯỢT HIỆN TẠI (AI HINT)
         // =====================================================
         [HttpGet("{id}/hint")]
-        public async Task<IActionResult> GetHint(int id)
+        public async Task<IActionResult> GetHint(int id, [FromQuery] string mode = "full")
         {
             var game = await _gameService.GetGameByIdAsync(id);
             if (game == null) return NotFound(new { message = "Không tìm thấy ván cờ." });
@@ -1126,6 +1140,19 @@ namespace ChessCore.Controllers
                 return BadRequest(new { message = "Không tìm thấy nước đi gợi ý phù hợp." });
             }
 
+            int pointsDeducted = mode == "piece" ? 5 : 10;
+            int? currentElo = null;
+            if (TryGetCurrentUserId(out int userId))
+            {
+                var user = await _dbContext.Users.FindAsync(userId);
+                if (user != null)
+                {
+                    user.Elo = Math.Max(0, user.Elo - pointsDeducted);
+                    await _dbContext.SaveChangesAsync();
+                    currentElo = user.Elo;
+                }
+            }
+
             var movingPiece = board.GetPieceAt(bestMove.From.Row, bestMove.From.Col);
 
             return Ok(new
@@ -1136,7 +1163,9 @@ namespace ChessCore.Controllers
                 toY = bestMove.To.Col,
                 pieceType = movingPiece?.Type.ToString(),
                 pieceColor = movingPiece?.Color.ToString(),
-                currentTurn = game.CurrentTurn.ToString()
+                currentTurn = game.CurrentTurn.ToString(),
+                pointsDeducted,
+                remainingElo = currentElo
             });
         }
 

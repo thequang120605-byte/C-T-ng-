@@ -218,7 +218,7 @@ namespace ChessCore.Controllers
         // =====================================================
 
         [HttpPost("puzzles/{key}/hint")]
-        public IActionResult Hint(string key, [FromBody] PuzzleMovesRequest request)
+        public async Task<IActionResult> Hint(string key, [FromBody] PuzzleMovesRequest request, [FromQuery] string mode = "move")
         {
             var entry = _campaign.Ready ? _campaign.Get(key) : null;
             if (entry == null || entry.Level == 0)
@@ -242,6 +242,22 @@ namespace ChessCore.Controllers
             if (hint == null)
                 return Ok(new { available = false, message = "Chưa có gợi ý cho thế cờ này." });
 
+            // Trừ điểm gợi ý (5 điểm cho gợi ý quân, 10 điểm cho gợi ý nước đi) nếu người dùng đã đăng nhập
+            int pointsDeducted = mode == "piece" ? 5 : 10;
+            int? userId = CurrentUserId();
+            int? currentElo = null;
+
+            if (userId != null)
+            {
+                var user = await _db.Users.FindAsync(userId.Value);
+                if (user != null)
+                {
+                    user.Elo = Math.Max(0, user.Elo - pointsDeducted);
+                    await _db.SaveChangesAsync();
+                    currentElo = user.Elo;
+                }
+            }
+
             Piece piece = board.Grid[hint.From.Row, hint.From.Col];
             Piece? targetPiece = board.Grid[hint.To.Row, hint.To.Col];
             return Ok(new
@@ -253,9 +269,14 @@ namespace ChessCore.Controllers
                 toCol = hint.To.Col,
                 pieceType = piece.Type.ToString(),
                 targetPieceType = targetPiece?.Type.ToString(),
-                message = $"Gợi ý: hãy xem xét nước đi của quân {PieceName(piece.Type)} đang được đánh dấu.",
+                pointsDeducted,
+                remainingElo = currentElo,
+                message = mode == "piece"
+                    ? $"Gợi ý quân cờ (-{pointsDeducted}đ): hãy xem xét quân {PieceName(piece.Type)} tại ({hint.From.Row}, {hint.From.Col})."
+                    : $"Gợi ý nước đi (-{pointsDeducted}đ): hãy đi {PieceName(piece.Type)} từ ({hint.From.Row}, {hint.From.Col}) ➜ ({hint.To.Row}, {hint.To.Col}).",
             });
         }
+
 
         // =====================================================
         // HELPERS

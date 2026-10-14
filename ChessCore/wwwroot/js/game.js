@@ -2919,7 +2919,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       showToast(mode === "piece" ? "Đang tìm quân cờ tối ưu..." : "Đang tính nước đi tối ưu...", "info");
 
-      const res = await fetch(`${API_BASE_URL}/${gameId}/hint`);
+      const res = await fetch(`${API_BASE_URL}/${gameId}/hint?mode=${encodeURIComponent(mode)}`);
       if (!res.ok) {
         const err = await res.json().catch(() => null);
         throw new Error(err?.message || "Không thể tìm nước đi gợi ý.");
@@ -3054,11 +3054,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // 5. Cập nhật dòng trạng thái và hiển thị toast đẹp mắt
+    const pointNote = hintData.pointsDeducted ? ` (-${hintData.pointsDeducted}đ)` : "";
     const turnStatus = document.getElementById("turn-status");
     if (mode === "piece") {
-      showToast(`💡 Gợi ý quân: Hãy đi quân ${pieceName} tại ô (${fromX}, ${fromY})`, "info");
+      showToast(`💡 Gợi ý quân${pointNote}: Hãy đi quân ${pieceName} tại ô (${fromX}, ${fromY})`, "info");
       if (turnStatus) {
-        turnStatus.innerHTML = `<span style="color: #38bdf8; font-weight: 800;">💡 Gợi ý quân:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1})`;
+        turnStatus.innerHTML = `<span style="color: #38bdf8; font-weight: 800;">💡 Gợi ý quân${pointNote}:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1})`;
         setTimeout(() => {
           if (gameStatus === "InProgress") {
             updateTurnStatus();
@@ -3066,9 +3067,9 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 7000);
       }
     } else {
-      showToast(`🎯 Gợi ý nước đi: ${pieceName} (${fromX}, ${fromY}) ➜ (${toX}, ${toY})`, "success");
+      showToast(`🎯 Gợi ý nước đi${pointNote}: ${pieceName} (${fromX}, ${fromY}) ➜ (${toX}, ${toY})`, "success");
       if (turnStatus) {
-        turnStatus.innerHTML = `<span style="color: #f59e0b; font-weight: 800;">💡 Gợi ý nước:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1}) ➜ cột ${9 - toY >= 1 ? 9 - toY : toY + 1} (Bấm ô vàng)`;
+        turnStatus.innerHTML = `<span style="color: #f59e0b; font-weight: 800;">💡 Gợi ý nước${pointNote}:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1}) ➜ cột ${9 - toY >= 1 ? 9 - toY : toY + 1} (Bấm ô vàng)`;
         setTimeout(() => {
           if (gameStatus === "InProgress") {
             updateTurnStatus();
@@ -3280,6 +3281,59 @@ document.addEventListener("DOMContentLoaded", function() {
                     copyBtn.style.color = '';
                 }, 2000);
             });
+        });
+    }
+
+    // Sao chép FEN thế cờ hiện tại
+    const copyFenBtn = document.getElementById("copy-fen-btn");
+    if (copyFenBtn) {
+        copyFenBtn.addEventListener("click", async function() {
+            if (!gameId) {
+                showToast("Chưa có ván cờ nào để lấy FEN!", "warning");
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE_URL}/${gameId}/fen`);
+                if (!res.ok) throw new Error("Không thể lấy FEN.");
+                const fen = await res.text();
+                await navigator.clipboard.writeText(fen);
+                showToast("Đã sao chép chuỗi FEN vào bộ nhớ tạm!", "success");
+            } catch (err) {
+                showToast("Lỗi khi sao chép FEN: " + err.message, "danger");
+            }
+        });
+    }
+
+    // Xuất / Tải biên bản ván cờ
+    const exportPgnBtn = document.getElementById("export-pgn-btn");
+    if (exportPgnBtn) {
+        exportPgnBtn.addEventListener("click", function() {
+            const container = document.getElementById("move-history-container");
+            if (!container || !container.children.length) {
+                showToast("Chưa có nước cờ nào để xuất biên bản!", "warning");
+                return;
+            }
+            let text = "=== BIÊN BẢN VÁN CỜ TƯỚNG ===\n";
+            text += `Ngày đấu: ${new Date().toLocaleString("vi-VN")}\n`;
+            text += `Mã ván: ${gameId || "N/A"}\n\n`;
+            text += "--- DANH SÁCH NƯỚC ĐI ---\n";
+            const rows = container.querySelectorAll("div[style*='grid']");
+            rows.forEach(r => {
+                const spans = r.querySelectorAll("span");
+                if (spans.length >= 3) {
+                    text += `${spans[0].textContent.trim()} ${spans[1].textContent.trim()} | ${spans[2].textContent.trim()}\n`;
+                }
+            });
+            const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `BienBan_VanCo_${gameId || "game"}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Đã tải về biên bản ván cờ!", "success");
         });
     }
 });

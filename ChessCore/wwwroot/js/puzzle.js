@@ -711,7 +711,7 @@
     busy = true;
 
     try {
-      const res = await fetch(`${API}/puzzles/${encodeURIComponent(puzzle.key)}/hint`, {
+      const res = await fetch(`${API}/puzzles/${encodeURIComponent(puzzle.key)}/hint?mode=${encodeURIComponent(mode)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ moves: attackerMoves }),
@@ -720,12 +720,13 @@
       if (!res.ok) throw new Error(data.message || "Không lấy được gợi ý.");
       if (data.available) {
         hintFrom = { row: data.fromRow, col: data.fromCol };
+        const pointNote = data.pointsDeducted ? ` (-${data.pointsDeducted}đ)` : "";
         if (mode === "move") {
           hintTo = { row: data.toRow, col: data.toCol };
-          setMsg("info", `💡 Gợi ý nước đi: Hãy đi ${data.pieceType || 'quân'} (${data.fromRow},${data.fromCol}) ➜ (${data.toRow},${data.toCol})`);
+          setMsg("info", `💡 Gợi ý nước đi${pointNote}: Hãy đi ${data.pieceType || 'quân'} (${data.fromRow},${data.fromCol}) ➜ (${data.toRow},${data.toCol})`);
         } else {
           hintTo = null; // Chỉ highlight quân
-          setMsg("info", `💡 Gợi ý quân cờ: Hãy di chuyển ${data.pieceType || 'quân'} tại ô (${data.fromRow},${data.fromCol})`);
+          setMsg("info", `💡 Gợi ý quân cờ${pointNote}: Hãy di chuyển ${data.pieceType || 'quân'} tại ô (${data.fromRow},${data.fromCol})`);
         }
         selected = null;
         renderBoard();
