@@ -82,6 +82,21 @@ builder.Services.AddHostedService<GameTimeoutWorker>();
 
 var app = builder.Build();
 
+// Tu dong cap nhat cac bang database con thieu khi ung dung khoi dong
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        dbContext.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Loi khi tu dong ap dung migration co so du lieu.");
+    }
+}
+
 // Doc dataset Co The va xac minh loi giai (chay nen, co cache)
 app.Services.GetRequiredService<PuzzleCampaignService>().Start(
     Path.Combine(app.Environment.ContentRootPath, "Data", "Puzzles"),
