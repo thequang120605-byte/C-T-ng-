@@ -266,8 +266,30 @@ namespace ChessCore.Controllers
                 });
             }
 
-            return View(benchmarkResults);
+            var vm = new AiBenchmarkViewModel
+            {
+                Results = benchmarkResults,
+                OsDescription = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
+                FrameworkDescription = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+                ProcessorCount = Environment.ProcessorCount,
+                ProcessArchitecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString(),
+                TotalMemoryAllocatedMb = Math.Round((double)GC.GetTotalMemory(false) / (1024 * 1024), 2),
+                MaxMemoryLimitMb = Math.Round((double)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024), 0)
+            };
+
+            return View(vm);
         }
+    }
+
+    public class AiBenchmarkViewModel
+    {
+        public List<BenchmarkResultRow> Results { get; set; } = new();
+        public string OsDescription { get; set; } = "";
+        public string FrameworkDescription { get; set; } = "";
+        public int ProcessorCount { get; set; }
+        public string ProcessArchitecture { get; set; } = "";
+        public double TotalMemoryAllocatedMb { get; set; }
+        public double MaxMemoryLimitMb { get; set; }
     }
 
     public class BenchmarkResultRow

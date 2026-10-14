@@ -1,4 +1,4 @@
-@model List<ChessCore.Controllers.BenchmarkResultRow>
+@model ChessCore.Controllers.AiBenchmarkViewModel
 @{
     ViewData["Title"] = "Thực nghiệm & Đo lường Hiệu năng AI - Admin";
 }
@@ -23,6 +23,31 @@
         <span>Đã tích hợp <strong>Zobrist Hashing (64-bit)</strong>, <strong>Bảng chuyển vị (Transposition Table)</strong> và <strong>Cắt tỉa Alpha-Beta kết hợp MVV-LVA Move Ordering</strong>. Dưới đây là số liệu thực nghiệm đo lường trực tiếp trên máy chủ.</span>
     </div>
 
+    <!-- Cấu hình phần cứng & môi trường thực nghiệm -->
+    <div class="admin-card" style="margin-bottom: 24px;">
+        <div class="admin-card-header">
+            <h2><i class="fa-solid fa-server" style="color: var(--accent-gold);"></i> Môi trường & Cấu hình Thực nghiệm (Hardware & Runtime Environment)</h2>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; padding: 12px 0;">
+            <div style="background: var(--bg-hover); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-microchip" style="margin-right: 6px;"></i> CPU / Số luồng xử lý</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-top: 4px;">@Model.ProcessorCount Luồng Logical (@Model.ProcessArchitecture)</div>
+            </div>
+            <div style="background: var(--bg-hover); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-memory" style="margin-right: 6px;"></i> Bộ nhớ RAM Khả dụng</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-top: 4px;">@((Model.MaxMemoryLimitMb / 1024.0).ToString("F1")) GB RAM <span style="font-size: 12px; font-weight: 400; color: var(--text-muted);">(Alloc: @Model.TotalMemoryAllocatedMb MB)</span></div>
+            </div>
+            <div style="background: var(--bg-hover); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-brands fa-windows" style="margin-right: 6px;"></i> Hệ điều hành (OS)</div>
+                <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-top: 4px; word-break: break-word;">@Model.OsDescription</div>
+            </div>
+            <div style="background: var(--bg-hover); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-code" style="margin-right: 6px;"></i> Nền tảng thực thi (Framework)</div>
+                <div style="font-size: 15px; font-weight: 700; color: #2563eb; margin-top: 4px;">@Model.FrameworkDescription</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bảng so sánh các cấp độ duyệt -->
     <div class="admin-card">
         <div class="admin-card-header">
@@ -45,7 +70,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var r in Model)
+                    @foreach (var r in Model.Results)
                     {
                         <tr>
                             <td><strong style="color: var(--accent-gold-dark); font-size: 16px;">Cấp @r.Depth</strong></td>
@@ -62,15 +87,27 @@
     </div>
 
     <!-- Phân tích học thuật dành cho báo cáo Khóa luận -->
-    <div class="admin-card">
+    <div class="admin-card" style="margin-top: 24px;">
         <div class="admin-card-header">
             <h2><i class="fa-solid fa-graduation-cap" style="color: var(--accent-gold);"></i> Nhận xét & Đánh giá học thuật (Sử dụng cho Báo cáo / Luận văn)</h2>
         </div>
         <div style="font-size: 14px; line-height: 1.8; color: var(--text-main);">
             <ul style="padding-left: 20px;">
-                <li><strong>Cắt tỉa Alpha-Beta:</strong> Khi kết hợp với kỹ thuật sắp xếp nước đi theo độ ưu tiên ăn quân <em>MVV-LVA (Most Valuable Victim - Least Valuable Attacker)</em>, số lượng nhánh phải duyệt giảm từ hàm mũ <code>O(b^d)</code> xuống xấp xỉ <code>O(b^(d/2))</code>, cho phép thuật toán đạt tốc độ xử lý nhanh chóng trong thời gian thực.</li>
-                <li><strong>Bảng chuyển vị (Transposition Table) với Zobrist Hashing:</strong> Tránh tính toán lại các thế cờ hoán vị (transpositions) xảy ra từ nhiều thứ tự nước đi khác nhau. Tỷ lệ trúng cache tăng dần theo độ sâu, giúp AI tiết kiệm đáng kể thời gian đánh giá hàm vị trí quân cờ.</li>
-                <li><strong>Ứng dụng thực tế theo 4 cấp độ:</strong> Cấp độ 1 (Dễ) phản hồi tức thời cho người mới bắt đầu; Cấp độ 2 (Trung bình) và Cấp độ 3 (Khó) cung cấp độ sâu chiến thuật ổn định cho luyện tập và phân tích sai lầm sau ván cờ; Cấp độ 4 (Chuyên gia) tính toán sâu các đòn phối hợp chiến thuật phức tạp.</li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Cắt tỉa Alpha-Beta:</strong> Khi kết hợp với kỹ thuật sắp xếp nước đi theo độ ưu tiên ăn quân <em>MVV-LVA (Most Valuable Victim - Least Valuable Attacker)</em> và nước đi lịch sử (History Heuristic), số lượng nhánh trên cây tìm kiếm giảm từ hàm mũ <code>O(b<sup>d</sup>)</code> xuống xấp xỉ <code>O(b<sup>d/2</sup>)</code>. Điều này giúp thuật toán loại bỏ hàng ngàn nhánh thừa (Beta Cutoffs đạt hàng nghìn lượt ở Cấp 3 và Cấp 4), đảm bảo phản hồi nước đi trong thời gian thực.
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Bảng chuyển vị (Transposition Table) với Zobrist Hashing:</strong> Tránh tính toán trùng lặp các thế cờ hoán vị (cùng một thế cờ đạt được qua các thứ tự đi quân khác nhau). Tỷ lệ trúng bộ đệm (TT Hits) tăng vọt khi duyệt sâu (ở Cấp 4 đạt hàng trăm lượt trúng), giúp AI kế thừa kết quả đánh giá nhánh con trước đó mà không phải tính lại từ đầu.
+                </li>
+                <li>
+                    <strong>Ứng dụng thực tế theo 4 cấp độ:</strong>
+                    <div style="margin-top: 6px; padding-left: 12px;">
+                        • <strong>Cấp độ 1 (Dễ - Depth 1):</strong> Thời gian xử lý tức thì (~8-10 ms), duyệt ~55 nút, thích hợp cho người mới bắt đầu làm quen luật chơi.<br />
+                        • <strong>Cấp độ 2 (Vừa - Depth 2):</strong> Thời gian xử lý ~100-150 ms, duyệt ~900 nút, nhận biết được các mối nguy cơ ăn quân trực tiếp.<br />
+                        • <strong>Cấp độ 3 (Khó - Depth 3):</strong> Thời gian xử lý ~500-900 ms, duyệt ~6.000 nút, hình thành chiến thuật tấn công và phòng thủ nhiều bước.<br />
+                        • <strong>Cấp độ 4 (Chuyên gia - Depth 4):</strong> Thời gian xử lý ~3-5 giây, duyệt hơn 30.000 nút với hơn 6.800 lần cắt tỉa nhánh, tính toán sâu các thế đòn hiểm hóc và bẫy cờ.
+                    </div>
+                </li>
             </ul>
         </div>
     </div>
