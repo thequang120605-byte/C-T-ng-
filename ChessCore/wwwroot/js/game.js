@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // 3 = Khó       = Depth 3
   // 4 = Siêu khó  = Depth 4
 
-  let computerDifficulty = 2;
+  let computerDifficulty = 1;
 
   const DIFFICULTY_INFO = {
     1: {
@@ -252,7 +252,7 @@ document.addEventListener("DOMContentLoaded", function () {
     difficulty = parseInt(difficulty, 10);
 
     if (!DIFFICULTY_INFO[difficulty]) {
-      difficulty = 2;
+      difficulty = 1;
     }
 
     computerDifficulty = difficulty;
@@ -520,9 +520,8 @@ document.addEventListener("DOMContentLoaded", function () {
       selectedModeText.textContent = "Chưa chọn chế độ chơi";
     }
 
-    // Mặc định lại Trung bình
-
-    selectDifficulty(2);
+    // Mặc định lại Dễ
+    selectDifficulty(1);
   }
 
   // =====================================================
@@ -550,8 +549,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // Mặc định chọn Người vs Người để nút BẮT ĐẦU VÁN CỜ luôn sẵn sàng
     selectGameMode(false);
 
-    // Mặc định Độ khó Trung bình
-    selectDifficulty(2);
+    // Mặc định Độ khó Dễ (Depth 1)
+    selectDifficulty(1);
 
     console.log("Khởi tạo trang chơi cờ thành công. Sẵn sàng tạo ván cờ.");
   }
