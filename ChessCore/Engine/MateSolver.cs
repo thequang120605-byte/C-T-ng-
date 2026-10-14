@@ -130,5 +130,68 @@ namespace ChessCore.Engine
 
             return best;
         }
+
+        /// <summary>
+        /// Tìm nước phản đòn hiệu quả nhất của bên phòng thủ khi người chơi đi sai nước sát cục.
+        /// </summary>
+        public static EngineMove? PickBestCounterAttack(
+            Board board,
+            PieceColor defender,
+            Position? playerTargetPos = null)
+        {
+            var moves = GameRules.GetAllLegalMoves(board, defender);
+            if (moves.Count == 0) return null;
+
+            EngineMove? best = null;
+            int bestScore = int.MinValue;
+
+            foreach (var m in moves)
+            {
+                int score = 0;
+                Board next = board.Clone();
+                next.ApplyMove(m.From, m.To);
+
+                Piece? target = board.GetPieceAt(m.To.Row, m.To.Col);
+                if (target != null)
+                {
+                    // Ưu tiên ăn quân
+                    int targetVal = target.Type switch
+                    {
+                        PieceType.Rook => 900,
+                        PieceType.Cannon => 450,
+                        PieceType.Horse => 400,
+                        PieceType.Elephant => 200,
+                        PieceType.Advisor => 200,
+                        PieceType.Pawn => 100,
+                        _ => 50
+                    };
+                    score += targetVal * 10;
+
+                    // Đặc biệt ưu tiên ăn đúng quân người chơi vừa di chuyển hớ hênh
+                    if (playerTargetPos.HasValue && m.To.Row == playerTargetPos.Value.Row && m.To.Col == playerTargetPos.Value.Col)
+                    {
+                        score += 3000;
+                    }
+                }
+
+                // Kiểm tra nếu nước đi này phản chiếu lại Tướng của bên tấn công
+                PieceColor attacker = GameRules.Opponent(defender);
+                if (MoveGenerator.CheckIfInCheck(next, attacker))
+                {
+                    score += 2000;
+                }
+
+                // Điểm đánh giá bàn cờ sau nước đi theo góc nhìn của bên phòng thủ
+                score += BoardEvaluator.Evaluate(next, defender);
+
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = m;
+                }
+            }
+
+            return best ?? moves[0];
+        }
     }
 }
