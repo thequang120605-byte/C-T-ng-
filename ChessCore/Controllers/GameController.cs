@@ -29,6 +29,8 @@ namespace ChessCore.Controllers
     public class GameReviewViewModel
     {
         public int GameId { get; set; }
+        public string MatchTitle { get; set; } = "";
+        public string GameMode { get; set; } = "Chơi với Máy";
         public string RoomCode { get; set; } = "";
         public GameStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -71,14 +73,22 @@ namespace ChessCore.Controllers
                 return NotFound("Không tìm thấy ván cờ yêu cầu.");
             }
 
+            bool isPvP = game.RedPlayerId.HasValue && game.BlackPlayerId.HasValue;
+            string redName = game.RedPlayer?.Username ?? "Quân Đỏ";
+            string blackName = isPvP ? (game.BlackPlayer?.Username ?? "Quân Đen") : "Máy (AI)";
+            string mode = isPvP ? "Đấu trực tuyến (PvP)" : "Chơi với Máy (AI)";
+            string matchTitle = $"{redName} vs. {blackName}";
+
             var vm = new GameReviewViewModel
             {
                 GameId = game.Id,
+                MatchTitle = matchTitle,
+                GameMode = mode,
                 RoomCode = game.RoomCode,
                 Status = game.Status,
                 CreatedAt = game.CreatedAt,
-                RedPlayerName = game.RedPlayer?.Username ?? "Quân Đỏ",
-                BlackPlayerName = game.BlackPlayer?.Username ?? "Quân Đen",
+                RedPlayerName = redName,
+                BlackPlayerName = blackName,
                 InitialFen = game.InitialFen ?? ""
             };
 

@@ -1,7 +1,7 @@
 @model ChessCore.Controllers.GameReviewViewModel
 @using System.Text.Json
 @{
-    ViewData["Title"] = "Phân tích ván cờ #" + Model.GameId;
+    ViewData["Title"] = "Phân tích ván đấu: " + Model.MatchTitle;
 }
 
 @section Styles {
@@ -25,6 +25,53 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+        }
+
+        .review-match-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .review-match-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .review-match-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .review-match-sub {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .review-match-badge {
+            background: rgba(212, 175, 55, 0.12);
+            border: 1px solid rgba(212, 175, 55, 0.28);
+            color: var(--accent-gold);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
         }
 
         .review-analysis-card {
@@ -64,7 +111,7 @@
             background: #1e293b;
             border-radius: 6px;
             overflow: hidden;
-            margin: 12px 0 20px;
+            margin: 8px 0 18px;
             display: flex;
         }
 
@@ -227,10 +274,17 @@
 <div class="review-container">
     <!-- CỘT TRÁI: BÀN CỜ REPLAY -->
     <div class="review-board-card">
-        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 14px;">
-            <h2 style="font-size: 20px; font-weight: 800; color: var(--text-main); margin: 0;">
-                <i class="fa-solid fa-chess-board" style="color: var(--accent-gold);"></i> Ván đấu #@Model.GameId (@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm"))
-            </h2>
+        <div class="review-match-header">
+            <div class="review-match-info">
+                <h2 class="review-match-title">
+                    <i class="fa-solid fa-chess-board" style="color: var(--accent-gold);"></i> @Model.MatchTitle
+                </h2>
+                <div class="review-match-sub">
+                    <span class="review-match-badge"><i class="fa-solid fa-shield-halved"></i> @Model.GameMode</span>
+                    <span><i class="fa-regular fa-calendar-days"></i> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                    <span><i class="fa-solid fa-hashtag"></i> Mã trận: <strong>@Model.GameId</strong></span>
+                </div>
+            </div>
             <div style="display: flex; gap: 8px; align-items: center;">
                 <a href="/Dashboard" class="btn-action-secondary" style="padding: 7px 14px; text-decoration: none; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;">
                     <i class="fa-solid fa-arrow-left"></i> Quay lại Thống kê
