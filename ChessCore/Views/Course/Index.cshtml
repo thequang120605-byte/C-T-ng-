@@ -181,15 +181,21 @@
                 </section>
             }
         </main>
+
+        <!-- KHU VỰC HỌC TRỰC TIẾP TRÊN TRANG (INLINE STUDY VIEW) -->
+        <section id="course-study-view" class="course-study-view" hidden>
+            <div class="study-view-header">
+                <button type="button" class="btn-back-to-modules" id="btn-back-to-modules">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách bài học
+                </button>
+            </div>
+            <div class="study-view-panel">
+                <div id="lesson-host"></div>
+            </div>
+        </section>
     </div>
 </div>
 
-<div class="course-modal" id="course-modal" aria-hidden="true">
-    <div class="course-modal-content">
-        <button class="modal-close" type="button" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
-        <div id="lesson-host"></div>
-    </div>
-</div>
 <form id="course-antiforgery" asp-controller="Course" asp-action="SaveProgress" method="post">@Html.AntiForgeryToken()</form>
 
 @section Scripts {

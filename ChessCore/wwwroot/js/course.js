@@ -1,5 +1,4 @@
 (function () {
-    const modal = document.getElementById('course-modal');
     const host = document.getElementById('lesson-host');
     const token = document.querySelector('#course-antiforgery input[name="__RequestVerificationToken"]')?.value;
     let currentLessonId = 0;
@@ -266,6 +265,28 @@
         selectModule(initialModuleIndex);
     }
 
+    const studyView = document.getElementById('course-study-view');
+    const courseLessons = document.querySelector('.course-lessons');
+    const btnBackToModules = document.getElementById('btn-back-to-modules');
+
+    function showLessonView() {
+        if (courseLessons) courseLessons.hidden = true;
+        if (studyView) {
+            studyView.hidden = false;
+            studyView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function hideLessonView() {
+        if (studyView) studyView.hidden = true;
+        if (courseLessons) courseLessons.hidden = false;
+        host.replaceChildren();
+    }
+
+    if (btnBackToModules) {
+        btnBackToModules.addEventListener('click', hideLessonView);
+    }
+
     document.querySelectorAll('.lesson-open').forEach(button => button.addEventListener('click', () => {
         currentLessonId = Number(button.dataset.lessonId);
         const currentModule = button.closest('.course-module');
@@ -273,8 +294,7 @@
         if (currentModuleIndex >= 0) selectModule(currentModuleIndex);
         const template = document.getElementById('lesson-data-' + currentLessonId);
         host.replaceChildren(template.content.cloneNode(true));
-        modal.classList.add('show');
-        modal.setAttribute('aria-hidden', 'false');
+        showLessonView();
 
         host.querySelectorAll('.course-board').forEach(setupLessonBoard);
 
@@ -334,8 +354,4 @@
             }
         });
     }
-
-    document.querySelector('.modal-close')?.addEventListener('click', close);
-    modal?.addEventListener('click', event => { if (event.target === modal) close(); });
-    function close() { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); host.replaceChildren(); }
 })();
