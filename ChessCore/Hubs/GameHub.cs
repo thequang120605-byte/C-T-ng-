@@ -15,7 +15,18 @@ namespace ChessCore.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
         }
 
-        // We can optionally use this to broadcast moves, but if we handle API calls, 
-        // the API controller can just use IHubContext<GameHub> to notify other players.
+        public async Task SendChatMessage(string gameId, string sender, string message)
+        {
+            if (string.IsNullOrWhiteSpace(gameId) || string.IsNullOrWhiteSpace(message)) return;
+            // Giới hạn độ dài tin nhắn
+            var safeMessage = message.Length > 200 ? message.Substring(0, 200) : message;
+            await Clients.Group(gameId).SendAsync("ReceiveChatMessage", new
+            {
+                gameId = gameId,
+                sender = sender ?? "Người chơi",
+                message = safeMessage,
+                sentAt = System.DateTime.UtcNow.ToString("HH:mm")
+            });
+        }
     }
 }

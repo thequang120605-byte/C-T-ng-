@@ -47,6 +47,28 @@ namespace ChessCore.Controllers
             _cache = cache;
         }
 
+        // Danh sách phòng chờ online công khai
+        [Authorize]
+        [HttpGet("online/rooms")]
+        public async Task<IActionResult> GetOpenRooms()
+        {
+            var openRooms = await _dbContext.Games
+                .Where(g => g.Status == GameStatus.WaitingForPlayers && g.RedPlayerId != null && g.BlackPlayerId == null)
+                .OrderByDescending(g => g.CreatedAt)
+                .Take(10)
+                .Select(g => new
+                {
+                    id = g.Id,
+                    roomCode = g.RoomCode,
+                    createdAt = g.CreatedAt,
+                    creatorUsername = _dbContext.Users.Where(u => u.Id == g.RedPlayerId).Select(u => u.Username).FirstOrDefault() ?? "Người chơi",
+                    creatorElo = _dbContext.Users.Where(u => u.Id == g.RedPlayerId).Select(u => u.Elo).FirstOrDefault()
+                })
+                .ToListAsync();
+
+            return Ok(openRooms);
+        }
+
         // Online endpoints require a signed-in player. Generic game endpoints
         // remain available for local/offline play.
         [Authorize]
@@ -792,10 +814,16 @@ namespace ChessCore.Controllers
 
             if (!CanAccessOnlineGame(game)) return Unauthorized();
 
+            // Chơi online không cho phép đi lại
+            if (game.RedPlayerId != null || game.BlackPlayerId != null)
+            {
+                return BadRequest(new { message = "Chế độ chơi Online không cho phép đi lại nước cờ." });
+            }
+
             var success = await _gameService.UndoMoveAsync(id, isPvE);
             if (!success)
             {
-                return BadRequest(new { message = "KhÃ´ng thá»ƒ Ä‘i láº¡i (chÆ°a Ä‘á»§ nÆ°á»›c Ä‘i)." });
+                return BadRequest(new { message = "Không thể đi lại (chưa đủ nước đi)." });
             }
 
             // Refetch after undo
@@ -1130,6 +1158,45 @@ namespace ChessCore.Controllers
             var eval = engine.EvaluatePosition(board, PieceColor.Red);
             
             return Ok(new { eval = eval });
+        }
+
+        // =====================================================
+        // GET /api/games/{id}/hint
+        // GỢI Ý NƯỚC ĐI TỐI ƯU CHO LƯỢT HIỆN TẠI (AI HINT)
+        // =====================================================
+        [HttpGet("{id}/hint")]
+        public async Task<IActionResult> GetHint(int id)
+        {
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null) return NotFound(new { message = "Không tìm thấy ván cờ." });
+            if (!CanAccessOnlineGame(game)) return Unauthorized();
+
+            if (game.Status != GameStatus.InProgress)
+            {
+                return BadRequest(new { message = "Ván cờ đã kết thúc, không thể gợi ý." });
+            }
+
+            var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+            var engine = new MinimaxEngine(3);
+            var bestMove = engine.FindBestMove(board, game.CurrentTurn);
+
+            if (bestMove == null)
+            {
+                return BadRequest(new { message = "Không tìm thấy nước đi gợi ý phù hợp." });
+            }
+
+            var movingPiece = board.GetPieceAt(bestMove.From.Row, bestMove.From.Col);
+
+            return Ok(new
+            {
+                fromX = bestMove.From.Row,
+                fromY = bestMove.From.Col,
+                toX = bestMove.To.Row,
+                toY = bestMove.To.Col,
+                pieceType = movingPiece?.Type.ToString(),
+                pieceColor = movingPiece?.Color.ToString(),
+                currentTurn = game.CurrentTurn.ToString()
+            });
         }
 
         // =====================================================

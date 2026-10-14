@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Cờ Tướng Pro</title>
     
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/svg+xml" href="~/images/logo.svg" asp-append-version="true" />
+    <link rel="alternate icon" href="~/images/logo.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="~/images/logo.svg" />
+    
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
@@ -20,8 +25,8 @@
         <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
         <aside class="app-sidebar" id="app-sidebar">
             <div class="sidebar-logo">
-                <i class="fa-solid fa-chess-knight"></i>
-                <span>CỜ TƯỚNG</span>
+                <img src="~/images/logo.svg" alt="Logo" class="sidebar-logo-img" asp-append-version="true" />
+                <span class="logo-text">CỜ TƯỚNG <span class="logo-sub">PRO</span></span>
             </div>
             <nav class="sidebar-nav">
                 @{
@@ -30,6 +35,7 @@
                     var isGame = path.StartsWith("/Game", StringComparison.OrdinalIgnoreCase);
                     var isPuzzle = path.StartsWith("/Puzzle", StringComparison.OrdinalIgnoreCase);
                     var isCourse = path.StartsWith("/Course", StringComparison.OrdinalIgnoreCase);
+                    var isDashboard = path.StartsWith("/Dashboard", StringComparison.OrdinalIgnoreCase);
                     var isAdmin = path.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase);
                     var userRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
                 }
@@ -45,9 +51,9 @@
                     <i class="fa-solid fa-puzzle-piece"></i>
                     <span data-i18n="menu_puzzle">Cờ thế</span>
                 </a>
-                <a href="/Dashboard" class="nav-item">
-                    <i class="fa-solid fa-chart-simple"></i>
-                    <span data-i18n="menu_stats">Thống kê</span>
+                <a href="/Dashboard" class="nav-item @(isDashboard ? "active" : "")">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span>Xếp hạng & Thống kê</span>
                 </a>
                 <a href="/Course" class="nav-item @(isCourse ? "active" : "")">
                     <i class="fa-solid fa-graduation-cap"></i>

@@ -12,8 +12,8 @@
     <section id="mode-selection" class="mode-overlay">
         <div class="mode-card">
             <!-- HEADER EMBLEM -->
-            <div class="mode-header-badge">
-                <i class="fa-solid fa-chess-knight"></i>
+            <div class="mode-header-badge" style="display: inline-flex; align-items: center; gap: 8px;">
+                <img src="~/images/logo.svg" alt="Logo" style="width: 26px; height: 26px; border-radius: 50%; vertical-align: middle;" />
                 <span>CỜ TƯỚNG VIỆT NAM</span>
             </div>
 
@@ -100,6 +100,19 @@
                     <button id="create-online-btn" class="btn-lobby-create" type="button">
                         <i class="fa-solid fa-plus"></i> Tạo bàn
                     </button>
+
+                    <!-- DANH SÁCH BÀN ĐANG CHỜ -->
+                    <div class="open-rooms-section" style="margin-top: 16px; border-top: 1px dashed var(--border-color); padding-top: 12px; text-align: left;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 13px; font-weight: bold; color: var(--accent-gold);"><i class="fa-solid fa-list"></i> Các phòng đang mở</span>
+                            <button id="refresh-rooms-btn" type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;">
+                                <i class="fa-solid fa-rotate-right"></i> Làm mới
+                            </button>
+                        </div>
+                        <div id="open-rooms-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto;">
+                            <div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Đang tải danh sách phòng...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -261,6 +274,30 @@
                 <div class="turn-indicator">
                     <i class="fa-solid fa-chess"></i> 
                     <span id="turn-status">Lượt của QUÂN ĐỎ</span>
+                    <button id="quick-sound-btn" class="quick-sound-btn" type="button" title="Bật/Tắt âm thanh" style="margin-left: auto; background: none; border: none; color: var(--accent-gold); cursor: pointer; font-size: 16px;">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CHAT ONLINE CHO PHÒNG ĐẤU -->
+            <div id="online-chat-box" class="panel-box online-chat-box hidden">
+                <div class="status-header">
+                    <i class="fa-solid fa-comments" style="color: #38bdf8;"></i> Trò chuyện trong trận
+                </div>
+                <div id="chat-messages" class="chat-messages-container" style="height: 120px; overflow-y: auto; background: var(--bg-navy-dark); border-radius: 6px; padding: 8px; font-size: 13px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
+                    <div style="color: var(--text-muted); font-size: 11px; text-align: center; font-style: italic;">Chào mừng bạn đến phòng đấu online!</div>
+                </div>
+                <div class="chat-input-row" style="display: flex; gap: 6px;">
+                    <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." maxlength="150" autocomplete="off" style="flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-navy-dark); color: var(--text-main); font-size: 12px;" />
+                    <button id="send-chat-btn" type="button" class="btn-primary" style="padding: 6px 12px; font-size: 12px;">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="quick-emojis" style="display: flex; gap: 6px; margin-top: 6px; justify-content: center;">
+                    <button type="button" class="quick-chat-tag" data-msg="Chúc bạn chơi vui vẻ! 👍" style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">👍 Chúc vui</button>
+                    <button type="button" class="quick-chat-tag" data-msg="Nước cờ hay quá! 👏" style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">👏 Nước hay</button>
+                    <button type="button" class="quick-chat-tag" data-msg="Nhanh lên bạn ơi! ⏳" style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">⏳ Nhanh lên</button>
                 </div>
             </div>
 
@@ -279,6 +316,10 @@
                     <button id="undo-btn" class="action-btn" title="Đi lại">
                         <i class="fa-solid fa-rotate-left"></i>
                         <span>Đi lại</span>
+                    </button>
+                    <button id="hint-btn" class="action-btn" title="Gợi ý nước đi tối ưu từ AI">
+                        <i class="fa-solid fa-lightbulb" style="color: var(--accent-gold);"></i>
+                        <span>Gợi ý</span>
                     </button>
                     <button id="draw-btn" class="action-btn" title="Xin hòa">
                         <i class="fa-solid fa-handshake"></i>

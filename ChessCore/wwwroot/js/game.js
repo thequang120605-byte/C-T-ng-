@@ -50,6 +50,12 @@ document.addEventListener("DOMContentLoaded", function () {
           }
       });
 
+      connection.on("ReceiveChatMessage", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
+              appendChatMessage(data.sender, data.message, data.sentAt);
+          }
+      });
+
       connection.start().then(function () {
           console.log("SignalR kết nối thành công.");
           if (typeof gameId !== 'undefined' && gameId) {
@@ -190,6 +196,14 @@ document.addEventListener("DOMContentLoaded", function () {
   const resignModal = document.getElementById("resign-modal");
 
   const drawButton = document.getElementById("draw-btn");
+  const hintButton = document.getElementById("hint-btn");
+  const quickSoundBtn = document.getElementById("quick-sound-btn");
+  const onlineChatBox = document.getElementById("online-chat-box");
+  const chatMessagesContainer = document.getElementById("chat-messages");
+  const chatInput = document.getElementById("chat-input");
+  const sendChatBtn = document.getElementById("send-chat-btn");
+  const openRoomsList = document.getElementById("open-rooms-list");
+  const refreshRoomsBtn = document.getElementById("refresh-rooms-btn");
   const confirmDrawModal = document.getElementById("confirm-draw-modal");
   const confirmDrawSubmitBtn = document.getElementById("confirm-draw-submit-btn");
   const confirmDrawCancelBtn = document.getElementById("confirm-draw-cancel-btn");
@@ -221,6 +235,14 @@ document.addEventListener("DOMContentLoaded", function () {
   let timerInterval = null;
 
   let remainingSeconds = 180;
+
+  const MAX_UNDO_LIMIT = 3;
+
+  let undoCount = 0;
+
+  let previousMovesCount = 0;
+
+  let previousPieceCount = 0;
 
   // =====================================================
   // BOARD
@@ -394,6 +416,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
       startGameButton.classList.add("enabled");
     }
+
+    updateActionButtonsVisibility();
   }
 
   // =====================================================
@@ -422,6 +446,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     isComputerThinking = false;
 
+    undoCount = 0;
+
     clearSelection();
 
     if (modeSelection) {
@@ -434,6 +460,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     updateBoardOrientation();
     updatePlayerNames();
+    updateActionButtonsVisibility();
 
     await createGame();
   }
@@ -476,6 +503,8 @@ document.addEventListener("DOMContentLoaded", function () {
     isCheck = false;
 
     isComputerThinking = false;
+
+    undoCount = 0;
 
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -677,9 +706,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     updateComputerStatus();
 
+    updateActionButtonsVisibility();
+
     checkGameResult();
     
-    updateEvalBar();
+    // Phát âm thanh khi có nước đi mới
+    const currentMovesCount = (data.moves || []).length;
+    const currentPieceCount = (data.boardPieces || []).length;
+    if (currentMovesCount > previousMovesCount && previousMovesCount > 0) {
+      if (isCheck) {
+        playSound('check');
+      } else if (currentPieceCount < previousPieceCount) {
+        playSound('capture');
+      } else {
+        playSound('move');
+      }
+    } else if (isCheck && gameStatus === "InProgress") {
+      playSound('check');
+    }
+    previousMovesCount = currentMovesCount;
+    previousPieceCount = currentPieceCount;
 
     renderMoveHistory(data.moves);
 
@@ -1036,6 +1082,12 @@ document.addEventListener("DOMContentLoaded", function () {
   function showGameResult(title, winner, message) {
     if (!gameResultModal) {
       return;
+    }
+
+    if (title.includes("CHIẾN THẮNG")) {
+      playSound('win');
+    } else if (title.includes("THẤT BẠI")) {
+      playSound('loss');
     }
 
     const resultTitle = document.getElementById("result-title");
@@ -1490,6 +1542,11 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   function clearMoveHighlights() {
+    if (piecesLayer) {
+      piecesLayer.querySelectorAll(".hint-piece").forEach(function (el) {
+        el.classList.remove("hint-piece");
+      });
+    }
     if (movesLayer) {
       movesLayer.innerHTML = "";
     }
@@ -1628,33 +1685,41 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // =====================================================
-  // NEW GAME
-  // =====================================================
-
   async function startNewGame() {
-    if (!gameModeSelected) {
-      return;
-    }
-
     try {
       closeGameResult();
-
       closeResignModal();
+      closeConfirmDrawModal();
+      closeDrawOfferModal();
+
+      const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+      if (isOnline) {
+        // Nếu vừa chơi ván online xong mà bấm ván mới, đưa về màn hình chọn chế độ hoặc tạo lại phòng
+        backToModeSelection();
+        return;
+      }
+
+      // Đảm bảo chế độ chơi hợp lệ nếu reload trang
+      if (!gameModeSelected) {
+        gameModeSelected = true;
+      }
 
       localStorage.removeItem("xiangqiGameId");
+      localStorage.removeItem("manualBoardFlipped");
 
       gameId = null;
-
       currentTurn = null;
-
       gameStatus = null;
-
       isCheck = false;
-
       isComputerThinking = false;
+      undoCount = 0;
+      previousMovesCount = 0;
+      previousPieceCount = 0;
 
       clearSelection();
+      clearMoveHighlights();
+      updateBoardOrientation();
+      updateUndoButtonUI();
 
       if (piecesLayer) {
         piecesLayer.innerHTML = "";
@@ -1834,8 +1899,19 @@ document.addEventListener("DOMContentLoaded", function () {
   let isUndoing = false;
 
   async function handleUndo() {
+    const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+    if (isOnline) {
+      alert("Chế độ chơi Online không hỗ trợ chức năng đi lại!");
+      return;
+    }
+
     if (!gameId || gameStatus !== "InProgress") {
       alert("Chỉ có thể xin đi lại khi ván cờ đang diễn ra!");
+      return;
+    }
+
+    if (undoCount >= MAX_UNDO_LIMIT) {
+      alert(`Bạn đã sử dụng hết số lần đi lại cho phép trong ván này (tối đa ${MAX_UNDO_LIMIT} lần)!`);
       return;
     }
 
@@ -1859,8 +1935,10 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const data = await response.json();
+      undoCount++;
       clearSelection();
       updateGameFromApi(data);
+      updateUndoButtonUI();
     } catch (error) {
       console.error("Lỗi xin đi lại:", error);
       alert(error.message);
@@ -2083,6 +2161,7 @@ document.addEventListener("DOMContentLoaded", function () {
       
       if (onlineSelection) { onlineSelection.style.display = "block"; onlineSelection.classList.remove("hidden"); }
       if (startGameButton) { startGameButton.style.display = "none"; startGameButton.classList.add("hidden"); }
+      loadOpenRooms();
     });
   }
 
@@ -2547,6 +2626,59 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // =====================================================
+  // ACTION BUTTONS VISIBILITY & UNDO UI
+  // =====================================================
+
+  function updateUndoButtonUI() {
+    if (!undoButton) return;
+    const remaining = Math.max(0, MAX_UNDO_LIMIT - undoCount);
+    const span = undoButton.querySelector("span");
+    if (span) {
+      span.textContent = `Đi lại (${remaining}/${MAX_UNDO_LIMIT})`;
+    }
+    if (remaining <= 0) {
+      undoButton.disabled = true;
+      undoButton.style.opacity = "0.5";
+      undoButton.style.cursor = "not-allowed";
+      undoButton.title = "Đã hết lượt đi lại trong ván này";
+    } else {
+      undoButton.disabled = false;
+      undoButton.style.opacity = "1";
+      undoButton.style.cursor = "pointer";
+      undoButton.title = `Đi lại (${remaining} lượt còn lại)`;
+    }
+  }
+
+  function updateActionButtonsVisibility() {
+    const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+
+    if (isOnline) {
+      // Chơi Online: Xóa/ẩn Đi lại, ẩn Gợi ý; Giữ Xin hòa và Đầu hàng; Hiện Chat box
+      if (undoButton) undoButton.style.display = "none";
+      if (hintButton) hintButton.style.display = "none";
+      if (drawButton) drawButton.style.display = "flex";
+      if (resignButton) resignButton.style.display = "flex";
+      if (onlineChatBox) onlineChatBox.classList.remove("hidden");
+    } else if (VS_COMPUTER) {
+      // Chơi với máy: Có Đi lại, có Gợi ý, có Đầu hàng, ẩn Xin hòa; Ẩn Chat box
+      if (undoButton) undoButton.style.display = "flex";
+      if (hintButton) hintButton.style.display = "flex";
+      if (drawButton) drawButton.style.display = "none";
+      if (resignButton) resignButton.style.display = "flex";
+      if (onlineChatBox) onlineChatBox.classList.add("hidden");
+      updateUndoButtonUI();
+    } else {
+      // Người vs Người trên cùng máy: Có Đi lại, có Gợi ý; Bỏ Đầu hàng và Xin hòa; Ẩn Chat box
+      if (undoButton) undoButton.style.display = "flex";
+      if (hintButton) hintButton.style.display = "flex";
+      if (drawButton) drawButton.style.display = "none";
+      if (resignButton) resignButton.style.display = "none";
+      if (onlineChatBox) onlineChatBox.classList.add("hidden");
+      updateUndoButtonUI();
+    }
+  }
+
   function showGameNotification(icon, title, message, duration = 2500) {
     const overlay = document.getElementById("check-overlay");
     const iconElement = document.getElementById("check-overlay-icon");
@@ -2574,6 +2706,431 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => {
       overlay.classList.add("hidden");
     }, duration);
+  }
+
+  // =====================================================
+  // WEB AUDIO SOUND EFFECTS (SYNTHESIZED CHESS SOUNDS)
+  // =====================================================
+  let audioCtx = null;
+
+  function isSoundEnabled() {
+    return localStorage.getItem('chess_sound') !== 'false';
+  }
+
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  function playSound(type) {
+    if (!isSoundEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      if (type === 'move') {
+        // Tiếng gõ quân cờ gỗ dứt khoát
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.08);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } else if (type === 'capture') {
+        // Tiếng ăn quân đanh giòn
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc1.type = 'sine';
+        osc2.type = 'square';
+        osc1.frequency.setValueAtTime(450, now);
+        osc1.frequency.exponentialRampToValueAtTime(140, now + 0.12);
+        osc2.frequency.setValueAtTime(220, now);
+        osc2.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.12);
+        osc2.stop(now + 0.12);
+      } else if (type === 'check') {
+        // Âm thanh cảnh báo chiếu tướng sắc bén
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(700, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'win') {
+        // Âm thanh chiến thắng tươi vui
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.1);
+          gain.gain.setValueAtTime(0.3, now + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.1);
+          osc.stop(now + i * 0.1 + 0.25);
+        });
+      } else if (type === 'loss') {
+        // Âm thanh thất bại
+        [440, 415.3, 392, 349.2].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now + i * 0.15);
+          gain.gain.setValueAtTime(0.3, now + i * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.3);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.15);
+          osc.stop(now + i * 0.15 + 0.3);
+        });
+      }
+    } catch (e) {
+      console.warn('Lỗi phát âm thanh:', e);
+    }
+  }
+
+  // Cập nhật trạng thái icon loa nhanh
+  function updateQuickSoundBtnUI() {
+    if (!quickSoundBtn) return;
+    const enabled = isSoundEnabled();
+    quickSoundBtn.innerHTML = enabled
+      ? '<i class="fa-solid fa-volume-high"></i>'
+      : '<i class="fa-solid fa-volume-xmark" style="color: var(--text-muted);"></i>';
+    quickSoundBtn.title = enabled ? 'Đang bật âm thanh (Bấm để tắt)' : 'Đang tắt âm thanh (Bấm để bật)';
+  }
+
+  if (quickSoundBtn) {
+    quickSoundBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const current = isSoundEnabled();
+      localStorage.setItem('chess_sound', (!current).toString());
+      updateQuickSoundBtnUI();
+      if (!current) playSound('move');
+    });
+    updateQuickSoundBtnUI();
+  }
+
+  // =====================================================
+  // AI HINT (GỢI Ý NƯỚC ĐI TỐI ƯU)
+  // =====================================================
+  let isHinting = false;
+
+  async function handleGetHint() {
+    if (!gameId || gameStatus !== "InProgress") {
+      alert("Chỉ có thể lấy gợi ý khi ván cờ đang diễn ra!");
+      return;
+    }
+
+    if (isComputerThinking) {
+      alert("Máy đang tính nước đi, vui lòng đợi trong giây lát!");
+      return;
+    }
+
+    if (isHinting) return;
+
+    try {
+      isHinting = true;
+      if (hintButton) {
+        hintButton.disabled = true;
+        hintButton.style.opacity = "0.6";
+      }
+
+      const res = await fetch(`${API_BASE_URL}/${gameId}/hint`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.message || "Không thể tìm nước đi gợi ý.");
+      }
+
+      const hintData = await res.json();
+      console.log("Nước đi gợi ý:", hintData);
+
+      // Hiển thị gợi ý trực quan trên bàn cờ
+      highlightHintMove(hintData);
+      playSound('move');
+    } catch (err) {
+      console.error("Lỗi lấy gợi ý:", err);
+      alert(err.message || "Lỗi lấy gợi ý.");
+    } finally {
+      isHinting = false;
+      if (hintButton) {
+        hintButton.disabled = false;
+        hintButton.style.opacity = "1";
+      }
+    }
+  }
+
+  function highlightHintMove(hintData) {
+    clearSelection();
+    clearMoveHighlights();
+
+    const fromX = hintData.fromX;
+    const fromY = hintData.fromY;
+    const toX = hintData.toX;
+    const toY = hintData.toY;
+
+    // Tìm quân cờ xuất phát
+    const pieceObj = initialPieces.find(p => p.row === fromX && p.col === fromY);
+    const pieceName = pieceObj ? pieceObj.type : (PIECE_NAMES_VI[hintData.pieceType] || "Quân");
+    const pieceColorName = (pieceObj?.color === "red" || hintData.pieceColor === "Red") ? "Đỏ" : "Đen";
+
+    // 1. Highlight quân cờ xuất phát
+    let sourcePieceElement = null;
+    if (piecesLayer) {
+      const pieceGroups = piecesLayer.querySelectorAll(".chess-piece");
+      pieceGroups.forEach(function (group) {
+        const r = parseInt(group.getAttribute("data-row"), 10);
+        const c = parseInt(group.getAttribute("data-col"), 10);
+        if (r === fromX && c === fromY) {
+          group.classList.add("hint-piece");
+          sourcePieceElement = group;
+        }
+      });
+    }
+
+    const fromPos = getPosition(fromX, fromY);
+    const toPos = getPosition(toX, toY);
+
+    if (movesLayer) {
+      // Đảm bảo có marker arrowhead trong SVG defs
+      const boardSvg = document.getElementById("board-svg");
+      if (boardSvg && !document.getElementById("hint-arrowhead")) {
+        let defs = boardSvg.querySelector("defs");
+        if (!defs) {
+          defs = document.createElementNS(SVG_NS, "defs");
+          boardSvg.insertBefore(defs, boardSvg.firstChild);
+        }
+        const marker = document.createElementNS(SVG_NS, "marker");
+        marker.setAttribute("id", "hint-arrowhead");
+        marker.setAttribute("markerWidth", "8");
+        marker.setAttribute("markerHeight", "8");
+        marker.setAttribute("refX", "6");
+        marker.setAttribute("refY", "4");
+        marker.setAttribute("orient", "auto");
+        const path = document.createElementNS(SVG_NS, "path");
+        path.setAttribute("d", "M 1 1 L 7 4 L 1 7 Z");
+        path.setAttribute("fill", "#f59e0b");
+        marker.appendChild(path);
+        defs.appendChild(marker);
+      }
+
+      // 2. Tính toán điểm đầu và điểm cuối của mũi tên (để không đè trọn tâm quân cờ)
+      const dx = toPos.x - fromPos.x;
+      const dy = toPos.y - fromPos.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 0) {
+        const startOffset = 38;
+        const endOffset = 36;
+        const startX = fromPos.x + (dx / dist) * startOffset;
+        const startY = fromPos.y + (dy / dist) * startOffset;
+        const endX = toPos.x - (dx / dist) * endOffset;
+        const endY = toPos.y - (dy / dist) * endOffset;
+
+        // Vẽ đường mũi tên chỉ hướng
+        const arrowLine = document.createElementNS(SVG_NS, "line");
+        arrowLine.setAttribute("x1", startX);
+        arrowLine.setAttribute("y1", startY);
+        arrowLine.setAttribute("x2", endX);
+        arrowLine.setAttribute("y2", endY);
+        arrowLine.setAttribute("class", "hint-arrow");
+        arrowLine.setAttribute("marker-end", "url(#hint-arrowhead)");
+        movesLayer.appendChild(arrowLine);
+      }
+
+      // 3. Vòng tròn đích đến có thể click trực tiếp để đi nước này
+      const targetCircle = document.createElementNS(SVG_NS, "circle");
+      targetCircle.setAttribute("cx", toPos.x);
+      targetCircle.setAttribute("cy", toPos.y);
+      targetCircle.setAttribute("r", 28);
+      targetCircle.setAttribute("class", "hint-target-circle");
+      targetCircle.setAttribute("title", "Bấm vào đây để thực hiện ngay nước đi gợi ý này!");
+
+      targetCircle.addEventListener("click", async function (event) {
+        event.stopPropagation();
+        // Chọn quân cờ gợi ý và thực hiện ngay nước đi
+        if (pieceObj) {
+          selectedPieceData = pieceObj;
+          selectedPieceElement = sourcePieceElement;
+          await makeMove(toX, toY);
+        }
+      });
+      movesLayer.appendChild(targetCircle);
+    }
+
+    // 4. Nếu người chơi bấm vào chính quân cờ gợi ý, tự động load các nước hợp lệ
+    if (sourcePieceElement && pieceObj) {
+      selectedPieceData = pieceObj;
+      selectedPieceElement = sourcePieceElement;
+      selectedPieceElement.classList.add("selected");
+    }
+
+    // 5. Cập nhật dòng trạng thái hoặc toast nhẹ nhàng không che bàn cờ
+    const turnStatus = document.getElementById("turn-status");
+    if (turnStatus) {
+      const origText = turnStatus.textContent;
+      turnStatus.innerHTML = `<span style="color: #f59e0b; font-weight: 800;">💡 Gợi ý:</span> ${pieceName} (${9 - fromY >= 1 ? 9 - fromY : fromY + 1}) ➜ cột ${9 - toY >= 1 ? 9 - toY : toY + 1} (Bấm ô vàng để đi)`;
+      setTimeout(() => {
+        if (gameStatus === "InProgress") {
+          updateTurnStatus();
+        }
+      }, 7000);
+    }
+  }
+
+  if (hintButton) {
+    hintButton.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      await handleGetHint();
+    });
+  }
+
+  // =====================================================
+  // ONLINE CHAT & OPEN ROOMS
+  // =====================================================
+  function appendChatMessage(sender, message, time) {
+    if (!chatMessagesContainer) return;
+    const msgDiv = document.createElement("div");
+    msgDiv.style.display = "flex";
+    msgDiv.style.flexDirection = "column";
+    msgDiv.style.background = "rgba(255, 255, 255, 0.05)";
+    msgDiv.style.padding = "4px 8px";
+    msgDiv.style.borderRadius = "4px";
+
+    const isMe = sender === (document.getElementById("current-player-name")?.textContent || "Bạn");
+
+    msgDiv.innerHTML = `
+      <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--accent-gold);">
+        <strong>${sender}</strong>
+        <span style="color: var(--text-muted);">${time || ""}</span>
+      </div>
+      <div style="color: var(--text-main); font-size: 12px; margin-top: 2px; word-break: break-word;">${message}</div>
+    `;
+
+    chatMessagesContainer.appendChild(msgDiv);
+    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+  }
+
+  async function sendCurrentChat(msgText) {
+    const text = msgText || (chatInput ? chatInput.value.trim() : "");
+    if (!text || !gameId) return;
+
+    if (connection && connection.state === signalR.HubConnectionState.Connected) {
+      const myName = localStorage.getItem("onlinePlayerColor") === "Red" ? "Quân Đỏ" : "Quân Đen";
+      try {
+        await connection.invoke("SendChatMessage", gameId.toString(), myName, text);
+        if (chatInput) chatInput.value = "";
+      } catch (err) {
+        console.error("Lỗi gửi chat:", err);
+      }
+    }
+  }
+
+  if (sendChatBtn) {
+    sendChatBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      sendCurrentChat();
+    });
+  }
+
+  if (chatInput) {
+    chatInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendCurrentChat();
+      }
+    });
+  }
+
+  document.querySelectorAll(".quick-chat-tag").forEach(tag => {
+    tag.addEventListener("click", function(e) {
+      e.stopPropagation();
+      const msg = this.getAttribute("data-msg");
+      if (msg) sendCurrentChat(msg);
+    });
+  });
+
+  // Tải danh sách phòng mở
+  async function loadOpenRooms() {
+    if (!openRoomsList) return;
+    try {
+      openRoomsList.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Đang tải danh sách phòng...</div>';
+      const res = await fetch(`${API_BASE_URL}/online/rooms`);
+      if (res.status === 401) {
+        openRoomsList.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Vui lòng đăng nhập để xem phòng.</div>';
+        return;
+      }
+      if (!res.ok) throw new Error("Không thể tải phòng.");
+      const rooms = await res.json();
+
+      if (!rooms || rooms.length === 0) {
+        openRoomsList.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Hiện chưa có phòng nào đang chờ. Hãy tạo phòng mới!</div>';
+        return;
+      }
+
+      let html = "";
+      rooms.forEach(r => {
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-navy-dark); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div>
+              <strong style="color: var(--accent-gold); font-size: 13px;">Phòng ${r.roomCode}</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">Tạo bởi: ${r.creatorUsername} (Elo: ${r.creatorElo || 1200})</div>
+            </div>
+            <button class="join-room-fast-btn btn-primary" data-code="${r.roomCode}" style="padding: 4px 10px; font-size: 11px;">
+              Vào chơi
+            </button>
+          </div>
+        `;
+      });
+      openRoomsList.innerHTML = html;
+
+      // Gắn sự kiện vào phòng nhanh
+      openRoomsList.querySelectorAll(".join-room-fast-btn").forEach(btn => {
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          const code = this.getAttribute("data-code");
+          if (onlineRoomIdInput) onlineRoomIdInput.value = code;
+          if (joinOnlineButton) joinOnlineButton.click();
+        });
+      });
+    } catch (e) {
+      console.warn("Lỗi load rooms:", e);
+      openRoomsList.innerHTML = '<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 10px;">Lỗi tải danh sách phòng.</div>';
+    }
+  }
+
+  if (refreshRoomsBtn) {
+    refreshRoomsBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      loadOpenRooms();
+    });
   }
 
   // =====================================================
