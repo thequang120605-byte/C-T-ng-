@@ -23,6 +23,21 @@
         </div>
     </section>
 
+    @if (!User.Identity?.IsAuthenticated == true)
+    {
+        <div class="course-guest-notice" style="background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="fa-solid fa-circle-info" style="color: #d97706; font-size: 20px;"></i>
+                <span style="font-size: 14px; color: #92400e;">
+                    Bạn đang xem khóa học với tư cách <b>Khách (Guest)</b>. Bạn có thể tự do học và làm bài tập, nhưng hãy <b>Đăng nhập</b> để hệ thống lưu lại tiến độ học tập và huy hiệu nhé!
+                </span>
+            </div>
+            <a asp-controller="Auth" asp-action="Login" style="background: #d97706; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập ngay
+            </a>
+        </div>
+    }
+
     <div class="course-layout">
         <aside class="course-modules">
             <h2>Nội dung khóa học</h2>

@@ -279,11 +279,17 @@
         const score = questions.length ? Math.round(correct * 100 / questions.length) : 0;
         const result = host.querySelector('.quiz-result');
         if (result) { result.textContent = `Kết quả: ${correct}/${questions.length} (${score}%)`; result.dataset.score = score; }
-        saveProgress(score === 100, score).then(response => {
+        saveProgress(score === 100, score).then(async response => {
             if (score === 100 && response.ok) {
-                result.textContent += ' - Bài học đã hoàn thành!';
-                result.classList.add('success');
-                setTimeout(() => window.location.reload(), 900);
+                const data = await response.json().catch(() => ({}));
+                if (data.isGuest) {
+                    result.textContent += ' - Xuất sắc! (Đăng nhập để lưu huy hiệu này)';
+                    result.classList.add('success');
+                } else {
+                    result.textContent += ' - Bài học đã hoàn thành!';
+                    result.classList.add('success');
+                    setTimeout(() => window.location.reload(), 900);
+                }
             }
         });
     }

@@ -8,17 +8,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChessCore.Controllers
 {
-    [Authorize]
     public class CourseController : Controller
     {
         private readonly AppDbContext _context;
 
         public CourseController(AppDbContext context) => _context = context;
 
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             var userId = GetUserId();
-            if (userId is null) return RedirectToAction("Login", "Auth");
 
             var modules = await _context.CourseModules
                 .AsNoTracking()
@@ -27,9 +26,11 @@ namespace ChessCore.Controllers
                 .OrderBy(m => m.DisplayOrder)
                 .ToListAsync();
 
-            var progress = await _context.UserCourseProgresses
-                .Where(p => p.UserId == userId.Value)
-                .ToDictionaryAsync(p => p.LessonId);
+            var progress = userId.HasValue
+                ? await _context.UserCourseProgresses
+                    .Where(p => p.UserId == userId.Value)
+                    .ToDictionaryAsync(p => p.LessonId)
+                : new Dictionary<int, UserCourseProgress>();
 
             var lessons = modules.SelectMany(m => m.Lessons).ToList();
             var vm = new CourseIndexViewModel
@@ -61,7 +62,11 @@ namespace ChessCore.Controllers
         public async Task<IActionResult> SaveProgress([FromBody] CourseProgressRequest request)
         {
             var userId = GetUserId();
-            if (userId is null) return Unauthorized();
+            if (userId is null)
+            {
+                // Khách chưa đăng nhập: Trả về trạng thái hoàn thành phiên học tạm thời, không lưu DB
+                return Ok(new { progress = new { isCompleted = request.IsCompleted, bestQuizScore = request.QuizScore }, isGuest = true });
+            }
             if (request.LessonId <= 0) return BadRequest("Bài học không hợp lệ.");
 
             var lessonExists = await _context.CourseLessons.AnyAsync(l => l.Id == request.LessonId);
