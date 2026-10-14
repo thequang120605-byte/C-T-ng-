@@ -86,14 +86,43 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
         dbContext.Database.Migrate();
+
+        // Seed default Admin account if not exists
+        var adminUser = dbContext.Users.FirstOrDefault(u => u.Username == "admin");
+        if (adminUser == null)
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes("Admin@123"));
+            var passwordHash = Convert.ToBase64String(hashBytes);
+
+            adminUser = new ChessCore.Models.User
+            {
+                Username = "admin",
+                Email = "admin@cotuong.pro",
+                PasswordHash = passwordHash,
+                PlayerId = "CT-00001",
+                Role = "Admin",
+                Elo = 1500,
+                CreatedAt = DateTime.UtcNow
+            };
+            dbContext.Users.Add(adminUser);
+            dbContext.SaveChanges();
+            logger.LogInformation(">>> Da tao tai khoan Admin mac dinh: admin / Admin@123");
+        }
+        else if (adminUser.Role != "Admin")
+        {
+            adminUser.Role = "Admin";
+            dbContext.SaveChanges();
+            logger.LogInformation(">>> Da cap quyen Admin cho tai khoan 'admin'");
+        }
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Loi khi tu dong ap dung migration co so du lieu.");
+        logger.LogError(ex, "Loi khi tu dong ap dung migration hoac seed du lieu.");
     }
 }
 
