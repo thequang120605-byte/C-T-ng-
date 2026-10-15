@@ -311,6 +311,7 @@
             <svg id="replay-board-svg" class="board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet">
                 <rect x="0" y="0" width="900" height="1000" class="board-outer-bg" />
                 <rect x="15" y="15" width="870" height="970" class="board-background" />
+                <image id="board-image-texture" x="15" y="15" width="870" height="970" preserveAspectRatio="none" style="display: none; opacity: 0.95;" />
                 <g class="board-lines">
                     @for (var row = 0; row < 10; row++) { <line x1="50" y1="@(50 + row * 100)" x2="850" y2="@(50 + row * 100)" /> }
                     <line x1="50" y1="50" x2="50" y2="950" /><line x1="850" y1="50" x2="850" y2="950" />
@@ -350,6 +351,19 @@
                 <div style="font-size: 12px; color: #3b82f6; font-weight: bold; margin-bottom: 4px;">ĐEN (@Model.BlackPlayerName)</div>
                 <div class="accuracy-score" style="color: #3b82f6;">@Model.AccuracyBlack%</div>
                 <small style="color: var(--text-muted); font-size: 11px;">Độ chuẩn xác</small>
+            </div>
+        </div>
+
+        <!-- BIỂU ĐỒ SÓNG DIỄN BIẾN THẾ TRẬN (EVALUATION GRAPH) -->
+        <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-chart-area" style="color: var(--accent-gold);"></i> Biểu đồ diễn biến ưu thế
+                </span>
+                <span style="font-size: 11px; color: var(--text-muted);">Đỏ (+ trên) | Đen (- dưới)</span>
+            </div>
+            <div style="width: 100%; height: 90px; position: relative;">
+                <canvas id="eval-chart-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
             </div>
         </div>
 
@@ -459,16 +473,37 @@
             const layer = document.getElementById('replay-pieces-layer');
             layer.replaceChildren();
 
+            const skin = localStorage.getItem("chess_piece_skin") || "traditional";
+            const typeMap = {
+                King: p => p.color === 'Red' ? 'Shuai' : 'Jiang',
+                Advisor: () => 'Shi',
+                Elephant: () => 'Xiang',
+                Horse: () => 'Ma',
+                Rook: () => 'Ju',
+                Cannon: () => 'Pao',
+                Pawn: p => p.color === 'Red' ? 'Bing' : 'Zu'
+            };
+
             pieces.forEach(p => {
                 const x = 50 + p.col * 100;
                 const y = 50 + p.row * 100;
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 g.setAttribute('class', `chess-piece ${p.color.toLowerCase()}`);
-                g.innerHTML = `
-                    <circle cx="${x}" cy="${y}" r="42" class="piece-circle"></circle>
-                    <circle cx="${x}" cy="${y}" r="35" class="piece-inner-circle"></circle>
-                    <text x="${x}" y="${y + 2}" text-anchor="middle" dominant-baseline="middle" class="piece-text">${p.text}</text>
-                `;
+
+                if (skin !== "traditional") {
+                    const func = typeMap[p.type] || (() => 'Bing');
+                    const fileName = `${skin} ${p.color} ${func(p)}.png`;
+                    const imgPath = `/images/pieces/${fileName}`;
+                    g.innerHTML = `
+                        <image x="${x - 44}" y="${y - 44}" width="88" height="88" href="${imgPath}" class="piece-image-skin" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));" />
+                    `;
+                } else {
+                    g.innerHTML = `
+                        <circle cx="${x}" cy="${y}" r="42" class="piece-circle"></circle>
+                        <circle cx="${x}" cy="${y}" r="35" class="piece-inner-circle"></circle>
+                        <text x="${x}" y="${y + 2}" text-anchor="middle" dominant-baseline="middle" class="piece-text">${p.text}</text>
+                    `;
+                }
                 layer.appendChild(g);
             });
 
@@ -499,6 +534,80 @@
             document.querySelectorAll('.review-move-item').forEach((el, idx) => {
                 el.classList.toggle('active', idx === step);
             });
+
+            drawEvalChart(step);
+        }
+
+        // Vẽ biểu đồ sóng diễn biến thế trận
+        function drawEvalChart(currentStepIdx) {
+            const canvas = document.getElementById('eval-chart-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio || 400;
+            canvas.height = rect.height * window.devicePixelRatio || 90;
+            const w = canvas.width;
+            const h = canvas.height;
+            const midY = h / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Đường trục giữa 0 (cân bằng)
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(0, midY);
+            ctx.lineTo(w, midY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            if (!analyzedMoves || analyzedMoves.length === 0) return;
+
+            const n = analyzedMoves.length;
+            const stepX = w / Math.max(1, n - 1);
+
+            // Vẽ dải đường cong ưu thế
+            ctx.beginPath();
+            ctx.moveTo(0, midY);
+            analyzedMoves.forEach((m, idx) => {
+                const x = idx * stepX;
+                // clamp score between -600 and +600
+                const sc = Math.max(-600, Math.min(600, m.EvalScore || 0));
+                // scale to Y: dương thì vẽ lên trên (Y < midY), âm vẽ xuống dưới
+                const y = midY - (sc / 600) * (midY - 10);
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            // Vẽ điểm hiện tại đang xem (Con trỏ thời gian)
+            if (currentStepIdx >= 0 && currentStepIdx < n) {
+                const curX = currentStepIdx * stepX;
+                const curSc = Math.max(-600, Math.min(600, analyzedMoves[currentStepIdx].EvalScore || 0));
+                const curY = midY - (curSc / 600) * (midY - 10);
+
+                // Đường dóng dọc
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(curX, 0);
+                ctx.lineTo(curX, h);
+                ctx.stroke();
+
+                // Điểm tròn chấm sáng
+                ctx.fillStyle = curSc >= 0 ? '#ef4444' : '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(curX, curY, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
         }
 
         function goToStep(step) {

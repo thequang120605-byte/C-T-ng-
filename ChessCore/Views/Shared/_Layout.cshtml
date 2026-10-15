@@ -286,7 +286,7 @@
             <div class="settings-body">
                 <!-- GIAO DIỆN HỆ THỐNG -->
                 <div class="setting-group">
-                    <div class="setting-title" data-i18n="settings_theme_title">Giao diện màu sắc</div>
+                    <div class="setting-title" data-i18n="settings_theme_title"><i class="fa-solid fa-palette"></i> Màu nền hệ thống</div>
                     <div class="theme-options">
                         <button class="theme-btn active" data-theme="wood" title="Giao diện Gỗ truyền thống ấm áp">
                             <div class="theme-img-wrap">
@@ -323,6 +323,74 @@
                                 <img src="~/images/themes/parchment.svg" alt="Giấy Cổ" class="theme-preview-img" asp-append-version="true" />
                             </div>
                             <span>Giấy Cổ</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CHỦ ĐỀ BÀN CỜ THỰC TẾ (HÌNH ẢNH) -->
+                <div class="setting-group">
+                    <div class="setting-title"><i class="fa-solid fa-chess-board"></i> Chất liệu mặt bàn cờ (Hình ảnh)</div>
+                    <div class="theme-options board-skin-options">
+                        <button type="button" class="theme-btn board-skin-btn active" data-board-skin="wood" title="Bàn cờ vân gỗ tự nhiên cao cấp">
+                            <div class="theme-img-wrap" style="background: #3e2723;">
+                                <img src="~/images/boards/Wood-grain Chessboard.png" alt="Bàn cờ vân gỗ" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Vân Gỗ Cổ</span>
+                        </button>
+                        <button type="button" class="theme-btn board-skin-btn" data-board-skin="stone" title="Bàn cờ đá cẩm thạch sang trọng">
+                            <div class="theme-img-wrap" style="background: #1e293b;">
+                                <img src="~/images/boards/Stone-textured Chessboard.png" alt="Bàn cờ đá" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Đá Cẩm Thạch</span>
+                        </button>
+                        <button type="button" class="theme-btn board-skin-btn" data-board-skin="cardboard" title="Bàn cờ da nâu vintage">
+                            <div class="theme-img-wrap" style="background: #5d4037;">
+                                <img src="~/images/boards/Simple Brown Cardboard Chessboard.png" alt="Bàn cờ nâu cổ" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Bìa Da Cổ</span>
+                        </button>
+                        <button type="button" class="theme-btn board-skin-btn" data-board-skin="minimalist" title="Bàn cờ tối giản trắng">
+                            <div class="theme-img-wrap" style="background: #f8fafc;">
+                                <img src="~/images/boards/Minimalist White Chessboard.png" alt="Bàn cờ tối giản" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Tối Giản Trắng</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KIỂU QUÂN CỜ THỰC TẾ (HÌNH ẢNH) -->
+                <div class="setting-group">
+                    <div class="setting-title"><i class="fa-solid fa-chess"></i> Phong cách quân cờ (Hình ảnh)</div>
+                    <div class="theme-options piece-skin-options">
+                        <button type="button" class="theme-btn piece-skin-btn active" data-piece-skin="traditional" title="Quân cờ thư pháp truyền thống Vector">
+                            <div class="theme-img-wrap" style="display: flex; align-items: center; justify-content: center; background: #e2c28e;">
+                                <span style="font-size: 26px; font-weight: 900; color: #c00000; font-family: serif;">帥</span>
+                            </div>
+                            <span>Thư Pháp Gốc</span>
+                        </button>
+                        <button type="button" class="theme-btn piece-skin-btn" data-piece-skin="Wooden" title="Quân cờ tiện gỗ 3D cao cấp">
+                            <div class="theme-img-wrap" style="background: #5d4037;">
+                                <img src="~/images/pieces/Wooden Red Shuai.png" alt="Quân gỗ 3D" class="theme-preview-img" style="object-fit: contain;" asp-append-version="true" />
+                            </div>
+                            <span>Gỗ Khắc 3D</span>
+                        </button>
+                        <button type="button" class="theme-btn piece-skin-btn" data-piece-skin="Shadowed" title="Quân cờ đổ bóng nổi bật">
+                            <div class="theme-img-wrap" style="background: #334155;">
+                                <img src="~/images/pieces/Shadowed Red Shuai.png" alt="Quân đổ bóng" class="theme-preview-img" style="object-fit: contain;" asp-append-version="true" />
+                            </div>
+                            <span>Đổ Bóng Nổi</span>
+                        </button>
+                        <button type="button" class="theme-btn piece-skin-btn" data-piece-skin="Brown" title="Quân gỗ nâu sẫm mạ đồng">
+                            <div class="theme-img-wrap" style="background: #3e2723;">
+                                <img src="~/images/pieces/Brown Red Shuai.png" alt="Quân gỗ nâu" class="theme-preview-img" style="object-fit: contain;" asp-append-version="true" />
+                            </div>
+                            <span>Gỗ Mun Nâu</span>
+                        </button>
+                        <button type="button" class="theme-btn piece-skin-btn" data-piece-skin="Minimalist" title="Quân ngọc trắng tối giản">
+                            <div class="theme-img-wrap" style="background: #e2e8f0;">
+                                <img src="~/images/pieces/Minimalist White Red Shuai.png" alt="Quân tối giản trắng" class="theme-preview-img" style="object-fit: contain;" asp-append-version="true" />
+                            </div>
+                            <span>Bạch Ngọc</span>
                         </button>
                     </div>
                 </div>

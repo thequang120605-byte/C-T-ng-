@@ -469,22 +469,50 @@
       g.setAttribute("data-row", p.row);
       g.setAttribute("data-col", p.col);
 
-      const circle = document.createElementNS(SVG_NS, "circle");
-      circle.setAttribute("cx", x);
-      circle.setAttribute("cy", y);
-      circle.setAttribute("r", 42);
-      circle.setAttribute("class", "piece-circle");
+      const skin = localStorage.getItem("chess_piece_skin") || "traditional";
+      const typeMap = {
+        King: color === "Red" ? "Shuai" : "Jiang",
+        Advisor: "Shi",
+        Elephant: "Xiang",
+        Horse: "Ma",
+        Rook: "Ju",
+        Cannon: "Pao",
+        Pawn: color === "Red" ? "Bing" : "Zu"
+      };
 
-      const text = document.createElementNS(SVG_NS, "text");
-      text.setAttribute("x", x);
-      text.setAttribute("y", y + 2);
-      text.setAttribute("text-anchor", "middle");
-      text.setAttribute("dominant-baseline", "middle");
-      text.setAttribute("class", "piece-text");
-      text.textContent = (PIECE_TEXT[p.type] || (() => "?"))(color);
+      if (skin !== "traditional") {
+        const fileName = `${skin} ${color} ${typeMap[p.type] || "Bing"}.png`;
+        const imgPath = `/images/pieces/${fileName}`;
+        const img = document.createElementNS(SVG_NS, "image");
+        img.setAttribute("x", x - 44);
+        img.setAttribute("y", y - 44);
+        img.setAttribute("width", 88);
+        img.setAttribute("height", 88);
+        img.setAttribute("href", imgPath);
+        img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imgPath);
+        img.setAttribute("class", "piece-image-skin");
+        img.style.pointerEvents = "all";
+        img.style.filter = "drop-shadow(0 4px 6px rgba(0,0,0,0.35))";
+        g.appendChild(img);
+      } else {
+        const circle = document.createElementNS(SVG_NS, "circle");
+        circle.setAttribute("cx", x);
+        circle.setAttribute("cy", y);
+        circle.setAttribute("r", 42);
+        circle.setAttribute("class", "piece-circle");
 
-      g.appendChild(circle);
-      g.appendChild(text);
+        const text = document.createElementNS(SVG_NS, "text");
+        text.setAttribute("x", x);
+        text.setAttribute("y", y + 2);
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("dominant-baseline", "middle");
+        text.setAttribute("class", "piece-text");
+        text.textContent = (PIECE_TEXT[p.type] || (() => "?"))(color);
+
+        g.appendChild(circle);
+        g.appendChild(text);
+      }
+
       g.addEventListener("click", (ev) => {
         ev.stopPropagation();
         onPieceClick(p);
@@ -1496,6 +1524,13 @@
     // Bấm ra ngoài bàn cờ để bỏ chọn quân.
     if (phase === "playing" && selected && !ev.target.closest("#board-svg")) {
       selected = null;
+      renderBoard();
+    }
+  });
+
+  // Lắng nghe đổi kiểu quân cờ
+  window.addEventListener("chess-skin-changed", function () {
+    if (phase === "playing" || phase === "solved") {
       renderBoard();
     }
   });

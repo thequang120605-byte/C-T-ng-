@@ -1411,45 +1411,70 @@ document.addEventListener("DOMContentLoaded", function () {
     pieceGroup.setAttribute("data-color", piece.color);
 
     pieceGroup.setAttribute("data-row", piece.row);
-
     pieceGroup.setAttribute("data-col", piece.col);
 
-    const circle = document.createElementNS(SVG_NS, "circle");
+    const skin = localStorage.getItem("chess_piece_skin") || "traditional";
+    
+    // Map tên quân sang file ảnh (Shuai, Jiang, Shi, Xiang, Ma, Ju, Pao, Bing, Zu)
+    const typeMap = {
+      King: piece.color === "Red" ? "Shuai" : "Jiang",
+      Advisor: "Shi",
+      Elephant: "Xiang",
+      Horse: "Ma",
+      Rook: "Ju",
+      Cannon: "Pao",
+      Pawn: piece.color === "Red" ? "Bing" : "Zu"
+    };
 
-    circle.setAttribute("cx", position.x);
+    if (skin !== "traditional") {
+      // Dùng ảnh quân cờ thực tế (Wooden, Shadowed, Brown, Minimalist)
+      const fileName = `${skin} ${piece.color} ${typeMap[piece.type] || "Bing"}.png`;
+      const imgPath = `/images/pieces/${fileName}`;
 
-    circle.setAttribute("cy", position.y);
+      const img = document.createElementNS(SVG_NS, "image");
+      img.setAttribute("x", position.x - 44);
+      img.setAttribute("y", position.y - 44);
+      img.setAttribute("width", 88);
+      img.setAttribute("height", 88);
+      img.setAttribute("href", imgPath);
+      img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imgPath);
+      img.setAttribute("class", "piece-image-skin");
+      img.style.pointerEvents = "all";
+      img.style.filter = "drop-shadow(0 4px 6px rgba(0,0,0,0.35))";
 
-    circle.setAttribute("r", 42);
+      pieceGroup.appendChild(img);
+    } else {
+      // Dùng phong cách thư pháp truyền thống
+      const circle = document.createElementNS(SVG_NS, "circle");
+      circle.setAttribute("cx", position.x);
+      circle.setAttribute("cy", position.y);
+      circle.setAttribute("r", 42);
+      circle.setAttribute("class", "piece-circle");
 
-    circle.setAttribute("class", "piece-circle");
+      const textElement = document.createElementNS(SVG_NS, "text");
+      textElement.setAttribute("x", position.x);
+      textElement.setAttribute("y", position.y + 2);
+      textElement.setAttribute("text-anchor", "middle");
+      textElement.setAttribute("dominant-baseline", "middle");
+      textElement.setAttribute("class", "piece-text");
+      textElement.textContent = piece.text;
 
-    const textElement = document.createElementNS(SVG_NS, "text");
-
-    textElement.setAttribute("x", position.x);
-
-    textElement.setAttribute("y", position.y + 2);
-
-    textElement.setAttribute("text-anchor", "middle");
-
-    textElement.setAttribute("dominant-baseline", "middle");
-
-    textElement.setAttribute("class", "piece-text");
-
-    textElement.textContent = piece.text;
-
-    pieceGroup.appendChild(circle);
-
-    pieceGroup.appendChild(textElement);
+      pieceGroup.appendChild(circle);
+      pieceGroup.appendChild(textElement);
+    }
 
     pieceGroup.addEventListener("click", async function (event) {
       event.stopPropagation();
-
       await handlePieceClick(pieceGroup);
     });
 
     piecesLayer.appendChild(pieceGroup);
   }
+
+  // Lắng nghe sự kiện thay đổi kiểu quân cờ để re-render ngay
+  window.addEventListener("chess-skin-changed", function() {
+    renderPieces();
+  });
 
   // =====================================================
   // RENDER
@@ -2218,6 +2243,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (onlineSelection) { onlineSelection.style.display = "block"; onlineSelection.classList.remove("hidden"); }
       if (startGameButton) { startGameButton.style.display = "none"; startGameButton.classList.add("hidden"); }
       loadOpenRooms();
+      loadLiveMatches();
     });
   }
 
@@ -3261,10 +3287,57 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // Tải danh sách các trận đang đấu trực tiếp (Khán giả)
+  async function loadLiveMatches() {
+    const liveList = document.getElementById("live-matches-list");
+    if (!liveList) return;
+    try {
+      liveList.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Đang tải danh sách trận đấu...</div>';
+      const res = await fetch(`${API_BASE_URL}/online/live`);
+      if (!res.ok) throw new Error("Không thể tải trận trực tiếp.");
+      const matches = await res.json();
+
+      if (!matches || matches.length === 0) {
+        liveList.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Hiện chưa có trận đấu trực tiếp nào.</div>';
+        return;
+      }
+
+      let html = "";
+      matches.forEach(m => {
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-navy-dark); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div>
+              <div style="font-size: 12px; font-weight: bold; color: var(--text-main);">
+                <span style="color: #ef4444;">${m.redPlayerName}</span> vs <span style="color: #3b82f6;">${m.blackPlayerName}</span>
+              </div>
+              <div style="font-size: 10px; color: var(--text-muted);">Phòng ${m.roomCode} · ${m.moveCount} nước đi</div>
+            </div>
+            <a href="/Game?joinRoom=${encodeURIComponent(m.roomCode)}" class="btn-primary" style="padding: 4px 10px; font-size: 11px; text-decoration: none; background: #ef4444; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-eye"></i> Xem
+            </a>
+          </div>
+        `;
+      });
+      liveList.innerHTML = html;
+    } catch (e) {
+      console.warn("Lỗi load live matches:", e);
+      liveList.innerHTML = '<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 10px;">Lỗi tải trận trực tiếp.</div>';
+    }
+  }
+
+  const refreshLiveBtn = document.getElementById("refresh-live-btn");
+  if (refreshLiveBtn) {
+    refreshLiveBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      loadLiveMatches();
+    });
+  }
+
   if (refreshRoomsBtn) {
     refreshRoomsBtn.addEventListener("click", function(e) {
       e.stopPropagation();
       loadOpenRooms();
+      loadLiveMatches();
     });
   }
 

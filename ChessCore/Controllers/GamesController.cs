@@ -69,6 +69,30 @@ namespace ChessCore.Controllers
             return Ok(openRooms);
         }
 
+        // Danh sách các trận đang đấu trực tiếp (Dành cho Khán giả / Spectator)
+        [HttpGet("online/live")]
+        public async Task<IActionResult> GetLiveMatches()
+        {
+            var liveMatches = await _dbContext.Games
+                .Where(g => g.Status == GameStatus.InProgress && g.RedPlayerId != null && g.BlackPlayerId != null)
+                .OrderByDescending(g => g.LastMoveAt ?? g.CreatedAt)
+                .Take(10)
+                .Select(g => new
+                {
+                    id = g.Id,
+                    roomCode = g.RoomCode,
+                    createdAt = g.CreatedAt,
+                    redPlayerName = _dbContext.Users.Where(u => u.Id == g.RedPlayerId).Select(u => u.Username).FirstOrDefault() ?? "Quân Đỏ",
+                    redElo = _dbContext.Users.Where(u => u.Id == g.RedPlayerId).Select(u => u.Elo).FirstOrDefault(),
+                    blackPlayerName = _dbContext.Users.Where(u => u.Id == g.BlackPlayerId).Select(u => u.Username).FirstOrDefault() ?? "Quân Đen",
+                    blackElo = _dbContext.Users.Where(u => u.Id == g.BlackPlayerId).Select(u => u.Elo).FirstOrDefault(),
+                    moveCount = g.Moves.Count
+                })
+                .ToListAsync();
+
+            return Ok(liveMatches);
+        }
+
         // Online endpoints require a signed-in player. Generic game endpoints
         // remain available for local/offline play.
         [Authorize]

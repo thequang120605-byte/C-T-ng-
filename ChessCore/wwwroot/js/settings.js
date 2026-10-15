@@ -1,28 +1,52 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const themeBtns = document.querySelectorAll('.theme-btn');
+    const themeBtns = document.querySelectorAll('.theme-options:not(.board-skin-options):not(.piece-skin-options) .theme-btn');
+    const boardSkinBtns = document.querySelectorAll('.board-skin-btn');
+    const pieceSkinBtns = document.querySelectorAll('.piece-skin-btn');
     const soundToggle = document.getElementById('setting-sound');
     const hintToggle = document.getElementById('setting-hint');
     const langSelect = document.getElementById('setting-lang');
 
     // Tải cấu hình từ localStorage
-    const savedTheme = localStorage.getItem('chess_theme') || 'light';
+    const savedTheme = localStorage.getItem('chess_theme') || 'wood';
+    const savedBoardSkin = localStorage.getItem('chess_board_skin') || 'wood';
+    const savedPieceSkin = localStorage.getItem('chess_piece_skin') || 'traditional';
     const savedSound = localStorage.getItem('chess_sound') !== 'false';
     const savedHint = localStorage.getItem('chess_hint') !== 'false';
     const savedLang = localStorage.getItem('chess_lang') || 'vi';
 
     // Áp dụng cấu hình ban đầu
     applyTheme(savedTheme);
+    applyBoardSkin(savedBoardSkin);
+    applyPieceSkin(savedPieceSkin);
     if (typeof updateLanguageText === 'function') { updateLanguageText(savedLang); }
     if(soundToggle) soundToggle.checked = savedSound;
     if(hintToggle) hintToggle.checked = savedHint;
     if(langSelect) langSelect.value = savedLang;
 
-    // Bắt sự kiện Theme
+    // Bắt sự kiện Theme Màu Nền
     themeBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             const theme = this.getAttribute('data-theme');
             applyTheme(theme);
             localStorage.setItem('chess_theme', theme);
+        });
+    });
+
+    // Bắt sự kiện Chất liệu Bàn Cờ
+    boardSkinBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const skin = this.getAttribute('data-board-skin');
+            applyBoardSkin(skin);
+            localStorage.setItem('chess_board_skin', skin);
+        });
+    });
+
+    // Bắt sự kiện Kiểu Quân Cờ
+    pieceSkinBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const skin = this.getAttribute('data-piece-skin');
+            applyPieceSkin(skin);
+            localStorage.setItem('chess_piece_skin', skin);
         });
     });
 
@@ -54,7 +78,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function applyTheme(theme) {
-        // Cập nhật UI button
         themeBtns.forEach(btn => {
             if(btn.getAttribute('data-theme') === theme) {
                 btn.classList.add('active');
@@ -62,8 +85,52 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.classList.remove('active');
             }
         });
-
-        // Áp dụng CSS variables
         document.body.setAttribute('data-theme', theme);
+    }
+
+    function applyBoardSkin(skin) {
+        boardSkinBtns.forEach(btn => {
+            if(btn.getAttribute('data-board-skin') === skin) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        const textureImg = document.getElementById('board-image-texture');
+        if (!textureImg) return;
+
+        let src = "";
+        if (skin === 'wood') {
+            src = "/images/boards/Wood-grain Chessboard.png";
+        } else if (skin === 'stone') {
+            src = "/images/boards/Stone-textured Chessboard.png";
+        } else if (skin === 'cardboard') {
+            src = "/images/boards/Simple Brown Cardboard Chessboard.png";
+        } else if (skin === 'minimalist') {
+            src = "/images/boards/Minimalist White Chessboard.png";
+        }
+
+        if (src) {
+            textureImg.setAttribute('href', src);
+            textureImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', src);
+            textureImg.style.display = 'block';
+        } else {
+            textureImg.style.display = 'none';
+        }
+    }
+
+    function applyPieceSkin(skin) {
+        pieceSkinBtns.forEach(btn => {
+            if(btn.getAttribute('data-piece-skin') === skin) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        window.currentPieceSkin = skin;
+        // Phát sự kiện để game.js và puzzle.js tự động re-render quân cờ ngay lập tức
+        window.dispatchEvent(new CustomEvent('chess-skin-changed', { detail: { skin: skin } }));
     }
 });
