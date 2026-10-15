@@ -81,11 +81,21 @@ builder.Services.AddCors(options =>
 
 // Cấu hình Entity Framework Core với MySQL (Pomelo)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+ServerVersion serverVersion;
+try
+{
+    serverVersion = ServerVersion.AutoDetect(connectionString);
+}
+catch
+{
+    serverVersion = new MySqlServerVersion(new Version(8, 0, 30));
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseMySql(
         connectionString,
-        ServerVersion.AutoDetect(connectionString),
+        serverVersion,
         mySqlOptions => mySqlOptions.EnableRetryOnFailure(
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(5),
