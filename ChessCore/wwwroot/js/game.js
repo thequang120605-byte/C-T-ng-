@@ -3386,6 +3386,41 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (e) {
       console.warn('Lỗi phát âm thanh:', e);
     }
+
+    // Giọng đọc bình luận trận đấu (Voice Announcer)
+    speakVoice(type);
+  }
+
+  function isVoiceEnabled() {
+    return localStorage.getItem('chess_voice') !== 'false';
+  }
+
+  function speakVoice(type) {
+    if (!isVoiceEnabled() || !window.speechSynthesis) return;
+
+    let text = "";
+    if (type === 'check') {
+      text = "Chiếu tướng!";
+    } else if (type === 'capture') {
+      text = "Ăn quân!";
+    } else if (type === 'win') {
+      text = "Chiến thắng!";
+    } else if (type === 'loss') {
+      text = "Thất bại!";
+    }
+
+    if (!text) return;
+
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'vi-VN';
+      utterance.rate = 1.1;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn("Lỗi đọc thông báo:", err);
+    }
   }
 
   // Cập nhật trạng thái icon loa nhanh

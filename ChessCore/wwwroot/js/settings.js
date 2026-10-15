@@ -57,9 +57,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Bắt sự kiện Sound & Hint
+    const voiceToggle = document.getElementById('setting-voice');
+    const savedVoice = localStorage.getItem('chess_voice') !== 'false';
+    if(voiceToggle) voiceToggle.checked = savedVoice;
+
     if(soundToggle) {
         soundToggle.addEventListener('change', function() {
             localStorage.setItem('chess_sound', this.checked);
+        });
+    }
+
+    if(voiceToggle) {
+        voiceToggle.addEventListener('change', function() {
+            localStorage.setItem('chess_voice', this.checked);
         });
     }
 

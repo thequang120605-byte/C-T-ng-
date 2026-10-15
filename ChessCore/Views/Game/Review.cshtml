@@ -520,13 +520,36 @@
             }
         </div>
 
-        <!-- Nút xuất biên bản PGN / In PDF -->
+        <!-- Nút xuất biên bản PGN / In PDF / Chia sẻ QR -->
         <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-top: 4px;">
             <button type="button" class="btn-action-secondary" onclick="exportNotation();" style="flex: 1; justify-content: center; padding: 6px 10px; font-size: 12px;">
                 <i class="fa-solid fa-file-arrow-down"></i> Xuất PGN / Text
             </button>
             <button type="button" class="btn-action-secondary" onclick="window.print();" style="flex: 1; justify-content: center; padding: 6px 10px; font-size: 12px;">
                 <i class="fa-solid fa-print"></i> In ván cờ
+            </button>
+            <button type="button" class="btn-action-secondary" onclick="openShareQrModal();" style="flex: 1; justify-content: center; padding: 6px 10px; font-size: 12px;" title="Chia sẻ mã QR để xem lại trên điện thoại">
+                <i class="fa-solid fa-qrcode"></i> Mã QR
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CHIA SẺ MÃ QR VÁN ĐẤU -->
+<div id="share-qr-modal" class="custom-modal hidden" style="position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999;">
+    <div class="modal-content" style="background: var(--bg-navy-panel, #ffffff); border: 2px solid var(--accent-gold); border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 20px 45px rgba(0,0,0,0.2);">
+        <div style="font-size: 32px; color: var(--accent-gold); margin-bottom: 8px;"><i class="fa-solid fa-qrcode"></i></div>
+        <h3 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 4px;">Chia sẻ ván đấu #@Model.GameId</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Quét mã QR bằng điện thoại để xem trực tiếp phân tích ván cờ này.</p>
+        <div style="background: #ffffff; padding: 12px; border-radius: 12px; display: inline-block; border: 1px solid var(--border-color); margin-bottom: 16px;">
+            <img id="share-qr-img" src="" alt="Mã QR Ván Đấu" style="width: 180px; height: 180px; display: block;" />
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: center;">
+            <button type="button" class="btn-action-secondary" onclick="copyShareLink();" style="flex: 1; justify-content: center;">
+                <i class="fa-regular fa-copy"></i> Chép link
+            </button>
+            <button type="button" class="btn-action-gold" onclick="closeShareQrModal();" style="flex: 1; justify-content: center;">
+                Đóng
             </button>
         </div>
     </div>
@@ -818,6 +841,32 @@
             a.href = URL.createObjectURL(blob);
             a.download = `BienBan_VanCo_${@Model.GameId}.txt`;
             a.click();
+        }
+
+        function openShareQrModal() {
+            const modal = document.getElementById('share-qr-modal');
+            const img = document.getElementById('share-qr-img');
+            const shareUrl = window.location.href;
+            if (img) {
+                img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}`;
+            }
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeShareQrModal() {
+            const modal = document.getElementById('share-qr-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function copyShareLink() {
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                alert("Đã sao chép liên kết ván cờ vào bộ nhớ tạm!");
+            } catch (err) {
+                alert("Liên kết ván cờ: " + window.location.href);
+            }
         }
 
         // Render trạng thái đầu tiên
