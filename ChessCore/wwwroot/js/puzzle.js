@@ -34,6 +34,8 @@
   let hintTo = null;
   let counterMove = null; // { fromRow, fromCol, toRow, toCol } khi AI phản đòn
   let checkedColor = null;
+  const MAX_PUZZLE_HINTS = 3;
+  let remainingPuzzleHints = MAX_PUZZLE_HINTS;
   let currentLevel = 1;
   let initialPieces = [];
   let initialLegal = [];
@@ -406,6 +408,7 @@
     initialPieces = data.state.pieces.map((p) => ({ ...p }));
     initialLegal = data.state.legalMoves;
     initialChecked = data.state.checkedColor;
+    remainingPuzzleHints = MAX_PUZZLE_HINTS;
 
     resetToInitial();
     renderInfo();
@@ -915,7 +918,19 @@
   function updateButtons() {
     $("pz-next").classList.toggle("pz-hidden", phase !== "solved");
     $("pz-retry").classList.toggle("pz-hidden", phase !== "wrong");
-    $("pz-hint").classList.toggle("pz-hidden", phase !== "playing");
+    const hintBtn = $("pz-hint");
+    if (hintBtn) {
+      hintBtn.classList.toggle("pz-hidden", phase !== "playing");
+      if (remainingPuzzleHints > 0) {
+        hintBtn.innerHTML = `<i class="fa-solid fa-lightbulb"></i> Gợi ý nước đi (${remainingPuzzleHints}) <i class="fa-solid fa-caret-up"></i>`;
+        hintBtn.disabled = false;
+        hintBtn.style.opacity = "1";
+      } else {
+        hintBtn.innerHTML = `<i class="fa-solid fa-ban" style="color: #ef4444;"></i> Đã hết lượt gợi ý`;
+        hintBtn.disabled = true;
+        hintBtn.style.opacity = "0.5";
+      }
+    }
 
     if (phase === "solved") {
       $("pz-next").textContent = levelFullyDone(puzzle.level) ? "Xem tổng kết cấp độ" : "Chơi tiếp";
@@ -1035,6 +1050,12 @@
   async function handlePuzzleHint(mode = "move") {
     if (pzHintDropdown) pzHintDropdown.classList.add("hidden");
     if (busy || phase !== "playing") return;
+
+    if (remainingPuzzleHints <= 0) {
+      setMsg("wrong", "Bạn đã dùng hết 3 lượt gợi ý trong bài thế này. Hãy tự suy nghĩ nhé!");
+      return;
+    }
+
     busy = true;
 
     try {
@@ -1046,20 +1067,16 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Không lấy được gợi ý.");
       if (data.available) {
+        remainingPuzzleHints--;
+        updateButtons();
+
         hintFrom = { row: data.fromRow, col: data.fromCol };
-        const pointNote = data.pointsDeducted ? ` (-${data.pointsDeducted} Elo)` : "";
-        if (data.remainingElo !== undefined && data.remainingElo !== null) {
-          const eloBadge = document.getElementById("navbar-user-elo");
-          if (eloBadge) {
-            eloBadge.innerHTML = `<i class="fa-solid fa-star" style="font-size: 9px;"></i> ${data.remainingElo}`;
-          }
-        }
         if (mode === "move") {
           hintTo = { row: data.toRow, col: data.toCol };
-          setMsg("info", `🎯 Gợi ý nước đi${pointNote}: Hãy đi ${data.pieceType || 'quân'} (${data.fromRow}, ${data.fromCol}) ➜ (${data.toRow}, ${data.toCol})`);
+          setMsg("info", `🎯 Gợi ý nước đi: Hãy đi ${data.pieceType || 'quân'} (${data.fromRow}, ${data.fromCol}) ➜ (${data.toRow}, ${data.toCol})`);
         } else {
           hintTo = null; // Chỉ highlight quân
-          setMsg("info", `💡 Gợi ý quân cờ${pointNote}: Hãy di chuyển ${data.pieceType || 'quân'} tại ô (${data.fromRow}, ${data.fromCol})`);
+          setMsg("info", `💡 Gợi ý quân cờ: Hãy di chuyển ${data.pieceType || 'quân'} tại ô (${data.fromRow}, ${data.fromCol})`);
         }
         selected = null;
         renderBoard();

@@ -1188,15 +1188,12 @@ namespace ChessCore.Controllers
                 return BadRequest(new { message = "Không tìm thấy nước đi gợi ý phù hợp." });
             }
 
-            int pointsDeducted = mode == "piece" ? 5 : 10;
             int? currentElo = null;
             if (TryGetCurrentUserId(out int userId))
             {
                 var user = await _dbContext.Users.FindAsync(userId);
                 if (user != null)
                 {
-                    user.Elo = Math.Max(0, user.Elo - pointsDeducted);
-                    await _dbContext.SaveChangesAsync();
                     currentElo = user.Elo;
                 }
             }
@@ -1212,7 +1209,7 @@ namespace ChessCore.Controllers
                 pieceType = movingPiece?.Type.ToString(),
                 pieceColor = movingPiece?.Color.ToString(),
                 currentTurn = game.CurrentTurn.ToString(),
-                pointsDeducted,
+                pointsDeducted = 0,
                 remainingElo = currentElo
             });
         }
@@ -1404,7 +1401,7 @@ namespace ChessCore.Controllers
                     else if (status == GameStatus.BlackWins)
                     {
                         redUser.Losses++;
-                        redUser.Elo = Math.Max(0, redUser.Elo - 10);
+                        redUser.Elo = Math.Max(400, redUser.Elo - 10);
                     }
                     else if (status == GameStatus.Draw)
                     {
@@ -1428,7 +1425,7 @@ namespace ChessCore.Controllers
                     else if (status == GameStatus.RedWins)
                     {
                         blackUser.Losses++;
-                        blackUser.Elo = Math.Max(0, blackUser.Elo - 10);
+                        blackUser.Elo = Math.Max(400, blackUser.Elo - 10);
                     }
                     else if (status == GameStatus.Draw)
                     {

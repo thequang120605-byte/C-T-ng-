@@ -378,8 +378,6 @@ namespace ChessCore.Controllers
             if (hint == null)
                 return Ok(new { available = false, message = "Chưa có gợi ý cho thế cờ này." });
 
-            // Trừ điểm gợi ý (5 điểm cho gợi ý quân, 10 điểm cho gợi ý nước đi) nếu người dùng đã đăng nhập
-            int pointsDeducted = mode == "piece" ? 5 : 10;
             int? userId = CurrentUserId();
             int? currentElo = null;
 
@@ -388,8 +386,6 @@ namespace ChessCore.Controllers
                 var user = await _db.Users.FindAsync(userId.Value);
                 if (user != null)
                 {
-                    user.Elo = Math.Max(0, user.Elo - pointsDeducted);
-                    await _db.SaveChangesAsync();
                     currentElo = user.Elo;
                 }
             }
@@ -405,11 +401,11 @@ namespace ChessCore.Controllers
                 toCol = hint.To.Col,
                 pieceType = piece.Type.ToString(),
                 targetPieceType = targetPiece?.Type.ToString(),
-                pointsDeducted,
+                pointsDeducted = 0,
                 remainingElo = currentElo,
                 message = mode == "piece"
-                    ? $"Gợi ý quân cờ (-{pointsDeducted}đ): hãy xem xét quân {PieceName(piece.Type)} tại ({hint.From.Row}, {hint.From.Col})."
-                    : $"Gợi ý nước đi (-{pointsDeducted}đ): hãy đi {PieceName(piece.Type)} từ ({hint.From.Row}, {hint.From.Col}) ➜ ({hint.To.Row}, {hint.To.Col}).",
+                    ? $"Gợi ý quân cờ: hãy xem xét quân {PieceName(piece.Type)} tại ({hint.From.Row}, {hint.From.Col})."
+                    : $"Gợi ý nước đi: hãy đi {PieceName(piece.Type)} từ ({hint.From.Row}, {hint.From.Col}) ➜ ({hint.To.Row}, {hint.To.Col}).",
             });
         }
 

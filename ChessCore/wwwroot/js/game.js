@@ -3134,9 +3134,27 @@ document.addEventListener("DOMContentLoaded", function () {
   // AI HINT (GỢI Ý QUÂN CỜ & GỢI Ý CÓ NƯỚC ĐI)
   // =====================================================
   let isHinting = false;
+  const MAX_GAME_HINTS = 3;
+  let remainingGameHints = MAX_GAME_HINTS;
   const hintDropdown = document.getElementById("hint-dropdown");
   const hintPieceBtn = document.getElementById("hint-piece-btn");
   const hintFullBtn = document.getElementById("hint-full-btn");
+
+  function updateHintButtonUI() {
+    if (!hintButton) return;
+    const span = hintButton.querySelector("span");
+    if (span) {
+      if (remainingGameHints > 0) {
+        span.innerHTML = `Gợi ý (${remainingGameHints}) <i class="fa-solid fa-caret-up" style="font-size: 10px;"></i>`;
+        hintButton.disabled = false;
+        hintButton.style.opacity = "1";
+      } else {
+        span.innerHTML = `Hết gợi ý <i class="fa-solid fa-ban" style="font-size: 10px; color: #ef4444;"></i>`;
+        hintButton.disabled = true;
+        hintButton.style.opacity = "0.5";
+      }
+    }
+  }
 
   async function handleGetHint(mode = "full") {
     if (hintDropdown) {
@@ -3145,6 +3163,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!gameId || gameStatus !== "InProgress") {
       showToast("Chỉ có thể lấy gợi ý khi ván cờ đang diễn ra!", "warning");
+      return;
+    }
+
+    if (remainingGameHints <= 0) {
+      showToast("Bạn đã dùng hết 3 lượt gợi ý trong ván này. Hãy tự suy nghĩ nhé!", "warning");
       return;
     }
 
@@ -3173,13 +3196,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const hintData = await res.json();
       console.log("Nước đi gợi ý:", hintData);
 
-      // Cập nhật lại số điểm trên Header người dùng ngay lập tức
-      if (hintData.remainingElo !== undefined && hintData.remainingElo !== null) {
-        const eloBadge = document.getElementById("navbar-user-elo");
-        if (eloBadge) {
-          eloBadge.innerHTML = `<i class="fa-solid fa-star" style="font-size: 9px;"></i> ${hintData.remainingElo}`;
-        }
-      }
+      remainingGameHints--;
+      updateHintButtonUI();
 
       // Hiển thị gợi ý trực quan trên bàn cờ theo chế độ
       await highlightHintMove(hintData, mode);
@@ -3189,10 +3207,7 @@ document.addEventListener("DOMContentLoaded", function () {
       showToast(err.message || "Lỗi lấy gợi ý.", "danger");
     } finally {
       isHinting = false;
-      if (hintButton) {
-        hintButton.disabled = false;
-        hintButton.style.opacity = "1";
-      }
+      updateHintButtonUI();
     }
   }
 
