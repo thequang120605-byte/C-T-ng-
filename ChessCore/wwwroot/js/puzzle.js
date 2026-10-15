@@ -32,6 +32,7 @@
   let flip = false;
   let hintFrom = null;
   let hintTo = null;
+  let counterMove = null; // { fromRow, fromCol, toRow, toCol } khi AI phản đòn
   let checkedColor = null;
   let currentLevel = 1;
   let initialPieces = [];
@@ -421,6 +422,7 @@
     selected = null;
     hintFrom = null;
     hintTo = null;
+    counterMove = null;
     phase = "playing";
     renderBoard();
   }
@@ -627,6 +629,82 @@
       });
       targetLayer.appendChild(targetCircle);
     }
+
+    // Hiển thị mũi tên đỏ trực quan khi AI phản đòn hóa giải nước đi sai
+    if (counterMove && phase === "wrong") {
+      const fromPos = pos(counterMove.fromRow, counterMove.fromCol);
+      const toPos = pos(counterMove.toRow, counterMove.toCol);
+
+      const boardSvg = $("board-svg");
+      if (boardSvg) {
+        let defs = boardSvg.querySelector("defs");
+        if (!defs) {
+          defs = document.createElementNS(SVG_NS, "defs");
+          boardSvg.insertBefore(defs, boardSvg.firstChild);
+        }
+        if (!document.getElementById("pz-counter-arrowhead")) {
+          const marker = document.createElementNS(SVG_NS, "marker");
+          marker.setAttribute("id", "pz-counter-arrowhead");
+          marker.setAttribute("markerWidth", "10");
+          marker.setAttribute("markerHeight", "10");
+          marker.setAttribute("refX", "7");
+          marker.setAttribute("refY", "5");
+          marker.setAttribute("orient", "auto");
+          const path = document.createElementNS(SVG_NS, "path");
+          path.setAttribute("d", "M 0 1 L 9 5 L 0 9 L 2.5 5 Z");
+          path.setAttribute("fill", "#ef4444");
+          marker.appendChild(path);
+          defs.appendChild(marker);
+        }
+      }
+
+      const dx = toPos.x - fromPos.x;
+      const dy = toPos.y - fromPos.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 0) {
+        const startOffset = 34;
+        const endOffset = 32;
+        const startX = fromPos.x + (dx / dist) * startOffset;
+        const startY = fromPos.y + (dy / dist) * startOffset;
+        const endX = toPos.x - (dx / dist) * endOffset;
+        const endY = toPos.y - (dy / dist) * endOffset;
+
+        const targetLayer = $("hint-layer") || movesLayer;
+
+        const arrowOutline = document.createElementNS(SVG_NS, "line");
+        arrowOutline.setAttribute("x1", startX);
+        arrowOutline.setAttribute("y1", startY);
+        arrowOutline.setAttribute("x2", endX);
+        arrowOutline.setAttribute("y2", endY);
+        arrowOutline.setAttribute("class", "counter-arrow-bg");
+        targetLayer.appendChild(arrowOutline);
+
+        const arrowLine = document.createElementNS(SVG_NS, "line");
+        arrowLine.setAttribute("x1", startX);
+        arrowLine.setAttribute("y1", startY);
+        arrowLine.setAttribute("x2", endX);
+        arrowLine.setAttribute("y2", endY);
+        arrowLine.setAttribute("class", "counter-arrow");
+        arrowLine.setAttribute("marker-end", "url(#pz-counter-arrowhead)");
+        targetLayer.appendChild(arrowLine);
+
+        // Vòng tròn highlight vị trí quân phản đòn xuất phát và điểm đích
+        const srcCircle = document.createElementNS(SVG_NS, "circle");
+        srcCircle.setAttribute("cx", fromPos.x);
+        srcCircle.setAttribute("cy", fromPos.y);
+        srcCircle.setAttribute("r", 32);
+        srcCircle.setAttribute("class", "counter-source-circle");
+        targetLayer.appendChild(srcCircle);
+
+        const destCircle = document.createElementNS(SVG_NS, "circle");
+        destCircle.setAttribute("cx", toPos.x);
+        destCircle.setAttribute("cy", toPos.y);
+        destCircle.setAttribute("r", 32);
+        destCircle.setAttribute("class", "counter-target-circle");
+        targetLayer.appendChild(destCircle);
+      }
+    }
   }
 
   function onPieceClick(p) {
@@ -712,21 +790,36 @@
       phase = "wrong";
       SoundFX.playWrong();
       setMsg("wrong", data.message);
+      counterMove = null;
       renderBoard();
 
       // Nếu đang trong chế độ Sinh tồn (Survival) và đi sai -> Kết thúc ngay!
       if (isTimeRush && timerushType === "survival") {
         setTimeout(() => {
           endTimerush("Bạn đã đi sai 1 nước trong chế độ Sinh tồn!");
-        }, 1200);
+        }, 1500);
       }
 
       // Nếu AI có nước phản đòn, biểu diễn trực quan trên bàn cờ
       if (data.reply) {
         await sleep(500);
+        // Lưu toạ độ nước phản đòn để vẽ mũi tên đỏ cảnh báo
+        counterMove = {
+          fromRow: data.reply.fromRow,
+          fromCol: data.reply.fromCol,
+          toRow: data.reply.toRow,
+          toCol: data.reply.toCol
+        };
+
+        const isDefCapture = pieces.some((p) => p.row === data.reply.toRow && p.col === data.reply.toCol);
         pieces = applyLocal(pieces, data.reply);
         checkedColor = null;
-        SoundFX.playMove();
+
+        if (isDefCapture) {
+          SoundFX.playCapture();
+        } else {
+          SoundFX.playMove();
+        }
         renderBoard();
         await sleep(250);
 
