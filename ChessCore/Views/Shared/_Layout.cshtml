@@ -332,6 +332,61 @@
                     </div>
                 </div>
 
+                <!-- HÌNH NỀN KHÔNG GIAN CHƠI CỜ (WALLPAPERS & CUSTOM UPLOAD) -->
+                <div class="setting-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="setting-title" style="margin-bottom: 0;"><i class="fa-solid fa-image"></i> Hình nền không gian chơi cờ</div>
+                        <label for="custom-bg-input" class="btn-secondary" style="font-size: 11.5px; padding: 4px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: 600;" title="Chọn ảnh bất kỳ từ máy tính của bạn">
+                            <i class="fa-solid fa-cloud-arrow-up" style="color: var(--accent-gold);"></i> Tải ảnh từ máy
+                        </label>
+                        <input type="file" id="custom-bg-input" accept="image/*" style="display: none;" />
+                    </div>
+                    <div class="theme-options wallpaper-options">
+                        <button type="button" class="theme-btn wallpaper-btn active" data-wallpaper="none" title="Không dùng ảnh nền, sử dụng màu theme mặc định">
+                            <div class="theme-img-wrap" style="background: var(--bg-navy-light); display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-ban" style="font-size: 20px; color: var(--text-muted);"></i>
+                            </div>
+                            <span>Mặc định</span>
+                        </button>
+                        <button type="button" class="theme-btn wallpaper-btn" data-wallpaper="/images/backgrounds/bamboo.jpg" title="Rừng trúc xanh thanh tịnh phong cách cổ phong">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/backgrounds/bamboo.jpg" alt="Rừng Trúc" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Rừng Trúc</span>
+                        </button>
+                        <button type="button" class="theme-btn wallpaper-btn" data-wallpaper="/images/backgrounds/classic_wood.jpg" title="Thư phòng gỗ cổ điển, trà đạo nho nhã">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/backgrounds/classic_wood.jpg" alt="Thư Phòng Gỗ" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Thư Phòng</span>
+                        </button>
+                        <button type="button" class="theme-btn wallpaper-btn" data-wallpaper="/images/backgrounds/ink_mountain.jpg" title="Tranh non nước sơn thủy sương mờ tĩnh lặng">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/backgrounds/ink_mountain.jpg" alt="Sơn Thủy" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Sơn Thủy</span>
+                        </button>
+                        <button type="button" class="theme-btn wallpaper-btn" data-wallpaper="/images/backgrounds/ancient_temple.jpg" title="Đền cổ tĩnh mịch ngắm kỳ nhân đối ẩm">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/backgrounds/ancient_temple.jpg" alt="Cổ Tự" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Cổ Tự</span>
+                        </button>
+                        <button type="button" class="theme-btn wallpaper-btn" data-wallpaper="/images/backgrounds/dark_study.jpg" title="Trầm hương tĩnh toạ, kỳ đạo thâm sâu">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/backgrounds/dark_study.jpg" alt="Trầm Hương" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Trầm Hương</span>
+                        </button>
+                    </div>
+                    <div id="custom-bg-indicator" style="display: none; margin-top: 8px; font-size: 11.5px; color: var(--accent-gold); align-items: center; justify-content: space-between; background: rgba(217, 119, 6, 0.08); padding: 5px 10px; border-radius: 6px;">
+                        <span><i class="fa-solid fa-check-circle"></i> Đang áp dụng ảnh tùy chỉnh từ máy</span>
+                        <button type="button" id="remove-custom-bg-btn" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 11.5px; font-weight: bold;">
+                            <i class="fa-solid fa-trash-can"></i> Xóa ảnh tùy chỉnh
+                        </button>
+                    </div>
+                </div>
+
                 <!-- CHỦ ĐỀ BÀN CỜ THỰC TẾ -->
                 <div class="setting-group">
                     <div class="setting-title"><i class="fa-solid fa-chess-board"></i> Chất liệu mặt bàn cờ</div>

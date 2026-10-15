@@ -1,7 +1,11 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const themeBtns = document.querySelectorAll('.theme-options:not(.board-skin-options):not(.piece-skin-options) .theme-btn');
+    const themeBtns = document.querySelectorAll('.theme-options:not(.board-skin-options):not(.piece-skin-options):not(.wallpaper-options) .theme-btn');
     const boardSkinBtns = document.querySelectorAll('.board-skin-btn');
     const pieceSkinBtns = document.querySelectorAll('.piece-skin-btn');
+    const wallpaperBtns = document.querySelectorAll('.wallpaper-btn');
+    const customBgInput = document.getElementById('custom-bg-input');
+    const removeCustomBgBtn = document.getElementById('remove-custom-bg-btn');
+    const customBgIndicator = document.getElementById('custom-bg-indicator');
     const soundToggle = document.getElementById('setting-sound');
     const hintToggle = document.getElementById('setting-hint');
     const langSelect = document.getElementById('setting-lang');
@@ -10,6 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const savedTheme = localStorage.getItem('chess_theme') || 'wood';
     const savedBoardSkin = localStorage.getItem('chess_board_skin') || 'vector';
     const savedPieceSkin = localStorage.getItem('chess_piece_skin') || 'traditional';
+    const savedWallpaper = localStorage.getItem('chess_wallpaper') || 'none';
+    const customWallpaper = localStorage.getItem('chess_custom_wallpaper');
     const savedSound = localStorage.getItem('chess_sound') !== 'false';
     const savedHint = localStorage.getItem('chess_hint') !== 'false';
     const savedLang = localStorage.getItem('chess_lang') || 'vi';
@@ -18,6 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
     applyTheme(savedTheme);
     applyBoardSkin(savedBoardSkin);
     applyPieceSkin(savedPieceSkin);
+    if (customWallpaper) {
+        applyWallpaper(customWallpaper, true);
+    } else {
+        applyWallpaper(savedWallpaper, false);
+    }
     if (typeof updateLanguageText === 'function') { updateLanguageText(savedLang); }
     if(soundToggle) soundToggle.checked = savedSound;
     if(hintToggle) hintToggle.checked = savedHint;
@@ -49,6 +60,59 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('chess_piece_skin', skin);
         });
     });
+
+    // Bắt sự kiện Chọn Hình Nền
+    wallpaperBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const wp = this.getAttribute('data-wallpaper');
+            localStorage.removeItem('chess_custom_wallpaper');
+            localStorage.setItem('chess_wallpaper', wp);
+            applyWallpaper(wp, false);
+        });
+    });
+
+    // Bắt sự kiện Tải ảnh tùy chỉnh từ máy
+    if (customBgInput) {
+        customBgInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Kiểm tra dung lượng tối đa 5MB để tránh đầy localStorage
+            if (file.size > 5 * 1024 * 1024) {
+                if (window.showAppDialog) {
+                    window.showAppDialog('Dung lượng ảnh quá lớn', 'Vui lòng chọn ảnh có kích thước dưới 5MB để đảm bảo hiệu năng.', 'warning');
+                } else {
+                    alert('Vui lòng chọn ảnh dưới 5MB.');
+                }
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const base64Str = evt.target.result;
+                try {
+                    localStorage.setItem('chess_custom_wallpaper', base64Str);
+                    applyWallpaper(base64Str, true);
+                } catch (err) {
+                    console.error('Không thể lưu ảnh vào localStorage:', err);
+                    if (window.showAppDialog) {
+                        window.showAppDialog('Lỗi bộ nhớ duyệt', 'Trình duyệt không đủ dung lượng lưu trữ ảnh này trong localStorage. Hãy chọn ảnh nhỏ hơn.', 'warning');
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Bắt sự kiện Xóa ảnh tùy chỉnh từ máy
+    if (removeCustomBgBtn) {
+        removeCustomBgBtn.addEventListener('click', function() {
+            localStorage.removeItem('chess_custom_wallpaper');
+            const defaultWp = localStorage.getItem('chess_wallpaper') || 'none';
+            applyWallpaper(defaultWp, false);
+            if (customBgInput) customBgInput.value = '';
+        });
+    }
 
     // Bắt sự kiện Sound & Hint
     if(soundToggle) {
@@ -142,5 +206,42 @@ document.addEventListener('DOMContentLoaded', function() {
         window.currentPieceSkin = skin;
         // Phát sự kiện để game.js và puzzle.js tự động re-render quân cờ ngay lập tức
         window.dispatchEvent(new CustomEvent('chess-skin-changed', { detail: { skin: skin } }));
+    }
+
+    function applyWallpaper(wp, isCustom) {
+        wallpaperBtns.forEach(btn => {
+            if (!isCustom && btn.getAttribute('data-wallpaper') === wp) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        if (customBgIndicator) {
+            customBgIndicator.style.display = isCustom ? 'flex' : 'none';
+        }
+
+        const appMain = document.querySelector('.app-main');
+        const gameViewContainer = document.querySelector('.game-view-container');
+
+        if (wp && wp !== 'none') {
+            document.body.classList.add('has-custom-wallpaper');
+            document.documentElement.style.setProperty('--game-bg-image', `url("${wp}")`);
+            if (gameViewContainer) {
+                gameViewContainer.style.backgroundImage = `url("${wp}")`;
+                gameViewContainer.style.backgroundSize = 'cover';
+                gameViewContainer.style.backgroundPosition = 'center';
+                gameViewContainer.style.backgroundRepeat = 'no-repeat';
+            }
+        } else {
+            document.body.classList.remove('has-custom-wallpaper');
+            document.documentElement.style.removeProperty('--game-bg-image');
+            if (gameViewContainer) {
+                gameViewContainer.style.backgroundImage = '';
+                gameViewContainer.style.backgroundSize = '';
+                gameViewContainer.style.backgroundPosition = '';
+                gameViewContainer.style.backgroundRepeat = '';
+            }
+        }
     }
 });

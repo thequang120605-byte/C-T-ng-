@@ -394,6 +394,14 @@ button, input, select, textarea {
     background: var(--bg-navy-dark);
 }
 
+body.has-custom-wallpaper .app-main {
+    background-image: var(--game-bg-image);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
 /* =========================================================
    RESPONSIVE
 ========================================================= */

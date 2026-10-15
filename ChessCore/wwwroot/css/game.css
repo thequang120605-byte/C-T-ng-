@@ -69,8 +69,6 @@
 }
 
 /* =========================================================
-   MODE SELECTION OVERLAY
-/* =========================================================
    MODE SELECTION OVERLAY & CARD (BRIGHT THEME)
 ========================================================= */
 .mode-overlay {
@@ -83,6 +81,12 @@
     backdrop-filter: blur(8px);
     z-index: 50;
     padding: 20px;
+    transition: background 0.3s ease;
+}
+
+body.has-custom-wallpaper .mode-overlay {
+    background: rgba(15, 23, 42, 0.25);
+    backdrop-filter: blur(10px);
 }
 
 .mode-card {
@@ -95,6 +99,13 @@
     text-align: center;
     box-shadow: 0 20px 50px -10px rgba(120, 53, 15, 0.12), 0 4px 16px rgba(15, 23, 42, 0.05);
     animation: modalPopIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.3s ease;
+}
+
+body.has-custom-wallpaper .mode-card {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(254, 215, 170, 0.8);
 }
 
 @keyframes modalPopIn {
@@ -515,6 +526,28 @@
     border-radius: 12px;
     padding: 8px 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+}
+
+body.has-custom-wallpaper .player-bar {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(12px);
+    border-color: rgba(254, 215, 170, 0.7);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+body.has-custom-wallpaper .board-wrapper {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(254, 215, 170, 0.8);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+body.has-custom-wallpaper .panel-box {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14px);
+    border-color: rgba(254, 215, 170, 0.7);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .player-info-left {
