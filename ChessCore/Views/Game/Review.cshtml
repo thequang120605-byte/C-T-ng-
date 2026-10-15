@@ -299,6 +299,60 @@
             }
         }
 
+        /* STYLES FOR PRINTING / EXPORT PDF */
+        @@media print {
+            body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+            }
+            nav, .main-navbar, .sidebar, .btn-action-gold, .btn-action-secondary, .review-controls, #btn-play, #btn-first, #btn-prev, #btn-next, #btn-last {
+                display: none !important;
+            }
+            .review-container {
+                display: block !important;
+                height: auto !important;
+                max-height: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+            }
+            .review-board-card, .review-analysis-card {
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+                background: #ffffff !important;
+                break-inside: avoid;
+                margin-bottom: 20px;
+                padding: 16px !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+            .move-history-scroll {
+                max-height: none !important;
+                overflow: visible !important;
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 4px;
+            }
+            .review-move-item {
+                border-bottom: 1px solid #e2e8f0 !important;
+            }
+            .review-board-wrapper {
+                max-height: 480px !important;
+            }
+            .print-report-header {
+                display: block !important;
+            }
+        }
+
+        .print-report-header {
+            display: none;
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #b45309;
+        }
+
         /* Quân cờ chuẩn */
         .chess-piece {
             cursor: pointer;
@@ -339,6 +393,11 @@
 <div class="review-container">
     <!-- CỘT TRÁI: BÀN CỜ REPLAY -->
     <div class="review-board-card">
+        <div class="print-report-header">
+            <h1 style="font-size: 22px; font-weight: 800; color: #b45309; margin: 0 0 6px 0;">BIÊN BẢN VÁN ĐẤU CỜ TƯỚNG PRO</h1>
+            <p style="font-size: 13px; color: #475569; margin: 0;">Trận: <strong>@Model.MatchTitle</strong> | Ngày đấu: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm") | Mã ván: #@Model.GameId</p>
+            <p style="font-size: 13px; color: #475569; margin: 4px 0 0 0;">Quân Đỏ: <strong style="color: #ef4444;">@Model.RedPlayerName</strong> (Độ chính xác: @Model.AccuracyRed%) — Quân Đen: <strong style="color: #0f172a;">@Model.BlackPlayerName</strong> (Độ chính xác: @Model.AccuracyBlack%)</p>
+        </div>
         <div class="review-match-header">
             <div class="review-match-info">
                 <h2 class="review-match-title">
@@ -392,11 +451,15 @@
 
         <!-- Bộ nút điều hướng Replay -->
         <div class="review-controls">
-            <button type="button" class="btn-replay" id="btn-first" title="Về đầu"><i class="fa-solid fa-backward-step"></i></button>
-            <button type="button" class="btn-replay" id="btn-prev" title="Nước trước"><i class="fa-solid fa-chevron-left"></i></button>
-            <button type="button" class="btn-replay" id="btn-play" title="Tự động chạy"><i class="fa-solid fa-play"></i></button>
-            <button type="button" class="btn-replay" id="btn-next" title="Nước kế tiếp"><i class="fa-solid fa-chevron-right"></i></button>
-            <button type="button" class="btn-replay" id="btn-last" title="Về cuối"><i class="fa-solid fa-forward-step"></i></button>
+            <button type="button" class="btn-replay" id="btn-first" title="Về đầu (Phím Home)"><i class="fa-solid fa-backward-step"></i></button>
+            <button type="button" class="btn-replay" id="btn-prev" title="Nước trước (Phím ←)"><i class="fa-solid fa-chevron-left"></i></button>
+            <button type="button" class="btn-replay" id="btn-play" title="Tự động chạy (Phím Space)"><i class="fa-solid fa-play"></i></button>
+            <button type="button" class="btn-replay" id="btn-next" title="Nước kế tiếp (Phím →)"><i class="fa-solid fa-chevron-right"></i></button>
+            <button type="button" class="btn-replay" id="btn-last" title="Về cuối (Phím End)"><i class="fa-solid fa-forward-step"></i></button>
+            <button type="button" class="btn-replay" id="btn-flip" title="Xoay bàn cờ (Phím F)"><i class="fa-solid fa-arrows-rotate"></i></button>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; text-align: center;">
+            <i class="fa-regular fa-keyboard"></i> Phím tắt: <strong>←</strong> / <strong>→</strong> (di chuyển nước), <strong>Space</strong> (chạy tự động), <strong>F</strong> (xoay bàn cờ)
         </div>
     </div>
 
@@ -552,8 +615,10 @@
             }
 
             pieces.forEach(p => {
-                const x = 50 + p.col * 100;
-                const y = 50 + p.row * 100;
+                const col = isBoardFlipped ? (8 - p.col) : p.col;
+                const row = isBoardFlipped ? (9 - p.row) : p.row;
+                const x = 50 + col * 100;
+                const y = 50 + row * 100;
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 g.setAttribute('class', `chess-piece ${(p.color || "").toLowerCase()}`);
 
@@ -681,10 +746,20 @@
             renderBoardAtStep(currentStep);
         }
 
+        let isBoardFlipped = false;
+
         document.getElementById('btn-first').onclick = () => goToStep(-1);
         document.getElementById('btn-prev').onclick = () => goToStep(currentStep - 1);
         document.getElementById('btn-next').onclick = () => goToStep(currentStep + 1);
         document.getElementById('btn-last').onclick = () => goToStep(analyzedMoves.length - 1);
+
+        const btnFlip = document.getElementById('btn-flip');
+        if (btnFlip) {
+            btnFlip.onclick = () => {
+                isBoardFlipped = !isBoardFlipped;
+                renderBoardAtStep(currentStep);
+            };
+        }
 
         document.getElementById('btn-play').onclick = function() {
             if (isPlaying) {
@@ -705,6 +780,32 @@
                 }, 1200);
             }
         };
+
+        // Phím tắt bàn phím (Keyboard Shortcuts)
+        document.addEventListener('keydown', function(e) {
+            // Không can thiệp nếu đang nhập text trong input
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                goToStep(currentStep - 1);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                goToStep(currentStep + 1);
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                goToStep(-1);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                goToStep(analyzedMoves.length - 1);
+            } else if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                document.getElementById('btn-play').click();
+            } else if (e.key === 'f' || e.key === 'F') {
+                e.preventDefault();
+                if (btnFlip) btnFlip.click();
+            }
+        });
 
         function exportNotation() {
             let txt = `[Ván cờ Cờ Tướng Pro #${@Model.GameId}]\n[Ngày: ${new Date().toLocaleDateString()}]\n[Đỏ: @Model.RedPlayerName]\n[Đen: @Model.BlackPlayerName]\n\n`;

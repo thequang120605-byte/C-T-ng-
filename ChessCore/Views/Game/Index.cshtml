@@ -50,9 +50,19 @@
                     <span class="mode-subtitle">Tạo phòng chơi với bạn bè</span>
                     <span class="mode-active-indicator"><i class="fa-solid fa-circle-check"></i></span>
                 </button>
+
+                <!-- AI VS AI (TỰ ĐỘNG ĐẤU) -->
+                <button id="player-vs-ai-btn" class="mode-btn" type="button">
+                    <div class="mode-icon-circle mode-aivai-circle">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <span class="mode-title">AI vs AI</span>
+                    <span class="mode-subtitle">Hai máy tự động đối đầu</span>
+                    <span class="mode-active-indicator"><i class="fa-solid fa-circle-check"></i></span>
+                </button>
             </div>
 
-            <!-- CHỌN ĐỘ KHÓ -->
+            <!-- CHỌN ĐỘ KHÓ CHO CHẾ ĐỘ NGƯỜI VS MÁY -->
             <div id="difficulty-selection" class="difficulty-panel hidden">
                 <div class="diff-header">
                     <i class="fa-solid fa-brain" style="color: var(--accent-gold);"></i>
@@ -81,6 +91,48 @@
                     </button>
                 </div>
                 <p id="difficulty-description" class="diff-desc-text"></p>
+            </div>
+
+            <!-- CHỌN CẤU HÌNH AI VS AI -->
+            <div id="aivai-selection" class="difficulty-panel hidden">
+                <div class="diff-header">
+                    <i class="fa-solid fa-microchip" style="color: #9333ea;"></i>
+                    <h3>Thiết lập đối đầu AI vs AI</h3>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+                    <div style="background: var(--bg-navy-dark); padding: 12px; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <div style="font-weight: 700; color: #ef4444; font-size: 13.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-robot"></i> Bot Đỏ (Đi trước)
+                        </div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Độ sâu tính toán:</label>
+                        <select id="aivai-red-depth" class="form-select" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-navy-panel); color: var(--text-main); font-size: 13px;">
+                            <option value="1">Depth 1 (Nhanh - Dễ)</option>
+                            <option value="2" selected>Depth 2 (Trung bình)</option>
+                            <option value="3">Depth 3 (Khó)</option>
+                            <option value="4">Depth 4 (Cao cấp)</option>
+                        </select>
+                    </div>
+                    <div style="background: var(--bg-navy-dark); padding: 12px; border-radius: 10px; border: 1px solid rgba(100, 116, 139, 0.3);">
+                        <div style="font-weight: 700; color: #64748b; font-size: 13.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-robot"></i> Bot Đen (Đi sau)
+                        </div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Độ sâu tính toán:</label>
+                        <select id="aivai-black-depth" class="form-select" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-navy-panel); color: var(--text-main); font-size: 13px;">
+                            <option value="1">Depth 1 (Nhanh - Dễ)</option>
+                            <option value="2">Depth 2 (Trung bình)</option>
+                            <option value="3" selected>Depth 3 (Khó)</option>
+                            <option value="4">Depth 4 (Cao cấp)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-muted);">
+                    <span><i class="fa-solid fa-stopwatch"></i> Tốc độ mỗi nước:</span>
+                    <select id="aivai-speed" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-navy-panel); color: var(--text-main); font-size: 12px;">
+                        <option value="400">Rất nhanh (0.4s)</option>
+                        <option value="800" selected>Bình thường (0.8s)</option>
+                        <option value="1500">Chậm rãi (1.5s)</option>
+                    </select>
+                </div>
             </div>
 
             <!-- ONLINE LOBBY -->
@@ -445,6 +497,22 @@
                         <i class="fa-solid fa-flag"></i>
                         <span>Đầu hàng</span>
                     </button>
+                </div>
+
+                <!-- AI VS AI CONTROLS (Chỉ hiện khi chơi chế độ AI vs AI) -->
+                <div id="aivai-controls" class="aivai-controls-panel hidden" style="margin-top: 10px; padding: 10px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 12px; font-weight: 700; color: #9333ea;"><i class="fa-solid fa-microchip"></i> Điều khiển AI vs AI</span>
+                        <span id="aivai-status-pill" style="font-size: 11px; background: rgba(168, 85, 247, 0.2); color: #9333ea; padding: 2px 6px; border-radius: 4px; font-weight: 600;">Đang chạy</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                        <button id="aivai-toggle-btn" class="btn-secondary" type="button" style="padding: 6px; font-size: 12px; justify-content: center;">
+                            <i class="fa-solid fa-pause"></i> Tạm dừng
+                        </button>
+                        <button id="aivai-step-btn" class="btn-secondary" type="button" style="padding: 6px; font-size: 12px; justify-content: center;">
+                            <i class="fa-solid fa-forward-step"></i> Nước kế
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="action-footer">

@@ -116,6 +116,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
 
   let VS_COMPUTER = false;
+  let IS_AI_VS_AI = false;
+  let aiVsAiPaused = false;
+  let aiVsAiTimer = null;
 
   let gameModeSelected = false;
 
@@ -173,6 +176,16 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   
   const playerVsOnlineButton = document.getElementById("player-vs-online-btn");
+  const playerVsAiButton = document.getElementById("player-vs-ai-btn");
+  const aivaiSelection = document.getElementById("aivai-selection");
+  const aivaiRedDepth = document.getElementById("aivai-red-depth");
+  const aivaiBlackDepth = document.getElementById("aivai-black-depth");
+  const aivaiSpeed = document.getElementById("aivai-speed");
+  const aivaiControls = document.getElementById("aivai-controls");
+  const aivaiToggleBtn = document.getElementById("aivai-toggle-btn");
+  const aivaiStepBtn = document.getElementById("aivai-step-btn");
+  const aivaiStatusPill = document.getElementById("aivai-status-pill");
+
   const onlineSelection = document.getElementById("online-selection");
   const joinOnlineButton = document.getElementById("join-online-btn");
   const createOnlineButton = document.getElementById("create-online-btn");
@@ -381,11 +394,36 @@ document.addEventListener("DOMContentLoaded", function () {
       playerVsOnlineButton.setAttribute("aria-pressed", "false");
     }
 
-    // -----------------------------------------
-    // COMPUTER
-    // -----------------------------------------
+    if (playerVsAiButton) {
+      playerVsAiButton.classList.remove("selected");
+      playerVsAiButton.setAttribute("aria-pressed", "false");
+    }
 
-    if (VS_COMPUTER) {
+    // -----------------------------------------
+    // AI VS AI (MÁY VS MÁY)
+    // -----------------------------------------
+    if (IS_AI_VS_AI) {
+      if (playerVsAiButton) {
+        playerVsAiButton.classList.add("selected");
+        playerVsAiButton.setAttribute("aria-pressed", "true");
+      }
+      if (selectedModeText) {
+        selectedModeText.textContent = "⚡ AI vs AI (Tự động đấu)";
+      }
+      if (difficultySelection) {
+        difficultySelection.style.display = "none"; difficultySelection.classList.add("hidden");
+      }
+      if (aivaiSelection) {
+        aivaiSelection.style.display = "block"; aivaiSelection.classList.remove("hidden");
+      }
+      if (selectedDifficultyContainer) {
+        selectedDifficultyContainer.style.display = "none"; selectedDifficultyContainer.classList.add("hidden");
+      }
+    }
+    // -----------------------------------------
+    // COMPUTER (NGƯỜI VS MÁY)
+    // -----------------------------------------
+    else if (VS_COMPUTER) {
       if (playerVsComputerButton) {
         playerVsComputerButton.classList.add("selected");
 
@@ -394,6 +432,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (selectedModeText) {
         selectedModeText.textContent = "🤖 Người chơi vs Máy";
+      }
+
+      if (aivaiSelection) {
+        aivaiSelection.style.display = "none"; aivaiSelection.classList.add("hidden");
       }
 
       if (difficultySelection) {
@@ -429,6 +471,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (selectedModeText) {
         selectedModeText.textContent = "👥 Người chơi vs Người chơi";
+      }
+
+      if (aivaiSelection) {
+        aivaiSelection.style.display = "none"; aivaiSelection.classList.add("hidden");
       }
 
       if (difficultySelection) {
@@ -489,6 +535,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (gameContent) {
       gameContent.classList.remove("hidden");
+    }
+
+    if (IS_AI_VS_AI) {
+      aiVsAiPaused = false;
+      if (aivaiControls) aivaiControls.classList.remove("hidden");
+      if (aivaiStatusPill) {
+        aivaiStatusPill.textContent = "Đang chạy";
+        aivaiStatusPill.style.background = "rgba(168, 85, 247, 0.2)";
+        aivaiStatusPill.style.color = "#9333ea";
+      }
+      if (aivaiToggleBtn) {
+        aivaiToggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Tạm dừng';
+      }
+    } else {
+      if (aivaiControls) aivaiControls.classList.add("hidden");
     }
 
     updateBoardOrientation();
@@ -562,6 +623,25 @@ document.addEventListener("DOMContentLoaded", function () {
       playerVsComputerButton.classList.remove("selected");
 
       playerVsComputerButton.setAttribute("aria-pressed", "false");
+    }
+
+    if (playerVsAiButton) {
+      playerVsAiButton.classList.remove("selected");
+      playerVsAiButton.setAttribute("aria-pressed", "false");
+    }
+
+    IS_AI_VS_AI = false;
+    aiVsAiPaused = false;
+    if (aiVsAiTimer) {
+      clearTimeout(aiVsAiTimer);
+      aiVsAiTimer = null;
+    }
+    if (aivaiControls) {
+      aivaiControls.classList.add("hidden");
+    }
+    if (aivaiSelection) {
+      aivaiSelection.style.display = "none";
+      aivaiSelection.classList.add("hidden");
     }
 
     if (difficultySelection) {
@@ -786,6 +866,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (VS_COMPUTER && gameStatus === "InProgress" && currentTurn === "Black") {
       triggerComputerMove();
+    } else if (IS_AI_VS_AI && gameStatus === "InProgress") {
+      scheduleNextAiVsAiMove();
     }
   }
 
@@ -870,6 +952,18 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       if (blackPlayerName) {
         blackPlayerName.textContent = playerColor === "Black" ? currentPlayerName : opponentName;
+      }
+      return;
+    }
+
+    if (IS_AI_VS_AI) {
+      const redDepth = aivaiRedDepth ? aivaiRedDepth.value : 2;
+      const blackDepth = aivaiBlackDepth ? aivaiBlackDepth.value : 3;
+      if (redPlayerName) {
+        redPlayerName.textContent = `Bot Đỏ (Depth ${redDepth})`;
+      }
+      if (blackPlayerName) {
+        blackPlayerName.textContent = `Bot Đen (Depth ${blackDepth})`;
       }
       return;
     }
@@ -1004,6 +1098,93 @@ document.addEventListener("DOMContentLoaded", function () {
 
       updateTurnStatus();
     }
+  }
+
+  // =====================================================
+  // AI VS AI (TỰ ĐỘNG ĐẤU)
+  // =====================================================
+
+  async function triggerAiVsAiMove(force = false) {
+    if (!IS_AI_VS_AI || !gameId) return;
+    if (gameStatus !== "InProgress") return;
+    if (isComputerThinking) return;
+    if (aiVsAiPaused && !force) return;
+
+    try {
+      isComputerThinking = true;
+      clearSelection();
+      updateTurnStatus();
+
+      const color = (currentTurn || "Red").toLowerCase();
+      const depth = color === "red"
+        ? (aivaiRedDepth ? parseInt(aivaiRedDepth.value, 10) : 2)
+        : (aivaiBlackDepth ? parseInt(aivaiBlackDepth.value, 10) : 3);
+
+      console.log(`⚡ AI vs AI: Bot ${color.toUpperCase()} đang tính với Depth ${depth}...`);
+
+      const response = await fetch(
+        `${API_BASE_URL}/${gameId}/computer-move?difficulty=${depth}&computerColor=${color}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || "AI không thể đi nước này.");
+      }
+
+      const data = await response.json();
+      updateGameFromApi(data);
+    } catch (err) {
+      console.error("Lỗi AI vs AI:", err);
+      showToast(`AI vs AI lỗi: ${err.message}`, "warning");
+    } finally {
+      isComputerThinking = false;
+      updateTurnStatus();
+    }
+  }
+
+  function scheduleNextAiVsAiMove() {
+    if (!IS_AI_VS_AI || gameStatus !== "InProgress" || aiVsAiPaused) return;
+    if (aiVsAiTimer) clearTimeout(aiVsAiTimer);
+
+    const speed = aivaiSpeed ? parseInt(aivaiSpeed.value, 10) : 800;
+    aiVsAiTimer = setTimeout(() => {
+      triggerAiVsAiMove();
+    }, speed);
+  }
+
+  if (aivaiToggleBtn) {
+    aivaiToggleBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      aiVsAiPaused = !aiVsAiPaused;
+      if (aiVsAiPaused) {
+        if (aiVsAiTimer) { clearTimeout(aiVsAiTimer); aiVsAiTimer = null; }
+        this.innerHTML = '<i class="fa-solid fa-play"></i> Tiếp tục';
+        if (aivaiStatusPill) {
+          aivaiStatusPill.textContent = "Đã tạm dừng";
+          aivaiStatusPill.style.background = "rgba(234, 179, 8, 0.2)";
+          aivaiStatusPill.style.color = "#d97706";
+        }
+      } else {
+        this.innerHTML = '<i class="fa-solid fa-pause"></i> Tạm dừng';
+        if (aivaiStatusPill) {
+          aivaiStatusPill.textContent = "Đang chạy";
+          aivaiStatusPill.style.background = "rgba(168, 85, 247, 0.2)";
+          aivaiStatusPill.style.color = "#9333ea";
+        }
+        triggerAiVsAiMove();
+      }
+    });
+  }
+
+  if (aivaiStepBtn) {
+    aivaiStepBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      triggerAiVsAiMove(true);
+    });
   }
 
   function showComputerErrorNotification(message) {
@@ -1549,6 +1730,10 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
+      if (IS_AI_VS_AI) {
+        return;
+      }
+
       const isOnlineMode = localStorage.getItem("isOnlineMode") === "true";
       if (isOnlineMode) {
           const myColor = localStorage.getItem("onlinePlayerColor");
@@ -1837,6 +2022,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (moveHistoryContainer) {
         moveHistoryContainer.innerHTML = '<div class="empty-history">Chưa có nước đi nào</div>';
+      }
+
+      if (aiVsAiTimer) {
+        clearTimeout(aiVsAiTimer);
+        aiVsAiTimer = null;
+      }
+      aiVsAiPaused = false;
+      if (IS_AI_VS_AI) {
+        if (aivaiControls) aivaiControls.classList.remove("hidden");
+        if (aivaiStatusPill) {
+          aivaiStatusPill.textContent = "Đang chạy";
+          aivaiStatusPill.style.background = "rgba(168, 85, 247, 0.2)";
+          aivaiStatusPill.style.color = "#9333ea";
+        }
+        if (aivaiToggleBtn) {
+          aivaiToggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Tạm dừng';
+        }
       }
 
       await createGame();
@@ -2280,10 +2482,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // MODE BUTTON
   // =====================================================
 
+
+
   if (playerVsPlayerButton) {
     playerVsPlayerButton.addEventListener("click", function (event) {
       event.stopPropagation();
       isOnlineMode = false;
+      IS_AI_VS_AI = false;
       localStorage.removeItem("isOnlineMode");
       localStorage.removeItem("onlinePlayerColor");
       localStorage.removeItem("onlineOpponentName");
@@ -2297,12 +2502,28 @@ document.addEventListener("DOMContentLoaded", function () {
     playerVsComputerButton.addEventListener("click", function (event) {
       event.stopPropagation();
       isOnlineMode = false;
+      IS_AI_VS_AI = false;
       localStorage.removeItem("isOnlineMode");
       localStorage.removeItem("onlinePlayerColor");
       localStorage.removeItem("onlineOpponentName");
       if (onlineSelection) { onlineSelection.style.display = "none"; onlineSelection.classList.add("hidden"); }
       if (startGameButton) { startGameButton.style.display = "block"; startGameButton.classList.remove("hidden"); }
       selectGameMode(true);
+    });
+  }
+
+  if (playerVsAiButton) {
+    playerVsAiButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+      isOnlineMode = false;
+      VS_COMPUTER = false;
+      IS_AI_VS_AI = true;
+      localStorage.removeItem("isOnlineMode");
+      localStorage.removeItem("onlinePlayerColor");
+      localStorage.removeItem("onlineOpponentName");
+      if (onlineSelection) { onlineSelection.style.display = "none"; onlineSelection.classList.add("hidden"); }
+      if (startGameButton) { startGameButton.style.display = "block"; startGameButton.classList.remove("hidden"); }
+      selectGameMode(false);
     });
   }
 
@@ -2317,13 +2538,16 @@ document.addEventListener("DOMContentLoaded", function () {
       isOnlineMode = true;
       gameModeSelected = true;
       VS_COMPUTER = false;
+      IS_AI_VS_AI = false;
       
       if (playerVsPlayerButton) playerVsPlayerButton.classList.remove("selected");
       if (playerVsComputerButton) playerVsComputerButton.classList.remove("selected");
+      if (playerVsAiButton) playerVsAiButton.classList.remove("selected");
       playerVsOnlineButton.classList.add("selected");
       
       if (selectedModeText) selectedModeText.textContent = "🌐 Online";
       if (difficultySelection) { difficultySelection.style.display = "none"; difficultySelection.classList.add("hidden"); }
+      if (aivaiSelection) { aivaiSelection.style.display = "none"; aivaiSelection.classList.add("hidden"); }
       if (selectedDifficultyContainer) { selectedDifficultyContainer.style.display = "none"; selectedDifficultyContainer.classList.add("hidden"); }
       
       if (onlineSelection) { onlineSelection.style.display = "block"; onlineSelection.classList.remove("hidden"); }
