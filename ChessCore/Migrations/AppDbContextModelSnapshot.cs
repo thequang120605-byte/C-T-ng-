@@ -17,7 +17,7 @@ namespace ChessCore.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.20")
+                .HasAnnotation("ProductVersion", "9.0.21")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -1035,6 +1035,9 @@ namespace ChessCore.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AiDepth")
+                        .HasColumnType("int");
+
                     b.Property<int?>("BlackPlayerId")
                         .HasColumnType("int");
 
@@ -1046,11 +1049,21 @@ namespace ChessCore.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<string>("GameMode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("PvP");
+
                     b.Property<string>("InitialFen")
                         .HasColumnType("longtext");
 
                     b.Property<DateTime?>("LastMoveAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("OpeningId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("RedPlayerId")
                         .HasColumnType("int");
@@ -1069,12 +1082,152 @@ namespace ChessCore.Migrations
 
                     b.HasIndex("BlackPlayerId");
 
+                    b.HasIndex("OpeningId");
+
                     b.HasIndex("RedPlayerId");
 
                     b.HasIndex("RoomCode")
                         .IsUnique();
 
                     b.ToTable("Games");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.GameAnalysis", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AccuracyBlack")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AccuracyRed")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("AnalyzedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("BestCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BlunderCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BrilliantCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GoodCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("InaccuracyCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SummaryReviewJson")
+                        .HasColumnType("longtext");
+
+                    b.Property<int?>("TurningPointMoveOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId")
+                        .IsUnique();
+
+                    b.ToTable("GameAnalyses");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.MasterGame", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BlackPlayer")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Event")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<DateTime?>("EventDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("InitialFen")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("MovesJson")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("OpeningName")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("PgnContent")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("RedPlayer")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MasterGames");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            BlackPlayer = "Lữ Khâm",
+                            CreatedAt = new DateTime(2026, 10, 15, 6, 28, 4, 359, DateTimeKind.Utc).AddTicks(1051),
+                            Event = "Giải Vô địch Cá nhân Cờ Tướng Trung Quốc",
+                            EventDate = new DateTime(1988, 11, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            InitialFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+                            MovesJson = "[]",
+                            OpeningName = "Thuận Pháo Hoành Xe đối Trực Xe",
+                            PgnContent = "[Event \"Giap Cap Lien Tai\"]\n[Site \"Quang Chau\"]\n[Date \"1988.11.20\"]\n[Round \"11\"]\n[Red \"Ho Vinh Hoa\"]\n[Black \"Lu Kham\"]\n[Result \"1-0\"]\n1. C2.5 C8.5 2. H2.3 H8.7 3. R1.2 R9.1 4. H8.7 H2.3",
+                            RedPlayer = "Hồ Vinh Hoa",
+                            Result = "1-0",
+                            Title = "Hồ Vinh Hoa vs Lữ Khâm - Chung kết Toàn quốc 1988"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            BlackPlayer = "Uông Dương Bắc",
+                            CreatedAt = new DateTime(2026, 10, 15, 6, 28, 4, 359, DateTimeKind.Utc).AddTicks(1358),
+                            Event = "Trạng Cờ Đất Việt",
+                            EventDate = new DateTime(2017, 7, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            InitialFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+                            MovesJson = "[]",
+                            OpeningName = "Tiên Nhân Chỉ Lộ đối Tốt Đề Pháo",
+                            PgnContent = "[Event \"Trang Co Dat Viet\"]\n[Site \"Ha Noi\"]\n[Date \"2017.07.15\"]\n[Round \"Final\"]\n[Red \"Lai Ly Huynh\"]\n[Black \"Uong Duong Bac\"]\n[Result \"1-0\"]\n1. P7.1 P7.1 2. C2.5 H8.7 3. H2.3 R9.1",
+                            RedPlayer = "Lại Lý Huynh",
+                            Result = "1-0",
+                            Title = "Lại Lý Huynh vs Uông Dương Bắc - Trạng Cờ Đất Việt 2017"
+                        });
                 });
 
             modelBuilder.Entity("ChessCore.Models.Move", b =>
@@ -1085,6 +1238,13 @@ namespace ChessCore.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BestAlternative")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int?>("EvalScore")
+                        .HasColumnType("int");
+
                     b.Property<int>("FromX")
                         .HasColumnType("int");
 
@@ -1093,6 +1253,10 @@ namespace ChessCore.Migrations
 
                     b.Property<int>("GameId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Judgment")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
 
                     b.Property<int>("MoveOrder")
                         .HasColumnType("int");
@@ -1116,11 +1280,202 @@ namespace ChessCore.Migrations
                     b.Property<int>("ToY")
                         .HasColumnType("int");
 
+                    b.Property<float?>("WinRate")
+                        .HasColumnType("float");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GameId");
 
                     b.ToTable("Moves");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.Opening", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("StartingFen")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Openings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "ECCO-01",
+                            Description = "Thế trận công thủ toàn diện, Pháo vào trung lộ kiểm soát lộ 5, tạo sức ép thẳng vào cung Tướng.",
+                            Name = "Pháo Đầu (Trung Pháo)",
+                            StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "ECCO-02",
+                            Description = "Trận hình phòng thủ kinh điển chống lại Pháo Đầu, hai Mã nhảy lên giữ chặt trung lộ và bảo vệ Tốt đầu vững chắc.",
+                            Name = "Bình Phong Mã",
+                            StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "ECCO-03",
+                            Description = "Hai bên cùng đưa Pháo vào cùng một lộ trung tâm, thế cờ đối công kịch liệt, ăn miếng trả miếng.",
+                            Name = "Thuận Pháo",
+                            StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "ECCO-04",
+                            Description = "Bên Đỏ khai cuộc bằng nước Tốt 7 tiến 1 hoặc Tốt 3 tiến 1 để thăm dò ý đồ chiến thuật của đối phương.",
+                            Name = "Tiên Nhân Chỉ Lộ",
+                            StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Code = "ECCO-05",
+                            Description = "Khai cuộc bằng nước phát triển Mã sớm, cấu trúc phòng thủ kiên cố, linh hoạt chuyển biến.",
+                            Name = "Trận Thượng Tiên (Khởi Mã Cuộc)",
+                            StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
+                        });
+                });
+
+            modelBuilder.Entity("ChessCore.Models.OpeningBookMove", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DrawCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Explanation")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("Fen")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("LossCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MoveNotation")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int>("MoveOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OpeningId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WinCount")
+                        .HasColumnType("int");
+
+                    b.Property<double>("WinRate")
+                        .HasColumnType("double");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpeningId");
+
+                    b.ToTable("OpeningBookMoves");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            DrawCount = 8900,
+                            Explanation = "Pháo vào giữa kiểm soát lộ trung tâm, sẵn sàng bắn Tốt đầu uy hiếp Tướng.",
+                            Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+                            LossCount = 7600,
+                            MoveNotation = "Pháo 2 bình 5 (C2.5)",
+                            MoveOrder = 1,
+                            OpeningId = 1,
+                            WinCount = 12500,
+                            WinRate = 58.399999999999999
+                        },
+                        new
+                        {
+                            Id = 2,
+                            DrawCount = 7200,
+                            Explanation = "Bên Đen nhảy Mã bảo vệ Tốt đầu, hình thành thế trận Bình Phong Mã đối kháng.",
+                            Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/4C1C2/9/RNBAKABNR b - - 1 1",
+                            LossCount = 6500,
+                            MoveNotation = "Mã 8 tiến 7 (M8.7)",
+                            MoveOrder = 2,
+                            OpeningId = 1,
+                            WinCount = 9800,
+                            WinRate = 52.100000000000001
+                        },
+                        new
+                        {
+                            Id = 3,
+                            DrawCount = 6100,
+                            Explanation = "Mã cánh phải phát triển kiểm soát trung lộ và bảo vệ Tốt đầu.",
+                            Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/4C1C2/9/RNBAKABNR b - - 1 1",
+                            LossCount = 5900,
+                            MoveNotation = "Mã 2 tiến 3 (M2.3)",
+                            MoveOrder = 2,
+                            OpeningId = 2,
+                            WinCount = 8400,
+                            WinRate = 51.5
+                        },
+                        new
+                        {
+                            Id = 4,
+                            DrawCount = 4500,
+                            Explanation = "Đen cũng đưa Pháo vào giữa, tạo thế Thuận Pháo đối công trực diện.",
+                            Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/4C1C2/9/RNBAKABNR b - - 1 1",
+                            LossCount = 6900,
+                            MoveNotation = "Pháo 8 bình 5 (C8.5)",
+                            MoveOrder = 2,
+                            OpeningId = 3,
+                            WinCount = 7100,
+                            WinRate = 49.799999999999997
+                        },
+                        new
+                        {
+                            Id = 5,
+                            DrawCount = 9400,
+                            Explanation = "Tiến Tốt mở đường cho Mã phát triển và thăm dò phản ứng của đối phương.",
+                            Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+                            LossCount = 7800,
+                            MoveNotation = "Binh 7 tiến 1 (P7.1)",
+                            MoveOrder = 1,
+                            OpeningId = 4,
+                            WinCount = 11200,
+                            WinRate = 54.200000000000003
+                        });
                 });
 
             modelBuilder.Entity("ChessCore.Models.Puzzle", b =>
@@ -1333,6 +1688,45 @@ namespace ChessCore.Migrations
                     b.ToTable("UserCourseProgresses");
                 });
 
+            modelBuilder.Entity("ChessCore.Models.UserEloHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EloChange")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NewElo")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OldElo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserEloHistories");
+                });
+
             modelBuilder.Entity("ChessCore.Models.CourseLesson", b =>
                 {
                     b.HasOne("ChessCore.Models.CourseModule", "Module")
@@ -1362,6 +1756,11 @@ namespace ChessCore.Migrations
                         .HasForeignKey("BlackPlayerId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("ChessCore.Models.Opening", "Opening")
+                        .WithMany()
+                        .HasForeignKey("OpeningId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ChessCore.Models.User", "RedPlayer")
                         .WithMany()
                         .HasForeignKey("RedPlayerId")
@@ -1369,7 +1768,20 @@ namespace ChessCore.Migrations
 
                     b.Navigation("BlackPlayer");
 
+                    b.Navigation("Opening");
+
                     b.Navigation("RedPlayer");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.GameAnalysis", b =>
+                {
+                    b.HasOne("ChessCore.Models.Game", "Game")
+                        .WithOne("Analysis")
+                        .HasForeignKey("ChessCore.Models.GameAnalysis", "GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
                 });
 
             modelBuilder.Entity("ChessCore.Models.Move", b =>
@@ -1379,6 +1791,17 @@ namespace ChessCore.Migrations
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ChessCore.Models.OpeningBookMove", b =>
+                {
+                    b.HasOne("ChessCore.Models.Opening", "Opening")
+                        .WithMany("BookMoves")
+                        .HasForeignKey("OpeningId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Opening");
                 });
 
             modelBuilder.Entity("ChessCore.Models.UserCourseProgress", b =>
@@ -1400,6 +1823,24 @@ namespace ChessCore.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ChessCore.Models.UserEloHistory", b =>
+                {
+                    b.HasOne("ChessCore.Models.Game", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ChessCore.Models.User", "User")
+                        .WithMany("EloHistories")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ChessCore.Models.CourseLesson", b =>
                 {
                     b.Navigation("Progresses");
@@ -1414,7 +1855,19 @@ namespace ChessCore.Migrations
 
             modelBuilder.Entity("ChessCore.Models.Game", b =>
                 {
+                    b.Navigation("Analysis");
+
                     b.Navigation("Moves");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.Opening", b =>
+                {
+                    b.Navigation("BookMoves");
+                });
+
+            modelBuilder.Entity("ChessCore.Models.User", b =>
+                {
+                    b.Navigation("EloHistories");
                 });
 #pragma warning restore 612, 618
         }

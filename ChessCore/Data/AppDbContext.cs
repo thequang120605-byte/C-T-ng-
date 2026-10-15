@@ -19,6 +19,11 @@ namespace ChessCore.Data
         public DbSet<CourseLesson> CourseLessons { get; set; }
         public DbSet<CourseQuizQuestion> CourseQuizQuestions { get; set; }
         public DbSet<UserCourseProgress> UserCourseProgresses { get; set; }
+        public DbSet<GameAnalysis> GameAnalyses { get; set; }
+        public DbSet<UserEloHistory> UserEloHistories { get; set; }
+        public DbSet<Opening> Openings { get; set; }
+        public DbSet<OpeningBookMove> OpeningBookMoves { get; set; }
+        public DbSet<MasterGame> MasterGames { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -110,6 +115,14 @@ namespace ChessCore.Data
                     .HasConversion<string>()
                     .HasMaxLength(20);
 
+                entity.Property(e => e.GameMode)
+                    .HasMaxLength(20)
+                    .HasDefaultValue("PvP");
+                entity.HasOne(g => g.Opening)
+                    .WithMany()
+                    .HasForeignKey(g => g.OpeningId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 // Quan hệ Game -> User (RedPlayer)
                 entity.HasOne(g => g.RedPlayer)
                     .WithMany()
@@ -139,6 +152,75 @@ namespace ChessCore.Data
                 entity.Property(e => e.PieceColor)
                     .HasConversion<string>()
                     .HasMaxLength(20);
+                entity.Property(e => e.Judgment)
+                    .HasMaxLength(30);
+                entity.Property(e => e.BestAlternative)
+                    .HasMaxLength(50);
+            });
+
+            // Cấu hình bảng GameAnalysis
+            modelBuilder.Entity<GameAnalysis>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.GameId).IsUnique();
+                entity.Property(e => e.SummaryReviewJson).HasColumnType("longtext");
+                entity.HasOne(e => e.Game)
+                    .WithOne(g => g.Analysis)
+                    .HasForeignKey<GameAnalysis>(e => e.GameId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Cấu hình bảng UserEloHistory
+            modelBuilder.Entity<UserEloHistory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Reason).HasMaxLength(150);
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.EloHistories)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Game)
+                    .WithMany()
+                    .HasForeignKey(e => e.GameId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Cấu hình bảng Opening
+            modelBuilder.Entity<Opening>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Code).IsRequired().HasMaxLength(30);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(150);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.StartingFen).IsRequired().HasMaxLength(255);
+                entity.HasMany(e => e.BookMoves)
+                    .WithOne(m => m.Opening)
+                    .HasForeignKey(m => m.OpeningId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Cấu hình bảng OpeningBookMove
+            modelBuilder.Entity<OpeningBookMove>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Fen).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.MoveNotation).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Explanation).HasMaxLength(500);
+            });
+
+            // Cấu hình bảng MasterGame
+            modelBuilder.Entity<MasterGame>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.RedPlayer).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.BlackPlayer).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Event).HasMaxLength(150);
+                entity.Property(e => e.Result).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.OpeningName).HasMaxLength(150);
+                entity.Property(e => e.InitialFen).HasMaxLength(255);
+                entity.Property(e => e.PgnContent).HasColumnType("longtext");
+                entity.Property(e => e.MovesJson).HasColumnType("longtext");
             });
 
             // Data Cờ Thế (Puzzles)
@@ -244,6 +326,58 @@ namespace ChessCore.Data
                 new CourseQuizQuestion { Id = 7, LessonId = 6, Question = "Chiếu hết nghĩa là gì?", OptionsJson = "[\"Tướng bị đe dọa nhưng còn đường thoát\",\"Tướng không bị đe dọa\",\"Bị chiếu và không còn nước hợp lệ để thoát\"]", CorrectAnswer = 2, Explanation = "Chiếu hết kết thúc ván vì bên bị chiếu không thể hóa giải.", DisplayOrder = 1 },
                 new CourseQuizQuestion { Id = 8, LessonId = 7, Question = "Bắt bí là trường hợp nào?", OptionsJson = "[\"Không còn nước hợp lệ nhưng không bị chiếu\",\"Bị chiếu hết\",\"Ăn được quân Xe\"]", CorrectAnswer = 0, Explanation = "Bắt bí là hòa cờ: không còn nước đi nhưng Tướng không bị chiếu.", DisplayOrder = 1 },
                 new CourseQuizQuestion { Id = 9, LessonId = 9, Question = "Khi nào nên đổi quân?", OptionsJson = "[\"Luôn luôn đổi quân\",\"Khi đổi quân có lợi về vị trí hoặc vật chất\",\"Không bao giờ đổi quân\"]", CorrectAnswer = 1, Explanation = "Đổi quân cần phục vụ kế hoạch và đem lại lợi thế.", DisplayOrder = 1 }
+            );
+
+            // Seed dữ liệu Khai cuộc (Openings) chuẩn theo đề cương
+            modelBuilder.Entity<Opening>().HasData(
+                new Opening { Id = 1, Code = "ECCO-01", Name = "Pháo Đầu (Trung Pháo)", Description = "Thế trận công thủ toàn diện, Pháo vào trung lộ kiểm soát lộ 5, tạo sức ép thẳng vào cung Tướng.", StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" },
+                new Opening { Id = 2, Code = "ECCO-02", Name = "Bình Phong Mã", Description = "Trận hình phòng thủ kinh điển chống lại Pháo Đầu, hai Mã nhảy lên giữ chặt trung lộ và bảo vệ Tốt đầu vững chắc.", StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" },
+                new Opening { Id = 3, Code = "ECCO-03", Name = "Thuận Pháo", Description = "Hai bên cùng đưa Pháo vào cùng một lộ trung tâm, thế cờ đối công kịch liệt, ăn miếng trả miếng.", StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" },
+                new Opening { Id = 4, Code = "ECCO-04", Name = "Tiên Nhân Chỉ Lộ", Description = "Bên Đỏ khai cuộc bằng nước Tốt 7 tiến 1 hoặc Tốt 3 tiến 1 để thăm dò ý đồ chiến thuật của đối phương.", StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" },
+                new Opening { Id = 5, Code = "ECCO-05", Name = "Trận Thượng Tiên (Khởi Mã Cuộc)", Description = "Khai cuộc bằng nước phát triển Mã sớm, cấu trúc phòng thủ kiên cố, linh hoạt chuyển biến.", StartingFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" }
+            );
+
+            // Seed dữ liệu nước đi Khai cuộc (OpeningBookMoves)
+            modelBuilder.Entity<OpeningBookMove>().HasData(
+                new OpeningBookMove { Id = 1, OpeningId = 1, Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1", MoveNotation = "Pháo 2 bình 5 (C2.5)", MoveOrder = 1, WinCount = 12500, DrawCount = 8900, LossCount = 7600, WinRate = 58.4, Explanation = "Pháo vào giữa kiểm soát lộ trung tâm, sẵn sàng bắn Tốt đầu uy hiếp Tướng." },
+                new OpeningBookMove { Id = 2, OpeningId = 1, Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/4C1C2/9/RNBAKABNR b - - 1 1", MoveNotation = "Mã 8 tiến 7 (M8.7)", MoveOrder = 2, WinCount = 9800, DrawCount = 7200, LossCount = 6500, WinRate = 52.1, Explanation = "Bên Đen nhảy Mã bảo vệ Tốt đầu, hình thành thế trận Bình Phong Mã đối kháng." },
+                new OpeningBookMove { Id = 3, OpeningId = 2, Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/4C1C2/9/RNBAKABNR b - - 1 1", MoveNotation = "Mã 2 tiến 3 (M2.3)", MoveOrder = 2, WinCount = 8400, DrawCount = 6100, LossCount = 5900, WinRate = 51.5, Explanation = "Mã cánh phải phát triển kiểm soát trung lộ và bảo vệ Tốt đầu." },
+                new OpeningBookMove { Id = 4, OpeningId = 3, Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/4C1C2/9/RNBAKABNR b - - 1 1", MoveNotation = "Pháo 8 bình 5 (C8.5)", MoveOrder = 2, WinCount = 7100, DrawCount = 4500, LossCount = 6900, WinRate = 49.8, Explanation = "Đen cũng đưa Pháo vào giữa, tạo thế Thuận Pháo đối công trực diện." },
+                new OpeningBookMove { Id = 5, OpeningId = 4, Fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1", MoveNotation = "Binh 7 tiến 1 (P7.1)", MoveOrder = 1, WinCount = 11200, DrawCount = 9400, LossCount = 7800, WinRate = 54.2, Explanation = "Tiến Tốt mở đường cho Mã phát triển và thăm dò phản ứng của đối phương." }
+            );
+
+            // Seed dữ liệu ván đấu chuyên nghiệp mẫu (MasterGames)
+            modelBuilder.Entity<MasterGame>().HasData(
+                new MasterGame
+                {
+                    Id = 1,
+                    Title = "Hồ Vinh Hoa vs Lữ Khâm - Chung kết Toàn quốc 1988",
+                    RedPlayer = "Hồ Vinh Hoa",
+                    BlackPlayer = "Lữ Khâm",
+                    Event = "Giải Vô địch Cá nhân Cờ Tướng Trung Quốc",
+                    EventDate = new System.DateTime(1988, 11, 20),
+                    Result = "1-0",
+                    OpeningName = "Thuận Pháo Hoành Xe đối Trực Xe",
+                    InitialFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+                    PgnContent = "[Event \"Giap Cap Lien Tai\"]\n[Site \"Quang Chau\"]\n[Date \"1988.11.20\"]\n[Round \"11\"]\n[Red \"Ho Vinh Hoa\"]\n[Black \"Lu Kham\"]\n[Result \"1-0\"]\n1. C2.5 C8.5 2. H2.3 H8.7 3. R1.2 R9.1 4. H8.7 H2.3",
+                    MovesJson = "[]",
+                    CreatedAt = System.DateTime.UtcNow
+                },
+                new MasterGame
+                {
+                    Id = 2,
+                    Title = "Lại Lý Huynh vs Uông Dương Bắc - Trạng Cờ Đất Việt 2017",
+                    RedPlayer = "Lại Lý Huynh",
+                    BlackPlayer = "Uông Dương Bắc",
+                    Event = "Trạng Cờ Đất Việt",
+                    EventDate = new System.DateTime(2017, 7, 15),
+                    Result = "1-0",
+                    OpeningName = "Tiên Nhân Chỉ Lộ đối Tốt Đề Pháo",
+                    InitialFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+                    PgnContent = "[Event \"Trang Co Dat Viet\"]\n[Site \"Ha Noi\"]\n[Date \"2017.07.15\"]\n[Round \"Final\"]\n[Red \"Lai Ly Huynh\"]\n[Black \"Uong Duong Bac\"]\n[Result \"1-0\"]\n1. P7.1 P7.1 2. C2.5 H8.7 3. H2.3 R9.1",
+                    MovesJson = "[]",
+                    CreatedAt = System.DateTime.UtcNow
+                }
             );
         }
     }
