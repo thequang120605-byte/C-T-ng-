@@ -104,58 +104,58 @@ body.has-custom-wallpaper .mode-overlay {
 }
 
 body.has-custom-wallpaper .mode-card {
-    background: rgba(255, 252, 243, 0.55) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.65) !important;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(254, 215, 170, 0.5) !important;
+    background: rgba(255, 253, 247, 0.78) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(254, 215, 170, 0.6) !important;
 }
 
 body.has-custom-wallpaper .mode-btn {
-    background: rgba(255, 255, 255, 0.65) !important;
-    border-color: rgba(254, 215, 170, 0.5) !important;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(255, 255, 255, 0.82) !important;
+    border-color: rgba(254, 215, 170, 0.6) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 body.has-custom-wallpaper .mode-btn:hover {
-    background: rgba(255, 251, 235, 0.85) !important;
+    background: rgba(255, 251, 235, 0.95) !important;
     border-color: #f59e0b !important;
 }
 
 body.has-custom-wallpaper .mode-btn.selected {
-    background: rgba(255, 251, 235, 0.9) !important;
+    background: rgba(255, 251, 235, 0.98) !important;
     border-color: #d97706 !important;
 }
 
 body.has-custom-wallpaper .selection-summary {
-    background: rgba(255, 255, 255, 0.55) !important;
-    border-color: rgba(254, 215, 170, 0.45) !important;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(255, 255, 255, 0.75) !important;
+    border-color: rgba(254, 215, 170, 0.55) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 body.has-custom-wallpaper .difficulty-panel,
 body.has-custom-wallpaper .online-lobby-panel {
-    background: rgba(255, 255, 255, 0.6) !important;
-    border-color: rgba(254, 215, 170, 0.5) !important;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-color: rgba(254, 215, 170, 0.6) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 body.has-custom-wallpaper #board-editor-open-btn,
 body.has-custom-wallpaper #opening-explorer-open-btn,
 body.has-custom-wallpaper #mode-import-fen-btn {
-    background: rgba(255, 255, 255, 0.65) !important;
-    border-color: rgba(254, 215, 170, 0.5) !important;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(255, 255, 255, 0.82) !important;
+    border-color: rgba(254, 215, 170, 0.6) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 body.has-custom-wallpaper #board-editor-open-btn:hover,
 body.has-custom-wallpaper #opening-explorer-open-btn:hover,
 body.has-custom-wallpaper #mode-import-fen-btn:hover {
-    background: rgba(255, 251, 235, 0.9) !important;
+    background: rgba(255, 251, 235, 0.95) !important;
     border-color: #f59e0b !important;
 }
 

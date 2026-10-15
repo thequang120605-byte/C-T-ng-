@@ -221,12 +221,16 @@ document.addEventListener('DOMContentLoaded', function() {
             customBgIndicator.style.display = isCustom ? 'flex' : 'none';
         }
 
-        const appMain = document.querySelector('.app-main');
         const gameViewContainer = document.querySelector('.game-view-container');
+        const isGamePage = window.location.pathname.toLowerCase().startsWith('/game');
 
         if (wp && wp !== 'none') {
-            document.body.classList.add('has-custom-wallpaper');
             document.documentElement.style.setProperty('--game-bg-image', `url("${wp}")`);
+            if (isGamePage) {
+                document.body.classList.add('has-custom-wallpaper');
+            } else {
+                document.body.classList.remove('has-custom-wallpaper');
+            }
             if (gameViewContainer) {
                 gameViewContainer.style.backgroundImage = `url("${wp}")`;
                 gameViewContainer.style.backgroundSize = 'cover';
