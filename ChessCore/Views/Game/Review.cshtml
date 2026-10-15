@@ -537,18 +537,21 @@
 
 <!-- MODAL CHIA SẺ MÃ QR VÁN ĐẤU -->
 <div id="share-qr-modal" class="custom-modal hidden" style="position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999;">
-    <div class="modal-content" style="background: var(--bg-navy-panel, #ffffff); border: 2px solid var(--accent-gold); border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 20px 45px rgba(0,0,0,0.2);">
+    <div class="modal-content" style="background: var(--bg-navy-panel, #ffffff); border: 2px solid var(--accent-gold); border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 45px rgba(0,0,0,0.2);">
         <div style="font-size: 32px; color: var(--accent-gold); margin-bottom: 8px;"><i class="fa-solid fa-qrcode"></i></div>
         <h3 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 4px;">Chia sẻ ván đấu #@Model.GameId</h3>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Quét mã QR bằng điện thoại để xem trực tiếp phân tích ván cờ này.</p>
-        <div style="background: #ffffff; padding: 12px; border-radius: 12px; display: inline-block; border: 1px solid var(--border-color); margin-bottom: 16px;">
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Quét mã QR bằng camera điện thoại hoặc Zalo để mở và xem lại toàn bộ phân tích ván đấu này.</p>
+        <div style="background: #ffffff; padding: 12px; border-radius: 12px; display: inline-block; border: 1px solid var(--border-color); margin-bottom: 12px;">
             <img id="share-qr-img" src="" alt="Mã QR Ván Đấu" style="width: 180px; height: 180px; display: block;" />
         </div>
-        <div style="display: flex; gap: 8px; justify-content: center;">
-            <button type="button" class="btn-action-secondary" onclick="copyShareLink();" style="flex: 1; justify-content: center;">
-                <i class="fa-regular fa-copy"></i> Chép link
+        <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+            <input id="share-url-input" type="text" readonly style="flex: 1; padding: 8px 10px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary, #f8fafc); color: var(--text-main); outline: none;" />
+            <button type="button" class="btn-action-gold" onclick="copyShareLink();" style="padding: 8px 12px; font-size: 12px; white-space: nowrap;">
+                <i class="fa-regular fa-copy"></i> Chép
             </button>
-            <button type="button" class="btn-action-gold" onclick="closeShareQrModal();" style="flex: 1; justify-content: center;">
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: center;">
+            <button type="button" class="btn-action-secondary" onclick="closeShareQrModal();" style="width: 100%; justify-content: center;">
                 Đóng
             </button>
         </div>
@@ -846,9 +849,13 @@
         function openShareQrModal() {
             const modal = document.getElementById('share-qr-modal');
             const img = document.getElementById('share-qr-img');
+            const input = document.getElementById('share-url-input');
             const shareUrl = window.location.href;
             if (img) {
                 img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}`;
+            }
+            if (input) {
+                input.value = shareUrl;
             }
             if (modal) {
                 modal.classList.remove('hidden');
@@ -861,11 +868,20 @@
         }
 
         async function copyShareLink() {
+            const shareUrl = window.location.href;
             try {
-                await navigator.clipboard.writeText(window.location.href);
-                alert("Đã sao chép liên kết ván cờ vào bộ nhớ tạm!");
+                await navigator.clipboard.writeText(shareUrl);
+                if (window.AppDialog && typeof window.AppDialog.alert === 'function') {
+                    window.AppDialog.alert("Đã sao chép liên kết ván cờ vào bộ nhớ tạm!", "Thành công", "info");
+                } else {
+                    alert("Đã sao chép liên kết ván cờ vào bộ nhớ tạm!");
+                }
             } catch (err) {
-                alert("Liên kết ván cờ: " + window.location.href);
+                if (window.AppDialog && typeof window.AppDialog.alert === 'function') {
+                    window.AppDialog.alert("Liên kết ván cờ:\n" + shareUrl, "Liên kết", "info");
+                } else {
+                    prompt("Sao chép liên kết tại đây:", shareUrl);
+                }
             }
         }
 
