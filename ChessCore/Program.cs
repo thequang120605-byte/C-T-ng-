@@ -41,16 +41,32 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 
-// Cấu hình Authentication (Cookie)
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+// Cấu hình Authentication (Cookie & Google)
+var authBuilder = builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+})
+.AddCookie(options =>
+{
+    options.LoginPath = "/Auth/Login";
+    options.LogoutPath = "/Auth/Logout";
+    options.AccessDeniedPath = "/Auth/AccessDenied";
+    options.Cookie.HttpOnly = true;
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+});
+
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    authBuilder.AddGoogle(options =>
     {
-        options.LoginPath = "/Auth/Login";
-        options.LogoutPath = "/Auth/Logout";
-        options.AccessDeniedPath = "/Auth/AccessDenied";
-        options.Cookie.HttpOnly = true;
-        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+        options.CallbackPath = "/signin-google";
     });
+}
 
 // Cấu hình CORS cho phép Frontend truy cập
 builder.Services.AddCors(options =>

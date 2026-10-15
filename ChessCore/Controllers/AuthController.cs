@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using ChessCore.Data;
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authentication.Google;
 using ChessCore.Models;
 using ChessCore.ViewModels;
 
@@ -16,11 +18,13 @@ namespace ChessCore.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IMemoryCache _cache;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(AppDbContext context, IMemoryCache cache)
+        public AuthController(AppDbContext context, IMemoryCache cache, IConfiguration configuration)
         {
             _context = context;
             _cache = cache;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -387,6 +391,124 @@ namespace ChessCore.Controllers
 
             TempData["OtpMessage"] = "Email không hợp lệ. Vui lòng thử lại.";
             return RedirectToAction("ForgotPassword");
+        }
+
+        [HttpGet]
+        public IActionResult GoogleLogin()
+        {
+            var clientId = _configuration["Authentication:Google:ClientId"];
+            var clientSecret = _configuration["Authentication:Google:ClientSecret"];
+
+            if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
+            {
+                TempData["ErrorMessage"] = "Chưa cấu hình Google ClientId/ClientSecret trong appsettings.json. Vui lòng cấu hình để sử dụng tính năng Đăng nhập bằng Google.";
+                return RedirectToAction("Login");
+            }
+
+            var properties = new AuthenticationProperties
+            {
+                RedirectUri = Url.Action("GoogleResponse")
+            };
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GoogleResponse()
+        {
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            if (!result.Succeeded || result.Principal == null)
+            {
+                // Thử authenticate scheme Google nếu Cookie chưa có
+                result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+            }
+
+            var emailClaim = result?.Principal?.FindFirst(ClaimTypes.Email)?.Value;
+            var nameClaim = result?.Principal?.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(emailClaim))
+            {
+                TempData["ErrorMessage"] = "Không thể lấy thông tin email từ tài khoản Google của bạn.";
+                return RedirectToAction("Login");
+            }
+
+            var normalizedEmail = emailClaim.Trim();
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+
+            if (user == null)
+            {
+                // Sinh PlayerId duy nhất
+                var random = new Random();
+                string newPid;
+                do
+                {
+                    newPid = "CT-" + random.Next(10000, 99999).ToString();
+                } while (await _context.Users.AnyAsync(u => u.PlayerId == newPid));
+
+                // Tạo username từ nameClaim hoặc phần đầu email
+                var baseUsername = string.IsNullOrWhiteSpace(nameClaim) 
+                    ? normalizedEmail.Split('@')[0] 
+                    : nameClaim.Replace(" ", "").Trim();
+
+                if (baseUsername.Length > 20) baseUsername = baseUsername.Substring(0, 20);
+
+                var finalUsername = baseUsername;
+                int suffix = 1;
+                while (await _context.Users.AnyAsync(u => u.Username == finalUsername))
+                {
+                    finalUsername = $"{baseUsername}{suffix++}";
+                }
+
+                user = new User
+                {
+                    Username = finalUsername,
+                    Email = normalizedEmail,
+                    PasswordHash = HashPassword(Guid.NewGuid().ToString("N")), // Mật khẩu ngẫu nhiên an toàn cho tài khoản OAuth
+                    PlayerId = newPid,
+                    Role = "Player",
+                    Elo = 1200,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(user.PlayerId))
+                {
+                    var random = new Random();
+                    string newPid;
+                    do
+                    {
+                        newPid = "CT-" + random.Next(10000, 99999).ToString();
+                    } while (await _context.Users.AnyAsync(u => u.PlayerId == newPid));
+                    user.PlayerId = newPid;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role ?? "Player"),
+                new Claim("PlayerId", user.PlayerId),
+                new Claim("Elo", user.Elo.ToString())
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
+            };
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+
+            TempData["SuccessMessage"] = $"Đăng nhập Google thành công! Chào mừng {user.Username}.";
+            return RedirectToAction("Index", "Game");
         }
 
         [HttpPost]
