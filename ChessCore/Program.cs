@@ -85,7 +85,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseMySql(
         connectionString,
-        new MySqlServerVersion(new Version(8, 0, 30))
+        ServerVersion.AutoDetect(connectionString),
+        mySqlOptions => mySqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorNumbersToAdd: null)
     );
 });
 

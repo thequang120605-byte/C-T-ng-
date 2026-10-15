@@ -34,6 +34,8 @@ namespace ChessCore.Services
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("GameTimeoutWorker đã khởi động (Giới hạn: 3 phút/nước).");
+            // Đợi 10 giây để bảo đảm Database migration hoàn tất khi ứng dụng vừa khởi động
+            await Task.Delay(10000, stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested)
             {
