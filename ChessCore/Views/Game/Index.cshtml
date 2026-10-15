@@ -159,17 +159,10 @@
                 <div id="black-player-timer" class="player-timer">03:00</div>
             </div>
 
-            <!-- BÀN CỜ VÀ THANH ĐÁNH GIÁ (EVAL BAR) -->
-            <div class="board-with-eval" style="display: flex; gap: 12px; align-items: stretch; justify-content: center; width: 100%;">
-                <!-- EVALUATION BAR (THANH ĐÁNH GIÁ THẾ TRẬN THỜI GIAN THỰC) -->
-                <div class="game-eval-bar-wrapper" title="Thanh đánh giá ưu thế thời gian thực (Trắng/Đỏ ưu thế, Đen ưu thế)" style="width: 22px; background: #e2e8f0; border: 2px solid var(--border-color); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                    <div id="eval-bar-fill" style="width: 100%; height: 50%; background: #0f172a; transition: height 0.4s ease;"></div>
-                    <span id="eval-bar-text" style="position: absolute; width: 100%; text-align: center; font-size: 10px; font-weight: 800; color: var(--accent-gold); bottom: 4px; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">0.0</span>
-                </div>
-
-                <div class="board-wrapper" style="flex: 1; max-width: 650px;">
-                    <div id="chess-board" class="xiangqi-board">
-                        <svg id="board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <!-- BÀN CỜ CHÍNH -->
+            <div class="board-wrapper">
+                <div id="chess-board" class="xiangqi-board">
+                    <svg id="board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
                         <!-- NỀN -->
                         <rect x="0" y="0" width="900" height="1000" class="board-outer-bg" fill="#3E2723" />
                         <rect x="15" y="15" width="870" height="970" class="board-background" fill="#E2C28E" />
@@ -238,7 +231,6 @@
                     </div>
                 </div>
             </div>
-        </div>
 
             <!-- THÔNG TIN NGƯỜI CHƠI (QUÂN ĐỎ) -->
             <div class="player-bar player-red">
@@ -363,22 +355,6 @@
                         <span class="delta-total">Tổng <b id="lm-total">0</b></span>
                     </div>
                     <span class="delta-caption">Thay đổi ưu thế của bên vừa đi</span>
-                </div>
-
-                <!-- KHAI CUỘC & TRỢ LÝ HUẤN LUYỆN VIÊN AI (OPENING BOOK & AI COACH) -->
-                <div class="ai-coach-box" style="margin-top: 10px; padding: 10px; background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color); border-radius: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-size: 11px; font-weight: 700; color: var(--accent-gold); display: flex; align-items: center; gap: 5px;">
-                            <i class="fa-solid fa-book-open"></i> <span id="opening-book-name">Khai cuộc: Tiêu chuẩn</span>
-                        </span>
-                        <span id="opening-book-eco" style="font-size: 10px; font-family: monospace; background: var(--bg-navy-dark); padding: 1px 6px; border-radius: 4px; color: #94a3b8;">EC-01</span>
-                    </div>
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <i class="fa-solid fa-chalkboard-user" style="color: #38bdf8; font-size: 14px; margin-top: 2px;"></i>
-                        <p id="ai-coach-advice" style="margin: 0; font-size: 12px; color: var(--text-muted); line-height: 1.4;">
-                            Huấn luyện viên: Hãy phát triển Xe, Pháo, Mã nhanh chóng và kiểm soát trung lộ để tạo thế chủ động.
-                        </p>
-                    </div>
                 </div>
             </section>
 

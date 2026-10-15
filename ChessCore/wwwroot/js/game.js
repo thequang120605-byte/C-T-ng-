@@ -781,9 +781,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-    // Cập nhật thanh đánh giá thế trận bên cạnh bàn cờ (Eval Bar)
-    updateEvalBar();
-
     console.log("Bàn cờ đã được cập nhật!");
 
     if (VS_COMPUTER && gameStatus === "InProgress" && currentTurn === "Black") {

@@ -14,6 +14,23 @@
   const byId = id => document.getElementById(id);
   const setText = (id, value) => { const el = byId(id); if (el) el.textContent = value; };
   const signed = n => Number.isFinite(n) ? (n > 0 ? `+${n}` : String(n)) : "—";
+  const setSignedValue = (id, val, formatter) => {
+    const el = byId(id);
+    if (!el) return;
+    if (!Number.isFinite(val)) {
+      el.textContent = "—";
+      el.style.color = "";
+      return;
+    }
+    el.textContent = formatter ? formatter(val) : signed(val);
+    if (val > 0) {
+      el.style.color = "#10b981"; // Xanh lá cây (dương +)
+    } else if (val < 0) {
+      el.style.color = "#ef4444"; // Đỏ (âm -)
+    } else {
+      el.style.color = "";
+    }
+  };
   const ordered = moves => [...(moves || [])].sort((a, b) => a.moveOrder - b.moveOrder);
   const square = (row, col) => `${String.fromCharCode(97 + Number(col))}${10 - Number(row)}`;
   const notation = m => `${names[m.pieceType] || "Quân"} ${square(m.fromX, m.fromY)} → ${square(m.toX, m.toY)}`;
@@ -34,13 +51,13 @@
     const score = data.redScore;
     const label = !Number.isFinite(score) ? "Chưa có dữ liệu" : Math.abs(score) < 30 ? "Thế trận cân bằng" : score > 0 ? "Đỏ đang có ưu thế" : "Đen đang có ưu thế";
     setText("advantage-label", label);
-    setText("advantage-score", Number.isFinite(score) ? `${score > 0 ? "+" : ""}${(score / 100).toFixed(2)}` : "—");
-    setText("red-score", signed(score));
-    setText("black-score", signed(data.blackScore));
+    setSignedValue("advantage-score", score, s => `${s > 0 ? "+" : ""}${(s / 100).toFixed(2)}`);
+    setSignedValue("red-score", score);
+    setSignedValue("black-score", data.blackScore);
     setMeter("advantage-meter", score, 650);
     const components = data.evaluation || {};
     for (const [key, scale] of [["h1", 700], ["h2", 200], ["h3", 250]]) {
-      setText(`${key}-value`, signed(components[key]));
+      setSignedValue(`${key}-value`, components[key]);
       setMeter(`${key}-meter`, components[key], scale);
     }
     const lm = data.lastMoveEval;
@@ -53,11 +70,8 @@
     const last = ordered(data.moves).at(-1);
     setText("lm-piece", last ? `${last.pieceColor === "Red" ? "Đỏ" : "Đen"} · ${names[last.pieceType] || "Quân"}` : names[lm.pieceName] || lm.pieceName);
     setText("lm-desc", last ? `${square(last.fromX, last.fromY)} → ${square(last.toX, last.toY)}` : lm.moveDescription);
-    for (const key of ["h1", "h2", "h3"]) setText(`lm-${key}`, signed(lm[`delta${key.toUpperCase()}`]));
-    setText("lm-total", signed(lm.totalDelta));
-
-    // Hệ thống Nhận diện Khai cuộc & Trợ lý Huấn luyện viên AI (Opening Book & AI Coach)
-    renderOpeningAndCoach(data);
+    for (const key of ["h1", "h2", "h3"]) setSignedValue(`lm-${key}`, lm[`delta${key.toUpperCase()}`]);
+    setSignedValue("lm-total", lm.totalDelta);
   }
 
   function renderOpeningAndCoach(data) {
