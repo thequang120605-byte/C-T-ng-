@@ -84,7 +84,7 @@ namespace ChessCore.Controllers
 
             string redRank = game.RedPlayer != null ? $"Elo {game.RedPlayer.Elo}" : "Cấp độ Kỳ Thủ";
             string blackRank = (isPvP && game.BlackPlayer != null) ? $"Elo {game.BlackPlayer.Elo}" : (isPvP ? "Cấp độ Kỳ Thủ" : "Cấp độ AI");
-            string resultDesc = game.Status == GameStatus.RedWon ? "Quân Đỏ giành thắng lợi vẻ vang!" : (game.Status == GameStatus.BlackWon ? "Quân Đen giành thắng lợi vẻ vang!" : (game.Status == GameStatus.Draw ? "Ván đấu hòa cục bất phân thắng bại!" : "Trận đấu hấp dẫn và kịch tính"));
+            string resultDesc = game.Status == GameStatus.RedWins ? "Quân Đỏ giành thắng lợi vẻ vang!" : (game.Status == GameStatus.BlackWins ? "Quân Đen giành thắng lợi vẻ vang!" : (game.Status == GameStatus.Draw ? "Ván đấu hòa cục bất phân thắng bại!" : "Trận đấu hấp dẫn và kịch tính"));
 
             var vm = new GameReviewViewModel
             {
