@@ -143,19 +143,21 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                <button id="start-game-btn" class="btn-primary start-btn" disabled type="button" style="flex: 2; min-width: 200px;">
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                <button id="start-game-btn" class="btn-primary start-btn" disabled type="button" style="width: 100%; justify-content: center; font-size: 16px; padding: 14px 20px;">
                     <i class="fa-solid fa-play"></i> BẮT ĐẦU VÁN CỜ
                 </button>
-                <button id="board-editor-open-btn" class="btn-secondary" type="button" style="flex: 1; min-width: 130px; border-radius: 12px; font-weight: 700; font-size: 13.5px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Tự xếp thế cờ tùy chỉnh để AI phân tích hoặc đấu tiếp">
-                    <i class="fa-solid fa-chess-board" style="color: var(--accent-gold);"></i> Xếp thế cờ
-                </button>
-                <button id="opening-explorer-open-btn" class="btn-secondary" type="button" style="flex: 1; min-width: 140px; border-radius: 12px; font-weight: 700; font-size: 13.5px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Tra cứu các thế trận khai cuộc và tỷ lệ thắng">
-                    <i class="fa-solid fa-book-bookmark" style="color: var(--accent-gold);"></i> Khai cuộc ECCO
-                </button>
-                <button id="mode-import-fen-btn" class="btn-secondary" type="button" style="border-radius: 12px; font-weight: 700; font-size: 13.5px; padding: 10px 16px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Nạp thế cờ từ chuỗi FEN để bắt đầu chơi">
-                    <i class="fa-solid fa-file-import" style="color: var(--accent-gold);"></i> Nạp FEN
-                </button>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <button id="board-editor-open-btn" class="btn-secondary" type="button" style="width: 100%; border-radius: 12px; font-weight: 700; font-size: 13.5px; padding: 10px 12px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Tự xếp thế cờ tùy chỉnh để AI phân tích hoặc đấu tiếp">
+                        <i class="fa-solid fa-chess-board" style="color: var(--accent-gold);"></i> Xếp thế cờ
+                    </button>
+                    <button id="opening-explorer-open-btn" class="btn-secondary" type="button" style="width: 100%; border-radius: 12px; font-weight: 700; font-size: 13.5px; padding: 10px 12px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Tra cứu các thế trận khai cuộc và tỷ lệ thắng">
+                        <i class="fa-solid fa-book-bookmark" style="color: var(--accent-gold);"></i> Khai cuộc ECCO
+                    </button>
+                    <button id="mode-import-fen-btn" class="btn-secondary" type="button" style="width: 100%; border-radius: 12px; font-weight: 700; font-size: 13.5px; padding: 10px 12px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Nạp thế cờ từ chuỗi FEN để bắt đầu chơi">
+                        <i class="fa-solid fa-file-import" style="color: var(--accent-gold);"></i> Nạp FEN
+                    </button>
+                </div>
             </div>
         </div>
     </section>
