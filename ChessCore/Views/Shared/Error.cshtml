@@ -164,6 +164,12 @@
             else
             {
                 <span>Đã có sự cố bất ngờ trong quá trình tính toán thế cờ. Hệ thống đã ghi nhận lỗi và đang khôi phục. Vui lòng thử lại sau ít phút.</span>
+                @if (ViewBag.ErrorMessage != null)
+                {
+                    <div style="margin-top: 12px; font-size: 11px; color: #fca5a5; background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 8px; text-align: left; overflow-x: auto; font-family: monospace;">
+                        @ViewBag.ErrorMessage
+                    </div>
+                }
             }
         </p>
 

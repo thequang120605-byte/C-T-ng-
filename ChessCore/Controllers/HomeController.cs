@@ -85,6 +85,12 @@ namespace ChessCore.Controllers
             var statusCode = id ?? HttpContext.Response.StatusCode;
             if (statusCode == 0 || statusCode == 200) statusCode = 404;
 
+            var exceptionFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+            if (exceptionFeature?.Error != null)
+            {
+                ViewBag.ErrorMessage = $"{exceptionFeature.Error.GetType().Name}: {exceptionFeature.Error.Message}";
+            }
+
             ViewBag.StatusCode = statusCode;
             return View("~/Views/Shared/Error.cshtml");
         }
