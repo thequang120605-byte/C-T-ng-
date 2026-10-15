@@ -21,27 +21,42 @@ namespace ChessCore.Controllers
         // GET: /MasterGame
         public async Task<IActionResult> Index()
         {
-            await EnsureMasterGamesPopulatedAsync();
+            try
+            {
+                await EnsureMasterGamesPopulatedAsync();
 
-            var games = await _context.MasterGames
-                .OrderByDescending(g => g.EventDate ?? g.CreatedAt)
-                .ToListAsync();
+                var games = await _context.MasterGames
+                    .OrderByDescending(g => g.EventDate ?? g.CreatedAt)
+                    .ToListAsync();
 
-            return View(games);
+                return View(games);
+            }
+            catch (Exception ex)
+            {
+                // Fallback nếu database vừa khởi động hoặc đang cập nhật bảng
+                return View(new List<MasterGame>());
+            }
         }
 
         // GET: /MasterGame/Detail/{id}
         public async Task<IActionResult> Detail(int id)
         {
-            await EnsureMasterGamesPopulatedAsync();
-
-            var game = await _context.MasterGames.FindAsync(id);
-            if (game == null)
+            try
             {
-                return NotFound();
-            }
+                await EnsureMasterGamesPopulatedAsync();
 
-            return View(game);
+                var game = await _context.MasterGames.FindAsync(id);
+                if (game == null)
+                {
+                    return NotFound();
+                }
+
+                return View(game);
+            }
+            catch (Exception)
+            {
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         private async Task EnsureMasterGamesPopulatedAsync()
