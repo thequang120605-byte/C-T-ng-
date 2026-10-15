@@ -24,7 +24,13 @@ namespace ChessCore.Models
         public User RedPlayer { get; set; }
         public User BlackPlayer { get; set; }
 
+        public string GameMode { get; set; } = "PvP"; // PvP, PvE, Online
+        public int? AiDepth { get; set; }             // AI search depth (1..4) for PvE matches
+        public int? OpeningId { get; set; }           // Linked opening book
+
         // Navigation properties
+        public Opening? Opening { get; set; }
+        public GameAnalysis? Analysis { get; set; }
         public List<Move> Moves { get; set; } = new List<Move>();
     }
 }

@@ -23,5 +23,8 @@ namespace ChessCore.Models
         public int Draws { get; set; } = 0;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation properties
+        public System.Collections.Generic.List<UserEloHistory> EloHistories { get; set; } = new();
     }
 }
