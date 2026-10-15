@@ -136,6 +136,14 @@ if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
+else
+{
+    app.UseExceptionHandler("/Home/Error/500");
+    app.UseHsts();
+}
+
+// Bắt các mã lỗi HTTP như 404, 403, 500 và điều hướng sang trang lỗi thân thiện
+app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
 
 if (!app.Environment.IsDevelopment())
 {

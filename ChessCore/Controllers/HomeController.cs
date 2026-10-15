@@ -78,6 +78,16 @@ namespace ChessCore.Controllers
 
             return View(vm);
         }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error(int? id)
+        {
+            var statusCode = id ?? HttpContext.Response.StatusCode;
+            if (statusCode == 0 || statusCode == 200) statusCode = 404;
+
+            ViewBag.StatusCode = statusCode;
+            return View("~/Views/Shared/Error.cshtml");
+        }
     }
 
     public class HomeViewModel
