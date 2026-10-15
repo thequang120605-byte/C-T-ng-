@@ -177,12 +177,12 @@
         </div>
         <div>
             <span class="master-badge-count">
-                <i class="fa-solid fa-book-bookmark"></i> @Model.Count ván đấu kinh điển
+                <i class="fa-solid fa-book-bookmark"></i> @(Model?.Count ?? 0) ván đấu kinh điển
             </span>
         </div>
     </div>
 
-    @if (Model.Any())
+    @if (Model != null && Model.Any())
     {
         <div class="master-grid">
             @foreach (var g in Model)
