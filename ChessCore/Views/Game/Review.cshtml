@@ -520,8 +520,11 @@
             }
         </div>
 
-        <!-- Nút xuất biên bản PGN / In PDF / Chia sẻ QR -->
+        <!-- Nút xuất biên bản PGN / In PDF / Chia sẻ QR / Tải Ảnh Thẻ Kết Quả -->
         <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-top: 4px;">
+            <button type="button" class="btn-action-gold" onclick="generateMatchCard();" style="flex: 1.2; justify-content: center; padding: 6px 10px; font-size: 12px;" title="Tạo thẻ ảnh chiến tích sang trọng để khoe bạn bè">
+                <i class="fa-solid fa-image"></i> Tải Thẻ Chiến Tích
+            </button>
             <button type="button" class="btn-action-secondary" onclick="exportNotation();" style="flex: 1; justify-content: center; padding: 6px 10px; font-size: 12px;">
                 <i class="fa-solid fa-file-arrow-down"></i> Xuất PGN / Text
             </button>
@@ -882,6 +885,202 @@
                 } else {
                     prompt("Sao chép liên kết tại đây:", shareUrl);
                 }
+            }
+        }
+
+        // HÀM TẠO ẢNH THẺ KẾT QUẢ CHIẾN TÍCH (CANVAS MATCH CARD)
+        async function generateMatchCard() {
+            try {
+                if (window.AppToast) window.AppToast.show("Đang chuẩn bị ảnh chiến tích...", "info");
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = 1000;
+                canvas.height = 1200;
+                const ctx = canvas.getContext('2d');
+
+                // 1. Nền Gradient hoàng gia sang trọng
+                const bgGrad = ctx.createLinearGradient(0, 0, 1000, 1200);
+                bgGrad.addColorStop(0, '#0f172a');
+                bgGrad.addColorStop(0.5, '#1e293b');
+                bgGrad.addColorStop(1, '#090d16');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, 1000, 1200);
+
+                // Khung viền mạ vàng
+                ctx.strokeStyle = '#d4af37';
+                ctx.lineWidth = 8;
+                ctx.strokeRect(24, 24, 952, 1152);
+
+                ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(36, 36, 928, 1128);
+
+                // 2. Tiêu đề thương hiệu
+                ctx.fillStyle = '#d4af37';
+                ctx.font = 'bold 36px "Segoe UI", Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('CỜ TƯỚNG PRO — CHIẾN TÍCH KỲ THỦ', 500, 100);
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '18px "Segoe UI", Arial, sans-serif';
+                ctx.fillText('Mã trận: #@Model.GameId  |  Ngày đấu: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")', 500, 135);
+
+                // Đường kẻ ngăn cách
+                ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+                ctx.beginPath();
+                ctx.moveTo(100, 160);
+                ctx.lineTo(900, 160);
+                ctx.stroke();
+
+                // 3. Hai bên kỳ thủ (VS Box)
+                // Bên Đỏ
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(80, 190, 380, 160, 16);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.font = 'bold 28px "Segoe UI", Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('@Model.RedPlayerName (Đỏ)', 270, 240);
+
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = '20px "Segoe UI", Arial, sans-serif';
+                ctx.fillText('Độ chính xác: @Model.AccuracyRed%', 270, 280);
+
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '16px "Segoe UI", Arial, sans-serif';
+                ctx.fillText('@Model.RedRank', 270, 315);
+
+                // Bên Đen
+                ctx.fillStyle = 'rgba(148, 163, 184, 0.1)';
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(540, 190, 380, 160, 16);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = 'bold 28px "Segoe UI", Arial, sans-serif';
+                ctx.fillText('@Model.BlackPlayerName (Đen)', 730, 240);
+
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = '20px "Segoe UI", Arial, sans-serif';
+                ctx.fillText('Độ chính xác: @Model.AccuracyBlack%', 730, 280);
+
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '16px "Segoe UI", Arial, sans-serif';
+                ctx.fillText('@Model.BlackRank', 730, 315);
+
+                // Huy hiệu VS ở giữa
+                ctx.fillStyle = '#d4af37';
+                ctx.font = 'italic bold 26px "Segoe UI", Arial, sans-serif';
+                ctx.fillText('VS', 500, 280);
+
+                // 4. Kết quả chung cuộc
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+                ctx.fillText('@Model.ResultDescription', 500, 395);
+
+                // 5. Vẽ bàn cờ tàn cuộc thu nhỏ (Mini Board)
+                const boardX = 220;
+                const boardY = 430;
+                const boardW = 560;
+                const boardH = 620;
+
+                // Nền gỗ bàn cờ
+                ctx.fillStyle = '#d7b377';
+                ctx.fillRect(boardX, boardY, boardW, boardH);
+                ctx.strokeStyle = '#4a3022';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(boardX, boardY, boardW, boardH);
+
+                // Lưới cờ 10x9
+                const stepX = boardW / 8;
+                const stepY = boardH / 9;
+
+                ctx.strokeStyle = '#5a3d28';
+                ctx.lineWidth = 1.5;
+                for (let r = 0; r < 10; r++) {
+                    ctx.beginPath();
+                    ctx.moveTo(boardX, boardY + r * stepY);
+                    ctx.lineTo(boardX + boardW, boardY + r * stepY);
+                    ctx.stroke();
+                }
+                for (let c = 0; c < 9; c++) {
+                    if (c === 0 || c === 8) {
+                        ctx.beginPath();
+                        ctx.moveTo(boardX + c * stepX, boardY);
+                        ctx.lineTo(boardX + c * stepX, boardY + boardH);
+                        ctx.stroke();
+                    } else {
+                        // Nửa trên
+                        ctx.beginPath();
+                        ctx.moveTo(boardX + c * stepX, boardY);
+                        ctx.lineTo(boardX + c * stepX, boardY + 4 * stepY);
+                        ctx.stroke();
+                        // Nửa dưới
+                        ctx.beginPath();
+                        ctx.moveTo(boardX + c * stepX, boardY + 5 * stepY);
+                        ctx.lineTo(boardX + c * stepX, boardY + boardH);
+                        ctx.stroke();
+                    }
+                }
+
+                // Vẽ các quân cờ hiện tại ở nước cuối cùng
+                const lastStep = analyzedMoves.length - 1;
+                const pieces = initialPieces.map(p => ({ ...p }));
+                for (let i = 0; i <= lastStep; i++) {
+                    const m = analyzedMoves[i];
+                    const cap = pieces.findIndex(p => p.row === m.ToX && p.col === m.ToY);
+                    if (cap !== -1) pieces.splice(cap, 1);
+                    const mover = pieces.find(p => p.row === m.FromX && p.col === m.FromY);
+                    if (mover) { mover.row = m.ToX; mover.col = m.ToY; }
+                }
+
+                pieces.forEach(p => {
+                    const px = boardX + p.col * stepX;
+                    const py = boardY + p.row * stepY;
+                    const radius = 22;
+
+                    ctx.beginPath();
+                    ctx.arc(px, py, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#fffbeb';
+                    ctx.fill();
+                    ctx.strokeStyle = p.color.toLowerCase() === 'red' ? '#dc2626' : '#1e293b';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = p.color.toLowerCase() === 'red' ? '#dc2626' : '#0f172a';
+                    ctx.font = 'bold 22px "KaiTi", "STKaiti", serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(p.text, px, py + 1);
+                });
+
+                // 6. Footer & Mã QR nhỏ
+                ctx.textBaseline = 'alphabetic';
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '15px "Segoe UI", Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Quét mã QR hoặc truy cập Cờ Tướng Pro để xem chi tiết toàn bộ phân tích ván đấu!', 500, 1110);
+
+                // Tải xuống file ảnh PNG
+                const link = document.createElement('a');
+                link.download = `ChienTich_VanCo_${@Model.GameId}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                if (window.AppDialog && typeof window.AppDialog.alert === 'function') {
+                    window.AppDialog.alert("Đã tạo và tải ảnh thẻ chiến tích thành công!", "Tuyệt vời", "info");
+                }
+            } catch (err) {
+                console.error("Lỗi tạo ảnh thẻ chiến tích:", err);
+                alert("Không thể tạo ảnh thẻ kết quả. Vui lòng thử lại!");
             }
         }
 
