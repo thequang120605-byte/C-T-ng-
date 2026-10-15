@@ -48,12 +48,13 @@
   }
 
   function renderEvaluation(data) {
-    const score = data.redScore;
+    const isNeural = window.evaluationEngineMode === "neural";
+    const score = isNeural ? (data.neuralScore ?? data.redScore) : data.redScore;
     const label = !Number.isFinite(score) ? "Chưa có dữ liệu" : Math.abs(score) < 30 ? "Thế trận cân bằng" : score > 0 ? "Đỏ đang có ưu thế" : "Đen đang có ưu thế";
-    setText("advantage-label", label);
+    setText("advantage-label", isNeural ? `[AI Mạng Nơ-ron] ${label}` : label);
     setSignedValue("advantage-score", score, s => `${s > 0 ? "+" : ""}${(s / 100).toFixed(2)}`);
     setSignedValue("red-score", score);
-    setSignedValue("black-score", data.blackScore);
+    setSignedValue("black-score", isNeural ? -score : data.blackScore);
     setMeter("advantage-meter", score, 650);
     const components = data.evaluation || {};
     for (const [key, scale] of [["h1", 700], ["h2", 200], ["h3", 250]]) {

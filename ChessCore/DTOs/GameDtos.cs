@@ -79,6 +79,7 @@ namespace ChessCore.DTOs
         public HeuristicEvaluationDto Evaluation { get; set; } = new();
         public int RedScore { get; set; }
         public int BlackScore { get; set; }
+        public int NeuralScore { get; set; }
         public LastMoveEvaluationDto? LastMoveEval { get; set; }
         public DateTime CreatedAt { get; set; }
 

@@ -3612,6 +3612,376 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
+  // TOGGLE EVALUATION ENGINE (HEURISTIC vs NEURAL NETWORK)
+  // =====================================================
+  window.evaluationEngineMode = "heuristic";
+  const engineModeToggle = document.getElementById("engine-mode-toggle");
+  const engineModeName = document.getElementById("engine-mode-name");
+
+  if (engineModeToggle && engineModeName) {
+    engineModeToggle.addEventListener("click", function(e) {
+      e.stopPropagation();
+      if (window.evaluationEngineMode === "heuristic") {
+        window.evaluationEngineMode = "neural";
+        engineModeName.textContent = "Mạng Nơ-ron (NNUE)";
+        engineModeToggle.style.background = "rgba(16, 185, 129, 0.15)";
+        engineModeToggle.style.color = "#059669";
+        engineModeToggle.style.borderColor = "rgba(16, 185, 129, 0.3)";
+        showToast("Đã kích hoạt Động cơ Định giá Mạng Nơ-ron (Value Network)", "success");
+      } else {
+        window.evaluationEngineMode = "heuristic";
+        engineModeName.textContent = "Heuristic";
+        engineModeToggle.style.background = "rgba(212, 175, 55, 0.15)";
+        engineModeToggle.style.color = "var(--accent-gold-dark)";
+        engineModeToggle.style.borderColor = "rgba(212, 175, 55, 0.3)";
+        showToast("Đã kích hoạt Động cơ Heuristic đa tầng (H1 + H2 + H3)", "info");
+      }
+      if (lastGameData && window.ArenaUI) {
+        window.ArenaUI.update(lastGameData);
+      }
+    });
+  }
+
+  // =====================================================
+  // THIẾT LẬP BÀN CỜ TÙY CHỈNH (BOARD EDITOR)
+  // =====================================================
+  const editorModal = document.getElementById("board-editor-modal");
+  const editorOpenBtn = document.getElementById("board-editor-open-btn");
+  const editorCloseBtn = document.getElementById("editor-close-btn");
+  const editorClearBtn = document.getElementById("editor-clear-btn");
+  const editorStandardBtn = document.getElementById("editor-standard-btn");
+  const editorPlayBtn = document.getElementById("editor-play-btn");
+  const editorFenOutput = document.getElementById("editor-fen-output");
+  const editorBoardSvg = document.getElementById("editor-board-svg");
+  const editorPiecesLayer = document.getElementById("editor-pieces-layer");
+
+  let editorSelectedPiece = null;
+  let editorGrid = Array.from({ length: 10 }, () => Array(9).fill(null));
+
+  function initStandardEditorGrid() {
+    editorGrid = Array.from({ length: 10 }, () => Array(9).fill(null));
+    const initFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+    loadFenIntoEditor(initFen);
+  }
+
+  function loadFenIntoEditor(fen) {
+    editorGrid = Array.from({ length: 10 }, () => Array(9).fill(null));
+    const ranks = (fen || "").trim().split(/\s+/)[0].split("/");
+    if (ranks.length === 10) {
+      ranks.forEach((rank, r) => {
+        let c = 0;
+        for (const ch of rank) {
+          if (ch >= "1" && ch <= "9") {
+            c += parseInt(ch, 10);
+          } else {
+            const isRed = ch === ch.toUpperCase();
+            const lower = ch.toLowerCase();
+            const typeMap = { k: "King", a: "Advisor", b: "Elephant", n: "Horse", r: "Rook", c: "Cannon", p: "Pawn" };
+            const textMap = {
+              k: isRed ? "帥" : "將",
+              a: isRed ? "仕" : "士",
+              b: isRed ? "相" : "象",
+              n: isRed ? "傌" : "馬",
+              r: isRed ? "俥" : "車",
+              c: isRed ? "炮" : "砲",
+              p: isRed ? "兵" : "卒"
+            };
+            if (typeMap[lower]) {
+              editorGrid[r][c] = {
+                type: typeMap[lower],
+                color: isRed ? "Red" : "Black",
+                text: textMap[lower],
+                fenChar: ch
+              };
+            }
+            c++;
+          }
+        }
+      });
+    }
+    renderEditorPieces();
+    updateEditorFenOutput();
+  }
+
+  function renderEditorPieces() {
+    if (!editorPiecesLayer) return;
+    editorPiecesLayer.replaceChildren();
+
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 9; c++) {
+        const p = editorGrid[r][c];
+        if (p) {
+          const x = 50 + c * 100;
+          const y = 50 + r * 100;
+          const g = document.createElementNS(SVG_NS, "g");
+          g.setAttribute("class", `editor-piece ${p.color.toLowerCase()}`);
+          g.setAttribute("data-row", r);
+          g.setAttribute("data-col", c);
+          g.style.cursor = "pointer";
+
+          g.innerHTML = `
+            <circle cx="${x}" cy="${y}" r="40" fill="#E2C28E" stroke="${p.color === 'Red' ? '#c00000' : '#111'}" stroke-width="2" style="filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.3));"></circle>
+            <circle cx="${x}" cy="${y}" r="33" fill="none" stroke="#F5DEB3" stroke-width="2"></circle>
+            <text x="${x}" y="${y + 2}" font-family="SimSun, STSong, serif" font-size="46" font-weight="900" text-anchor="middle" dominant-baseline="middle" fill="${p.color === 'Red' ? '#c00000' : '#111'}">${p.text}</text>
+          `;
+          editorPiecesLayer.appendChild(g);
+        }
+      }
+    }
+  }
+
+  function updateEditorFenOutput() {
+    if (!editorFenOutput) return;
+    const ranks = [];
+    for (let r = 0; r < 10; r++) {
+      let emptyCount = 0;
+      let rankStr = "";
+      for (let c = 0; c < 9; c++) {
+        const p = editorGrid[r][c];
+        if (!p) {
+          emptyCount++;
+        } else {
+          if (emptyCount > 0) {
+            rankStr += emptyCount;
+            emptyCount = 0;
+          }
+          const charMap = {
+            King: "k", Advisor: "a", Elephant: "b", Horse: "n", Rook: "r", Cannon: "c", Pawn: "p"
+          };
+          const base = charMap[p.type] || "p";
+          rankStr += (p.color === "Red") ? base.toUpperCase() : base.toLowerCase();
+        }
+      }
+      if (emptyCount > 0) rankStr += emptyCount;
+      ranks.push(rankStr);
+    }
+
+    const turnRadio = document.querySelector('input[name="editor-turn"]:checked');
+    const turn = turnRadio ? turnRadio.value : "w";
+    editorFenOutput.value = `${ranks.join("/")} ${turn} - - 0 1`;
+  }
+
+  if (editorOpenBtn && editorModal) {
+    editorOpenBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      initStandardEditorGrid();
+      editorModal.classList.remove("hidden");
+    });
+  }
+
+  if (editorCloseBtn && editorModal) {
+    editorCloseBtn.addEventListener("click", () => editorModal.classList.add("hidden"));
+  }
+
+  if (editorClearBtn) {
+    editorClearBtn.addEventListener("click", () => {
+      editorGrid = Array.from({ length: 10 }, () => Array(9).fill(null));
+      renderEditorPieces();
+      updateEditorFenOutput();
+    });
+  }
+
+  if (editorStandardBtn) {
+    editorStandardBtn.addEventListener("click", () => initStandardEditorGrid());
+  }
+
+  // Chọn quân trên khay
+  document.querySelectorAll(".editor-piece-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll(".editor-piece-btn").forEach(b => b.style.outline = "none");
+      const eraser = document.getElementById("editor-eraser-btn");
+      if (eraser) eraser.style.borderColor = "var(--border-color)";
+
+      this.style.outline = "3px solid #d97706";
+      editorSelectedPiece = {
+        type: this.getAttribute("data-type"),
+        color: this.getAttribute("data-color"),
+        text: this.getAttribute("data-text")
+      };
+    });
+  });
+
+  const editorEraser = document.getElementById("editor-eraser-btn");
+  if (editorEraser) {
+    editorEraser.addEventListener("click", function() {
+      document.querySelectorAll(".editor-piece-btn").forEach(b => b.style.outline = "none");
+      this.style.borderColor = "#ef4444";
+      editorSelectedPiece = { isEraser: true };
+    });
+  }
+
+  // Click vào bàn cờ editor để đặt/xóa quân
+  if (editorBoardSvg) {
+    editorBoardSvg.addEventListener("click", function(e) {
+      const rect = editorBoardSvg.getBoundingClientRect();
+      const scaleX = 900 / rect.width;
+      const scaleY = 1000 / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      const col = Math.round((x - 50) / 100);
+      const row = Math.round((y - 50) / 100);
+
+      if (row >= 0 && row <= 9 && col >= 0 && col <= 8) {
+        if (!editorSelectedPiece) {
+          // Nếu không chọn quân gì thì click vào quân đang có sẽ xóa nó
+          editorGrid[row][col] = null;
+        } else if (editorSelectedPiece.isEraser) {
+          editorGrid[row][col] = null;
+        } else {
+          editorGrid[row][col] = {
+            type: editorSelectedPiece.type,
+            color: editorSelectedPiece.color,
+            text: editorSelectedPiece.text
+          };
+        }
+        renderEditorPieces();
+        updateEditorFenOutput();
+      }
+    });
+  }
+
+  document.querySelectorAll('input[name="editor-turn"]').forEach(radio => {
+    radio.addEventListener("change", updateEditorFenOutput);
+  });
+
+  if (editorPlayBtn) {
+    editorPlayBtn.addEventListener("click", async function() {
+      const fen = editorFenOutput.value.trim();
+      if (!fen) return;
+      editorModal.classList.add("hidden");
+      await createGame(fen);
+      showToast("Đã khởi tạo ván cờ từ thế xếp tùy chỉnh của bạn!", "success");
+    });
+  }
+
+  // =====================================================
+  // TRA CỨU KHAI CUỘC (OPENING BOOK EXPLORER)
+  // =====================================================
+  const openingModal = document.getElementById("opening-explorer-modal");
+  const openingOpenBtn = document.getElementById("opening-explorer-open-btn");
+  const openingCloseBtn = document.getElementById("opening-explorer-close-btn");
+  const openingPracticeBtn = document.getElementById("opening-practice-btn");
+
+  const openingData = {
+    1: {
+      title: "Pháo Đầu (Trung Pháo) - ECCO-01",
+      desc: "Thế trận công thủ toàn diện, Pháo vào trung lộ kiểm soát lộ 5, tạo sức ép thẳng vào cung Tướng đối phương.",
+      fen: "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+      moves: [
+        { notation: "Pháo 2 bình 5 (C2.5)", win: "58.4%", draw: "24.1%", loss: "17.5%", note: "Chuẩn thức khai cuộc công phá trung lộ dũng mãnh nhất." },
+        { notation: "Pháo 8 bình 5 (C8.5)", win: "56.2%", draw: "25.0%", loss: "18.8%", note: "Tả Pháo nhập trung, tạo thế uy hiếp đối xứng." }
+      ]
+    },
+    2: {
+      title: "Bình Phong Mã - ECCO-02",
+      desc: "Thế trận phòng ngự phản công kinh điển chống lại Trung Pháo. Hai Mã nhảy lên lộ 3 và 7 giữ chặt trung tâm và bảo vệ Tốt đầu vững chắc.",
+      fen: "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/4C1C2/9/RNBAKABNR b - - 1 1",
+      moves: [
+        { notation: "Mã 8 tiến 7 (M8.7)", win: "52.1%", draw: "30.4%", loss: "17.5%", note: "Phương án Bình Phong Mã cổ điển kiên cố nhất." },
+        { notation: "Mã 2 tiến 3 (M2.3)", win: "51.5%", draw: "31.2%", loss: "17.3%", note: "Bình Phong Mã hiện đại kết hợp tiến Tốt 7 hoặc 3." }
+      ]
+    },
+    3: {
+      title: "Thuận Pháo - ECCO-03",
+      desc: "Hai bên cùng đưa Pháo vào cùng một lộ trung tâm, thế cờ đối công kịch liệt, ăn miếng trả miếng không khoan nhượng.",
+      fen: "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/4C1C2/9/RNBAKABNR b - - 1 1",
+      moves: [
+        { notation: "Pháo 8 bình 5 (C8.5)", win: "49.8%", draw: "22.5%", loss: "27.7%", note: "Đối công rực lửa, quyết chiến từ những nước đầu tiên." }
+      ]
+    },
+    4: {
+      title: "Tiên Nhân Chỉ Lộ - ECCO-04",
+      desc: "Bên Đỏ khai cuộc bằng nước Tốt 7 tiến 1 hoặc Tốt 3 tiến 1 để thăm dò ý đồ chiến thuật của đối phương.",
+      fen: "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+      moves: [
+        { notation: "Binh 7 tiến 1 (P7.1)", win: "54.2%", draw: "28.6%", loss: "17.2%", note: "Mở đường Mã thông suốt, linh hoạt chuyển biến theo phản ứng đối phương." }
+      ]
+    },
+    5: {
+      title: "Khởi Mã Cuộc (Trận Thượng Tiên) - ECCO-05",
+      desc: "Khai cuộc bằng nước phát triển Mã sớm, cấu trúc phòng thủ kiên cố, linh hoạt và chuyển biến sâu sắc.",
+      fen: "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+      moves: [
+        { notation: "Mã 2 tiến 3 (H2.3)", win: "53.0%", draw: "33.5%", loss: "13.5%", note: "Lối đánh trầm tĩnh, dẻo dai thích hợp cho kỳ thủ chuộng trung tàn cuộc." }
+      ]
+    }
+  };
+
+  let currentOpeningId = 1;
+
+  function renderOpeningDetail(id) {
+    currentOpeningId = id;
+    const data = openingData[id];
+    if (!data) return;
+
+    const titleEl = document.getElementById("opening-detail-title");
+    const descEl = document.getElementById("opening-detail-desc");
+    const movesTable = document.getElementById("opening-moves-table");
+
+    if (titleEl) titleEl.textContent = data.title;
+    if (descEl) descEl.textContent = data.desc;
+
+    if (movesTable) {
+      let html = "";
+      data.moves.forEach(m => {
+        html += `
+          <div style="background: var(--bg-navy-panel); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <strong style="color: #c00000; font-size: 13.5px;">${m.notation}</strong>
+              <div style="font-size: 11.5px; font-weight: 700; display: flex; gap: 8px;">
+                <span style="color: #10b981;">Thắng: ${m.win}</span>
+                <span style="color: var(--text-muted);">Hòa: ${m.draw}</span>
+                <span style="color: #ef4444;">Thua: ${m.loss}</span>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">${m.note}</div>
+          </div>
+        `;
+      });
+      movesTable.innerHTML = html;
+    }
+  }
+
+  if (openingOpenBtn && openingModal) {
+    openingOpenBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      renderOpeningDetail(1);
+      openingModal.classList.remove("hidden");
+    });
+  }
+
+  if (openingCloseBtn && openingModal) {
+    openingCloseBtn.addEventListener("click", () => openingModal.classList.add("hidden"));
+  }
+
+  document.querySelectorAll(".opening-menu-item").forEach(item => {
+    item.addEventListener("click", function() {
+      document.querySelectorAll(".opening-menu-item").forEach(i => {
+        i.classList.remove("active");
+        i.style.background = "transparent";
+        i.style.borderColor = "transparent";
+      });
+      this.classList.add("active");
+      this.style.background = "rgba(212, 175, 55, 0.15)";
+      this.style.borderColor = "rgba(212, 175, 55, 0.3)";
+
+      const id = parseInt(this.getAttribute("data-id"), 10);
+      renderOpeningDetail(id);
+    });
+  });
+
+  if (openingPracticeBtn) {
+    openingPracticeBtn.addEventListener("click", async function() {
+      const data = openingData[currentOpeningId];
+      if (!data) return;
+      openingModal.classList.add("hidden");
+      await createGame(data.fen);
+      showToast(`Đã mở bàn cờ luyện tập thế trận: ${data.title}!`, "success");
+    });
+  }
+
+  // =====================================================
   // START
   // =====================================================
 

@@ -1296,35 +1296,37 @@ namespace ChessCore.Controllers
             var remainingSeconds = game.Status == GameStatus.InProgress
                 ? Math.Max(0, 180 - (int)(DateTime.UtcNow - lastAction).TotalSeconds)
                 : 0;
+            var neuralScore = NeuralNetworkEvaluator.EvaluateNeural(board, PieceColor.Red);
 
             return new GameResponseDto
             {
-                Id =
-                    game.Id,
+                    Id =
+                        game.Id,
 
-                RoomCode =
-                    game.RoomCode,
+                    RoomCode =
+                        game.RoomCode,
 
-                Status =
-                    game.Status.ToString(),
+                    Status =
+                        game.Status.ToString(),
 
-                CurrentTurn =
-                    game.CurrentTurn.ToString(),
+                    CurrentTurn =
+                        game.CurrentTurn.ToString(),
 
-                IsCheck = isCheck,
-                HasNoLegalMoves = noMoves,
-                IsCheckmate = isCheck && noMoves,
-                EndReason = endReason,
-                InitialFen = game.InitialFen,
-                Evaluation = new HeuristicEvaluationDto
-                {
-                    H1 = redEvaluation.H1 - blackEvaluation.H1,
-                    H2 = redEvaluation.H2 - blackEvaluation.H2,
-                    H3 = redEvaluation.H3 - blackEvaluation.H3
-                },
-                RedScore = redScore,
-                BlackScore = -redScore,
-                LastMoveEval = lastMoveEval,
+                    IsCheck = isCheck,
+                    HasNoLegalMoves = noMoves,
+                    IsCheckmate = isCheck && noMoves,
+                    EndReason = endReason,
+                    InitialFen = game.InitialFen,
+                    Evaluation = new HeuristicEvaluationDto
+                    {
+                        H1 = redEvaluation.H1 - blackEvaluation.H1,
+                        H2 = redEvaluation.H2 - blackEvaluation.H2,
+                        H3 = redEvaluation.H3 - blackEvaluation.H3
+                    },
+                    RedScore = redScore,
+                    BlackScore = -redScore,
+                    NeuralScore = neuralScore,
+                    LastMoveEval = lastMoveEval,
 
                 CreatedAt =
                     game.CreatedAt,
