@@ -36,6 +36,9 @@ namespace ChessCore.Controllers
         public DateTime CreatedAt { get; set; }
         public string RedPlayerName { get; set; } = "Quân Đỏ";
         public string BlackPlayerName { get; set; } = "Quân Đen";
+        public string RedRank { get; set; } = "Kỳ Thủ";
+        public string BlackRank { get; set; } = "Kỳ Thủ";
+        public string ResultDescription { get; set; } = "Trận đấu kịch tính";
         public List<GameReviewItem> AnalyzedMoves { get; set; } = new();
         public int AccuracyRed { get; set; } = 85;
         public int AccuracyBlack { get; set; } = 82;
@@ -79,6 +82,10 @@ namespace ChessCore.Controllers
             string mode = isPvP ? "Đấu trực tuyến (PvP)" : "Chơi với Máy (AI)";
             string matchTitle = $"{redName} vs. {blackName}";
 
+            string redRank = game.RedPlayer != null ? $"Elo {game.RedPlayer.Elo}" : "Cấp độ Kỳ Thủ";
+            string blackRank = (isPvP && game.BlackPlayer != null) ? $"Elo {game.BlackPlayer.Elo}" : (isPvP ? "Cấp độ Kỳ Thủ" : "Cấp độ AI");
+            string resultDesc = game.Status == GameStatus.RedWon ? "Quân Đỏ giành thắng lợi vẻ vang!" : (game.Status == GameStatus.BlackWon ? "Quân Đen giành thắng lợi vẻ vang!" : (game.Status == GameStatus.Draw ? "Ván đấu hòa cục bất phân thắng bại!" : "Trận đấu hấp dẫn và kịch tính"));
+
             var vm = new GameReviewViewModel
             {
                 GameId = game.Id,
@@ -89,6 +96,9 @@ namespace ChessCore.Controllers
                 CreatedAt = game.CreatedAt,
                 RedPlayerName = redName,
                 BlackPlayerName = blackName,
+                RedRank = redRank,
+                BlackRank = blackRank,
+                ResultDescription = resultDesc,
                 InitialFen = game.InitialFen ?? ""
             };
 
