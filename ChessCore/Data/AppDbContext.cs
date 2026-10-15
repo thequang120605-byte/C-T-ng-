@@ -361,7 +361,7 @@ namespace ChessCore.Data
                     InitialFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
                     PgnContent = "[Event \"Giap Cap Lien Tai\"]\n[Site \"Quang Chau\"]\n[Date \"1988.11.20\"]\n[Round \"11\"]\n[Red \"Ho Vinh Hoa\"]\n[Black \"Lu Kham\"]\n[Result \"1-0\"]\n1. C2.5 C8.5 2. H2.3 H8.7 3. R1.2 R9.1 4. H8.7 H2.3",
                     MovesJson = "[]",
-                    CreatedAt = System.DateTime.UtcNow
+                    CreatedAt = new System.DateTime(2026, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)
                 },
                 new MasterGame
                 {
@@ -376,7 +376,7 @@ namespace ChessCore.Data
                     InitialFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
                     PgnContent = "[Event \"Trang Co Dat Viet\"]\n[Site \"Ha Noi\"]\n[Date \"2017.07.15\"]\n[Round \"Final\"]\n[Red \"Lai Ly Huynh\"]\n[Black \"Uong Duong Bac\"]\n[Result \"1-0\"]\n1. P7.1 P7.1 2. C2.5 H8.7 3. H2.3 R9.1",
                     MovesJson = "[]",
-                    CreatedAt = System.DateTime.UtcNow
+                    CreatedAt = new System.DateTime(2026, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)
                 }
             );
         }
