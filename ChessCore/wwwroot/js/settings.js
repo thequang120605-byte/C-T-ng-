@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Tải cấu hình từ localStorage
     const savedTheme = localStorage.getItem('chess_theme') || 'wood';
-    const savedBoardSkin = localStorage.getItem('chess_board_skin') || 'wood';
+    const savedBoardSkin = localStorage.getItem('chess_board_skin') || 'vector';
     const savedPieceSkin = localStorage.getItem('chess_piece_skin') || 'traditional';
     const savedSound = localStorage.getItem('chess_sound') !== 'false';
     const savedHint = localStorage.getItem('chess_hint') !== 'false';
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         const textureImg = document.getElementById('board-image-texture');
-        if (!textureImg) return;
+        const boardLines = document.querySelectorAll('.board-lines, .river-text, .palace-lines, .board-inner-border');
 
         let src = "";
         if (skin === 'wood') {
@@ -111,12 +111,22 @@ document.addEventListener('DOMContentLoaded', function() {
             src = "/images/boards/Minimalist White Chessboard.png";
         }
 
-        if (src) {
+        if (src && textureImg) {
             textureImg.setAttribute('href', src);
             textureImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', src);
             textureImg.style.display = 'block';
+            // Khi dùng ảnh bàn cờ có sẵn lưới và chữ Hán, ẩn hoàn toàn lưới vector để không bị đè nét, lệch hàng hay lộ nét đứt
+            boardLines.forEach(el => {
+                el.style.opacity = '0';
+                el.style.display = 'none';
+            });
         } else {
-            textureImg.style.display = 'none';
+            if (textureImg) textureImg.style.display = 'none';
+            // Hiện lại lưới vector chuẩn nét
+            boardLines.forEach(el => {
+                el.style.opacity = '1';
+                el.style.display = '';
+            });
         }
     }
 

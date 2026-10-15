@@ -51,12 +51,13 @@
         <!-- MATCH HISTORY -->
         <div class="panel-box">
             <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đấu gần đây</h2>
-            <div class="history-list">
+            <div class="history-list" id="history-list-container">
                 @if (Model.RecentGames.Any())
                 {
+                    var index = 0;
                     foreach (var game in Model.RecentGames)
                     {
-                        <a href="/Game/Review/@game.GameId" class="history-item @game.Result" style="text-decoration: none; cursor: pointer;" title="Nhấn để xem chi tiết phân tích ván đấu">
+                        <a href="/Game/Review/@game.GameId" class="history-item @game.Result match-row" data-index="@index" style="text-decoration: none; cursor: pointer; display: none;" title="Nhấn để xem chi tiết phân tích ván đấu">
                             <div class="history-main">
                                 <div class="history-opp">
                                     vs. @game.OpponentName 
@@ -75,7 +76,18 @@
                             </div>
                             <div class="history-result @game.Result">@game.ResultText</div>
                         </a>
+                        index++;
                     }
+
+                    <!-- PHÂN TRANG CHUYÊN NGHIỆP -->
+                    <div class="pagination-wrapper" id="history-pagination">
+                        <div class="pagination-info" id="pagination-info">
+                            Đang hiển thị 1 - 5 / tổng số @Model.RecentGames.Count ván
+                        </div>
+                        <div class="pagination-controls" id="pagination-controls">
+                            <!-- Nút phân trang render bằng JS -->
+                        </div>
+                    </div>
                 }
                 else
                 {
@@ -100,16 +112,28 @@
 
             <!-- TAB 1: ELO CHƠI CỜ -->
             <div id="lb-tab-elo" class="leaderboard-list">
+                @{
+                    int lbEloIdx = 0;
+                }
                 @foreach (var user in Model.Leaderboard)
                 {
                     var extraStyle = user.IsCurrentUser ? "border: 1px solid var(--accent-gold); background: rgba(212,175,55,0.05);" : "";
                     var rankBadgeStyle = user.IsCurrentUser && user.Rank > 3 ? "background: var(--accent-gold); color: white;" : "";
                     var lbPlayerStyle = user.IsCurrentUser ? "color: var(--accent-gold);" : "";
 
-                    <div class="leaderboard-item rank-@(user.Rank <= 3 ? user.Rank : 0)" style="@extraStyle">
+                    <div class="leaderboard-item lb-elo-row rank-@(user.Rank <= 3 ? user.Rank : 0)" data-index="@lbEloIdx" style="@extraStyle">
                         <div class="rank-badge" style="@rankBadgeStyle">@user.Rank</div>
                         <div class="lb-player" style="@lbPlayerStyle">@user.Username</div>
                         <div class="lb-elo"><i class="fa-solid fa-star" style="font-size: 11px; color: var(--accent-gold);"></i> @user.Elo</div>
+                    </div>
+                    lbEloIdx++;
+                }
+
+                @if (Model.Leaderboard.Any())
+                {
+                    <div class="pagination-wrapper" id="lb-elo-pagination" style="margin-top: 10px; padding-top: 8px;">
+                        <div class="pagination-info" id="lb-elo-pagination-info" style="font-size: 11.5px;"></div>
+                        <div class="pagination-controls" id="lb-elo-pagination-controls"></div>
                     </div>
                 }
             </div>
@@ -118,18 +142,25 @@
             <div id="lb-tab-puzzle" class="leaderboard-list" style="display: none;">
                 @if (Model.PuzzleLeaderboard.Any())
                 {
+                    int lbPzIdx = 0;
                     foreach (var user in Model.PuzzleLeaderboard)
                     {
                         var extraStyle = user.IsCurrentUser ? "border: 1px solid var(--accent-gold); background: rgba(212,175,55,0.05);" : "";
                         var rankBadgeStyle = user.IsCurrentUser && user.Rank > 3 ? "background: var(--accent-gold); color: white;" : "";
                         var lbPlayerStyle = user.IsCurrentUser ? "color: var(--accent-gold);" : "";
 
-                        <div class="leaderboard-item rank-@(user.Rank <= 3 ? user.Rank : 0)" style="@extraStyle">
+                        <div class="leaderboard-item lb-pz-row rank-@(user.Rank <= 3 ? user.Rank : 0)" data-index="@lbPzIdx" style="@extraStyle">
                             <div class="rank-badge" style="@rankBadgeStyle">@user.Rank</div>
                             <div class="lb-player" style="@lbPlayerStyle">@user.Username</div>
                             <div class="lb-elo" style="color: #10b981;"><i class="fa-solid fa-check" style="font-size: 11px;"></i> @user.SolvedCount bài</div>
                         </div>
+                        lbPzIdx++;
                     }
+
+                    <div class="pagination-wrapper" id="lb-pz-pagination" style="margin-top: 10px; padding-top: 8px;">
+                        <div class="pagination-info" id="lb-pz-pagination-info" style="font-size: 11.5px;"></div>
+                        <div class="pagination-controls" id="lb-pz-pagination-controls"></div>
+                    </div>
                 }
                 else
                 {
@@ -157,6 +188,170 @@
                     eloBtn.classList.remove('active');
                 }
             }
+
+            // ==========================================
+            // HỆ THỐNG PHÂN TRANG LỊCH SỬ ĐẤU
+            // ==========================================
+            (function() {
+                const pageSize = 5; // Số ván đấu trên mỗi trang
+                let currentPage = 1;
+                const rows = document.querySelectorAll('.match-row');
+                const totalItems = rows.length;
+                const totalPages = Math.ceil(totalItems / pageSize);
+                const infoEl = document.getElementById('pagination-info');
+                const controlsEl = document.getElementById('pagination-controls');
+                const paginationWrapper = document.getElementById('history-pagination');
+
+                if (totalItems === 0) {
+                    if (paginationWrapper) paginationWrapper.style.display = 'none';
+                    return;
+                }
+
+                function renderPage(page) {
+                    currentPage = page;
+                    const start = (page - 1) * pageSize;
+                    const end = Math.min(start + pageSize, totalItems);
+
+                    // Ẩn/Hiện dòng theo trang
+                    rows.forEach((row, i) => {
+                        if (i >= start && i < end) {
+                            row.style.display = 'flex';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+
+                    // Cập nhật thông tin dòng hiển thị
+                    if (infoEl) {
+                        infoEl.textContent = `Đang hiển thị ${start + 1} - ${end} / tổng số ${totalItems} ván`;
+                    }
+
+                    // Render các nút bấm phân trang
+                    renderControls();
+                }
+
+                function renderControls() {
+                    if (!controlsEl) return;
+                    controlsEl.innerHTML = '';
+
+                    // Nút Về trang trước
+                    const prevBtn = document.createElement('button');
+                    prevBtn.type = 'button';
+                    prevBtn.className = 'page-btn';
+                    prevBtn.title = 'Trang trước';
+                    prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+                    prevBtn.disabled = currentPage === 1;
+                    prevBtn.onclick = () => renderPage(currentPage - 1);
+                    controlsEl.appendChild(prevBtn);
+
+                    // Danh sách số trang (thông minh với dấu ...)
+                    let pages = [];
+                    if (totalPages <= 5) {
+                        for (let p = 1; p <= totalPages; p++) pages.push(p);
+                    } else {
+                        if (currentPage <= 3) {
+                            pages = [1, 2, 3, 4, '...', totalPages];
+                        } else if (currentPage >= totalPages - 2) {
+                            pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                        } else {
+                            pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+                        }
+                    }
+
+                    pages.forEach(p => {
+                        if (p === '...') {
+                            const ellipsis = document.createElement('span');
+                            ellipsis.className = 'page-ellipsis';
+                            ellipsis.textContent = '...';
+                            controlsEl.appendChild(ellipsis);
+                        } else {
+                            const pageBtn = document.createElement('button');
+                            pageBtn.type = 'button';
+                            pageBtn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+                            pageBtn.textContent = p;
+                            pageBtn.onclick = () => renderPage(p);
+                            controlsEl.appendChild(pageBtn);
+                        }
+                    });
+
+                    // Nút Sang trang sau
+                    const nextBtn = document.createElement('button');
+                    nextBtn.type = 'button';
+                    nextBtn.className = 'page-btn';
+                    nextBtn.title = 'Trang sau';
+                    nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+                    nextBtn.disabled = currentPage === totalPages;
+                    nextBtn.onclick = () => renderPage(currentPage + 1);
+                    controlsEl.appendChild(nextBtn);
+                }
+
+                // Khởi động trang đầu tiên lịch sử đấu
+                renderPage(1);
+            })();
+
+            // ==========================================
+            // HỆ THỐNG PHÂN TRANG BẢNG XẾP HẠNG (LEADERBOARD)
+            // ==========================================
+            function setupSimplePagination(rowSelector, infoId, controlsId, wrapperId, pageSize) {
+                const rows = document.querySelectorAll(rowSelector);
+                const totalItems = rows.length;
+                const totalPages = Math.ceil(totalItems / pageSize);
+                const infoEl = document.getElementById(infoId);
+                const controlsEl = document.getElementById(controlsId);
+                const wrapperEl = document.getElementById(wrapperId);
+
+                if (totalItems <= pageSize) {
+                    if (wrapperEl) wrapperEl.style.display = 'none';
+                    rows.forEach(r => r.style.display = 'flex');
+                    return;
+                }
+
+                function renderLbPage(page) {
+                    const start = (page - 1) * pageSize;
+                    const end = Math.min(start + pageSize, totalItems);
+
+                    rows.forEach((r, i) => {
+                        r.style.display = (i >= start && i < end) ? 'flex' : 'none';
+                    });
+
+                    if (infoEl) {
+                        infoEl.textContent = `Hiển thị ${start + 1} - ${end} / ${totalItems}`;
+                    }
+
+                    if (controlsEl) {
+                        controlsEl.innerHTML = '';
+                        const prevBtn = document.createElement('button');
+                        prevBtn.type = 'button';
+                        prevBtn.className = 'page-btn';
+                        prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+                        prevBtn.disabled = page === 1;
+                        prevBtn.onclick = () => renderLbPage(page - 1);
+                        controlsEl.appendChild(prevBtn);
+
+                        for (let p = 1; p <= totalPages; p++) {
+                            const pBtn = document.createElement('button');
+                            pBtn.type = 'button';
+                            pBtn.className = 'page-btn' + (p === page ? ' active' : '');
+                            pBtn.textContent = p;
+                            pBtn.onclick = () => renderLbPage(p);
+                            controlsEl.appendChild(pBtn);
+                        }
+
+                        const nextBtn = document.createElement('button');
+                        nextBtn.type = 'button';
+                        nextBtn.className = 'page-btn';
+                        nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+                        nextBtn.disabled = page === totalPages;
+                        nextBtn.onclick = () => renderLbPage(page + 1);
+                        controlsEl.appendChild(nextBtn);
+                    }
+                }
+
+                renderLbPage(1);
+            }
+
+            setupSimplePagination('.lb-elo-row', 'lb-elo-pagination-info', 'lb-elo-pagination-controls', 'lb-elo-pagination', 8);
+            setupSimplePagination('.lb-pz-row', 'lb-pz-pagination-info', 'lb-pz-pagination-controls', 'lb-pz-pagination', 8);
         </script>
     </div>
 </div>

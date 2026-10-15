@@ -135,14 +135,14 @@ namespace ChessCore.Controllers
                 }
             }
 
-            // Fetch Recent Games
+            // Fetch Recent Games (Toàn bộ lịch sử ván đấu đã tham gia)
             var recentGames = await _context.Games
                 .Include(g => g.RedPlayer)
                 .Include(g => g.BlackPlayer)
                 .Include(g => g.Moves)
                 .Where(g => (g.RedPlayerId == userId || g.BlackPlayerId == userId) && g.Status != GameStatus.WaitingForPlayers)
                 .OrderByDescending(g => g.CreatedAt)
-                .Take(5)
+                .Take(100)
                 .ToListAsync();
 
             foreach (var g in recentGames)

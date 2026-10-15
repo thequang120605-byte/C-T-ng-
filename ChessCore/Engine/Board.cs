@@ -351,7 +351,8 @@ namespace ChessCore.Engine
                 case 'h': type = PieceType.Horse; break;
                 case 'r': type = PieceType.Rook; break;
                 case 'c': type = PieceType.Cannon; break;
-                case 'p': type = PieceType.Pawn; break;
+                case 'p':
+                case 's': type = PieceType.Pawn; break;
                 default: return false;
             }
 

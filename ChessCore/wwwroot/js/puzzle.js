@@ -470,31 +470,23 @@
       g.setAttribute("data-col", p.col);
 
       const skin = localStorage.getItem("chess_piece_skin") || "traditional";
-      const typeMap = {
-        King: color === "Red" ? "Shuai" : "Jiang",
-        Advisor: "Shi",
-        Elephant: "Xiang",
-        Horse: "Ma",
-        Rook: "Ju",
-        Cannon: "Pao",
-        Pawn: color === "Red" ? "Bing" : "Zu"
-      };
+      
+      function getPuzzlePieceFileName(piece, cStr, targetSkin) {
+        const isRed = cStr === "Red";
+        const actualSkin = targetSkin === "Minimalist" ? "Minimalist White" : targetSkin;
+        let pName = "";
+        const t = (piece.type || "").toLowerCase();
+        if (t === "king" || t === "tướng") pName = isRed ? "Shuai" : "Jiang";
+        else if (t === "advisor" || t === "sĩ" || t === "si") pName = "Shi";
+        else if (t === "elephant" || t === "tượng" || t === "tuong") pName = "Xiang";
+        else if (t === "horse" || t === "knight" || t === "mã" || t === "ma") pName = "Ma";
+        else if (t === "rook" || t === "chariot" || t === "xe") pName = "Ju";
+        else if (t === "cannon" || t === "pháo" || t === "phao") pName = "Pao";
+        else pName = isRed ? "Bing" : "Zu";
+        return `${actualSkin} ${cStr} ${pName}.png`;
+      }
 
-      if (skin !== "traditional") {
-        const fileName = `${skin} ${color} ${typeMap[p.type] || "Bing"}.png`;
-        const imgPath = `/images/pieces/${fileName}`;
-        const img = document.createElementNS(SVG_NS, "image");
-        img.setAttribute("x", x - 44);
-        img.setAttribute("y", y - 44);
-        img.setAttribute("width", 88);
-        img.setAttribute("height", 88);
-        img.setAttribute("href", imgPath);
-        img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imgPath);
-        img.setAttribute("class", "piece-image-skin");
-        img.style.pointerEvents = "all";
-        img.style.filter = "drop-shadow(0 4px 6px rgba(0,0,0,0.35))";
-        g.appendChild(img);
-      } else {
+      function drawVectorPiece() {
         const circle = document.createElementNS(SVG_NS, "circle");
         circle.setAttribute("cx", x);
         circle.setAttribute("cy", y);
@@ -511,6 +503,28 @@
 
         g.appendChild(circle);
         g.appendChild(text);
+      }
+
+      if (skin !== "traditional") {
+        const fileName = getPuzzlePieceFileName(p, color, skin);
+        const imgPath = `/images/pieces/${fileName}`;
+        const img = document.createElementNS(SVG_NS, "image");
+        img.setAttribute("x", x - 44);
+        img.setAttribute("y", y - 44);
+        img.setAttribute("width", 88);
+        img.setAttribute("height", 88);
+        img.setAttribute("href", imgPath);
+        img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imgPath);
+        img.setAttribute("class", "piece-image-skin");
+        img.style.pointerEvents = "all";
+        img.style.filter = "drop-shadow(0 4px 6px rgba(0,0,0,0.35))";
+        img.addEventListener("error", function() {
+          img.remove();
+          drawVectorPiece();
+        });
+        g.appendChild(img);
+      } else {
+        drawVectorPiece();
       }
 
       g.addEventListener("click", (ev) => {
@@ -1186,7 +1200,9 @@
     }
 
     if (timerushPuzzles.length === 0) {
-      alert("Chưa nạp đủ bài tập cờ thế để bắt đầu.");
+      if (window.AppDialog) {
+        AppDialog.alert("Chưa nạp đủ bài tập cờ thế để bắt đầu.", "Thông báo bài tập", "warning");
+      }
       return;
     }
 
@@ -1344,30 +1360,115 @@
         return;
       }
 
-      listEl.innerHTML = items.map((item) => `
-        <div class="pz-result-item" style="border-left: 4px solid ${item.isCompleted ? "#10b981" : "#f59e0b"};">
-          <div class="pz-result-info">
-            <span class="pz-result-title">${cleanTitle(item.title)}</span>
-            <div class="pz-result-meta">
-              <span><i class="fa-solid fa-shield-halved"></i> ${item.levelName}</span>
-              <span><i class="fa-solid fa-bolt"></i> Chiếu bí ${item.mateIn} nước</span>
-              <span><i class="fa-solid fa-rotate-right"></i> ${item.attempts || 1} lần thử</span>
-              <span style="color: ${item.isCompleted ? "#059669" : "#d97706"};">
-                ${item.isCompleted ? `<i class="fa-solid fa-circle-check"></i> Đã hoàn thành` : '<i class="fa-solid fa-clock"></i> Chưa xong'}
-              </span>
+      let historyPage = 1;
+      const historyPageSize = 5;
+      const totalHistoryPages = Math.ceil(items.length / historyPageSize) || 1;
+      const histPaginationWrapper = $("history-pagination");
+      const histPaginationInfo = $("history-pagination-info");
+      const histPaginationControls = $("history-pagination-controls");
+
+      function renderHistoryPage(p) {
+        historyPage = Math.max(1, Math.min(p, totalHistoryPages));
+        const start = (historyPage - 1) * historyPageSize;
+        const end = Math.min(start + historyPageSize, items.length);
+        const pageItems = items.slice(start, end);
+
+        listEl.innerHTML = pageItems.map((item, idx) => {
+          const actualIdx = start + idx;
+          return `
+          <div class="pz-result-item" style="border-left: 4px solid ${item.isCompleted ? "#10b981" : "#f59e0b"}; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
+              <div class="pz-result-info">
+                <span class="pz-result-title" style="cursor: pointer;" onclick="document.getElementById('hist-detail-${actualIdx}').classList.toggle('pz-hidden')">
+                  ${cleanTitle(item.title)} <i class="fa-solid fa-circle-info" style="font-size: 13px; color: var(--accent-gold); margin-left: 4px;" title="Bấm để xem/ẩn chi tiết bài thế"></i>
+                </span>
+                <div class="pz-result-meta">
+                  <span><i class="fa-solid fa-shield-halved"></i> ${item.levelName}</span>
+                  <span><i class="fa-solid fa-bolt"></i> Chiếu bí ${item.mateIn} nước</span>
+                  <span><i class="fa-solid fa-rotate-right"></i> ${item.attempts || 1} lần thử</span>
+                  <span style="color: ${item.isCompleted ? "#059669" : "#d97706"};">
+                    ${item.isCompleted ? `<i class="fa-solid fa-circle-check"></i> Đã hoàn thành` : '<i class="fa-solid fa-clock"></i> Đang dở dang'}
+                  </span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="pz-btn pz-btn-secondary" onclick="document.getElementById('hist-detail-${actualIdx}').classList.toggle('pz-hidden')" style="padding: 6px 10px; font-size: 12px;" title="Xem chi tiết">
+                  <i class="fa-solid fa-eye"></i> Chi tiết
+                </button>
+                <button type="button" class="pz-btn pz-btn-secondary btn-inspect-solution" data-key="${item.key}" style="padding: 6px 10px; font-size: 12px; border-color: var(--accent-gold); color: var(--accent-gold);" title="Xem các nước đi đáp án & biến sát cục">
+                  <i class="fa-solid fa-graduation-cap"></i> Xem đáp án
+                </button>
+                <button type="button" class="pz-btn pz-btn-primary btn-replay-history" data-key="${item.key}" style="padding: 6px 14px; font-size: 13px;">
+                  <i class="fa-solid fa-rotate-left"></i> ${item.isCompleted ? "Giải lại" : "Giải tiếp"}
+                </button>
+              </div>
+            </div>
+
+            <!-- KHUNG CHI TIẾT BÀI THẾ -->
+            <div id="hist-detail-${actualIdx}" class="pz-hidden" style="background: var(--bg-navy-dark); border-radius: 8px; padding: 10px 14px; border: 1px solid var(--border-color); font-size: 12.5px; color: var(--text-muted); line-height: 1.6;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 6px;">
+                <div><strong>Mã bài thế:</strong> <code style="color: var(--accent-gold);">${item.key}</code></div>
+                <div><strong>Thời gian hoàn thành:</strong> <span style="color: var(--text-main); font-weight: 600;">${item.completedAt || "Chưa giải xong"}</span></div>
+                <div><strong>Cập nhật lần cuối:</strong> <span style="color: var(--text-main);">${item.updatedAt || "Gần đây"}</span></div>
+                <div><strong>Tổng số quân cờ:</strong> <span style="color: var(--text-main); font-weight: 600;">${item.pieces ? item.pieces + ' quân' : 'Tiêu chuẩn'}</span></div>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); border-top: 1px dashed var(--border-color); padding-top: 6px; margin-top: 6px;">
+                <i class="fa-solid fa-lightbulb" style="color: var(--accent-gold);"></i> <strong>Mẹo:</strong> Bấm vào <em>"${item.isCompleted ? "Giải lại" : "Giải tiếp"}"</em> để mở lại bàn cờ và trực tiếp luyện tập, hoặc bấm <em>"Xem đáp án"</em> để nghiên cứu chi tiết đường đi nước bước.
+              </div>
             </div>
           </div>
-          <button type="button" class="pz-btn pz-btn-secondary btn-replay-history" data-key="${item.key}" style="padding: 6px 14px; font-size: 13px;">
-            <i class="fa-solid fa-rotate-left"></i> Giải lại
-          </button>
-        </div>
-      `).join("");
+        `;
+        }).join("");
 
-      listEl.querySelectorAll(".btn-replay-history").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          startPuzzle(btn.dataset.key, true);
+        listEl.querySelectorAll(".btn-replay-history").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            startPuzzle(btn.dataset.key, true);
+          });
         });
-      });
+
+        listEl.querySelectorAll(".btn-inspect-solution").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            inspectPuzzleSolution(btn.dataset.key);
+          });
+        });
+
+        if (histPaginationWrapper && histPaginationInfo && histPaginationControls) {
+          if (items.length > historyPageSize) {
+            histPaginationWrapper.classList.remove("pz-hidden");
+            histPaginationInfo.textContent = `Đang hiển thị ${start + 1} - ${end} / tổng số ${items.length} bài`;
+
+            histPaginationControls.innerHTML = "";
+            const prevBtn = document.createElement("button");
+            prevBtn.type = "button";
+            prevBtn.className = "page-btn";
+            prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+            prevBtn.disabled = historyPage === 1;
+            prevBtn.onclick = () => renderHistoryPage(historyPage - 1);
+            histPaginationControls.appendChild(prevBtn);
+
+            for (let i = 1; i <= totalHistoryPages; i++) {
+              const pBtn = document.createElement("button");
+              pBtn.type = "button";
+              pBtn.className = "page-btn" + (i === historyPage ? " active" : "");
+              pBtn.textContent = i;
+              pBtn.onclick = () => renderHistoryPage(i);
+              histPaginationControls.appendChild(pBtn);
+            }
+
+            const nextBtn = document.createElement("button");
+            nextBtn.type = "button";
+            nextBtn.className = "page-btn";
+            nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+            nextBtn.disabled = historyPage === totalHistoryPages;
+            nextBtn.onclick = () => renderHistoryPage(historyPage + 1);
+            histPaginationControls.appendChild(nextBtn);
+          } else {
+            histPaginationWrapper.classList.add("pz-hidden");
+          }
+        }
+      }
+
+      renderHistoryPage(1);
     } catch (e) {
       listEl.innerHTML = `<div class="pz-error">${escapeHtml(e.message)}</div>`;
     }
@@ -1469,41 +1570,199 @@
         return;
       }
 
-      listEl.innerHTML = customPuzzlesCache.map((p, idx) => {
-        const isDone = data.completedKeys && data.completedKeys.includes(p.key);
-        return `
-          <div class="pz-result-item" data-key="${p.key}">
-            <div class="pz-result-info">
-              <span class="pz-result-title">${cleanTitle(p.title) || `Bài thế ${idx + 1}`}</span>
-              <div class="pz-result-meta">
-                <span><i class="fa-solid fa-bolt"></i> Chiếu bí ${p.mateIn} nước</span>
-                <span><i class="fa-solid fa-chess"></i> ${p.pieces} quân</span>
-                <span><i class="fa-solid fa-shield-halved"></i> ${p.levelName}</span>
-                ${isDone ? '<span style="color: #10b981; background: #ecfdf5;"><i class="fa-solid fa-check"></i> Đã giải</span>' : ""}
-              </div>
-            </div>
-            <button type="button" class="pz-btn pz-btn-secondary btn-play-custom-puzzle" data-key="${p.key}" style="padding: 6px 14px; font-size: 13px;">
-              <i class="fa-solid fa-play"></i> Giải ngay
-            </button>
-          </div>
-        `;
-      }).join("");
+      let customPage = 1;
+      const customPageSize = 5;
+      const totalCustomPages = Math.ceil(customPuzzlesCache.length / customPageSize) || 1;
+      const custPaginationWrapper = $("custom-pagination");
+      const custPaginationInfo = $("custom-pagination-info");
+      const custPaginationControls = $("custom-pagination-controls");
 
-      listEl.querySelectorAll(".btn-play-custom-puzzle").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          startPuzzle(btn.dataset.key, true);
+      function renderCustomPage(p) {
+        customPage = Math.max(1, Math.min(p, totalCustomPages));
+        const start = (customPage - 1) * customPageSize;
+        const end = Math.min(start + customPageSize, customPuzzlesCache.length);
+        const pageItems = customPuzzlesCache.slice(start, end);
+
+        listEl.innerHTML = pageItems.map((p, idx) => {
+          const actualIdx = start + idx;
+          const isDone = data.completedKeys && data.completedKeys.includes(p.key);
+          return `
+            <div class="pz-result-item" data-key="${p.key}">
+              <div class="pz-result-info">
+                <span class="pz-result-title">${cleanTitle(p.title) || `Bài thế ${actualIdx + 1}`}</span>
+                <div class="pz-result-meta">
+                  <span><i class="fa-solid fa-bolt"></i> Chiếu bí ${p.mateIn} nước</span>
+                  <span><i class="fa-solid fa-chess"></i> ${p.pieces} quân</span>
+                  <span><i class="fa-solid fa-shield-halved"></i> ${p.levelName}</span>
+                  ${isDone ? '<span style="color: #10b981; background: #ecfdf5;"><i class="fa-solid fa-check"></i> Đã giải</span>' : ""}
+                </div>
+              </div>
+              <button type="button" class="pz-btn pz-btn-secondary btn-play-custom-puzzle" data-key="${p.key}" style="padding: 6px 14px; font-size: 13px;">
+                <i class="fa-solid fa-play"></i> Giải ngay
+              </button>
+            </div>
+          `;
+        }).join("");
+
+        listEl.querySelectorAll(".btn-play-custom-puzzle").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            startPuzzle(btn.dataset.key, true);
+          });
         });
-      });
+
+        if (custPaginationWrapper && custPaginationInfo && custPaginationControls) {
+          if (customPuzzlesCache.length > customPageSize) {
+            custPaginationWrapper.classList.remove("pz-hidden");
+            custPaginationInfo.textContent = `Đang hiển thị ${start + 1} - ${end} / tổng số ${customPuzzlesCache.length} bài`;
+
+            custPaginationControls.innerHTML = "";
+            const prevBtn = document.createElement("button");
+            prevBtn.type = "button";
+            prevBtn.className = "page-btn";
+            prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+            prevBtn.disabled = customPage === 1;
+            prevBtn.onclick = () => renderCustomPage(customPage - 1);
+            custPaginationControls.appendChild(prevBtn);
+
+            for (let i = 1; i <= totalCustomPages; i++) {
+              const pBtn = document.createElement("button");
+              pBtn.type = "button";
+              pBtn.className = "page-btn" + (i === customPage ? " active" : "");
+              pBtn.textContent = i;
+              pBtn.onclick = () => renderCustomPage(i);
+              custPaginationControls.appendChild(pBtn);
+            }
+
+            const nextBtn = document.createElement("button");
+            nextBtn.type = "button";
+            nextBtn.className = "page-btn";
+            nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+            nextBtn.disabled = customPage === totalCustomPages;
+            nextBtn.onclick = () => renderCustomPage(customPage + 1);
+            custPaginationControls.appendChild(nextBtn);
+          } else {
+            custPaginationWrapper.classList.add("pz-hidden");
+          }
+        }
+      }
+
+      renderCustomPage(1);
     } catch (e) {
       listEl.innerHTML = `<div class="pz-error">${escapeHtml(e.message)}</div>`;
     }
   }
 
+  // =====================================================
+  // XEM ĐÁP ÁN & DIỄN BIẾN NƯỚC ĐI CHI TIẾT
+  // =====================================================
+
+  let currentSolutionData = null;
+
+  async function inspectPuzzleSolution(key) {
+    const modal = $("pz-modal-solution");
+    const titleEl = $("pz-sol-title");
+    const metaEl = $("pz-sol-meta");
+    const stepsEl = $("pz-sol-steps");
+    const noteEl = $("pz-sol-note");
+    if (!modal || !stepsEl) return;
+
+    modal.classList.add("show");
+    stepsEl.innerHTML = '<div style="color: var(--text-muted); padding: 12px; text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tính toán và truy vết các bước giải sát cục...</div>';
+
+    try {
+      const res = await fetch(`${API}/puzzles/${encodeURIComponent(key)}/solution`);
+      if (!res.ok) throw new Error("Không thể truy xuất lời giải bài này.");
+      const data = await res.json();
+      currentSolutionData = data;
+
+      if (titleEl) titleEl.textContent = `Thế cờ: ${cleanTitle(data.title)}`;
+      if (metaEl) metaEl.innerHTML = `Mục tiêu: <strong>${data.attacker === "Red" ? "Đỏ" : "Đen"}</strong> chiếu bí cưỡng bức trong <strong>${data.mateIn}</strong> nước.`;
+
+      if (!data.steps || data.steps.length === 0) {
+        stepsEl.innerHTML = '<div style="color: #ef4444; padding: 10px;">Chưa tìm thấy biến sát cục ngắn nhất cho bài này.</div>';
+        return;
+      }
+
+      stepsEl.innerHTML = data.steps.map((st) => {
+        const att = st.attackerMove;
+        const def = st.defenderMove;
+        return `
+          <div style="background: var(--bg-navy-panel); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 13px;">
+            <div style="font-weight: 700; color: var(--accent-gold); margin-bottom: 4px;">
+              <i class="fa-solid fa-arrow-turn-down"></i> Nước thứ ${st.step}:
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 8px;">
+              <div style="color: #dc2626; font-weight: 600;">
+                <i class="fa-solid fa-chess-king"></i> Tấn công: ${att.description} 
+                ${att.isCheckmate ? '<span style="color: #10b981; font-weight: 800; margin-left: 6px;"><i class="fa-solid fa-flag-checkered"></i> SÁT CỤC (CHIẾU BÍ)!</span>' : ''}
+              </div>
+              ${def ? `
+                <div style="color: #475569; font-weight: 500;">
+                  <i class="fa-solid fa-shield"></i> Đối phương đỡ: ${def.description}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+    } catch (err) {
+      stepsEl.innerHTML = `<div style="color: #ef4444; padding: 10px;">${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  // Đóng modal lời giải
+  $("pz-modal-solution-close").addEventListener("click", () => {
+    $("pz-modal-solution").classList.remove("show");
+  });
+  $("pz-modal-solution-close-btn").addEventListener("click", () => {
+    $("pz-modal-solution").classList.remove("show");
+  });
+
+  // Tự động phát lại trên bàn cờ từ modal lời giải
+  $("pz-sol-autoplay-btn").addEventListener("click", async () => {
+    if (!currentSolutionData) return;
+    $("pz-modal-solution").classList.remove("show");
+
+    // Bắt đầu mở bài này ở chế độ thực hành
+    await startPuzzle(currentSolutionData.key, true);
+
+    // Di chuyển tự động lần lượt các nước
+    if (currentSolutionData.steps && currentSolutionData.steps.length > 0) {
+      setMsg("info", "Đang tự động phát lại lời giải mẫu...");
+      let delay = 800;
+      for (const st of currentSolutionData.steps) {
+        const att = st.attackerMove;
+        setTimeout(() => {
+          submitMove({
+            fromRow: att.fromRow,
+            fromCol: att.fromCol,
+            toRow: att.toRow,
+            toCol: att.toCol
+          });
+        }, delay);
+        delay += 1200;
+      }
+    }
+  });
+
+  // Nút xem lời giải ở màn hình chơi bài cờ thế
+  const btnShowSol = $("pz-show-solution");
+  if (btnShowSol) {
+    btnShowSol.addEventListener("click", () => {
+      if (!puzzle || !puzzle.key) return;
+      inspectPuzzleSolution(puzzle.key);
+    });
+  }
+
   // Xử lý nút quay về từ màn chơi bài thế
-  $("pz-exit").addEventListener("click", () => {
+  $("pz-exit").addEventListener("click", async () => {
     if (busy) return;
     if (isTimeRush) {
-      if (confirm("Bạn có chắc chắn muốn dừng chế độ Chạy đua thời gian?")) {
+      const ok = window.AppDialog 
+        ? await AppDialog.confirm("Bạn có chắc chắn muốn dừng chế độ Chạy đua thời gian?", "Dừng thử thách", { confirmText: "Dừng chơi", cancelText: "Tiếp tục chơi", isDanger: true })
+        : true;
+      if (ok) {
         stopTimerush();
         openTimerushScreen();
       }

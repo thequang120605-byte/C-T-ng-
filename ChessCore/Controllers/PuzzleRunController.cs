@@ -413,6 +413,101 @@ namespace ChessCore.Controllers
             });
         }
 
+        // =====================================================
+        // XEM ĐÁP ÁN & CÁC BƯỚC GIẢI CHI TIẾT
+        // =====================================================
+
+        [HttpGet("puzzles/{key}/solution")]
+        public IActionResult GetSolution(string key)
+        {
+            var entry = _campaign.Ready ? _campaign.Get(key) : null;
+            if (entry == null || entry.Level == 0)
+                return NotFound(new { message = "Không tìm thấy bài Cờ Thế này." });
+
+            PieceColor attacker = entry.Attacker;
+            PieceColor defender = GameRules.Opponent(attacker);
+            Board board = Board.FromFen(entry.Fen);
+            int remaining = entry.MateIn;
+
+            var steps = new List<object>();
+            int stepNum = 1;
+
+            while (remaining > 0)
+            {
+                var attMove = MateSolver.FindMateMove(board, attacker, remaining);
+                if (attMove == null) break;
+
+                Piece attPiece = board.Grid[attMove.From.Row, attMove.From.Col];
+                Piece? capturedByAtt = board.Grid[attMove.To.Row, attMove.To.Col];
+                string attDesc = $"{PieceName(attPiece.Type)} ({attMove.From.Row},{attMove.From.Col}) ➜ ({attMove.To.Row},{attMove.To.Col})"
+                    + (capturedByAtt != null ? $" (ăn {PieceName(capturedByAtt.Type)})" : "");
+
+                Board boardAfterAtt = board.Clone();
+                boardAfterAtt.ApplyMove(attMove.From, attMove.To);
+
+                var defMoves = GameRules.GetAllLegalMoves(boardAfterAtt, defender);
+                bool isCheckmate = defMoves.Count == 0;
+
+                object? defStepObj = null;
+                Board boardAfterDef = boardAfterAtt;
+
+                if (!isCheckmate)
+                {
+                    var defMove = MateSolver.PickBestDefense(boardAfterAtt, attacker, remaining - 1);
+                    if (defMove != null)
+                    {
+                        Piece defPiece = boardAfterAtt.Grid[defMove.From.Row, defMove.From.Col];
+                        Piece? capturedByDef = boardAfterAtt.Grid[defMove.To.Row, defMove.To.Col];
+                        string defDesc = $"{PieceName(defPiece.Type)} ({defMove.From.Row},{defMove.From.Col}) ➜ ({defMove.To.Row},{defMove.To.Col})"
+                            + (capturedByDef != null ? $" (ăn {PieceName(capturedByDef.Type)})" : "");
+
+                        defStepObj = new
+                        {
+                            fromRow = defMove.From.Row,
+                            fromCol = defMove.From.Col,
+                            toRow = defMove.To.Row,
+                            toCol = defMove.To.Col,
+                            piece = PieceName(defPiece.Type),
+                            description = defDesc
+                        };
+
+                        boardAfterDef = boardAfterAtt.Clone();
+                        boardAfterDef.ApplyMove(defMove.From, defMove.To);
+                    }
+                }
+
+                steps.Add(new
+                {
+                    step = stepNum++,
+                    attackerMove = new
+                    {
+                        fromRow = attMove.From.Row,
+                        fromCol = attMove.From.Col,
+                        toRow = attMove.To.Row,
+                        toCol = attMove.To.Col,
+                        piece = PieceName(attPiece.Type),
+                        description = attDesc,
+                        isCheckmate
+                    },
+                    defenderMove = defStepObj
+                });
+
+                if (isCheckmate) break;
+
+                board = boardAfterDef;
+                remaining--;
+            }
+
+            return Ok(new
+            {
+                key = entry.Key,
+                title = entry.Title,
+                mateIn = entry.MateIn,
+                attacker = attacker.ToString(),
+                steps
+            });
+        }
+
 
         // =====================================================
         // HELPERS

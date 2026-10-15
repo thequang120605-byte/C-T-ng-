@@ -810,8 +810,8 @@ namespace ChessCore.Controllers
 
             if (!CanAccessOnlineGame(game)) return Unauthorized();
 
-            // Chơi online không cho phép đi lại
-            if (game.RedPlayerId != null || game.BlackPlayerId != null)
+            // Chơi online giữa 2 người chơi khác nhau không cho phép đi lại
+            if (game.RedPlayerId != null && game.BlackPlayerId != null && game.RedPlayerId != game.BlackPlayerId)
             {
                 return BadRequest(new { message = "Chế độ chơi Online không cho phép đi lại nước cờ." });
             }

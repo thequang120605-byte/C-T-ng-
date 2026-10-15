@@ -12,6 +12,7 @@
         <h1><i class="fa-solid fa-puzzle-piece"></i> Quản lý Cờ thế (Puzzles)</h1>
         <div class="admin-tabs">
             <a href="/Admin" class="admin-tab-btn"><i class="fa-solid fa-chart-pie"></i> Tổng quan</a>
+            <a href="/Admin/Users" class="admin-tab-btn"><i class="fa-solid fa-users"></i> Quản lý Người dùng</a>
             <a href="/Admin/Puzzles" class="admin-tab-btn active"><i class="fa-solid fa-puzzle-piece"></i> Quản lý Cờ thế</a>
             <a href="/Admin/Courses" class="admin-tab-btn"><i class="fa-solid fa-graduation-cap"></i> Quản lý Khóa học</a>
             <a href="/Admin/AiBenchmark" class="admin-tab-btn"><i class="fa-solid fa-microchip"></i> Hiệu năng AI</a>
@@ -52,9 +53,12 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @{
+                        int pzIdx = 0;
+                    }
                     @foreach (var p in Model)
                     {
-                        <tr>
+                        <tr class="puzzle-row" data-index="@pzIdx">
                             <td><strong style="color: var(--accent-gold-dark);">#@p.Level</strong></td>
                             <td>
                                 <strong>@p.Title</strong>
@@ -79,7 +83,7 @@
                                             onclick='openEditPuzzleModal(@p.Id, "@p.Level", "@Html.Raw(Html.Encode(p.Title))", "@Html.Raw(Html.Encode(p.Description))", "@p.Fen", @p.MateIn, @p.Difficulty);' title="Chỉnh sửa">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <form asp-controller="Admin" asp-action="DeletePuzzle" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thế cờ này không?');">
+                                    <form asp-controller="Admin" asp-action="DeletePuzzle" method="post" style="display: inline;" onsubmit="event.preventDefault(); const form = this; if(window.AppDialog){AppDialog.confirm('Bạn có chắc chắn muốn xóa thế cờ này không?', 'Xác nhận xóa', {confirmText: 'Xóa ngay', cancelText: 'Hủy', isDanger: true}).then(ok => { if(ok) form.submit(); });} else { form.submit(); }">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@p.Id" />
                                         <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" title="Xóa thế cờ">
@@ -89,10 +93,21 @@
                                 </div>
                             </td>
                         </tr>
+                        pzIdx++;
                     }
                 </tbody>
             </table>
         </div>
+
+        @if (Model.Any())
+        {
+            <div class="pagination-wrapper" id="admin-puzzles-pagination" style="padding: 16px 12px 6px;">
+                <div class="pagination-info" id="admin-puzzles-info">
+                    Đang hiển thị 1 - 10 / tổng số @Model.Count thế cờ
+                </div>
+                <div class="pagination-controls" id="admin-puzzles-controls"></div>
+            </div>
+        }
     </div>
 </div>
 
@@ -189,5 +204,70 @@
         function closePuzzleModal() {
             document.getElementById('puzzle-modal').classList.remove('show');
         }
+
+        // ==========================================
+        // PHÂN TRANG DANH SÁCH THẾ CỜ (ADMIN)
+        // ==========================================
+        (function () {
+            const rows = document.querySelectorAll('.puzzle-row');
+            const totalItems = rows.length;
+            if (totalItems <= 10) return;
+
+            const pageSize = 10;
+            const totalPages = Math.ceil(totalItems / pageSize);
+            let currentPage = 1;
+
+            const infoEl = document.getElementById('admin-puzzles-info');
+            const controlsEl = document.getElementById('admin-puzzles-controls');
+
+            function renderPage(page) {
+                currentPage = Math.max(1, Math.min(page, totalPages));
+                const start = (currentPage - 1) * pageSize;
+                const end = Math.min(start + pageSize, totalItems);
+
+                rows.forEach(row => {
+                    const idx = parseInt(row.dataset.index, 10);
+                    row.style.display = (idx >= start && idx < end) ? '' : 'none';
+                });
+
+                if (infoEl) {
+                    infoEl.textContent = `Đang hiển thị ${start + 1} - ${end} / tổng số ${totalItems} thế cờ`;
+                }
+
+                renderControls();
+            }
+
+            function renderControls() {
+                if (!controlsEl) return;
+                controlsEl.innerHTML = '';
+
+                const prevBtn = document.createElement('button');
+                prevBtn.type = 'button';
+                prevBtn.className = 'page-btn';
+                prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.onclick = () => renderPage(currentPage - 1);
+                controlsEl.appendChild(prevBtn);
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const pBtn = document.createElement('button');
+                    pBtn.type = 'button';
+                    pBtn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+                    pBtn.textContent = i;
+                    pBtn.onclick = () => renderPage(i);
+                    controlsEl.appendChild(pBtn);
+                }
+
+                const nextBtn = document.createElement('button');
+                nextBtn.type = 'button';
+                nextBtn.className = 'page-btn';
+                nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+                nextBtn.disabled = currentPage === totalPages;
+                nextBtn.onclick = () => renderPage(currentPage + 1);
+                controlsEl.appendChild(nextBtn);
+            }
+
+            renderPage(1);
+        })();
     </script>
 }

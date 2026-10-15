@@ -229,6 +229,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const drawButton = document.getElementById("draw-btn");
   const hintButton = document.getElementById("hint-btn");
+  const hintMenuContainer = document.querySelector(".hint-menu-container");
   const quickSoundBtn = document.getElementById("quick-sound-btn");
   const onlineChatBox = document.getElementById("online-chat-box");
   const chatMessagesContainer = document.getElementById("chat-messages");
@@ -1415,20 +1416,38 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const skin = localStorage.getItem("chess_piece_skin") || "traditional";
     
-    // Map tên quân sang file ảnh (Shuai, Jiang, Shi, Xiang, Ma, Ju, Pao, Bing, Zu)
-    const typeMap = {
-      King: piece.color === "Red" ? "Shuai" : "Jiang",
-      Advisor: "Shi",
-      Elephant: "Xiang",
-      Horse: "Ma",
-      Rook: "Ju",
-      Cannon: "Pao",
-      Pawn: piece.color === "Red" ? "Bing" : "Zu"
-    };
+    // Chuẩn hóa tên quân và màu sắc cho skin hình ảnh
+    function getPieceImageFileName(piece, targetSkin) {
+      const isRed = (piece.color || "").toLowerCase() === "red";
+      const colorStr = isRed ? "Red" : "Black";
+      const actualSkin = targetSkin === "Minimalist" ? "Minimalist White" : targetSkin;
+
+      let pieceName = "";
+      const t = (piece.type || "").toLowerCase();
+      if (t === "king" || t === "tướng") {
+        pieceName = isRed ? "Shuai" : "Jiang";
+      } else if (t === "advisor" || t === "sĩ" || t === "si") {
+        pieceName = "Shi";
+      } else if (t === "elephant" || t === "tượng" || t === "tuong") {
+        pieceName = "Xiang";
+      } else if (t === "horse" || t === "knight" || t === "mã" || t === "ma") {
+        pieceName = "Ma";
+      } else if (t === "rook" || t === "chariot" || t === "xe") {
+        pieceName = "Ju";
+      } else if (t === "cannon" || t === "pháo" || t === "phao") {
+        pieceName = "Pao";
+      } else if (t === "pawn" || t === "tốt" || t === "tot" || t === "binh") {
+        pieceName = isRed ? "Bing" : "Zu";
+      } else {
+        pieceName = isRed ? "Bing" : "Zu";
+      }
+
+      return `${actualSkin} ${colorStr} ${pieceName}.png`;
+    }
 
     if (skin !== "traditional") {
-      // Dùng ảnh quân cờ thực tế (Wooden, Shadowed, Brown, Minimalist)
-      const fileName = `${skin} ${piece.color} ${typeMap[piece.type] || "Bing"}.png`;
+      // Dùng ảnh quân cờ thực tế (Wooden, Shadowed, Brown, Minimalist White)
+      const fileName = getPieceImageFileName(piece, skin);
       const imgPath = `/images/pieces/${fileName}`;
 
       const img = document.createElementNS(SVG_NS, "image");
@@ -1442,25 +1461,35 @@ document.addEventListener("DOMContentLoaded", function () {
       img.style.pointerEvents = "all";
       img.style.filter = "drop-shadow(0 4px 6px rgba(0,0,0,0.35))";
 
+      // Fallback về quân vector nếu ảnh bị lỗi tải
+      img.addEventListener("error", function() {
+        console.warn("Lỗi tải ảnh quân cờ:", imgPath, "- chuyển về vector");
+        img.remove();
+        renderVectorPiece(pieceGroup, position, piece);
+      });
+
       pieceGroup.appendChild(img);
     } else {
-      // Dùng phong cách thư pháp truyền thống
+      renderVectorPiece(pieceGroup, position, piece);
+    }
+
+    function renderVectorPiece(parent, pos, p) {
       const circle = document.createElementNS(SVG_NS, "circle");
-      circle.setAttribute("cx", position.x);
-      circle.setAttribute("cy", position.y);
+      circle.setAttribute("cx", pos.x);
+      circle.setAttribute("cy", pos.y);
       circle.setAttribute("r", 42);
       circle.setAttribute("class", "piece-circle");
 
       const textElement = document.createElementNS(SVG_NS, "text");
-      textElement.setAttribute("x", position.x);
-      textElement.setAttribute("y", position.y + 2);
+      textElement.setAttribute("x", pos.x);
+      textElement.setAttribute("y", pos.y + 2);
       textElement.setAttribute("text-anchor", "middle");
       textElement.setAttribute("dominant-baseline", "middle");
       textElement.setAttribute("class", "piece-text");
-      textElement.textContent = piece.text;
+      textElement.textContent = p.text;
 
-      pieceGroup.appendChild(circle);
-      pieceGroup.appendChild(textElement);
+      parent.appendChild(circle);
+      parent.appendChild(textElement);
     }
 
     pieceGroup.addEventListener("click", async function (event) {
@@ -2462,6 +2491,172 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // =====================================================
+  // FEN & MOVE RECORD (CHÉP FEN, NẠP FEN, BIÊN BẢN)
+  // =====================================================
+
+  const copyRoomCodeBtn = document.getElementById("copy-room-code-btn");
+  if (copyRoomCodeBtn) {
+    copyRoomCodeBtn.addEventListener("click", function () {
+      const codeEl = document.getElementById("display-room-code");
+      const code = codeEl ? codeEl.textContent.trim() : "";
+      if (!code) return;
+      navigator.clipboard.writeText(code).then(() => {
+        const originalText = copyRoomCodeBtn.innerHTML;
+        copyRoomCodeBtn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép';
+        copyRoomCodeBtn.style.color = '#10b981';
+        setTimeout(() => {
+          copyRoomCodeBtn.innerHTML = originalText;
+          copyRoomCodeBtn.style.color = '';
+        }, 2000);
+      });
+    });
+  }
+
+  // Sao chép FEN thế cờ hiện tại
+  const copyFenBtn = document.getElementById("copy-fen-btn");
+  if (copyFenBtn) {
+    copyFenBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      if (!gameId) {
+        showToast("Chưa có ván cờ nào để lấy FEN!", "warning");
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE_URL}/${gameId}/fen`);
+        if (!res.ok) throw new Error("Không thể lấy FEN.");
+        const data = await res.json();
+        const fen = data.fen || data;
+        const fenStr = typeof fen === "string" ? fen : JSON.stringify(fen);
+        await navigator.clipboard.writeText(fenStr);
+        showToast("Đã sao chép chuỗi FEN vào bộ nhớ tạm!", "success");
+      } catch (err) {
+        showToast("Lỗi khi sao chép FEN: " + err.message, "danger");
+      }
+    });
+  }
+
+  // Nhập thế cờ từ FEN (Import FEN)
+  const importFenBtn = document.getElementById("import-fen-btn");
+  const modeImportFenBtn = document.getElementById("mode-import-fen-btn");
+  const importFenModal = document.getElementById("import-fen-modal");
+  const importFenCancelBtn = document.getElementById("import-fen-cancel-btn");
+  const importFenSubmitBtn = document.getElementById("import-fen-submit-btn");
+  const importFenInput = document.getElementById("import-fen-input");
+
+  function openImportFenModal(event) {
+    if (event) event.stopPropagation();
+    if (importFenModal) {
+      importFenModal.classList.remove("hidden");
+      if (importFenInput) importFenInput.focus();
+    }
+  }
+
+  if (importFenBtn) {
+    importFenBtn.addEventListener("click", openImportFenModal);
+  }
+  if (modeImportFenBtn) {
+    modeImportFenBtn.addEventListener("click", openImportFenModal);
+  }
+  if (importFenCancelBtn && importFenModal) {
+    importFenCancelBtn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      importFenModal.classList.add("hidden");
+    });
+  }
+  document.querySelectorAll(".fen-preset-btn").forEach(btn => {
+    btn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (importFenInput) {
+        importFenInput.value = this.dataset.fen || "";
+      }
+    });
+  });
+  if (importFenSubmitBtn && importFenModal) {
+    importFenSubmitBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      const fenVal = (importFenInput?.value || "").trim();
+      if (!fenVal) {
+        showToast("Vui lòng nhập chuỗi FEN hợp lệ!", "warning");
+        return;
+      }
+
+      // Không cho phép nạp FEN khi đang chơi online
+      const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+      if (isOnline) {
+        showToast("Không thể nạp FEN khi đang chơi chế độ Online!", "warning");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE_URL}?initialFen=${encodeURIComponent(fenVal)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (!res.ok) {
+          const err = await res.text();
+          throw new Error(err || "Chuỗi FEN không hợp lệ.");
+        }
+        const data = await res.json();
+        
+        // Reset game state trước khi load ván mới từ FEN
+        undoCount = 0;
+        previousMovesCount = 0;
+        previousPieceCount = 0;
+        isComputerThinking = false;
+        clearSelection();
+        
+        gameId = data.id;
+        localStorage.setItem("xiangqiGameId", gameId);
+        
+        // Đảm bảo game content hiển thị
+        if (modeSelection) modeSelection.classList.add("hidden");
+        if (gameContent) gameContent.classList.remove("hidden");
+        
+        importFenModal.classList.add("hidden");
+        updateGameFromApi(data);
+        updateUndoButtonUI();
+        showToast("Đã thiết lập ván cờ từ FEN thành công!", "success");
+      } catch (err) {
+        showToast("Lỗi nạp FEN: " + err.message, "danger");
+      }
+    });
+  }
+
+  // Xuất / Tải biên bản ván cờ
+  const exportPgnBtn = document.getElementById("export-pgn-btn");
+  if (exportPgnBtn) {
+    exportPgnBtn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      const container = document.getElementById("move-history-container");
+      if (!container || !container.children.length) {
+        showToast("Chưa có nước cờ nào để xuất biên bản!", "warning");
+        return;
+      }
+      let text = "=== BIÊN BẢN VÁN CỜ TƯỚNG ===\n";
+      text += `Ngày đấu: ${new Date().toLocaleString("vi-VN")}\n`;
+      text += `Mã ván: ${gameId || "N/A"}\n\n`;
+      text += "--- DANH SÁCH NƯỚC ĐI ---\n";
+      const rows = container.querySelectorAll("div[style*='grid']");
+      rows.forEach(r => {
+        const spans = r.querySelectorAll("span");
+        if (spans.length >= 3) {
+          text += `${spans[0].textContent.trim()} ${spans[1].textContent.trim()} | ${spans[2].textContent.trim()}\n`;
+        }
+      });
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `BienBan_VanCo_${gameId || "game"}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Đã tải về biên bản ván cờ!", "success");
+    });
+  }
+
+  // =====================================================
   // RESIGN
   // =====================================================
 
@@ -2748,14 +2943,16 @@ document.addEventListener("DOMContentLoaded", function () {
     if (isOnline) {
       // Chơi Online: Xóa/ẩn Đi lại, ẩn Gợi ý; Giữ Xin hòa và Đầu hàng; Hiện Chat box
       if (undoButton) undoButton.style.display = "none";
-      if (hintButton) hintButton.style.display = "none";
+      if (hintMenuContainer) hintMenuContainer.style.display = "none";
+      else if (hintButton) hintButton.style.display = "none";
       if (drawButton) drawButton.style.display = "flex";
       if (resignButton) resignButton.style.display = "flex";
       if (onlineChatBox) onlineChatBox.classList.remove("hidden");
     } else if (VS_COMPUTER) {
       // Chơi với máy: Có Đi lại, có Gợi ý, có Đầu hàng, ẩn Xin hòa; Ẩn Chat box
       if (undoButton) undoButton.style.display = "flex";
-      if (hintButton) hintButton.style.display = "flex";
+      if (hintMenuContainer) hintMenuContainer.style.display = "inline-block";
+      else if (hintButton) hintButton.style.display = "flex";
       if (drawButton) drawButton.style.display = "none";
       if (resignButton) resignButton.style.display = "flex";
       if (onlineChatBox) onlineChatBox.classList.add("hidden");
@@ -2763,7 +2960,8 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       // Người vs Người trên cùng máy: Có Đi lại, có Gợi ý; Bỏ Đầu hàng và Xin hòa; Ẩn Chat box
       if (undoButton) undoButton.style.display = "flex";
-      if (hintButton) hintButton.style.display = "flex";
+      if (hintMenuContainer) hintMenuContainer.style.display = "inline-block";
+      else if (hintButton) hintButton.style.display = "flex";
       if (drawButton) drawButton.style.display = "none";
       if (resignButton) resignButton.style.display = "none";
       if (onlineChatBox) onlineChatBox.classList.add("hidden");
@@ -3377,127 +3575,4 @@ document.addEventListener("DOMContentLoaded", function () {
       }
   }
 
-document.addEventListener("DOMContentLoaded", function() {
-    const copyBtn = document.getElementById("copy-room-code-btn");
-    if (copyBtn) {
-        copyBtn.addEventListener("click", function() {
-            const code = document.getElementById("display-room-code").textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép';
-                copyBtn.style.color = '#10b981';
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalText;
-                    copyBtn.style.color = '';
-                }, 2000);
-            });
-        });
-    }
 
-    // Sao chép FEN thế cờ hiện tại
-    const copyFenBtn = document.getElementById("copy-fen-btn");
-    if (copyFenBtn) {
-        copyFenBtn.addEventListener("click", async function() {
-            if (!gameId) {
-                showToast("Chưa có ván cờ nào để lấy FEN!", "warning");
-                return;
-            }
-            try {
-                const res = await fetch(`${API_BASE_URL}/${gameId}/fen`);
-                if (!res.ok) throw new Error("Không thể lấy FEN.");
-                const data = await res.json();
-                const fen = data.fen || data;
-                await navigator.clipboard.writeText(typeof fen === "string" ? fen : JSON.stringify(fen));
-                showToast("Đã sao chép chuỗi FEN vào bộ nhớ tạm!", "success");
-            } catch (err) {
-                showToast("Lỗi khi sao chép FEN: " + err.message, "danger");
-            }
-        });
-    }
-
-    // Nhập thế cờ từ FEN (Import FEN)
-    const importFenBtn = document.getElementById("import-fen-btn");
-    const importFenModal = document.getElementById("import-fen-modal");
-    const importFenCancelBtn = document.getElementById("import-fen-cancel-btn");
-    const importFenSubmitBtn = document.getElementById("import-fen-submit-btn");
-    const importFenInput = document.getElementById("import-fen-input");
-
-    if (importFenBtn && importFenModal) {
-        importFenBtn.addEventListener("click", function() {
-            importFenModal.classList.remove("hidden");
-            if (importFenInput) importFenInput.focus();
-        });
-    }
-    if (importFenCancelBtn && importFenModal) {
-        importFenCancelBtn.addEventListener("click", function() {
-            importFenModal.classList.add("hidden");
-        });
-    }
-    document.querySelectorAll(".fen-preset-btn").forEach(btn => {
-        btn.addEventListener("click", function() {
-            if (importFenInput) {
-                importFenInput.value = this.dataset.fen || "";
-            }
-        });
-    });
-    if (importFenSubmitBtn && importFenModal) {
-        importFenSubmitBtn.addEventListener("click", async function() {
-            const fenVal = (importFenInput?.value || "").trim();
-            if (!fenVal) {
-                showToast("Vui lòng nhập chuỗi FEN hợp lệ!", "warning");
-                return;
-            }
-            try {
-                const res = await fetch(`${API_BASE_URL}?initialFen=${encodeURIComponent(fenVal)}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" }
-                });
-                if (!res.ok) {
-                    const err = await res.text();
-                    throw new Error(err || "Chuỗi FEN không hợp lệ.");
-                }
-                const data = await res.json();
-                gameId = data.id;
-                localStorage.setItem("xiangqiGameId", gameId);
-                importFenModal.classList.add("hidden");
-                updateGameFromApi(data);
-                showToast("Đã thiết lập ván cờ từ FEN thành công!", "success");
-            } catch (err) {
-                showToast("Lỗi nạp FEN: " + err.message, "danger");
-            }
-        });
-    }
-
-    // Xuất / Tải biên bản ván cờ
-    const exportPgnBtn = document.getElementById("export-pgn-btn");
-    if (exportPgnBtn) {
-        exportPgnBtn.addEventListener("click", function() {
-            const container = document.getElementById("move-history-container");
-            if (!container || !container.children.length) {
-                showToast("Chưa có nước cờ nào để xuất biên bản!", "warning");
-                return;
-            }
-            let text = "=== BIÊN BẢN VÁN CỜ TƯỚNG ===\n";
-            text += `Ngày đấu: ${new Date().toLocaleString("vi-VN")}\n`;
-            text += `Mã ván: ${gameId || "N/A"}\n\n`;
-            text += "--- DANH SÁCH NƯỚC ĐI ---\n";
-            const rows = container.querySelectorAll("div[style*='grid']");
-            rows.forEach(r => {
-                const spans = r.querySelectorAll("span");
-                if (spans.length >= 3) {
-                    text += `${spans[0].textContent.trim()} ${spans[1].textContent.trim()} | ${spans[2].textContent.trim()}\n`;
-                }
-            });
-            const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `BienBan_VanCo_${gameId || "game"}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast("Đã tải về biên bản ván cờ!", "success");
-        });
-    }
-});

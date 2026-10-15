@@ -217,8 +217,17 @@ namespace ChessCore.Controllers
         }
 
         // ==========================================
-        // 4. PHÂN QUYỀN NHANH USER (Dành cho Dev / Test)
+        // 4. QUẢN LÝ NGƯỜI DÙNG (USERS)
         // ==========================================
+        [HttpGet]
+        public async Task<IActionResult> Users()
+        {
+            if (!await IsAdminUserAsync()) return View("AccessDenied");
+
+            var users = await _context.Users.OrderByDescending(u => u.Id).ToListAsync();
+            return View(users);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleAdminRole(int userId)
@@ -232,7 +241,33 @@ namespace ChessCore.Controllers
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Đã cập nhật quyền của {user.Username} thành: {user.Role}";
             }
-            return RedirectToAction(nameof(Index));
+            return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteUser(int userId)
+        {
+            if (!await IsAdminUserAsync()) return View("AccessDenied");
+
+            var currentUsername = User.Identity?.Name;
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng cần xóa.";
+                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin");
+            }
+
+            if (string.Equals(user.Username, currentUsername, StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Bạn không thể tự xóa tài khoản của chính mình!";
+                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin");
+            }
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = $"Đã xóa người dùng {user.Username} ({user.PlayerId}) thành công!";
+            return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin");
         }
 
         // ==========================================

@@ -143,9 +143,14 @@
                 </div>
             </div>
 
-            <button id="start-game-btn" class="btn-primary start-btn" disabled type="button">
-                <i class="fa-solid fa-play"></i> BẮT ĐẦU VÁN CỜ
-            </button>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button id="start-game-btn" class="btn-primary start-btn" disabled type="button" style="flex: 2;">
+                    <i class="fa-solid fa-play"></i> BẮT ĐẦU VÁN CỜ
+                </button>
+                <button id="mode-import-fen-btn" class="btn-secondary" type="button" style="flex: 1; border-radius: 12px; font-weight: 700; font-size: 14px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Nạp thế cờ từ chuỗi FEN để bắt đầu chơi">
+                    <i class="fa-solid fa-file-import" style="color: var(--accent-gold);"></i> Nạp FEN
+                </button>
+            </div>
         </div>
     </section>
 
@@ -423,14 +428,11 @@
                 
                 <div class="action-footer">
                     <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px;">
-                        <button id="copy-fen-btn" class="btn-secondary" style="flex: 1; padding: 8px; font-size: 12px;" type="button" title="Sao chép FEN thế cờ hiện tại">
-                            <i class="fa-regular fa-copy"></i> Chép FEN
+                        <button id="copy-fen-btn" class="btn-secondary" style="flex: 1; padding: 9px; font-size: 13px;" type="button" title="Sao chép chuỗi FEN thế cờ hiện tại">
+                            <i class="fa-regular fa-copy" style="color: var(--accent-gold);"></i> Chép FEN
                         </button>
-                        <button id="import-fen-btn" class="btn-secondary" style="flex: 1; padding: 8px; font-size: 12px;" type="button" title="Nhập thế cờ từ chuỗi FEN">
-                            <i class="fa-solid fa-file-import"></i> Nạp FEN
-                        </button>
-                        <button id="export-pgn-btn" class="btn-secondary" style="flex: 1; padding: 8px; font-size: 12px;" type="button" title="Tải biên bản ván cờ">
-                            <i class="fa-solid fa-download"></i> Biên bản
+                        <button id="export-pgn-btn" class="btn-secondary" style="flex: 1; padding: 9px; font-size: 13px;" type="button" title="Tải biên bản các nước đi của ván cờ">
+                            <i class="fa-solid fa-download" style="color: var(--accent-gold);"></i> Xuất biên bản
                         </button>
                     </div>
                     <button id="flip-board-btn" class="btn-secondary w-full mb-2" type="button" title="Đảo góc nhìn bàn cờ">
@@ -523,12 +525,12 @@
         </p>
         <div style="margin-bottom: 14px;">
             <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text-main);">Chuỗi FEN:</label>
-            <textarea id="import-fen-input" rows="3" style="width: 100%; box-sizing: border-box; background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; resize: vertical;" placeholder="Ví dụ: rheakaehr/9/1c5c1/s1s1s1s1s/9/9/S1S1S1S1S/1C5C1/9/RHEAKAEHR w - - 0 1"></textarea>
+            <textarea id="import-fen-input" rows="3" style="width: 100%; box-sizing: border-box; background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; resize: vertical;" placeholder="Ví dụ: rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"></textarea>
         </div>
         <div style="margin-bottom: 16px;">
             <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text-main);">Hoặc chọn thế cờ mẫu:</label>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <button type="button" class="btn-secondary fen-preset-btn" data-fen="rheakaehr/9/1c5c1/s1s1s1s1s/9/9/S1S1S1S1S/1C5C1/9/RHEAKAEHR w - - 0 1" style="font-size: 11px; padding: 4px 10px;">Bàn cờ chuẩn</button>
+                <button type="button" class="btn-secondary fen-preset-btn" data-fen="rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" style="font-size: 11px; padding: 4px 10px;">Bàn cờ chuẩn</button>
                 <button type="button" class="btn-secondary fen-preset-btn" data-fen="3k5/4a4/4b4/9/9/9/9/4B4/4A4/4K4 w - - 0 1" style="font-size: 11px; padding: 4px 10px;">Tàn cuộc Tướng Sĩ Tượng</button>
                 <button type="button" class="btn-secondary fen-preset-btn" data-fen="4k4/4a4/4ba3/9/9/9/9/4B4/4A4/3K5 w - - 0 1" style="font-size: 11px; padding: 4px 10px;">Thế sát cơ bản</button>
             </div>

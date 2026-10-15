@@ -8,23 +8,35 @@
     <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" />
     <style>
         .review-container {
-            max-width: 1400px;
+            max-width: 1440px;
+            width: 100%;
+            height: calc(100vh - var(--navbar-height));
+            max-height: calc(100vh - var(--navbar-height));
             margin: 0 auto;
-            padding: 20px;
+            padding: 10px 20px;
             display: grid;
-            grid-template-columns: 800px 1fr;
-            gap: 24px;
+            grid-template-columns: minmax(460px, 1fr) clamp(380px, 32vw, 460px);
+            gap: 16px;
+            box-sizing: border-box;
+            overflow: hidden;
+            align-items: stretch;
         }
 
         .review-board-card {
             background: var(--bg-navy-panel);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 14px;
+            padding: 12px 18px 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: space-between;
+            height: 100%;
+            max-height: 100%;
+            min-height: 0;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .review-match-header {
@@ -32,36 +44,37 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 18px;
-            padding-bottom: 14px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
             border-bottom: 1px solid var(--border-color);
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 8px;
+            flex-shrink: 0;
         }
 
         .review-match-info {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
 
         .review-match-title {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 800;
             color: var(--text-main);
             margin: 0;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .review-match-sub {
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 13px;
+            gap: 10px;
+            font-size: 12px;
             color: var(--text-muted);
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         .review-match-badge {
@@ -70,19 +83,56 @@
             color: var(--accent-gold);
             font-size: 11px;
             font-weight: 700;
-            padding: 2px 8px;
+            padding: 2px 7px;
             border-radius: 4px;
+        }
+
+        .review-board-wrapper {
+            flex: 1 1 0;
+            min-height: 0;
+            max-height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .review-board-inner {
+            height: 100%;
+            max-height: 100%;
+            max-width: 100%;
+            aspect-ratio: 9 / 10;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .review-analysis-card {
             background: var(--bg-navy-panel);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 14px;
+            padding: 14px 16px;
             display: flex;
             flex-direction: column;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            max-height: 85vh;
+            height: 100%;
+            max-height: 100%;
+            min-height: 0;
+            box-sizing: border-box;
+            overflow-y: auto;
+            overflow-x: hidden;
+            gap: 8px;
+        }
+
+        .review-analysis-card::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .review-analysis-card::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
         }
 
         .accuracy-box {
@@ -90,9 +140,10 @@
             justify-content: space-around;
             background: var(--bg-navy-light);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 20px;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 0;
+            flex-shrink: 0;
         }
 
         .accuracy-item {
@@ -100,19 +151,21 @@
         }
 
         .accuracy-score {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 800;
+            line-height: 1.1;
         }
 
         /* Eval Bar */
         .eval-bar-wrapper {
             width: 100%;
-            height: 12px;
+            height: 8px;
             background: #1e293b;
-            border-radius: 6px;
+            border-radius: 4px;
             overflow: hidden;
-            margin: 8px 0 18px;
+            margin: 4px 0 6px;
             display: flex;
+            flex-shrink: 0;
         }
 
         .eval-bar-red {
@@ -128,11 +181,13 @@
         }
 
         .move-history-scroll {
-            flex: 1;
+            flex: 1 1 0;
+            min-height: 110px;
+            max-height: 220px;
             overflow-y: auto;
-            margin-bottom: 16px;
+            margin-bottom: 0;
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 8px;
             background: var(--bg-navy-dark);
         }
 
@@ -140,10 +195,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 14px;
+            padding: 6px 12px;
             border-bottom: 1px solid var(--border-color);
             cursor: pointer;
             transition: background 0.2s;
+            font-size: 13px;
         }
 
         .review-move-item:hover, .review-move-item.active {
@@ -151,10 +207,10 @@
         }
 
         .badge-judgment {
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 20px;
+            padding: 2px 7px;
+            border-radius: 12px;
             text-transform: uppercase;
         }
         .badge-Brilliant { background: rgba(168, 85, 247, 0.2); color: #9333ea; }
@@ -166,17 +222,18 @@
         .review-controls {
             display: flex;
             justify-content: center;
-            gap: 12px;
-            margin-top: 14px;
+            gap: 8px;
+            margin-top: 8px;
+            flex-shrink: 0;
         }
 
         .btn-replay {
-            padding: 8px 18px;
+            padding: 6px 14px;
             border-radius: 8px;
             border: 1px solid var(--border-color);
             background: var(--bg-navy-panel);
             color: var(--text-main);
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -188,9 +245,9 @@
         .btn-action-gold {
             background: linear-gradient(135deg, #f59e0b, #b45309) !important;
             color: #ffffff !important;
-            padding: 8px 16px;
+            padding: 7px 12px;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
@@ -210,9 +267,9 @@
         .btn-action-secondary {
             background: var(--bg-navy-light, #ffffff) !important;
             color: var(--text-main, #334155) !important;
-            padding: 8px 16px;
+            padding: 7px 12px;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
@@ -228,9 +285,17 @@
             color: #b45309 !important;
         }
 
-        @@media (max-width: 1024px) {
+        @@media (max-width: 900px) {
             .review-container {
                 grid-template-columns: 1fr;
+                height: auto;
+                max-height: none;
+                overflow-y: auto;
+            }
+            .review-board-card, .review-analysis-card {
+                height: auto;
+                max-height: none;
+                overflow: visible;
             }
         }
 
@@ -307,20 +372,22 @@
         </div>
 
         <!-- Bàn cờ SVG -->
-        <div style="width: 100%; max-width: 600px; aspect-ratio: 9/10; position: relative;">
-            <svg id="replay-board-svg" class="board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet">
-                <rect x="0" y="0" width="900" height="1000" class="board-outer-bg" />
-                <rect x="15" y="15" width="870" height="970" class="board-background" />
-                <image id="board-image-texture" x="15" y="15" width="870" height="970" preserveAspectRatio="none" style="display: none; opacity: 0.95;" />
-                <g class="board-lines">
-                    @for (var row = 0; row < 10; row++) { <line x1="50" y1="@(50 + row * 100)" x2="850" y2="@(50 + row * 100)" /> }
-                    <line x1="50" y1="50" x2="50" y2="950" /><line x1="850" y1="50" x2="850" y2="950" />
-                    @for (var col = 1; col < 8; col++) { <line x1="@(50 + col * 100)" y1="50" x2="@(50 + col * 100)" y2="450" /><line x1="@(50 + col * 100)" y1="550" x2="@(50 + col * 100)" y2="950" /> }
-                </g>
-                <g class="palace-lines"><line x1="350" y1="50" x2="550" y2="250" /><line x1="550" y1="50" x2="350" y2="250" /><line x1="350" y1="750" x2="550" y2="950" /><line x1="550" y1="750" x2="350" y2="950" /></g>
-                <g class="river-text"><text x="250" y="520">楚 河</text><text x="650" y="520">漢 界</text></g>
-                <g id="replay-moves-layer"></g><g id="replay-pieces-layer"></g>
-            </svg>
+        <div class="review-board-wrapper">
+            <div class="review-board-inner">
+                <svg id="replay-board-svg" class="board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 100%; display: block;">
+                    <rect x="0" y="0" width="900" height="1000" class="board-outer-bg" />
+                    <rect x="15" y="15" width="870" height="970" class="board-background" />
+                    <image id="board-image-texture" x="15" y="15" width="870" height="970" preserveAspectRatio="none" style="display: none; opacity: 0.95;" />
+                    <g class="board-lines">
+                        @for (var row = 0; row < 10; row++) { <line x1="50" y1="@(50 + row * 100)" x2="850" y2="@(50 + row * 100)" /> }
+                        <line x1="50" y1="50" x2="50" y2="950" /><line x1="850" y1="50" x2="850" y2="950" />
+                        @for (var col = 1; col < 8; col++) { <line x1="@(50 + col * 100)" y1="50" x2="@(50 + col * 100)" y2="450" /><line x1="@(50 + col * 100)" y1="550" x2="@(50 + col * 100)" y2="950" /> }
+                    </g>
+                    <g class="palace-lines"><line x1="350" y1="50" x2="550" y2="250" /><line x1="550" y1="50" x2="350" y2="250" /><line x1="350" y1="750" x2="550" y2="950" /><line x1="550" y1="750" x2="350" y2="950" /></g>
+                    <g class="river-text"><text x="250" y="520">楚 河</text><text x="650" y="520">漢 界</text></g>
+                    <g id="replay-moves-layer"></g><g id="replay-pieces-layer"></g>
+                </svg>
+            </div>
         </div>
 
         <!-- Bộ nút điều hướng Replay -->
@@ -335,42 +402,42 @@
 
     <!-- CỘT PHẢI: BÁO CÁO PHÂN TÍCH AI & DANH SÁCH NƯỚC ĐI -->
     <div class="review-analysis-card">
-        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--text-main);">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 2px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-brain" style="color: var(--accent-gold);"></i> Báo cáo Phân tích từ AI
         </h3>
 
         <!-- Chỉ số độ chính xác (Accuracy) -->
         <div class="accuracy-box">
             <div class="accuracy-item">
-                <div style="font-size: 12px; color: #ef4444; font-weight: bold; margin-bottom: 4px;">ĐỎ (@Model.RedPlayerName)</div>
+                <div style="font-size: 11px; color: #ef4444; font-weight: bold; margin-bottom: 2px;">ĐỎ (@Model.RedPlayerName)</div>
                 <div class="accuracy-score" style="color: #ef4444;">@Model.AccuracyRed%</div>
-                <small style="color: var(--text-muted); font-size: 11px;">Độ chuẩn xác</small>
+                <small style="color: var(--text-muted); font-size: 10.5px;">Độ chuẩn xác</small>
             </div>
             <div style="width: 1px; background: var(--border-color);"></div>
             <div class="accuracy-item">
-                <div style="font-size: 12px; color: #3b82f6; font-weight: bold; margin-bottom: 4px;">ĐEN (@Model.BlackPlayerName)</div>
+                <div style="font-size: 11px; color: #3b82f6; font-weight: bold; margin-bottom: 2px;">ĐEN (@Model.BlackPlayerName)</div>
                 <div class="accuracy-score" style="color: #3b82f6;">@Model.AccuracyBlack%</div>
-                <small style="color: var(--text-muted); font-size: 11px;">Độ chuẩn xác</small>
+                <small style="color: var(--text-muted); font-size: 10.5px;">Độ chuẩn xác</small>
             </div>
         </div>
 
         <!-- BIỂU ĐỒ SÓNG DIỄN BIẾN THẾ TRẬN (EVALUATION GRAPH) -->
-        <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 12px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+        <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 11.5px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-chart-area" style="color: var(--accent-gold);"></i> Biểu đồ diễn biến ưu thế
                 </span>
-                <span style="font-size: 11px; color: var(--text-muted);">Đỏ (+ trên) | Đen (- dưới)</span>
+                <span style="font-size: 10.5px; color: var(--text-muted);">Đỏ (+ trên) | Đen (- dưới)</span>
             </div>
-            <div style="width: 100%; height: 90px; position: relative;">
+            <div style="width: 100%; height: 75px; position: relative;">
                 <canvas id="eval-chart-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
             </div>
         </div>
 
         <!-- Nhận xét nước cờ hiện tại -->
-        <div id="move-comment-box" style="background: var(--bg-navy-light); border-left: 4px solid var(--accent-gold); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; min-height: 54px;">
-            <div id="comment-title" style="font-weight: 700; font-size: 13px; color: var(--text-main); margin-bottom: 4px;">Khởi đầu ván cờ</div>
-            <div id="comment-text" style="font-size: 13px; color: var(--text-muted);">Hãy bấm các nút điều hướng hoặc chọn nước đi bên dưới để xem AI nhận xét.</div>
+        <div id="move-comment-box" style="background: var(--bg-navy-light); border-left: 3px solid var(--accent-gold); padding: 8px 12px; border-radius: 6px; min-height: 48px;">
+            <div id="comment-title" style="font-weight: 700; font-size: 12px; color: var(--text-main); margin-bottom: 2px;">Khởi đầu ván cờ</div>
+            <div id="comment-text" style="font-size: 12px; color: var(--text-muted); line-height: 1.35;">Hãy bấm các nút điều hướng hoặc chọn nước đi bên dưới để xem AI nhận xét.</div>
         </div>
 
         <!-- Danh sách cuộn nước đi -->
@@ -379,29 +446,23 @@
             {
                 var m = Model.AnalyzedMoves[i];
                 <div class="review-move-item" data-index="@i" onclick="goToStep(@i);">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 12px; font-weight: bold; color: var(--text-muted); width: 28px;">#@m.MoveOrder</span>
-                        <strong style="color: @(m.PieceColor == "Red" ? "#ef4444" : "var(--text-main)");">@m.Notation</strong>
-                    </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 11.5px; font-weight: bold; color: var(--text-muted); width: 26px;">#@m.MoveOrder</span>
+                        <strong style="color: @(m.PieceColor == "Red" ? "#ef4444" : "var(--text-main)"); font-size: 12.5px;">@m.Notation</strong>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
                         <span class="badge-judgment badge-@m.Judgment">@m.Judgment</span>
                     </div>
                 </div>
             }
         </div>
 
-        <!-- Nút xuất biên bản PGN / In PDF / Quay lại bàn cờ -->
-        <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-top: 14px;">
-            <a href="/Dashboard" class="btn-action-secondary">
-                <i class="fa-solid fa-arrow-left"></i> Quay lại Thống kê
-            </a>
-            <a href="/Game" class="btn-action-gold">
-                <i class="fa-solid fa-chess-board"></i> Chơi ván mới
-            </a>
-            <button type="button" class="btn-action-secondary" onclick="exportNotation();">
+        <!-- Nút xuất biên bản PGN / In PDF -->
+        <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-top: 4px;">
+            <button type="button" class="btn-action-secondary" onclick="exportNotation();" style="flex: 1; justify-content: center; padding: 6px 10px; font-size: 12px;">
                 <i class="fa-solid fa-file-arrow-down"></i> Xuất PGN / Text
             </button>
-            <button type="button" class="btn-action-secondary" onclick="window.print();">
+            <button type="button" class="btn-action-secondary" onclick="window.print();" style="flex: 1; justify-content: center; padding: 6px 10px; font-size: 12px;">
                 <i class="fa-solid fa-print"></i> In ván cờ
             </button>
         </div>
@@ -474,28 +535,33 @@
             layer.replaceChildren();
 
             const skin = localStorage.getItem("chess_piece_skin") || "traditional";
-            const typeMap = {
-                King: p => p.color === 'Red' ? 'Shuai' : 'Jiang',
-                Advisor: () => 'Shi',
-                Elephant: () => 'Xiang',
-                Horse: () => 'Ma',
-                Rook: () => 'Ju',
-                Cannon: () => 'Pao',
-                Pawn: p => p.color === 'Red' ? 'Bing' : 'Zu'
-            };
+            function getReviewPieceFileName(p, targetSkin) {
+                const isRed = (p.color || "").toLowerCase() === "red";
+                const cStr = isRed ? "Red" : "Black";
+                const actualSkin = targetSkin === "Minimalist" ? "Minimalist White" : targetSkin;
+                let pName = "";
+                const t = (p.type || "").toLowerCase();
+                if (t === "king" || t === "tướng") pName = isRed ? "Shuai" : "Jiang";
+                else if (t === "advisor" || t === "sĩ" || t === "si") pName = "Shi";
+                else if (t === "elephant" || t === "tượng" || t === "tuong") pName = "Xiang";
+                else if (t === "horse" || t === "knight" || t === "mã" || t === "ma") pName = "Ma";
+                else if (t === "rook" || t === "chariot" || t === "xe") pName = "Ju";
+                else if (t === "cannon" || t === "pháo" || t === "phao") pName = "Pao";
+                else pName = isRed ? "Bing" : "Zu";
+                return `${actualSkin} ${cStr} ${pName}.png`;
+            }
 
             pieces.forEach(p => {
                 const x = 50 + p.col * 100;
                 const y = 50 + p.row * 100;
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                g.setAttribute('class', `chess-piece ${p.color.toLowerCase()}`);
+                g.setAttribute('class', `chess-piece ${(p.color || "").toLowerCase()}`);
 
                 if (skin !== "traditional") {
-                    const func = typeMap[p.type] || (() => 'Bing');
-                    const fileName = `${skin} ${p.color} ${func(p)}.png`;
+                    const fileName = getReviewPieceFileName(p, skin);
                     const imgPath = `/images/pieces/${fileName}`;
                     g.innerHTML = `
-                        <image x="${x - 44}" y="${y - 44}" width="88" height="88" href="${imgPath}" class="piece-image-skin" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));" />
+                        <image x="${x - 44}" y="${y - 44}" width="88" height="88" href="${imgPath}" class="piece-image-skin" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));" onerror="this.remove();" />
                     `;
                 } else {
                     g.innerHTML = `

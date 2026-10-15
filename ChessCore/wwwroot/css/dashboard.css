@@ -259,3 +259,79 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     font-weight: 700;
 }
+
+/* =========================================================
+   PAGINATION STYLES (MATCH HISTORY)
+========================================================= */
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 4px 6px;
+    margin-top: 10px;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pagination-info {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.page-btn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-navy-dark);
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.page-btn:hover:not(:disabled):not(.active) {
+    background: var(--bg-navy-light);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+    transform: translateY(-1px);
+}
+
+.page-btn.active {
+    background: var(--accent-gold);
+    color: #ffffff;
+    border-color: var(--accent-gold);
+    box-shadow: 0 3px 10px rgba(212, 175, 55, 0.35);
+    font-weight: 700;
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--bg-navy-dark);
+    border-color: var(--border-color);
+    transform: none;
+}
+
+.page-ellipsis {
+    width: 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-weight: bold;
+    user-select: none;
+}
+

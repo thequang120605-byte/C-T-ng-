@@ -136,6 +136,12 @@
                 <div id="history-items-list" class="pz-custom-results-list" style="max-height: 600px;">
                     <!-- Lịch sử sẽ render ở đây -->
                 </div>
+                <div class="pagination-wrapper pz-hidden" id="history-pagination" style="margin-top: 14px;">
+                    <div class="pagination-info" id="history-pagination-info">
+                        Đang hiển thị 1 - 5 / tổng số 0 bài
+                    </div>
+                    <div class="pagination-controls" id="history-pagination-controls"></div>
+                </div>
             </div>
         </div>
     </section>
@@ -217,6 +223,12 @@
                     </div>
                     <div id="custom-results-list" class="pz-custom-results-list">
                         <!-- Danh sách bài phù hợp sẽ render ở đây -->
+                    </div>
+                    <div class="pagination-wrapper pz-hidden" id="custom-pagination" style="margin-top: 14px;">
+                        <div class="pagination-info" id="custom-pagination-info">
+                            Đang hiển thị 1 - 5 / tổng số 0 bài
+                        </div>
+                        <div class="pagination-controls" id="custom-pagination-controls"></div>
                     </div>
                 </div>
             </div>
@@ -368,6 +380,9 @@
                             </button>
                         </div>
                     </div>
+                    <button type="button" class="pz-btn pz-btn-secondary pz-btn-block" id="pz-show-solution" style="margin-top: 6px;">
+                        <i class="fa-solid fa-graduation-cap"></i> Xem đáp án & Biến sát cục
+                    </button>
                     <button type="button" class="pz-btn pz-btn-back pz-btn-block" id="pz-exit">
                         <i class="fa-solid fa-arrow-left"></i> Về danh sách cấp độ
                     </button>
@@ -431,6 +446,39 @@
                 <button type="button" class="pz-btn pz-btn-danger" id="btn-tr-res-retry">
                     <i class="fa-solid fa-rotate-left"></i> Chơi lại ngay
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL XEM ĐÁP ÁN & LỜI GIẢI CHI TIẾT (SOLUTION MODAL) -->
+    <div id="pz-modal-solution" class="pz-modal-overlay">
+        <div class="pz-modal-card" style="max-width: 520px;">
+            <div class="pz-modal-header">
+                <h3 class="pz-modal-title"><i class="fa-solid fa-graduation-cap" style="color: var(--accent-gold);"></i> Đáp án & Biến sát cục</h3>
+                <button id="pz-modal-solution-close" type="button" class="pz-modal-close-icon" title="Đóng">&times;</button>
+            </div>
+            <div style="padding: 16px; font-size: 14px; line-height: 1.6;">
+                <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                    <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;" id="pz-sol-title">Thế cờ: </div>
+                    <div style="font-size: 12.5px; color: var(--text-muted);" id="pz-sol-meta">Mục tiêu: Đỏ chiếu bí trong N nước</div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <strong style="color: var(--text-main); display: block; margin-bottom: 6px;"><i class="fa-solid fa-list-ol" style="color: var(--accent-gold);"></i> Các bước sát cục cưỡng bức:</strong>
+                    <div id="pz-sol-steps" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Các bước giải sẽ render tại đây -->
+                    </div>
+                </div>
+
+                <div id="pz-sol-note" style="font-size: 12.5px; color: var(--text-muted); background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; padding: 8px 12px; border-radius: 4px;">
+                    <i class="fa-solid fa-lightbulb" style="color: #f59e0b;"></i> <em>Mẹo:</em> Bạn có thể bấm <strong>"Thực hiện trên bàn cờ"</strong> để xem engine phát lại tự động từng nước đi.
+                </div>
+            </div>
+            <div class="pz-modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button id="pz-sol-autoplay-btn" type="button" class="pz-btn pz-btn-primary" style="padding: 8px 16px; font-size: 13px;">
+                    <i class="fa-solid fa-play"></i> Thực hiện trên bàn cờ
+                </button>
+                <button id="pz-modal-solution-close-btn" type="button" class="pz-btn pz-btn-secondary" style="padding: 8px 16px; font-size: 13px;">Đóng</button>
             </div>
         </div>
     </div>
