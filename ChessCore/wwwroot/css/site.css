@@ -659,3 +659,55 @@ body.has-custom-wallpaper .app-main {
     user-select: none;
 }
 
+/* =========================================================
+   COMPREHENSIVE GLASSMORPHISM & TRANSLUCENCY FOR WALLPAPERS
+   Applies across Game, Analysis (Review), Puzzles, Master Games
+========================================================= */
+body.has-custom-wallpaper .review-board-card,
+body.has-custom-wallpaper .review-analysis-card,
+body.has-custom-wallpaper .puzzle-board-card,
+body.has-custom-wallpaper .puzzle-info-card,
+body.has-custom-wallpaper .master-game-card,
+body.has-custom-wallpaper .master-analysis-card,
+body.has-custom-wallpaper .board-wrapper,
+body.has-custom-wallpaper .player-bar,
+body.has-custom-wallpaper .panel-box,
+body.has-custom-wallpaper .move-history-box {
+    background: rgba(255, 252, 243, 0.6) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.65) !important;
+    box-shadow: 0 15px 35px -8px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(254, 215, 170, 0.45) !important;
+}
+
+body.has-custom-wallpaper .accuracy-box,
+body.has-custom-wallpaper .move-history-scroll,
+body.has-custom-wallpaper .move-list,
+body.has-custom-wallpaper .review-match-header,
+body.has-custom-wallpaper .eco-explanation,
+body.has-custom-wallpaper .eval-bar-container,
+body.has-custom-wallpaper .analysis-card-sub,
+body.has-custom-wallpaper .puzzle-status-box {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border-color: rgba(254, 215, 170, 0.45) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+}
+
+body.has-custom-wallpaper .btn-replay,
+body.has-custom-wallpaper .btn-secondary,
+body.has-custom-wallpaper .action-btn {
+    background: rgba(255, 255, 255, 0.65) !important;
+    border-color: rgba(254, 215, 170, 0.5) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+}
+
+body.has-custom-wallpaper .btn-replay:hover,
+body.has-custom-wallpaper .btn-secondary:hover,
+body.has-custom-wallpaper .action-btn:hover {
+    background: rgba(255, 251, 235, 0.9) !important;
+    border-color: #f59e0b !important;
+}
+
+
