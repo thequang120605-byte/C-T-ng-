@@ -384,10 +384,24 @@
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </div>
-                <div class="quick-emojis" style="display: flex; gap: 6px; margin-top: 6px; justify-content: center;">
-                    <button type="button" class="quick-chat-tag" data-msg="Chúc bạn chơi vui vẻ! 👍" style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">👍 Chúc vui</button>
-                    <button type="button" class="quick-chat-tag" data-msg="Nước cờ hay quá! 👏" style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">👏 Nước hay</button>
-                    <button type="button" class="quick-chat-tag" data-msg="Nhanh lên bạn ơi! ⏳" style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">⏳ Nhanh lên</button>
+                <!-- BIỂU CẢM VÀ CÂU CHAT NHANH (QUICK EMOTES & PHRASES) -->
+                <div class="quick-emojis-panel" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                    <!-- Hàng biểu cảm Emoji phản hồi tức thì -->
+                    <div style="display: flex; gap: 6px; justify-content: space-between; overflow-x: auto; padding-bottom: 2px;">
+                        <button type="button" class="quick-chat-tag" data-msg="🤝 Chào bạn, chúc thi đấu tốt!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Chào hỏi">🤝</button>
+                        <button type="button" class="quick-chat-tag" data-msg="👏 Nước cờ xuất sắc!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Khen ngợi">👏</button>
+                        <button type="button" class="quick-chat-tag" data-msg="🤔 Thế cờ khó quá, đang suy nghĩ..." style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Đang tính">🤔</button>
+                        <button type="button" class="quick-chat-tag" data-msg="😱 Nước cờ bất ngờ thật!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Kinh ngạc">😱</button>
+                        <button type="button" class="quick-chat-tag" data-msg="☕ Thư thái làm ngụm trà nào!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Uống trà">☕</button>
+                        <button type="button" class="quick-chat-tag" data-msg="🙏 Cảm ơn bạn vì ván cờ hay!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Cảm ơn">🙏</button>
+                    </div>
+                    <!-- Hàng câu thoại nhanh phổ biến -->
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button type="button" class="quick-chat-tag" data-msg="Chúc kỳ hữu chơi vui vẻ! 👍" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: var(--text-muted); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">👍 Chúc vui</button>
+                        <button type="button" class="quick-chat-tag" data-msg="Đến lượt bạn đi kìa! ⏳" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: var(--text-muted); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">⏳ Đến lượt bạn</button>
+                        <button type="button" class="quick-chat-tag" data-msg="Cao thủ! Bái phục! 🫡" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: var(--text-muted); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">🫡 Bái phục</button>
+                        <button type="button" class="quick-chat-tag" data-msg="Làm lại ván nữa nhé? 🔄" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: var(--text-muted); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">🔄 Ván nữa nhé</button>
+                    </div>
                 </div>
             </div>
 

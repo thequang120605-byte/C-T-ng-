@@ -144,27 +144,31 @@
     <div class="home-content-layout">
         <!-- Cột trái: Thế cờ rèn luyện & Giới thiệu AI Engine -->
         <div>
-            <div class="panel-card">
+            <div class="panel-card" style="border: 2px solid rgba(217, 119, 6, 0.4); background: radial-gradient(circle at top right, rgba(217, 119, 6, 0.08), transparent 70%), var(--bg-navy-panel, #ffffff);">
                 <div class="panel-card-header">
-                    <div class="panel-card-title">
-                        <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-gold);"></i>
-                        Thế cờ rèn luyện hôm nay
+                    <div class="panel-card-title" style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-fire" style="color: #ef4444;"></i>
+                        <span style="font-weight: 800;">Thử Thách Cờ Thế Hôm Nay</span>
+                        <span style="font-size: 11px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); padding: 2px 8px; border-radius: 12px;">+20 Elo</span>
                     </div>
-                    <a href="/Puzzle" style="font-size: 13px; color: var(--accent-gold-dark); text-decoration: none; font-weight: 700;">
-                        Xem tất cả <i class="fa-solid fa-angle-right"></i>
+                    <a href="/Puzzle" style="font-size: 13px; color: var(--accent-gold); text-decoration: none; font-weight: 700;">
+                        Kho cờ thế <i class="fa-solid fa-angle-right"></i>
                     </a>
                 </div>
                 <div class="puzzle-preview-box">
-                    <div class="puzzle-mini-board">
-                        <span>將</span>
+                    <div class="puzzle-mini-board" style="background: linear-gradient(135deg, #d97706, #b45309); box-shadow: 0 4px 15px rgba(217, 119, 6, 0.35);">
+                        <span style="font-family: 'KaiTi', 'STKaiti', serif; font-size: 38px; color: #fff;">帥</span>
                     </div>
                     <div class="puzzle-preview-info">
-                        <span style="font-size: 11px; font-weight: 800; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px;">@Model.DailyPuzzleCategory</span>
-                        <h3>@Model.DailyPuzzleTitle</h3>
-                        <p>Vận dụng phối hợp quân Xe - Pháo - Mã để tung đòn sát chiêu đoạt mạng Tướng đối phương trong số nước quy định.</p>
-                        <a href="/Puzzle" class="hero-btn primary" style="padding: 8px 18px; font-size: 13px;">
-                            <i class="fa-solid fa-play"></i> Bắt đầu giải ngay
-                        </a>
+                        <span style="font-size: 11px; font-weight: 800; color: #d97706; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fa-solid fa-crosshairs"></i> @Model.DailyPuzzleCategory</span>
+                        <h3 style="margin: 4px 0 8px 0; font-size: 17px; font-weight: 800; color: var(--text-main);">@Model.DailyPuzzleTitle</h3>
+                        <p style="margin-bottom: 14px; font-size: 13px; color: var(--text-muted); line-height: 1.5;">Vận dụng nhãn quan chiến thuật phối hợp binh chủng tung đòn sát chiêu đoạt mạng Tướng đối phương trong số nước quy định.</p>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <a href="/Puzzle@(Model.DailyPuzzleId > 0 ? $"?puzzleId={Model.DailyPuzzleId}" : "")" class="hero-btn primary" style="padding: 9px 20px; font-size: 13.5px; font-weight: 700; border-radius: 8px;">
+                                <i class="fa-solid fa-play"></i> Phá giải ngay
+                            </a>
+                            <span style="font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Thử thách hàng ngày</span>
+                        </div>
                     </div>
                 </div>
             </div>
