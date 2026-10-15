@@ -1,0 +1,222 @@
+@model List<ChessCore.Models.MasterGame>
+@{
+    ViewData["Title"] = "Kỳ phổ Danh thủ";
+}
+
+<style>
+    .master-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 20px;
+    }
+
+    .master-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .master-title h1 {
+        font-size: 26px;
+        font-weight: 800;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+    }
+
+    .master-title p {
+        color: #94a3b8;
+        font-size: 14px;
+        margin: 6px 0 0;
+    }
+
+    .master-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 20px;
+    }
+
+    .master-card {
+        background: radial-gradient(circle at top, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 24px;
+        transition: all 0.25s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .master-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(212, 175, 55, 0.4);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.1);
+    }
+
+    .master-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #d4af37, #f59e0b);
+    }
+
+    .master-event-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #d4af37;
+        background: rgba(212, 175, 55, 0.1);
+        border: 1px solid rgba(212, 175, 55, 0.25);
+        padding: 4px 10px;
+        border-radius: 20px;
+        margin-bottom: 12px;
+    }
+
+    .master-match-title {
+        color: #f8fafc;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.4;
+        margin-bottom: 16px;
+    }
+
+    .master-players-box {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+    }
+
+    .player-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 14px;
+        padding: 4px 0;
+    }
+
+    .player-side-red {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #ef4444;
+        font-weight: 600;
+    }
+
+    .player-side-black {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    .master-meta-info {
+        font-size: 13px;
+        color: #94a3b8;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .btn-view-master {
+        padding: 10px 18px;
+        background: linear-gradient(135deg, #d4af37, #b45309);
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-view-master:hover {
+        background: linear-gradient(135deg, #fcd34d, #d4af37);
+        color: #0f172a;
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="master-container">
+    <div class="master-header">
+        <div class="master-title">
+            <h1><i class="fa-solid fa-scroll" style="color: var(--accent-gold);"></i> Kỳ phổ Danh thủ Kinh điển</h1>
+            <p>Tuyển tập những kiệt tác ván cờ đỉnh cao của các Đại kiện tướng quốc tế và danh kỳ hàng đầu.</p>
+        </div>
+        <div>
+            <span style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;">
+                <i class="fa-solid fa-book-bookmark"></i> @Model.Count ván cờ mẫu
+            </span>
+        </div>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="master-grid">
+            @foreach (var g in Model)
+            {
+                <div class="master-card">
+                    <div>
+                        <div class="master-event-tag">
+                            <i class="fa-solid fa-trophy"></i> @(string.IsNullOrEmpty(g.Event) ? "Kỳ Đài" : g.Event)
+                        </div>
+
+                        <div class="master-match-title">@g.Title</div>
+
+                        <div class="master-players-box">
+                            <div class="player-line">
+                                <span class="player-side-red">
+                                    <i class="fa-solid fa-circle" style="font-size: 10px;"></i> Đỏ: @g.RedPlayer
+                                </span>
+                                <span style="font-weight: 700; color: @(g.Result == "1-0" ? "#22c55e" : "#94a3b8");">
+                                    @(g.Result == "1-0" ? "Thắng" : (g.Result == "0-1" ? "Bại" : "Hòa"))
+                                </span>
+                            </div>
+                            <div class="player-line" style="border-top: 1px solid rgba(255,255,255,0.04); margin-top: 4px; padding-top: 6px;">
+                                <span class="player-side-black">
+                                    <i class="fa-regular fa-circle" style="font-size: 10px;"></i> Đen: @g.BlackPlayer
+                                </span>
+                                <span style="font-weight: 700; color: @(g.Result == "0-1" ? "#22c55e" : "#94a3b8");">
+                                    @(g.Result == "0-1" ? "Thắng" : (g.Result == "1-0" ? "Bại" : "Hòa"))
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="master-meta-info">
+                            <span><i class="fa-solid fa-chess-knight"></i> Thế trận: <strong>@(g.OpeningName ?? "Khai cuộc kinh điển")</strong></span>
+                            <span><i class="fa-regular fa-calendar"></i> @(g.EventDate?.ToString("yyyy") ?? "1988")</span>
+                        </div>
+                    </div>
+
+                    <a href="/MasterGame/Detail/@g.Id" class="btn-view-master">
+                        <i class="fa-solid fa-eye"></i> Xem ván cờ & Khai cuộc
+                    </a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
+            <i class="fa-solid fa-box-open" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+            <p>Chưa có dữ liệu kỳ phổ trong hệ thống.</p>
+        </div>
+    }
+</div>

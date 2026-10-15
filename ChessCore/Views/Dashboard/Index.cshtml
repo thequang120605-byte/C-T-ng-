@@ -47,6 +47,22 @@
         </div>
     </div>
 
+    <!-- ELO RATING GRAPH PANEL -->
+    <div class="panel-box" style="margin-bottom: 24px; padding: 20px 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <h2 class="panel-title" style="margin: 0;">
+                <i class="fa-solid fa-chart-line" style="color: var(--accent-gold);"></i> Biểu đồ phong độ Elo
+            </h2>
+            <div style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 12px;">
+                <span><i class="fa-solid fa-circle" style="color: #3b82f6; font-size: 8px;"></i> Elo ván đấu</span>
+                <span style="font-weight: 600; color: #10b981;">Hiện tại: @Model.CurrentUser.Elo</span>
+            </div>
+        </div>
+        <div style="position: relative; width: 100%; height: 220px;">
+            <canvas id="eloRatingChart"></canvas>
+        </div>
+    </div>
+
     <div class="dashboard-content">
         <!-- MATCH HISTORY -->
         <div class="panel-box">
@@ -352,6 +368,90 @@
 
             setupSimplePagination('.lb-elo-row', 'lb-elo-pagination-info', 'lb-elo-pagination-controls', 'lb-elo-pagination', 8);
             setupSimplePagination('.lb-pz-row', 'lb-pz-pagination-info', 'lb-pz-pagination-controls', 'lb-pz-pagination', 8);
+
+            // ==========================================
+            // VẼ BIỂU ĐỒ BIẾN ĐỘNG ELO (CHART.JS)
+            // ==========================================
+            (function() {
+                var eloDataRaw = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.EloHistory));
+                if (!eloDataRaw || eloDataRaw.length === 0) return;
+
+                var labels = eloDataRaw.map(function(item) { return item.DateLabel; });
+                var eloValues = eloDataRaw.map(function(item) { return item.Elo; });
+
+                function initChart() {
+                    var ctx = document.getElementById('eloRatingChart');
+                    if (!ctx || !window.Chart) return;
+
+                    var gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 220);
+                    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+                    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Điểm Elo',
+                                data: eloValues,
+                                borderColor: '#3b82f6',
+                                backgroundColor: gradient,
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.35,
+                                pointBackgroundColor: '#3b82f6',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 1.5,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    titleColor: '#f8fafc',
+                                    bodyColor: '#cbd5e1',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    padding: 10,
+                                    displayColors: false,
+                                    callbacks: {
+                                        label: function(context) {
+                                            var idx = context.dataIndex;
+                                            var item = eloDataRaw[idx];
+                                            var changeText = item.Change > 0 ? ('+' + item.Change) : (item.Change < 0 ? item.Change : '0');
+                                            return 'Elo: ' + item.Elo + ' (' + changeText + ') - ' + item.Reason;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#94a3b8', font: { size: 11 } }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#94a3b8', font: { size: 11 }, precision: 0 }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (window.Chart) {
+                    initChart();
+                } else {
+                    var script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                    script.onload = initChart;
+                    document.head.appendChild(script);
+                }
+            })();
         </script>
     </div>
 </div>

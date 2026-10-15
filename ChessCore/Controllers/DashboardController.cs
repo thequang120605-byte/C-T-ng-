@@ -200,6 +200,49 @@ namespace ChessCore.Controllers
                 });
             }
 
+            // 4. Lấy lịch sử biến động Elo từ UserEloHistories
+            var eloHistories = await _context.UserEloHistories
+                .Where(h => h.UserId == userId)
+                .OrderBy(h => h.RecordedAt)
+                .Take(30)
+                .ToListAsync();
+
+            if (eloHistories.Any())
+            {
+                foreach (var h in eloHistories)
+                {
+                    vm.EloHistory.Add(new EloPointDto
+                    {
+                        DateLabel = h.RecordedAt.ToString("dd/MM HH:mm"),
+                        Elo = h.NewElo,
+                        Change = h.EloChange,
+                        Reason = h.Reason ?? "Ván đấu"
+                    });
+                }
+            }
+            else
+            {
+                // Nếu chưa có ván nào ghi lịch sử, tạo điểm mốc khởi đầu từ ngày tạo tài khoản
+                vm.EloHistory.Add(new EloPointDto
+                {
+                    DateLabel = currentUser.CreatedAt.ToString("dd/MM"),
+                    Elo = 1200,
+                    Change = 0,
+                    Reason = "Khởi tạo tài khoản"
+                });
+
+                if (currentUser.Elo != 1200)
+                {
+                    vm.EloHistory.Add(new EloPointDto
+                    {
+                        DateLabel = "Hiện tại",
+                        Elo = currentUser.Elo,
+                        Change = currentUser.Elo - 1200,
+                        Reason = "Điểm số hiện tại"
+                    });
+                }
+            }
+
             return View(vm);
         }
     }

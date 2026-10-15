@@ -36,6 +36,7 @@
                     var isHome = path == "/" || path == "";
                     var isGame = path.StartsWith("/Game", StringComparison.OrdinalIgnoreCase);
                     var isPuzzle = path.StartsWith("/Puzzle", StringComparison.OrdinalIgnoreCase);
+                    var isMasterGame = path.StartsWith("/MasterGame", StringComparison.OrdinalIgnoreCase);
                     var isCourse = path.StartsWith("/Course", StringComparison.OrdinalIgnoreCase);
                     var isDashboard = path.StartsWith("/Dashboard", StringComparison.OrdinalIgnoreCase);
                     var isAccount = path.StartsWith("/Account", StringComparison.OrdinalIgnoreCase);
@@ -53,6 +54,10 @@
                 <a href="/Puzzle" class="nav-item @(isPuzzle ? "active" : "")">
                     <i class="fa-solid fa-puzzle-piece"></i>
                     <span data-i18n="menu_puzzle">Cờ thế</span>
+                </a>
+                <a href="/MasterGame" class="nav-item @(isMasterGame ? "active" : "")">
+                    <i class="fa-solid fa-scroll"></i>
+                    <span>Kỳ phổ danh thủ</span>
                 </a>
                 <a href="/Dashboard" class="nav-item @(isDashboard ? "active" : "")">
                     <i class="fa-solid fa-trophy"></i>

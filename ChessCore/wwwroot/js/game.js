@@ -2000,6 +2000,63 @@ document.addEventListener("DOMContentLoaded", function () {
 
     moveHistoryContainer.innerHTML = html;
     moveHistoryContainer.scrollTop = moveHistoryContainer.scrollHeight;
+
+    // Tự động nhận diện thế trận khai cuộc từ các nước đầu tiên
+    updateOpeningRecognition(moves);
+  }
+
+  function updateOpeningRecognition(moves) {
+    const openingNameEl = document.getElementById("opening-book-name");
+    const openingCodeEl = document.getElementById("opening-book-code");
+    if (!openingNameEl || !openingCodeEl) return;
+
+    if (!moves || moves.length === 0) {
+      openingNameEl.textContent = "Chưa định hình";
+      openingCodeEl.textContent = "ECCO";
+      return;
+    }
+
+    const firstRed = moves[0];
+    const firstBlack = moves.length > 1 ? moves[1] : null;
+
+    // Nước 1 của Đỏ
+    if (firstRed.pieceType === "Cannon") {
+      // Pháo 2 bình 5 (col 7 -> 4) hoặc Pháo 8 bình 5 (col 1 -> 4)
+      if (firstRed.toX === 4) {
+        if (!firstBlack) {
+          openingNameEl.textContent = "Pháo Đầu (Trung Pháo)";
+          openingCodeEl.textContent = "ECCO-01";
+        } else if (firstBlack.pieceType === "Horse") {
+          openingNameEl.textContent = "Pháo Đầu đối Bình Phong Mã";
+          openingCodeEl.textContent = "ECCO-02";
+        } else if (firstBlack.pieceType === "Cannon" && firstBlack.toX === 4) {
+          openingNameEl.textContent = "Thuận Pháo (Đại chiến)";
+          openingCodeEl.textContent = "ECCO-03";
+        } else {
+          openingNameEl.textContent = "Pháo Đầu (Trung Pháo)";
+          openingCodeEl.textContent = "ECCO-01";
+        }
+        return;
+      }
+    } else if (firstRed.pieceType === "Pawn") {
+      // Tốt 7 tiến 1 hoặc Tốt 3 tiến 1
+      if (firstRed.fromX === 2 || firstRed.fromX === 6) {
+        openingNameEl.textContent = "Tiên Nhân Chỉ Lộ";
+        openingCodeEl.textContent = "ECCO-04";
+        return;
+      }
+    } else if (firstRed.pieceType === "Horse") {
+      openingNameEl.textContent = "Khởi Mã Cuộc (Trận Thượng Tiên)";
+      openingCodeEl.textContent = "ECCO-05";
+      return;
+    } else if (firstRed.pieceType === "Elephant") {
+      openingNameEl.textContent = "Phi Tượng Cuộc";
+      openingCodeEl.textContent = "ECCO-06";
+      return;
+    }
+
+    openingNameEl.textContent = "Khai cuộc tự do";
+    openingCodeEl.textContent = "ECCO-00";
   }
 
   // =====================================================

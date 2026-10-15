@@ -14,6 +14,15 @@ namespace ChessCore.ViewModels
         public List<GameHistoryItem> RecentGames { get; set; } = new List<GameHistoryItem>();
         public List<LeaderboardItem> Leaderboard { get; set; } = new List<LeaderboardItem>();
         public List<PuzzleLeaderboardItem> PuzzleLeaderboard { get; set; } = new List<PuzzleLeaderboardItem>();
+        public List<EloPointDto> EloHistory { get; set; } = new List<EloPointDto>();
+    }
+
+    public class EloPointDto
+    {
+        public string DateLabel { get; set; } = string.Empty;
+        public int Elo { get; set; }
+        public int Change { get; set; }
+        public string Reason { get; set; } = string.Empty;
     }
 
     public class PuzzleLeaderboardItem
