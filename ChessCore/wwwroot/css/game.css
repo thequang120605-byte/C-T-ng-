@@ -5,7 +5,7 @@
     width: 100%;
     height: 100%;
     max-height: calc(100vh - var(--navbar-height));
-    padding: 10px 16px;
+    padding: 8px 24px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -451,13 +451,12 @@
 ========================================================= */
 .game-layout {
     display: grid;
-    grid-template-columns: minmax(460px, 1fr) clamp(380px, 32vw, 440px);
-    gap: 20px;
-    max-width: 1380px;
+    grid-template-columns: minmax(520px, 1fr) clamp(400px, 34vw, 480px);
+    gap: 24px;
+    max-width: 1480px;
     width: 100%;
-    height: 100%;
-    max-height: calc(100vh - var(--navbar-height) - 16px);
-    align-items: center;
+    height: calc(100vh - var(--navbar-height) - 16px);
+    align-items: stretch;
     justify-content: center;
 }
 
@@ -465,12 +464,12 @@
 .board-column {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     height: 100%;
-    max-width: 680px;
+    max-width: 760px;
     width: 100%;
     margin: 0 auto;
-    justify-content: center;
+    justify-content: space-between;
 }
 
 .board-column .player-bar.player-black {
@@ -479,6 +478,7 @@
 
 .board-column .board-wrapper {
     order: 2;
+    flex: 1;
 }
 
 .board-column .player-bar.player-red {
@@ -505,24 +505,25 @@
     justify-content: space-between;
     background-color: var(--bg-navy-panel);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 6px 12px;
+    border-radius: 12px;
+    padding: 8px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .player-info-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .player-avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 15px;
+    font-size: 18px;
     color: white;
 }
 .red-bg { background-color: #c62828; }
@@ -534,25 +535,26 @@
 }
 
 .player-details strong {
-    font-size: 13.5px;
+    font-size: 15px;
+    font-weight: 700;
     color: var(--text-main);
 }
 
 .status-text {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-muted);
 }
 
 .player-timer {
     font-family: monospace;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--accent-gold-dark);
     background-color: var(--bg-navy-light);
     border: 1px solid var(--border-color);
-    padding: 3px 8px;
-    border-radius: 6px;
-    min-width: 60px;
+    padding: 4px 12px;
+    border-radius: 8px;
+    min-width: 72px;
     text-align: center;
 }
 
@@ -572,10 +574,10 @@
 .player-captured {
     flex: 1;
     display: flex;
-    gap: 4px;
-    margin: 0 12px;
+    gap: 6px;
+    margin: 0 14px;
     font-family: "KaiTi", "STKaiti", serif;
-    font-size: 16px;
+    font-size: 18px;
 }
 .red-pieces { color: #ef4444; }
 .black-pieces { color: #94a3b8; }
@@ -588,12 +590,12 @@
     justify-content: center;
     align-items: center;
     background-color: var(--bg-navy-panel);
-    padding: 8px;
-    border-radius: 12px;
+    padding: 10px;
+    border-radius: 14px;
     border: 1px solid var(--border-color);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-    height: calc(100vh - var(--navbar-height) - 120px);
-    max-height: 640px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    height: 100%;
+    min-height: 0;
     width: auto;
 }
 
@@ -790,27 +792,27 @@
 .control-column {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     height: 100%;
-    max-height: calc(100vh - var(--navbar-height) - 20px);
-    justify-content: center;
+    justify-content: space-between;
 }
 
 .panel-box {
     background-color: var(--bg-navy-panel);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 10px 14px;
+    border-radius: 12px;
+    padding: 12px 16px;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .status-header {
-    font-size: 11px;
+    font-size: 12px;
     text-transform: uppercase;
     font-weight: 700;
     color: var(--text-muted);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -818,32 +820,34 @@
 
 .turn-indicator {
     background-color: var(--bg-navy-dark);
-    padding: 8px 12px;
-    border-radius: 6px;
+    padding: 10px 14px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: bold;
     color: var(--accent-gold-light);
     border: 1px solid rgba(251, 191, 36, 0.2);
 }
 
 .move-history-box {
-    flex: 1; /* Take remaining space */
-    min-height: 100px;
-    max-height: 160px;
+    flex: 1; /* Tự động dãn đều để chiều cao cân đối đối xứng với bàn cờ */
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
 }
 
 .move-list {
     flex: 1;
+    min-height: 100px;
     background-color: var(--bg-navy-dark);
-    border-radius: 6px;
-    padding: 8px;
+    border-radius: 8px;
+    padding: 10px;
     overflow-y: auto;
     font-family: monospace;
-    font-size: 13px;
+    font-size: 13.5px;
 }
 
 .empty-history {
@@ -857,9 +861,9 @@
 /* ACTIONS */
 .action-grid {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     justify-content: center;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .action-btn {
@@ -868,20 +872,22 @@
     background-color: var(--bg-navy-dark);
     border: 1px solid var(--border-color);
     color: var(--text-main);
-    border-radius: 6px;
-    padding: 6px 4px;
+    border-radius: 8px;
+    padding: 8px 6px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 600;
     transition: all 0.2s ease;
 }
 
-.action-btn i { font-size: 14px; color: var(--text-muted); }
+.action-btn i { font-size: 16px; color: var(--text-muted); }
 .action-btn:hover {
     background-color: var(--bg-navy-light);
+    transform: translateY(-1px);
 }
 .action-btn.danger-text i { color: #ef4444; }
 .action-btn.danger-text:hover {
@@ -891,12 +897,13 @@
 
 .action-footer {
     border-top: 1px solid var(--border-color);
-    padding-top: 8px;
+    padding-top: 10px;
 }
 
 .action-footer .btn-secondary, .action-footer .btn-primary {
-    padding: 6px 10px;
-    font-size: 12.5px;
+    padding: 8px 12px;
+    font-size: 13.5px;
+    border-radius: 8px;
 }
 
 /* =========================================================
@@ -1297,35 +1304,35 @@
 .heuristic-cards {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    margin-bottom: 6px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .heuristic-card {
     display: grid;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
-    padding: 4px 6px;
+    padding: 6px 8px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 8px;
     background: var(--bg-navy-dark);
 }
 
 .heuristic-code {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--accent-gold);
     letter-spacing: 0.5px;
 }
 
 .heuristic-name {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text-muted);
     white-space: nowrap;
 }
 
 .heuristic-card strong {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--text-main);
 }
