@@ -1,6 +1,7 @@
-﻿**/bin/
+**/bin/
 **/obj/
 **/node_modules/
 .vs/
 
 /CHESSCORE_COMPLETE.patch
+**/appsettings.Development.json
