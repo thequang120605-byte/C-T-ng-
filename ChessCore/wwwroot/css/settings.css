@@ -642,4 +642,118 @@ body[data-theme="ocean"] {
     .puzzle-preview-info p {
         color: var(--text-muted) !important;
     }
+
+    /* 5. Cờ thế Tạo đề tùy chỉnh (Custom Generator) & Lịch sử giải đề (History) */
+    .pz-radio-label {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .pz-radio-label:hover {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .pz-radio-label input[type="radio"]:checked + span {
+        color: var(--accent-gold-light) !important;
+    }
+    .pz-pill-btn {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .pz-pill-btn:hover {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .pz-pill-btn.active {
+        background: rgba(217, 119, 6, 0.2) !important;
+        border-color: var(--accent-gold) !important;
+        color: var(--accent-gold-light) !important;
+    }
+    .pz-result-item {
+        background: var(--bg-navy-panel) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .pz-result-item:hover {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .pz-result-title {
+        color: var(--text-main) !important;
+    }
+    .pz-result-meta span {
+        background: var(--bg-navy-dark) !important;
+        color: var(--text-muted) !important;
+        border: 1px solid var(--border-color);
+    }
+    .pz-btn-secondary {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .pz-btn-secondary:hover:not(:disabled) {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--accent-gold) !important;
+        color: var(--accent-gold) !important;
+    }
+    .page-btn {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .page-btn:hover:not(:disabled):not(.active) {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--accent-gold) !important;
+    }
+
+    /* 6. Màn giải bài cờ thế (Puzzle Play Screen) */
+    .pz-goal-box {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .pz-goal {
+        color: var(--text-main) !important;
+    }
+    .pz-msg.info {
+        background: var(--bg-navy-dark) !important;
+        border-color: rgba(56, 189, 248, 0.3) !important;
+        color: #38bdf8 !important;
+    }
+    .pz-nav-btn {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .pz-nav-btn:hover {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--accent-gold) !important;
+        color: var(--text-main) !important;
+    }
+    .pz-nav-btn-main {
+        background: rgba(217, 119, 6, 0.15) !important;
+        border-color: var(--accent-gold) !important;
+        color: var(--accent-gold-light) !important;
+    }
+    .pz-nav-btn-main:hover {
+        background: rgba(217, 119, 6, 0.25) !important;
+        border-color: var(--accent-gold) !important;
+        color: var(--accent-gold-light) !important;
+    }
+    .pz-hint-group .pz-btn-hint {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+        color: var(--accent-gold-light) !important;
+    }
+    .hint-dropdown-menu {
+        background: var(--bg-navy-panel) !important;
+        border-color: var(--border-color) !important;
+    }
+    .hint-dropdown-item {
+        color: var(--text-main) !important;
+    }
+    .hint-dropdown-item:hover {
+        background: var(--bg-navy-light) !important;
+    }
 }
