@@ -19,6 +19,16 @@
     
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/settings.css" asp-append-version="true" />
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('chess_theme') || 'wood';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) { document.body.setAttribute('data-theme', savedTheme); }
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.setAttribute('data-theme', savedTheme);
+            });
+        })();
+    </script>
     @RenderSection("Styles", required: false)
 </head>
 <body>

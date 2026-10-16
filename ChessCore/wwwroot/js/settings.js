@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         document.body.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
     }
 
     function applyBoardSkin(skin) {

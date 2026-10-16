@@ -328,8 +328,8 @@ input:checked + .slider:before {
 }
 
 /* THEME OVERRIDES */
-body[data-theme="night"] {
-    --bg-navy-dark: #0f172a;
+body[data-theme="night"], html[data-theme="night"] {
+    --bg-navy-dark: #0b1120;
     --bg-navy-panel: #1e293b;
     --bg-navy-light: #334155;
     --text-main: #f8fafc;
@@ -339,10 +339,13 @@ body[data-theme="night"] {
     --accent-gold-dark: #b48600;
     --wood-light: #e7c28e;
     --wood-dark: #5c4033;
-    --border-color: rgba(148, 163, 184, 0.15);
+    --border-color: rgba(148, 163, 184, 0.18);
+    --card-surface: #1e293b;
+    --card-surface-subtle: #0f172a;
+    --hero-gradient: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 }
 
-body[data-theme="light"], :root {
+body[data-theme="light"], html[data-theme="light"], :root {
     --bg-navy-dark: #f1f5f9;
     --bg-navy-panel: #ffffff;
     --bg-navy-light: #e2e8f0;
@@ -354,12 +357,15 @@ body[data-theme="light"], :root {
     --wood-light: #f5e6d3;
     --wood-dark: #78350f;
     --border-color: #e2e8f0;
+    --card-surface: #ffffff;
+    --card-surface-subtle: #f8fafc;
+    --hero-gradient: linear-gradient(115deg, #fff7ed 0%, #fffbeb 100%);
 }
 
-body[data-theme="wood"] {
-    --bg-navy-dark: #fcf8ee;
+body[data-theme="wood"], html[data-theme="wood"] {
+    --bg-navy-dark: #fbf5e8;
     --bg-navy-panel: #ffffff;
-    --bg-navy-light: #f6eedb;
+    --bg-navy-light: #f5ecd8;
     --text-main: #2b1808;
     --text-muted: #796551;
     --accent-gold: #b45309;
@@ -368,9 +374,12 @@ body[data-theme="wood"] {
     --wood-light: #e7c28e;
     --wood-dark: #5c4033;
     --border-color: #e8ddc7;
+    --card-surface: #ffffff;
+    --card-surface-subtle: #fcf8ee;
+    --hero-gradient: linear-gradient(115deg, #fff7ed 0%, #fef3c7 100%);
 }
 
-body[data-theme="emerald"] {
+body[data-theme="emerald"], html[data-theme="emerald"] {
     --bg-navy-dark: #064e3b;
     --bg-navy-panel: #065f46;
     --bg-navy-light: #047857;
@@ -382,9 +391,12 @@ body[data-theme="emerald"] {
     --wood-light: #d1fae5;
     --wood-dark: #064e3b;
     --border-color: rgba(167, 243, 208, 0.2);
+    --card-surface: #065f46;
+    --card-surface-subtle: #047857;
+    --hero-gradient: linear-gradient(135deg, #065f46 0%, #047857 100%);
 }
 
-body[data-theme="ocean"] {
+body[data-theme="ocean"], html[data-theme="ocean"] {
     --bg-navy-dark: #0c4a6e;
     --bg-navy-panel: #075985;
     --bg-navy-light: #0369a1;
@@ -396,9 +408,12 @@ body[data-theme="ocean"] {
     --wood-light: #e0f2fe;
     --wood-dark: #082f49;
     --border-color: rgba(186, 230, 253, 0.2);
+    --card-surface: #075985;
+    --card-surface-subtle: #0369a1;
+    --hero-gradient: linear-gradient(135deg, #075985 0%, #0c4a6e 100%);
 }
 
-body[data-theme="parchment"] {
+body[data-theme="parchment"], html[data-theme="parchment"] {
     --bg-navy-dark: #faf5ed;
     --bg-navy-panel: #ffffff;
     --bg-navy-light: #f3eae0;
@@ -410,4 +425,221 @@ body[data-theme="parchment"] {
     --wood-light: #fef3c7;
     --wood-dark: #78350f;
     --border-color: #e7dac9;
+    --card-surface: #ffffff;
+    --card-surface-subtle: #faf5ed;
+    --hero-gradient: linear-gradient(115deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+/* UNIVERSAL COMPONENT ADAPTATIONS FOR DARK & COLORED THEMES (NIGHT, EMERALD, OCEAN) */
+body[data-theme="night"],
+body[data-theme="emerald"],
+body[data-theme="ocean"] {
+    /* 1. Trang chủ Hero & User Card */
+    .home-hero {
+        background: var(--hero-gradient) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+    }
+    .home-hero h1 {
+        color: var(--text-main) !important;
+    }
+    .home-hero p {
+        color: var(--text-muted) !important;
+    }
+    .hero-btn.secondary {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .hero-btn.secondary:hover {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .hero-user-card {
+        background: var(--bg-navy-panel) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+    }
+    .hero-user-card h3 {
+        color: var(--text-main) !important;
+    }
+    .hero-user-stats {
+        border-color: var(--border-color) !important;
+    }
+    .user-stat-mini b {
+        color: var(--text-main) !important;
+    }
+    .user-stat-mini span {
+        color: var(--text-muted) !important;
+    }
+
+    /* 2. Khóa học Hero & Progress Card */
+    .course-hero {
+        background: var(--hero-gradient) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+        color: var(--text-main) !important;
+    }
+    .course-hero h1 {
+        color: var(--text-main) !important;
+    }
+    .course-hero p {
+        color: var(--text-muted) !important;
+    }
+    .course-progress-card {
+        background: var(--bg-navy-panel) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+    }
+    .progress-title {
+        color: var(--text-main) !important;
+    }
+    .progress-count {
+        color: var(--text-muted) !important;
+    }
+    .progress-ring:after {
+        background: var(--bg-navy-panel) !important;
+    }
+    .progress-ring strong {
+        color: var(--accent-gold-light) !important;
+    }
+    .module-summary {
+        color: var(--text-main) !important;
+    }
+    .module-summary b {
+        color: var(--text-main) !important;
+    }
+    .module-summary:hover,
+    .module-summary.active {
+        background: rgba(217, 119, 6, 0.15) !important;
+    }
+    .module-icon {
+        background: rgba(217, 119, 6, 0.2) !important;
+        color: var(--accent-gold-light) !important;
+    }
+    .lesson-card {
+        background: var(--bg-navy-panel) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .lesson-card h3 {
+        color: var(--text-main) !important;
+    }
+    .lesson-card p {
+        color: var(--text-muted) !important;
+    }
+    .lesson-content {
+        background: rgba(217, 119, 6, 0.1) !important;
+        color: var(--text-main) !important;
+    }
+
+    /* 3. Màn hình Chọn chế độ chơi (Game Mode Selection Card) */
+    .mode-overlay {
+        background: rgba(11, 17, 32, 0.88) !important;
+    }
+    .mode-card {
+        background: var(--bg-navy-panel) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
+    }
+    .mode-card-title {
+        color: var(--text-main) !important;
+    }
+    .mode-desc {
+        color: var(--text-muted) !important;
+    }
+    .mode-btn {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .mode-btn .mode-title {
+        color: var(--text-main) !important;
+    }
+    .mode-btn .mode-subtitle {
+        color: var(--text-muted) !important;
+    }
+    .mode-btn:hover {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .mode-btn.selected {
+        background: rgba(217, 119, 6, 0.15) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .difficulty-panel {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+    }
+    .diff-header, .diff-header h3 {
+        color: var(--text-main) !important;
+    }
+    .diff-btn {
+        background: var(--bg-navy-panel) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    .diff-btn .diff-name {
+        color: var(--text-main) !important;
+    }
+    .diff-btn:hover {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .diff-btn.selected {
+        background: rgba(217, 119, 6, 0.15) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .diff-desc-text {
+        color: var(--text-muted) !important;
+    }
+    .selection-summary {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+    }
+    .summary-pill {
+        color: var(--text-muted) !important;
+    }
+    .highlight-text {
+        color: var(--accent-gold-light) !important;
+    }
+    .start-btn:disabled {
+        background: var(--bg-navy-light) !important;
+        color: var(--text-muted) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    /* 4. Cờ thế Hub (Puzzle Hub Cards) */
+    .pz-hub-card {
+        background: var(--bg-navy-panel) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+    }
+    .pz-hub-card:hover {
+        background: var(--bg-navy-light) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .pz-hub-card.active {
+        background: rgba(217, 119, 6, 0.15) !important;
+        border-color: var(--accent-gold) !important;
+    }
+    .pz-hub-card-info h3 {
+        color: var(--text-main) !important;
+    }
+    .pz-hub-card-info p {
+        color: var(--text-muted) !important;
+    }
+    .puzzle-preview-box {
+        background: var(--bg-navy-dark) !important;
+        border-color: var(--border-color) !important;
+    }
+    .puzzle-preview-info h3 {
+        color: var(--text-main) !important;
+    }
+    .puzzle-preview-info p {
+        color: var(--text-muted) !important;
+    }
 }
