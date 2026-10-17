@@ -1,0 +1,268 @@
+@model List<ChessCore.Models.User>
+@{
+    ViewData["Title"] = "Quản lý Người dùng";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    <style>
+        .user-search-box {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .user-search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-navy-panel);
+            color: var(--text-main);
+            font-size: 14px;
+        }
+        .user-search-input:focus {
+            outline: 2px solid rgba(217, 119, 6, 0.2);
+            border-color: var(--accent-gold);
+        }
+        .pagination-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .pagination-info {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .page-btn {
+            background: var(--bg-navy-panel);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--accent-gold);
+            background: var(--bg-navy-light);
+            color: var(--accent-gold-dark);
+        }
+        .page-btn.active {
+            background: var(--accent-gold);
+            color: #ffffff;
+            border-color: var(--accent-gold);
+        }
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    </style>
+}
+
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fa-solid fa-users"></i> Quản lý Người dùng</h1>
+        <div class="admin-tabs">
+            <a href="/Admin" class="admin-tab-btn"><i class="fa-solid fa-chart-pie"></i> Tổng quan</a>
+            <a href="/Admin/Users" class="admin-tab-btn active"><i class="fa-solid fa-users"></i> Quản lý Người dùng</a>
+            <a href="/Admin/Puzzles" class="admin-tab-btn"><i class="fa-solid fa-puzzle-piece"></i> Quản lý Cờ thế</a>
+            <a href="/Admin/Courses" class="admin-tab-btn"><i class="fa-solid fa-graduation-cap"></i> Quản lý Khóa học</a>
+            <a href="/Admin/AiBenchmark" class="admin-tab-btn"><i class="fa-solid fa-microchip"></i> Hiệu năng AI</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="admin-alert admin-alert-success">
+            <i class="fa-solid fa-circle-check"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="admin-alert admin-alert-danger">
+            <i class="fa-solid fa-triangle-exclamation"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h2><i class="fa-solid fa-user-group" style="color: #60a5fa;"></i> Danh sách Tất cả Thành viên (@Model.Count)</h2>
+        </div>
+
+        <div class="user-search-box">
+            <input type="text" id="user-search" class="user-search-input" placeholder="Tìm kiếm theo Tên, Email hoặc Mã ID (CT-xxxxx)..." oninput="filterUsers();" />
+        </div>
+
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th>Kỳ thủ / Tài khoản</th>
+                        <th>Mã ID</th>
+                        <th>Elo online nội bộ</th>
+                        <th>Số trận (Thắng/Thua/Hòa)</th>
+                        <th>Vai trò</th>
+                        <th>Ngày tạo</th>
+                        <th style="text-align: right;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody id="user-table-body">
+                    @{
+                        int userIndex = 0;
+                    }
+                    @foreach (var u in Model)
+                    {
+                        var isCurrentAdmin = string.Equals(u.Username, User.Identity?.Name, StringComparison.OrdinalIgnoreCase);
+                        <tr class="user-row" data-index="@userIndex" data-search="@u.Username.ToLower() @u.Email.ToLower() @u.PlayerId.ToLower()">
+                            <td><strong>#@u.Id</strong></td>
+                            <td>
+                                <strong>@u.Username</strong>
+                                <div style="font-size: 11.5px; color: var(--text-muted);">@u.Email</div>
+                            </td>
+                            <td><code style="color: var(--accent-gold-dark); background: var(--bg-navy-light); padding: 2px 7px; border-radius: 4px; font-weight: 700;">@u.PlayerId</code></td>
+                            <td><strong style="color: var(--accent-gold); font-size: 15px;">@u.Elo</strong></td>
+                            <td>
+                                <span>@u.GamesPlayed trận PvE + Online đã kết thúc</span>
+                                <small style="color: var(--text-muted); display: block; font-size: 11px;">(@u.Wins T / @u.Losses B / @u.Draws H)</small>
+                            </td>
+                            <td>
+                                <span class="role-badge @(u.Role?.ToLower() == "admin" ? "admin" : "player")">
+                                    @(u.Role ?? "Player")
+                                </span>
+                            </td>
+                            <td><span style="font-size: 12px; color: var(--text-muted);">@u.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span></td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                    <form asp-controller="Admin" asp-action="ToggleAdminRole" method="post" style="display: inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@u.Id" />
+                                        <button type="submit" class="btn-admin btn-admin-sm @(u.Role == "Admin" ? "btn-admin-danger" : "btn-admin-primary")" title="Đổi quyền Admin / Player">
+                                            @(u.Role == "Admin" ? "Hạ quyền" : "Cấp Admin")
+                                        </button>
+                                    </form>
+
+                                    @if (!isCurrentAdmin)
+                                    {
+                                        <form asp-controller="Admin" asp-action="DeleteUser" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản @u.Username (@u.PlayerId)? Dữ liệu liên quan sẽ bị xóa hoàn toàn.');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@u.Id" />
+                                            <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" title="Xóa tài khoản">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                        userIndex++;
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-wrapper" id="users-pagination">
+            <div class="pagination-info" id="users-pagination-info"></div>
+            <div class="pagination-controls" id="users-pagination-controls"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const pageSize = 10;
+        let currentPage = 1;
+        let visibleRows = [];
+
+        function initRows() {
+            visibleRows = Array.from(document.querySelectorAll('.user-row'));
+            renderUsersPage(1);
+        }
+
+        function filterUsers() {
+            const query = (document.getElementById('user-search')?.value || '').toLowerCase().trim();
+            const allRows = Array.from(document.querySelectorAll('.user-row'));
+
+            if (!query) {
+                visibleRows = allRows;
+            } else {
+                visibleRows = allRows.filter(r => r.dataset.search.includes(query));
+            }
+            renderUsersPage(1);
+        }
+
+        function renderUsersPage(page) {
+            currentPage = page;
+            const totalItems = visibleRows.length;
+            const totalPages = Math.ceil(totalItems / pageSize) || 1;
+            const start = (page - 1) * pageSize;
+            const end = Math.min(start + pageSize, totalItems);
+
+            document.querySelectorAll('.user-row').forEach(r => r.style.display = 'none');
+            visibleRows.forEach((r, idx) => {
+                if (idx >= start && idx < end) {
+                    r.style.display = '';
+                }
+            });
+
+            const infoEl = document.getElementById('users-pagination-info');
+            if (infoEl) {
+                infoEl.textContent = totalItems === 0 
+                    ? 'Không tìm thấy người dùng phù hợp' 
+                    : `Hiển thị ${start + 1} - ${end} / tổng số ${totalItems} người dùng`;
+            }
+
+            renderUsersControls(totalPages);
+        }
+
+        function renderUsersControls(totalPages) {
+            const controlsEl = document.getElementById('users-pagination-controls');
+            if (!controlsEl) return;
+            controlsEl.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            const prevBtn = document.createElement('button');
+            prevBtn.type = 'button';
+            prevBtn.className = 'page-btn';
+            prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => renderUsersPage(currentPage - 1);
+            controlsEl.appendChild(prevBtn);
+
+            for (let p = 1; p <= totalPages; p++) {
+                const pBtn = document.createElement('button');
+                pBtn.type = 'button';
+                pBtn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+                pBtn.textContent = p;
+                pBtn.onclick = () => renderUsersPage(p);
+                controlsEl.appendChild(pBtn);
+            }
+
+            const nextBtn = document.createElement('button');
+            nextBtn.type = 'button';
+            nextBtn.className = 'page-btn';
+            nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => renderUsersPage(currentPage + 1);
+            controlsEl.appendChild(nextBtn);
+        }
+
+        document.addEventListener('DOMContentLoaded', initRows);
+    </script>
+}

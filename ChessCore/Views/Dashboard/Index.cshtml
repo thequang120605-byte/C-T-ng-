@@ -1,0 +1,470 @@
+@model ChessCore.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Thống kê";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 data-i18n="menu_stats"><i class="fa-solid fa-chart-pie"></i> Bảng điều khiển</h1>
+        <div style="background: rgba(212,175,55,0.1); color: var(--accent-gold); padding: 8px 15px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(212,175,55,0.3);">
+            <i class="fa-solid fa-trophy"></i> Hạng: @Model.RankIndex
+        </div>
+    </div>
+
+    <!-- STATS GRID -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+            <div class="stat-info">
+                <h3>ĐIỂM ELO</h3>
+                <p class="stat-value">@Model.CurrentUser.Elo</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="color: #10b981; background: rgba(16,185,129,0.1);"><i class="fa-solid fa-medal"></i></div>
+            <div class="stat-info">
+                <h3>TỈ LỆ THẮNG ONLINE</h3>
+                <p class="stat-value">@Model.WinRate%</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="color: #3b82f6; background: rgba(59,130,246,0.1);"><i class="fa-solid fa-chess"></i></div>
+            <div class="stat-info">
+                <h3>TỔNG SỐ TRẬN</h3>
+                <p class="stat-value">@Model.FinishedGames</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="color: #f59e0b; background: rgba(245,158,11,0.1);"><i class="fa-solid fa-puzzle-piece"></i></div>
+            <div class="stat-info">
+                <h3>CỜ THẾ ĐÃ GIẢI</h3>
+                <p class="stat-value">@Model.PuzzlesSolved</p>
+            </div>
+        </div>
+    </div>
+
+    <section class="panel-box" style="padding:20px;margin-bottom:20px">
+        <h2>Thống kê theo chế độ</h2>
+        <a href="/Dashboard/Export">Tải báo cáo CSV</a>
+        <partial name="_ModeStatistics" model="Model.ModeStats" />
+        <p>Khóa học: @Model.Learning.CompletedLessonRecords / @Model.Learning.TotalLessons bài hoàn thành · @Model.Learning.QuizAttempts lượt quiz · Điểm quiz tốt nhất trung bình: @Model.Learning.AverageBestQuizScore%.</p>
+        <p>Cờ thế: @Model.Learning.PuzzlesSolved bài duy nhất đã giải · @Model.Learning.PuzzleAttempts lượt gửi lời giải. Time Rush: điểm phiên luyện tập, chưa có BXH server.</p>
+    </section>
+    <!-- ELO RATING GRAPH PANEL -->
+    <div class="panel-box" style="margin-bottom: 24px; padding: 20px 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <h2 class="panel-title" style="margin: 0;">
+                <i class="fa-solid fa-chart-line" style="color: var(--accent-gold);"></i> Biểu đồ phong độ Elo
+            </h2>
+            <div style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 12px;">
+                <span><i class="fa-solid fa-circle" style="color: #3b82f6; font-size: 8px;"></i> Elo ván đấu</span>
+                <span style="font-weight: 600; color: #10b981;">Hiện tại: @Model.CurrentUser.Elo</span>
+            </div>
+        </div>
+        <div style="position: relative; width: 100%; height: 220px;">
+            <canvas id="eloRatingChart"></canvas>
+        </div>
+    </div>
+
+    <div class="dashboard-content">
+        <!-- MATCH HISTORY -->
+        <div class="panel-box">
+            <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đấu gần đây</h2>
+            <div class="history-list" id="history-list-container">
+                @if (Model.RecentGames.Any())
+                {
+                    var index = 0;
+                    foreach (var game in Model.RecentGames)
+                    {
+                        <a href="/Game/Review/@game.GameId" class="history-item @game.Result match-row" data-index="@index" style="text-decoration: none; cursor: pointer; display: none;" title="Nhấn để xem chi tiết phân tích ván đấu">
+                            <div class="history-main">
+                                <div class="history-opp">
+                                    vs. @game.OpponentName 
+                                    @if (game.OpponentElo.HasValue)
+                                    {
+                                        <span class="history-elo-badge" title="Elo thực tế của đối thủ">(Elo: @game.OpponentElo.Value)</span>
+                                    }
+                                    <span class="history-mode-tag">@game.GameMode</span>
+                                </div>
+                                <div class="history-meta">
+                                    <span><i class="fa-regular fa-calendar"></i> @game.PlayedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                    <span><i class="fa-solid fa-chess-board"></i> @game.TotalMoves nước</span>
+                                    <span style="color: var(--text-muted);"><i class="fa-solid fa-star" style="color: var(--accent-gold); font-size: 11px;"></i> Elo sau ván: <strong style="color: var(--accent-gold);">@(game.PlayerElo?.ToString() ?? "Không có bản ghi")</strong> · Δ @(game.EloChange?.ToString("+0;-0;0") ?? "—")</span>
+                                    <span class="history-review-hint"><i class="fa-solid fa-magnifying-glass-chart"></i> Phân tích ván đấu</span>
+                                </div>
+                            </div>
+                            <div class="history-result @game.Result">@game.ResultText</div>
+                        </a>
+                        index++;
+                    }
+
+                    <!-- PHÂN TRANG CHUYÊN NGHIỆP -->
+                    <div class="pagination-wrapper" id="history-pagination">
+                        <div class="pagination-info" id="pagination-info">
+                            Đang hiển thị 1 - 5 / tổng số @Model.RecentGames.Count ván
+                        </div>
+                        <div class="pagination-controls" id="pagination-controls">
+                            <!-- Nút phân trang render bằng JS -->
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p style="color: var(--text-muted); text-align: center; padding: 20px;">Bạn chưa chơi trận nào.</p>
+                }
+            </div>
+        </div>
+
+        <!-- LEADERBOARD WITH TABS -->
+        <div class="panel-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2 class="panel-title" style="margin: 0;"><i class="fa-solid fa-ranking-star"></i> Bảng xếp hạng</h2>
+                <div style="display: flex; gap: 6px; background: var(--bg-navy-dark); padding: 3px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <button type="button" id="tab-btn-elo" class="lb-tab-btn active" onclick="switchLbTab('elo')">
+                        <i class="fa-solid fa-star"></i> Điểm Elo
+                    </button>
+                    <button type="button" id="tab-btn-puzzle" class="lb-tab-btn" onclick="switchLbTab('puzzle')">
+                        <i class="fa-solid fa-puzzle-piece"></i> Cờ thế
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: ELO CHƠI CỜ -->
+            <div id="lb-tab-elo" class="leaderboard-list">
+                @{
+                    int lbEloIdx = 0;
+                }
+                @foreach (var user in Model.Leaderboard)
+                {
+                    var extraStyle = user.IsCurrentUser ? "border: 1px solid var(--accent-gold); background: rgba(212,175,55,0.05);" : "";
+                    var rankBadgeStyle = user.IsCurrentUser && user.Rank > 3 ? "background: var(--accent-gold); color: white;" : "";
+                    var lbPlayerStyle = user.IsCurrentUser ? "color: var(--accent-gold);" : "";
+
+                    <div class="leaderboard-item lb-elo-row rank-@(user.Rank <= 3 ? user.Rank : 0)" data-index="@lbEloIdx" style="@extraStyle">
+                        <div class="rank-badge" style="@rankBadgeStyle">@user.Rank</div>
+                        <div class="lb-player" style="@lbPlayerStyle">@user.Username</div>
+                        <div class="lb-elo"><i class="fa-solid fa-star" style="font-size: 11px; color: var(--accent-gold);"></i> @user.Elo</div>
+                    </div>
+                    lbEloIdx++;
+                }
+
+                @if (Model.Leaderboard.Any())
+                {
+                    <div class="pagination-wrapper" id="lb-elo-pagination" style="margin-top: 10px; padding-top: 8px;">
+                        <div class="pagination-info" id="lb-elo-pagination-info" style="font-size: 11.5px;"></div>
+                        <div class="pagination-controls" id="lb-elo-pagination-controls"></div>
+                    </div>
+                }
+            </div>
+
+            <!-- TAB 2: CAO THỦ CỜ THẾ -->
+            <div id="lb-tab-puzzle" class="leaderboard-list" style="display: none;">
+                @if (Model.PuzzleLeaderboard.Any())
+                {
+                    int lbPzIdx = 0;
+                    foreach (var user in Model.PuzzleLeaderboard)
+                    {
+                        var extraStyle = user.IsCurrentUser ? "border: 1px solid var(--accent-gold); background: rgba(212,175,55,0.05);" : "";
+                        var rankBadgeStyle = user.IsCurrentUser && user.Rank > 3 ? "background: var(--accent-gold); color: white;" : "";
+                        var lbPlayerStyle = user.IsCurrentUser ? "color: var(--accent-gold);" : "";
+
+                        <div class="leaderboard-item lb-pz-row rank-@(user.Rank <= 3 ? user.Rank : 0)" data-index="@lbPzIdx" style="@extraStyle">
+                            <div class="rank-badge" style="@rankBadgeStyle">@user.Rank</div>
+                            <div class="lb-player" style="@lbPlayerStyle">
+                                @user.Username
+                                <span style="font-size: 11px; color: #38bdf8; margin-left: 6px; font-weight: 600;">(@user.LevelTitle)</span>
+                            </div>
+                            <div class="lb-elo" style="color: #10b981;">
+                                <span style="font-size: 12px; color: #38bdf8; margin-right: 6px;" title="Điểm Cờ Thế"><i class="fa-solid fa-gem" style="font-size: 10px;"></i> @user.Score</span>
+                                <i class="fa-solid fa-check" style="font-size: 11px;"></i> @user.SolvedCount bài
+                            </div>
+                        </div>
+                        lbPzIdx++;
+                    }
+
+                    <div class="pagination-wrapper" id="lb-pz-pagination" style="margin-top: 10px; padding-top: 8px;">
+                        <div class="pagination-info" id="lb-pz-pagination-info" style="font-size: 11.5px;"></div>
+                        <div class="pagination-controls" id="lb-pz-pagination-controls"></div>
+                    </div>
+                }
+                else
+                {
+                    <p style="color: var(--text-muted); text-align: center; padding: 20px;">Chưa có dữ liệu bảng xếp hạng cờ thế.</p>
+                }
+            </div>
+        </div>
+
+        <script>
+            function switchLbTab(type) {
+                var eloTab = document.getElementById('lb-tab-elo');
+                var pzTab = document.getElementById('lb-tab-puzzle');
+                var eloBtn = document.getElementById('tab-btn-elo');
+                var pzBtn = document.getElementById('tab-btn-puzzle');
+
+                if (type === 'elo') {
+                    eloTab.style.display = 'flex';
+                    pzTab.style.display = 'none';
+                    eloBtn.classList.add('active');
+                    pzBtn.classList.remove('active');
+                } else {
+                    eloTab.style.display = 'none';
+                    pzTab.style.display = 'flex';
+                    pzBtn.classList.add('active');
+                    eloBtn.classList.remove('active');
+                }
+            }
+
+            // ==========================================
+            // HỆ THỐNG PHÂN TRANG LỊCH SỬ ĐẤU
+            // ==========================================
+            (function() {
+                const pageSize = 5; // Số ván đấu trên mỗi trang
+                let currentPage = 1;
+                const rows = document.querySelectorAll('.match-row');
+                const totalItems = rows.length;
+                const totalPages = Math.ceil(totalItems / pageSize);
+                const infoEl = document.getElementById('pagination-info');
+                const controlsEl = document.getElementById('pagination-controls');
+                const paginationWrapper = document.getElementById('history-pagination');
+
+                if (totalItems === 0) {
+                    if (paginationWrapper) paginationWrapper.style.display = 'none';
+                    return;
+                }
+
+                function renderPage(page) {
+                    currentPage = page;
+                    const start = (page - 1) * pageSize;
+                    const end = Math.min(start + pageSize, totalItems);
+
+                    // Ẩn/Hiện dòng theo trang
+                    rows.forEach((row, i) => {
+                        if (i >= start && i < end) {
+                            row.style.display = 'flex';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+
+                    // Cập nhật thông tin dòng hiển thị
+                    if (infoEl) {
+                        infoEl.textContent = `Đang hiển thị ${start + 1} - ${end} / tổng số ${totalItems} ván`;
+                    }
+
+                    // Render các nút bấm phân trang
+                    renderControls();
+                }
+
+                function renderControls() {
+                    if (!controlsEl) return;
+                    controlsEl.innerHTML = '';
+
+                    // Nút Về trang trước
+                    const prevBtn = document.createElement('button');
+                    prevBtn.type = 'button';
+                    prevBtn.className = 'page-btn';
+                    prevBtn.title = 'Trang trước';
+                    prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+                    prevBtn.disabled = currentPage === 1;
+                    prevBtn.onclick = () => renderPage(currentPage - 1);
+                    controlsEl.appendChild(prevBtn);
+
+                    // Danh sách số trang (thông minh với dấu ...)
+                    let pages = [];
+                    if (totalPages <= 5) {
+                        for (let p = 1; p <= totalPages; p++) pages.push(p);
+                    } else {
+                        if (currentPage <= 3) {
+                            pages = [1, 2, 3, 4, '...', totalPages];
+                        } else if (currentPage >= totalPages - 2) {
+                            pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                        } else {
+                            pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+                        }
+                    }
+
+                    pages.forEach(p => {
+                        if (p === '...') {
+                            const ellipsis = document.createElement('span');
+                            ellipsis.className = 'page-ellipsis';
+                            ellipsis.textContent = '...';
+                            controlsEl.appendChild(ellipsis);
+                        } else {
+                            const pageBtn = document.createElement('button');
+                            pageBtn.type = 'button';
+                            pageBtn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+                            pageBtn.textContent = p;
+                            pageBtn.onclick = () => renderPage(p);
+                            controlsEl.appendChild(pageBtn);
+                        }
+                    });
+
+                    // Nút Sang trang sau
+                    const nextBtn = document.createElement('button');
+                    nextBtn.type = 'button';
+                    nextBtn.className = 'page-btn';
+                    nextBtn.title = 'Trang sau';
+                    nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+                    nextBtn.disabled = currentPage === totalPages;
+                    nextBtn.onclick = () => renderPage(currentPage + 1);
+                    controlsEl.appendChild(nextBtn);
+                }
+
+                // Khởi động trang đầu tiên lịch sử đấu
+                renderPage(1);
+            })();
+
+            // ==========================================
+            // HỆ THỐNG PHÂN TRANG BẢNG XẾP HẠNG (LEADERBOARD)
+            // ==========================================
+            function setupSimplePagination(rowSelector, infoId, controlsId, wrapperId, pageSize) {
+                const rows = document.querySelectorAll(rowSelector);
+                const totalItems = rows.length;
+                const totalPages = Math.ceil(totalItems / pageSize);
+                const infoEl = document.getElementById(infoId);
+                const controlsEl = document.getElementById(controlsId);
+                const wrapperEl = document.getElementById(wrapperId);
+
+                if (totalItems <= pageSize) {
+                    if (wrapperEl) wrapperEl.style.display = 'none';
+                    rows.forEach(r => r.style.display = 'flex');
+                    return;
+                }
+
+                function renderLbPage(page) {
+                    const start = (page - 1) * pageSize;
+                    const end = Math.min(start + pageSize, totalItems);
+
+                    rows.forEach((r, i) => {
+                        r.style.display = (i >= start && i < end) ? 'flex' : 'none';
+                    });
+
+                    if (infoEl) {
+                        infoEl.textContent = `Hiển thị ${start + 1} - ${end} / ${totalItems}`;
+                    }
+
+                    if (controlsEl) {
+                        controlsEl.innerHTML = '';
+                        const prevBtn = document.createElement('button');
+                        prevBtn.type = 'button';
+                        prevBtn.className = 'page-btn';
+                        prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+                        prevBtn.disabled = page === 1;
+                        prevBtn.onclick = () => renderLbPage(page - 1);
+                        controlsEl.appendChild(prevBtn);
+
+                        for (let p = 1; p <= totalPages; p++) {
+                            const pBtn = document.createElement('button');
+                            pBtn.type = 'button';
+                            pBtn.className = 'page-btn' + (p === page ? ' active' : '');
+                            pBtn.textContent = p;
+                            pBtn.onclick = () => renderLbPage(p);
+                            controlsEl.appendChild(pBtn);
+                        }
+
+                        const nextBtn = document.createElement('button');
+                        nextBtn.type = 'button';
+                        nextBtn.className = 'page-btn';
+                        nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+                        nextBtn.disabled = page === totalPages;
+                        nextBtn.onclick = () => renderLbPage(page + 1);
+                        controlsEl.appendChild(nextBtn);
+                    }
+                }
+
+                renderLbPage(1);
+            }
+
+            setupSimplePagination('.lb-elo-row', 'lb-elo-pagination-info', 'lb-elo-pagination-controls', 'lb-elo-pagination', 8);
+            setupSimplePagination('.lb-pz-row', 'lb-pz-pagination-info', 'lb-pz-pagination-controls', 'lb-pz-pagination', 8);
+
+            // ==========================================
+            // VẼ BIỂU ĐỒ BIẾN ĐỘNG ELO (CHART.JS)
+            // ==========================================
+            (function() {
+                var eloDataRaw = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.EloHistory));
+                if (!eloDataRaw || eloDataRaw.length === 0) return;
+
+                var labels = eloDataRaw.map(function(item) { return item.DateLabel; });
+                var eloValues = eloDataRaw.map(function(item) { return item.Elo; });
+
+                function initChart() {
+                    var ctx = document.getElementById('eloRatingChart');
+                    if (!ctx || !window.Chart) return;
+
+                    var gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 220);
+                    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+                    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Điểm Elo',
+                                data: eloValues,
+                                borderColor: '#3b82f6',
+                                backgroundColor: gradient,
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.35,
+                                pointBackgroundColor: '#3b82f6',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 1.5,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    titleColor: '#f8fafc',
+                                    bodyColor: '#cbd5e1',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    padding: 10,
+                                    displayColors: false,
+                                    callbacks: {
+                                        label: function(context) {
+                                            var idx = context.dataIndex;
+                                            var item = eloDataRaw[idx];
+                                            var changeText = item.Change > 0 ? ('+' + item.Change) : (item.Change < 0 ? item.Change : '0');
+                                            return 'Elo: ' + item.Elo + ' (' + changeText + ') - ' + item.Reason;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#94a3b8', font: { size: 11 } }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#94a3b8', font: { size: 11 }, precision: 0 }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (window.Chart) {
+                    initChart();
+                } else {
+                    var script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                    script.onload = initChart;
+                    document.head.appendChild(script);
+                }
+            })();
+        </script>
+    </div>
+</div>

@@ -1,0 +1,14 @@
+PASS Every control ID is unique
+PASS Captured horse appears for Red
+PASS Captured tray clears after undo
+PASS FEN missing pieces are not incorrectly counted as captured
+PASS Black-to-move FEN capture is assigned to Black
+PASS Current H1 uses current position, not last delta
+PASS Meters bounded and accessible
+PASS Only latest half-move highlighted
+PASS History handles Black first
+PASS Text rendering cannot inject HTML
+PASS Active player glow switches and ends with game
+PASS Check warning has text and visual state
+PASS No evaluation displays an honest empty state
+13 UI checks passed

@@ -3,6 +3,17 @@ using System.Collections.Generic;
 
 namespace ChessCore.DTOs
 {
+    public class LastMoveEvaluationDto
+    {
+        public string PieceName { get; set; } = string.Empty;
+        public string MoveDescription { get; set; } = string.Empty;
+        public int DeltaH1 { get; set; } // Thay doi chenh lech vat chat theo ben vua di
+        public int DeltaH2 { get; set; } // Điểm vị trí / cơ động
+        public int DeltaH3 { get; set; } // Điểm chiến thuật
+        public int DeltaH4 { get; set; }
+        public int TotalDelta => DeltaH1 + DeltaH2 + DeltaH3 + DeltaH4;
+    }
+
     public class PieceDto
     {
         public int Row { get; set; }
@@ -41,9 +52,21 @@ namespace ChessCore.DTOs
     }
 
 
+    public class HeuristicEvaluationDto
+    {
+        // All four components are Red minus Black, in project heuristic points; not Elo.
+        public int H1 { get; set; }
+        public int H2 { get; set; }
+        public int H3 { get; set; }
+        public int H4 { get; set; }
+    }
+
     public class GameResponseDto
     {
         public int Id { get; set; }
+
+        public string RoomCode { get; set; }
+            = string.Empty;
 
         public string Status { get; set; }
             = string.Empty;
@@ -51,9 +74,21 @@ namespace ChessCore.DTOs
         public string CurrentTurn { get; set; }
             = string.Empty;
         public bool IsCheck { get; set; }
+        public bool HasNoLegalMoves { get; set; }
+        public bool IsCheckmate { get; set; }
+        public string EndReason { get; set; } = string.Empty;
+        public string? InitialFen { get; set; }
+        public HeuristicEvaluationDto Evaluation { get; set; } = new();
+        public string GameMode { get; set; } = "Legacy";
+        public bool IsRated { get; set; }
+        public int RedScore { get; set; }
+        public int BlackScore { get; set; }
+        public int NeuralScore { get; set; }
+        public LastMoveEvaluationDto? LastMoveEval { get; set; }
         public DateTime CreatedAt { get; set; }
 
         public DateTime? LastMoveAt { get; set; }
+        public int RemainingSeconds { get; set; } = 180;
 
         public List<PieceDto> BoardPieces { get; set; }
             = new();
@@ -86,5 +121,11 @@ namespace ChessCore.DTOs
         public int Col { get; set; }
 
         public bool IsCapture { get; set; }
+    }
+
+    public class RespondDrawRequestDto
+    {
+        public bool Accepted { get; set; }
+        public bool IsAccepted { get; set; }
     }
 }

@@ -1,0 +1,164 @@
+/* Viewport contract: app/navbar/page must all have a definite height.
+   The only persistent scroll area in the playing workspace is move history. */
+html:has(.arena-page), body:has(.arena-page) { height: 100%; overflow: hidden; }
+body:has(.arena-page) .app-container { height: 100vh; height: 100dvh; overflow: hidden; }
+body:has(.arena-page) .main-wrapper { height: 100%; min-height: 0; overflow: hidden; }
+body:has(.arena-page) .app-navbar { flex: 0 0 var(--navbar-height,70px); }
+body:has(.arena-page) .app-main { flex: 1 1 0; min-height: 0; overflow: hidden; }
+.arena-page { height: 100%; min-height: 0; padding: 12px 18px; overflow: hidden; }
+.arena-page .game-layout {
+    width: 100%; height: 100%; min-height: 0; max-width: 1360px;
+    display: grid; grid-template-columns: minmax(0,1fr) clamp(320px,31vw,380px);
+    grid-template-rows: 40px minmax(0,1fr); gap: 10px 20px;
+}
+.arena-heading { min-height: 0; margin: 0; }
+.arena-heading h1 { font-size: 20px; margin-top: 3px; }
+.arena-heading .arena-eyebrow { font-size: 9px; }
+/* Three rows consume the available height. The middle row is allowed to shrink. */
+.arena-page .board-column {
+    height: 100%; min-height: 0; min-width: 0; display: grid;
+    grid-template-columns: minmax(0,1fr); grid-template-rows: 68px minmax(0,1fr) 68px;
+    gap: 8px; container-type: size;
+}
+.arena-page .player-bar {
+    width: min(100%, calc((100cqh - 170px) * .9)); min-width: 0;
+    justify-self: center; padding: 6px 12px; gap: 3px 8px; border-radius: 12px;
+}
+.arena-page .player-avatar { width: 30px; height: 30px; border-radius: 9px; font-size: 13px; }
+.arena-page .player-details { gap: 2px; }
+.arena-page .player-details strong { font-size: 12px; }
+.arena-page .status-text { font-size: 10px; }
+.arena-page .player-timer { font-size: 19px; min-width: 74px; padding: 5px 8px; }
+.arena-page .capture-tray { padding: 0; gap: 7px; border: 0; }
+.arena-page .player-captured { min-height: 16px; gap: 4px; flex-wrap: nowrap; }
+.arena-page .captured-piece { width: 17px; height: 17px; font-size: 13px; }
+.arena-page .capture-empty, .arena-page .capture-label { font-size: 9px; }
+/* This container has a definite grid-row height. Container units fit BOTH axes.
+   Do not set a fixed min-width/min-height on the SVG or its frame. */
+.arena-page .board-wrapper {
+    width: 100%; height: 100%; min-height: 0; min-width: 0;
+    padding: 0; border: 0; background: none; box-shadow: none;
+    display: grid; place-items: center; container-type: size; overflow: visible;
+}
+.arena-page .xiangqi-board {
+    width: min(calc(100cqw - 18px), calc((100cqh - 18px) * .9));
+    height: auto; max-width: 100%; max-height: 100%; aspect-ratio: 9 / 10;
+    min-width: 0; min-height: 0; padding: 0; border-radius: 5px;
+    box-shadow: 0 0 0 7px #684a34, 0 14px 28px -10px #422c2538;
+}
+.arena-page #board-svg { display: block; width: 100%; height: 100%; }
+/* Four fixed sections + a flexible, internally scrolling history section. */
+.arena-page .arena-panel {
+    height: 100%; min-height: 0; display: flex; flex-direction: column;
+    overflow: hidden; position: relative; border-radius: 14px;
+}
+.arena-panel-heading { flex: 0 0 auto; padding: 11px 15px; }
+.arena-panel-heading h2 { font-size: 15px; margin-top: 4px; }
+.arena-panel-heading .arena-eyebrow { font-size: 9px; }
+.panel-emblem { width: 30px; height: 30px; font-size: 21px; }
+.arena-panel .panel-box { padding: 10px 14px; flex: 0 0 auto; min-height: 0; }
+.arena-panel .status-header { font-size: 9px; margin-bottom: 5px; }
+.arena-panel .turn-indicator { padding: 7px 9px; min-height: 34px; font-size: 11px; }
+.arena-panel .section-title-row { margin-bottom: 8px; }
+.arena-panel .section-title-row h3 { font-size: 12px; }
+.arena-panel .small-badge { font-size: 9px; padding: 3px 5px; }
+.arena-panel .advantage-summary { margin-bottom: 6px; font-size: 11px; }
+.arena-panel .advantage-summary strong { font-size: 20px; }
+.arena-panel .advantage-legend { margin: 6px 0 9px; font-size: 10px; }
+.arena-panel .heuristic-card { padding: 7px 8px; gap: 4px; }
+.arena-panel .heuristic-card strong { font-size: 17px; }
+.arena-panel .heuristic-name, .arena-panel .heuristic-code { font-size: 10px; }
+.arena-panel .evaluation-help { margin-top: 5px; font-size: 10px; }
+.arena-panel .evaluation-help[open] p {
+    position: absolute; z-index: 5; left: 10px; right: 10px; margin: 6px 0 0;
+    padding: 12px; background: var(--arena-surface); border: 1px solid var(--arena-line);
+    box-shadow: 0 8px 24px #0002; border-radius: 9px;
+}
+.arena-panel .last-move-summary { margin-top: 6px; padding-top: 6px; }
+.arena-panel .last-move-label { display: none; }
+.arena-panel .last-move-summary p { margin: 0 0 5px; font-size: 10px; }
+.arena-panel .delta-badges > span { padding: 3px 5px; font-size: 9px; }
+.arena-panel .delta-caption { font-size: 9px; margin-top: 4px; }
+.arena-panel .move-history-box { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.arena-panel .move-history-box .section-title-row, .history-columns { flex: 0 0 auto; }
+.arena-panel .history-columns { padding-bottom: 6px; }
+.arena-panel .move-list { flex: 1 1 0; height: auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+.arena-panel .history-row { min-height: 29px; padding: 2px 5px; }
+.arena-panel .history-move { font-size: 11px; padding-top: 5px; padding-bottom: 5px; }
+.arena-panel .action-box { flex: 0 0 auto; padding: 9px 14px; }
+.arena-panel .action-box .section-title-row { margin-bottom: 6px; }
+.arena-panel .action-btn { min-height: 49px; padding: 7px 2px; gap: 5px; font-size: 10px; }
+.arena-panel .action-btn i { font-size: 13px; }
+.arena-panel .action-grid { margin-bottom: 8px; }
+.arena-panel .action-footer { padding-top: 8px; gap: 6px; }
+.arena-panel .action-footer button { min-height: 30px; padding: 6px 8px; font-size: 10px; }
+/* Optional online information opens over the panel; it cannot increase layout height. */
+.arena-panel .room-info-box { margin-bottom: 6px; padding: 6px 8px; }
+.arena-panel .room-info-box > .status-header { display: none; }
+.arena-panel .room-info-box #copy-room-code-btn { margin-top: 4px !important; }
+.arena-panel .online-chat-box:not(.hidden) {
+    position: absolute; z-index: 6; left: 10px; right: 10px; bottom: 145px;
+    border: 1px solid var(--arena-line); border-radius: 10px; background: var(--arena-surface);
+    box-shadow: 0 8px 24px #0002;
+}
+.arena-chat-toggle { margin-left: auto; border: 1px solid var(--arena-line); border-radius: 6px; padding: 4px 6px; background: var(--arena-soft); color: var(--arena-ink); font: inherit; font-size: 10px; cursor: pointer; }
+/* Mode selection also lives inside the viewport; only its own chooser can scroll. */
+.arena-page .mode-overlay { min-height: 0; height: 100%; padding: 0; overflow: hidden; }
+.arena-page .mode-card { max-height: 100%; overflow-y: auto; padding: 22px; }
+@media (max-width: 1100px) {
+    .arena-page { padding: 10px 12px; }
+    .arena-page .game-layout { grid-template-columns: minmax(0,1fr) 310px; max-width: none; gap: 8px 12px; }
+}
+@media (max-height: 850px) {
+    .arena-page .game-layout { grid-template-rows: 30px minmax(0,1fr); gap: 7px 14px; }
+    .arena-heading h1 { font-size: 16px; }
+    .arena-heading .arena-eyebrow { display: none; }
+    .arena-panel-heading { padding: 8px 12px; }
+    .arena-panel-heading .arena-eyebrow { display: none; }
+    .arena-panel .panel-box { padding: 7px 12px; }
+    .arena-panel .last-move-summary p, .arena-panel .delta-caption { display: none; }
+    .arena-panel .action-box .section-title-row { display: none; }
+}
+@media (max-width: 700px) {
+    .arena-page .game-layout { grid-template-columns: minmax(0,1fr); grid-template-rows: 28px minmax(0,1fr) minmax(0,1fr); gap: 8px; }
+    .arena-heading .arena-mode-tag, .arena-heading .arena-eyebrow { display: none; }
+    .arena-heading h1 { font-size: 15px; }
+    .arena-page .board-column { grid-template-rows: 36px minmax(0,1fr) 36px; gap: 6px; }
+    .arena-page .player-bar { width: 100%; padding: 3px 8px; }
+    .arena-page .capture-tray, .arena-page .status-text { display: none; }
+    .arena-page .player-timer { padding: 3px 6px; font-size: 16px; }
+    .arena-page .player-avatar { width: 24px; height: 24px; }
+    .arena-panel-heading, .arena-panel .game-status-box, .arena-panel .evaluation-help, .arena-panel .last-move-summary, .arena-panel .action-footer { display: none; }
+    .arena-panel .evaluation-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; padding: 8px 12px; }
+    .arena-panel .evaluation-panel .section-title-row, .arena-panel .advantage-legend { display: none; }
+    .arena-panel .heuristic-cards { grid-column: 2; grid-row: 1 / 3; }
+    .arena-panel .heuristic-card { padding: 4px; gap: 2px; }
+    .arena-panel .heuristic-name { display: none; }
+    .arena-panel .action-btn { min-height: 36px; flex-direction: row; }
+}
+
+/* Short laptop/tablet screens keep controls and the history usable. */
+.last-move-toggle { display: none; }
+@media (max-height: 650px) and (min-width: 701px) {
+    .arena-panel-heading { display: none; }
+    .arena-panel .game-status-box > .status-header { display: none; }
+    .arena-panel .evaluation-help { display: none; }
+    .arena-panel .last-move-summary { display: none; }
+    .arena-panel .last-move-toggle { display: inline-flex; border: 1px solid var(--arena-line); border-radius: 5px; background: var(--arena-soft); padding: 4px 6px; color: var(--arena-ink); font-size: 10px; cursor: pointer; }
+    .arena-panel .last-move-summary.is-open {
+        display: block; position: absolute; left: 10px; right: 10px; top: 115px; z-index: 7;
+        padding: 12px; background: var(--arena-surface); border: 1px solid var(--arena-line);
+        border-radius: 8px; box-shadow: 0 8px 20px #0002;
+    }
+    .arena-panel .last-move-summary.is-open p, .arena-panel .last-move-summary.is-open .delta-caption { display: flex; }
+}
+
+.arena-room-toggle { display: none; border: 1px solid var(--arena-line); border-radius: 6px; padding: 4px 6px; background: var(--arena-soft); color: var(--arena-ink); font-size: 10px; cursor: pointer; }
+.arena-panel .game-status-box:has(#room-info-box:not(.hidden)) > .status-header { display: flex; }
+.arena-panel .game-status-box:has(#room-info-box:not(.hidden)) .arena-room-toggle { display: inline-flex; margin-left: auto; }
+.arena-panel .room-info-box:not(.hidden) { display: none; }
+.arena-panel .room-info-box.is-open:not(.hidden) {
+    display: flex; position: absolute; top: 75px; left: 10px; right: 10px;
+    z-index: 8; padding: 12px; background: var(--arena-surface) !important;
+    box-shadow: 0 8px 24px #0002; border-radius: 9px;
+}

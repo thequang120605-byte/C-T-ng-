@@ -1,0 +1,205 @@
+@model ChessCore.ViewModels.AccountProfileViewModel
+@{
+    ViewData["Title"] = "Hồ sơ Tài khoản";
+    var initial = !string.IsNullOrEmpty(Model.Username) ? Model.Username.Substring(0, 1).ToUpper() : "U";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/account.css" asp-append-version="true" />
+}
+
+<div class="account-container">
+    <div class="account-header">
+        <h1><i class="fa-solid fa-circle-user"></i> Quản lý Tài khoản</h1>
+        <div style="font-size: 13px; color: var(--text-muted);">
+            <i class="fa-solid fa-calendar-days"></i> Thành viên từ: <strong>@Model.CreatedAt.ToString("dd/MM/yyyy")</strong>
+        </div>
+    </div>
+
+    @if (TempData["AccountSuccess"] != null)
+    {
+        <div class="alert-acc alert-acc-success">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>@TempData["AccountSuccess"]</span>
+        </div>
+    }
+
+    @if (TempData["AccountError"] != null)
+    {
+        <div class="alert-acc alert-acc-danger">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>@TempData["AccountError"]</span>
+        </div>
+    }
+
+    <!-- HERO CARD -->
+    <div class="account-hero-card">
+        <div class="hero-user-info">
+            <div class="hero-avatar">@initial</div>
+            <div class="hero-meta">
+                <h2>
+                    <span>@Model.Username</span>
+                    <span class="role-badge @(string.Equals(Model.Role, "Admin", StringComparison.OrdinalIgnoreCase) ? "admin" : "")">
+                        <i class="fa-solid fa-shield-halved"></i> @Model.Role
+                    </span>
+                </h2>
+                <div class="hero-id-tag">
+                    <span>Mã người chơi: <strong>@Model.PlayerId</strong></span>
+                    <span>•</span>
+                    <span>Email: <strong>@Model.Email</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-elo-pill">
+            <div class="hero-elo-label">Hệ số Elo</div>
+            <div class="hero-elo-value">
+                <i class="fa-solid fa-star"></i>
+                <span>@Model.Elo</span>
+            </div>
+        </div>
+        <div class="hero-elo-pill" style="border-color: @(Model.PuzzleLevel?.BadgeColor ?? "#38bdf8");">
+            <div class="hero-elo-label">Cấp @(Model.PuzzleLevel?.Level ?? 1) — @(Model.PuzzleLevel?.Title ?? "Cờ Thế")</div>
+            <div class="hero-elo-value" style="color: @(Model.PuzzleLevel?.BadgeColor ?? "#38bdf8");">
+                <i class="fa-solid @(Model.PuzzleLevel?.Icon ?? "fa-gem")"></i>
+                <span>@Model.PuzzleScore</span> <span style="font-size: 13px; font-weight: 500; opacity: 0.85;">điểm</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="account-stats-grid">
+        <div class="acc-stat-card">
+            <div class="acc-stat-icon games"><i class="fa-solid fa-chess-board"></i></div>
+            <div class="acc-stat-info">
+                <h4>Tổng số ván đấu</h4>
+                <p>@Model.GamesPlayed</p>
+            </div>
+        </div>
+        <div class="acc-stat-card">
+            <div class="acc-stat-icon wins"><i class="fa-solid fa-trophy"></i></div>
+            <div class="acc-stat-info">
+                <h4>Thắng / Tỉ lệ</h4>
+                <p>@Model.Wins <span style="font-size: 14px; font-weight: 500; color: #10b981;">(@Model.WinRate%)</span></p>
+            </div>
+        </div>
+        <div class="acc-stat-card">
+            <div class="acc-stat-icon puzzles"><i class="fa-solid fa-puzzle-piece"></i></div>
+            <div class="acc-stat-info">
+                <h4>Cờ thế đã giải</h4>
+                <p>@Model.PuzzlesSolved</p>
+            </div>
+        </div>
+        <div class="acc-stat-card">
+            <div class="acc-stat-icon courses"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div class="acc-stat-info">
+                <h4>Module hoàn thành</h4>
+                <p>@Model.CompletedCourses / 4</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- DANH HIỆU & HUY HIỆU THÀNH TỰU (ACHIEVEMENTS & BADGES) -->
+    <div class="account-badges-section" style="margin-bottom: 28px;">
+        <div class="badges-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="margin: 0; font-size: 18px; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-medal text-gold"></i>
+                <span>Danh hiệu & Huy hiệu Thành tựu</span>
+            </h3>
+            <span style="font-size: 13px; color: var(--text-muted); background: var(--bg-navy-dark); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 20px;">
+                Đã mở khóa: <strong style="color: var(--accent-gold);">@(Model.Badges.Count(b => b.IsUnlocked))/8</strong> huy hiệu
+            </span>
+        </div>
+
+        <div class="badges-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
+            @foreach (var badge in Model.Badges)
+            {
+                <div class="badge-item-card @(badge.IsUnlocked ? "unlocked" : "locked")" 
+                     style="background: var(--bg-navy-panel); border: 1px solid @(badge.IsUnlocked ? "rgba(212, 175, 55, 0.35)" : "var(--border-color)"); border-radius: 12px; padding: 16px; display: flex; gap: 14px; align-items: flex-start; transition: transform 0.2s, box-shadow 0.2s; position: relative; opacity: @(badge.IsUnlocked ? "1" : "0.65");">
+                    
+                    <div class="badge-icon-wrap" style="width: 44px; height: 44px; min-width: 44px; border-radius: 10px; background: @(badge.IsUnlocked ? badge.Color : "#334155"); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; box-shadow: @(badge.IsUnlocked ? $"0 4px 12px {badge.Color}44" : "none");">
+                        <i class="fa-solid @badge.Icon"></i>
+                    </div>
+
+                    <div class="badge-details" style="flex: 1; min-width: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 6px;">
+                            <strong style="font-size: 14px; color: @(badge.IsUnlocked ? "var(--text-main)" : "var(--text-muted)"); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                @badge.Title
+                            </strong>
+                            @if (badge.IsUnlocked)
+                            {
+                                <span style="font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);"><i class="fa-solid fa-check"></i> Đạt</span>
+                            }
+                            else
+                            {
+                                <span style="font-size: 10px; font-weight: 600; color: var(--text-muted); background: var(--bg-navy-dark); padding: 2px 6px; border-radius: 4px;"><i class="fa-solid fa-lock"></i> Khóa</span>
+                            }
+                        </div>
+                        <p style="margin: 0 0 6px 0; font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                            @badge.Description
+                        </p>
+                        <div style="font-size: 11px; font-weight: 600; color: @(badge.IsUnlocked ? "var(--accent-gold)" : "var(--text-muted)");">
+                            Tiến độ: @badge.ProgressText
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- FORMS ROW -->
+    <div class="account-forms-grid">
+        <!-- ĐỔI TÊN HIỂN THỊ -->
+        <div class="account-form-card">
+            <div class="card-title-row">
+                <i class="fa-solid fa-id-card"></i>
+                <h3>Đổi Tên Hiển Thị</h3>
+            </div>
+            <form asp-controller="Account" asp-action="UpdateUsername" method="post">
+                @Html.AntiForgeryToken()
+                <div class="form-group-acc">
+                    <label>Mã ID Định Danh (Không đổi)</label>
+                    <input type="text" class="form-control-acc" value="@Model.PlayerId" disabled />
+                </div>
+                <div class="form-group-acc">
+                    <label>Email Đăng Ký</label>
+                    <input type="text" class="form-control-acc" value="@Model.Email" disabled />
+                </div>
+                <div class="form-group-acc">
+                    <label>Tên hiển thị hiện tại</label>
+                    <input type="text" name="Username" class="form-control-acc" value="@Model.Username" required minlength="3" maxlength="30" />
+                    <small style="color: var(--text-muted); font-size: 12px; margin-top: 4px; display: block;">Tên hiển thị sẽ xuất hiện trên bàn cờ, bảng xếp hạng và chứng chỉ khóa học.</small>
+                </div>
+                <button type="submit" class="btn-acc-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
+                </button>
+            </form>
+        </div>
+
+        <!-- ĐỔI MẬT KHẨU -->
+        <div class="account-form-card">
+            <div class="card-title-row">
+                <i class="fa-solid fa-lock"></i>
+                <h3>Đổi Mật Khẩu</h3>
+            </div>
+            <form asp-controller="Account" asp-action="ChangePassword" method="post">
+                @Html.AntiForgeryToken()
+                <div class="form-group-acc">
+                    <label>Mật khẩu hiện tại</label>
+                    <input type="password" name="CurrentPassword" class="form-control-acc" placeholder="Nhập mật khẩu hiện tại" required />
+                </div>
+                <div class="form-group-acc">
+                    <label>Mật khẩu mới</label>
+                    <input type="password" name="NewPassword" class="form-control-acc" placeholder="Tối thiểu 6 ký tự" required minlength="6" />
+                </div>
+                <div class="form-group-acc">
+                    <label>Xác nhận mật khẩu mới</label>
+                    <input type="password" name="ConfirmNewPassword" class="form-control-acc" placeholder="Nhập lại mật khẩu mới" required minlength="6" />
+                </div>
+                <button type="submit" class="btn-acc-primary">
+                    <i class="fa-solid fa-key"></i> Đổi mật khẩu
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,24 @@
+const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');
+const {JSDOM}=require('../ChessCore/node_modules/jsdom');
+const html=fs.readFileSync(path.join(__dirname,'../ChessCore/Views/Game/Index.cshtml'),'utf8');
+const dom=new JSDOM(html,{runScripts:'outside-only',url:'http://localhost/Game'});const w=dom.window;
+w.eval(fs.readFileSync(path.join(__dirname,'../ChessCore/wwwroot/js/arena-ui.js'),'utf8'));
+const data={id:1,status:'InProgress',currentTurn:'Black',moves:[],redScore:460,blackScore:-460,
+ evaluation:{h1:400,h2:10,h3:-10,h4:60},lastMoveEval:{pieceName:'Rook',moveDescription:'test',deltaH1:0,deltaH2:0,deltaH3:0,deltaH4:60,totalDelta:60}};
+w.ArenaUI.update(data);
+assert.equal(w.document.getElementById('h4-value').textContent,'+60');
+assert.equal(w.document.getElementById('lm-h4').textContent,'+60');
+assert.equal(w.document.getElementById('lm-total').textContent,'+60');
+assert.equal(w.document.getElementById('red-score').textContent,'+460');
+w.ArenaUI.update({...data,evaluation:{h1:0,h2:0,h3:0,h4:-100},redScore:-100,blackScore:100});
+assert.equal(w.document.getElementById('h4-value').textContent,'-100');
+assert.ok(Number(w.document.getElementById('h4-meter').getAttribute('aria-valuenow'))<50);
+w.ArenaUI.update({...data,evaluation:{h1:0,h2:0,h3:0,h4:0},lastMoveEval:null});
+assert.equal(w.document.getElementById('h4-value').textContent,'0');
+assert.equal(w.document.getElementById('last-move-box').hidden,true);
+const puzzle=fs.readFileSync(path.join(__dirname,'../ChessCore/wwwroot/js/puzzle.js'),'utf8');
+assert.ok(!puzzle.includes('const earnedElo'));
+assert.ok(puzzle.includes('practicePoints'));
+const course=fs.readFileSync(path.join(__dirname,'../ChessCore/wwwroot/js/course.js'),'utf8');
+assert.ok(course.includes('answers,'));assert.ok(!course.includes('quizScore:'));
+console.log('PASS H4 UI, delta, signs, reset, practice points and server quiz contract (12 assertions)');

@@ -7,8 +7,9 @@ namespace ChessCore.Services
 {
     public interface IGameService
     {
-        Task<Game> CreateGameAsync();
+        Task<Game> CreateGameAsync(string? initialFen = null, GameStatus status = GameStatus.InProgress, string mode = GameModes.PvE);
         Task<Game> GetGameByIdAsync(int gameId);
         Task<bool> UpdateGameTurnAndStatusAsync(int gameId, PieceColor nextTurn, GameStatus status);
+        Task<bool> UndoMoveAsync(int gameId, bool isPvE = true);
     }
 }

@@ -1,0 +1,270 @@
+@model ChessCore.Controllers.HomeViewModel
+@{
+    ViewData["Title"] = "Trang chủ - Cờ Tướng Thông Minh";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+}
+
+<div class="home-page">
+    <!-- 1. HERO BANNER -->
+    <section class="home-hero">
+        <div>
+            <div class="hero-tag">
+                <i class="fa-solid fa-brain"></i> NỀN TẢNG CỜ TƯỚNG ỨNG DỤNG AI THÔNG MINH
+            </div>
+            <h1>Rèn Luyện Kỳ Nghệ &amp; Thách Đấu Kỳ Thủ</h1>
+            <p>
+                Trải nghiệm đấu cờ trực tuyến thời gian thực, phân tích thế trận với thuật toán Alpha-Beta, luyện sát cục hàng ngàn thế cờ và học cờ bài bản từ con số không.
+            </p>
+            <div class="hero-actions">
+                <a href="/Game" class="hero-btn primary">
+                    <i class="fa-solid fa-play"></i> Chơi cờ ngay
+                </a>
+                <a href="/Course" class="hero-btn secondary">
+                    <i class="fa-solid fa-graduation-cap"></i> Khóa học nhập môn
+                </a>
+            </div>
+        </div>
+
+        @if (Model.CurrentUser != null)
+        {
+            <div class="hero-user-card">
+                <div class="user-avatar-circle">
+                    <i class="fa-solid fa-user-ninja"></i>
+                </div>
+                <h3>@Model.CurrentUser.Username</h3>
+                <div class="user-elo"><i class="fa-solid fa-trophy"></i> Elo: @Model.CurrentUser.Elo</div>
+                <div class="hero-user-stats">
+                    <div class="user-stat-mini">
+                        <b>@Model.CurrentUser.GamesPlayed</b>
+                        <span>Trận đấu</span>
+                    </div>
+                    <div class="user-stat-mini">
+                        <b style="color: #10b981;">@Model.WinRate%</b>
+                        <span>Thắng</span>
+                    </div>
+                    <div class="user-stat-mini">
+                        <b style="color: #f59e0b;">@Model.PuzzlesSolved</b>
+                        <span>Cờ thế</span>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="hero-user-card" style="text-align: center;">
+                <div class="user-avatar-circle">
+                    <i class="fa-solid fa-user-secret"></i>
+                </div>
+                <h3>Khách vãng lai</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px;">
+                    Đăng nhập để lưu tiến độ, tính điểm Elo và leo bảng xếp hạng!
+                </p>
+                <a asp-controller="Auth" asp-action="Login" class="hero-btn primary" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 14px;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập / Đăng ký
+                </a>
+            </div>
+        }
+    </section>
+
+    <!-- 2. BỐN TRỤ CỘT TÍNH NĂNG (FEATURE PILLARS) -->
+    <div class="features-grid">
+        <!-- Chơi cờ -->
+        <a href="/Game" class="feature-card">
+            <div>
+                <div class="feature-icon" style="background: #fef2f2; color: #dc2626;">
+                    <i class="fa-solid fa-chess-board"></i>
+                </div>
+                <h2>
+                    <span>Sàn Đấu Cờ</span>
+                    <i class="fa-solid fa-arrow-right arrow"></i>
+                </h2>
+                <p>Thi đấu trực tiếp với bạn bè qua Mã phòng Realtime (SignalR) hoặc thử sức với Máy AI qua 4 cấp độ thông minh.</p>
+            </div>
+            <div class="feature-meta">
+                <i class="fa-solid fa-bolt"></i> Realtime • AI 4 cấp độ
+            </div>
+        </a>
+
+        <!-- Cờ thế -->
+        <a href="/Puzzle" class="feature-card">
+            <div>
+                <div class="feature-icon" style="background: #fef3c7; color: #d97706;">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                </div>
+                <h2>
+                    <span>Kho Cờ Thế</span>
+                    <i class="fa-solid fa-arrow-right arrow"></i>
+                </h2>
+                <p>Thực hành giải sát cục từ 1 đến 5 nước đi. Rèn luyện tư duy chiến thuật và khả năng nhìn cờ nhạy bén.</p>
+            </div>
+            <div class="feature-meta">
+                <i class="fa-solid fa-fire"></i> @Model.TotalPuzzles thế cờ sát chiêu
+            </div>
+        </a>
+
+        <!-- Khóa học -->
+        <a href="/Course" class="feature-card">
+            <div>
+                <div class="feature-icon" style="background: #ecfdf5; color: #059669;">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <h2>
+                    <span>Khóa Học Nhập Môn</span>
+                    <i class="fa-solid fa-arrow-right arrow"></i>
+                </h2>
+                <p>Học luật cờ 7 loại quân, đường đi cản chân mã, cản mắt tượng, nguyên tắc bố cục và làm trắc nghiệm quiz tương tác.</p>
+            </div>
+            <div class="feature-meta">
+                <i class="fa-solid fa-book-open"></i> @Model.TotalLessons bài học lý thuyết &amp; quiz
+            </div>
+        </a>
+
+        <!-- Thống kê -->
+        <a href="/Dashboard" class="feature-card">
+            <div>
+                <div class="feature-icon" style="background: #f5f3ff; color: #7c3aed;">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <h2>
+                    <span>Bảng Thống Kê</span>
+                    <i class="fa-solid fa-arrow-right arrow"></i>
+                </h2>
+                <p>Theo dõi chỉ số Elo cá nhân, tỷ lệ thắng/hòa/thua, lịch sử các trận đấu và xếp hạng của bạn so với cộng đồng.</p>
+            </div>
+            <div class="feature-meta">
+                <i class="fa-solid fa-ranking-star"></i> Xếp hạng Elo FIDE
+            </div>
+        </a>
+    </div>
+
+    <!-- 3. NỘI DUNG 2 CỘT: CÂU ĐỐ HÔM NAY & TOP KỲ THỦ -->
+    <div class="home-content-layout">
+        <!-- Cột trái: Thế cờ rèn luyện & Giới thiệu AI Engine -->
+        <div>
+            <div class="panel-card" style="border: 2px solid rgba(217, 119, 6, 0.4); background: radial-gradient(circle at top right, rgba(217, 119, 6, 0.08), transparent 70%), var(--bg-navy-panel, #ffffff);">
+                <div class="panel-card-header">
+                    <div class="panel-card-title" style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-fire" style="color: #ef4444;"></i>
+                        <span style="font-weight: 800;">Thử Thách Cờ Thế Hôm Nay</span>
+                        <span style="font-size: 11px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); padding: 2px 8px; border-radius: 12px;">+20 Elo</span>
+                    </div>
+                    <a href="/Puzzle" style="font-size: 13px; color: var(--accent-gold); text-decoration: none; font-weight: 700;">
+                        Kho cờ thế <i class="fa-solid fa-angle-right"></i>
+                    </a>
+                </div>
+                <div class="puzzle-preview-box">
+                    <div class="puzzle-mini-board" style="background: linear-gradient(135deg, #d97706, #b45309); box-shadow: 0 4px 15px rgba(217, 119, 6, 0.35);">
+                        <span style="font-family: 'KaiTi', 'STKaiti', serif; font-size: 38px; color: #fff;">帥</span>
+                    </div>
+                    <div class="puzzle-preview-info">
+                        <span style="font-size: 11px; font-weight: 800; color: #d97706; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fa-solid fa-crosshairs"></i> @Model.DailyPuzzleCategory</span>
+                        <h3 style="margin: 4px 0 8px 0; font-size: 17px; font-weight: 800; color: var(--text-main);">@Model.DailyPuzzleTitle</h3>
+                        <p style="margin-bottom: 14px; font-size: 13px; color: var(--text-muted); line-height: 1.5;">Vận dụng nhãn quan chiến thuật phối hợp binh chủng tung đòn sát chiêu đoạt mạng Tướng đối phương trong số nước quy định.</p>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <a href="/Puzzle@(Model.DailyPuzzleId > 0 ? $"?puzzleId={Model.DailyPuzzleId}" : "")" class="hero-btn primary" style="padding: 9px 20px; font-size: 13.5px; font-weight: 700; border-radius: 8px;">
+                                <i class="fa-solid fa-play"></i> Phá giải ngay
+                            </a>
+                            <span style="font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Thử thách hàng ngày</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khối công nghệ AI -->
+            <div class="panel-card">
+                <div class="panel-card-header">
+                    <div class="panel-card-title">
+                        <i class="fa-solid fa-microchip" style="color: #2563eb;"></i>
+                        Công Nghệ Huấn Luyện &amp; Phân Tích
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                    <div style="background: var(--slate-50); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <b style="display: block; font-size: 14px; color: var(--primary); margin-bottom: 6px;">
+                            <i class="fa-solid fa-code-branch"></i> Cắt tỉa Alpha-Beta
+                        </b>
+                        <span style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5; display: block;">
+                            Tìm kiếm nước đi tối ưu ở độ sâu cao, lọc bỏ hàng triệu biến thể yếu trong chớp mắt.
+                        </span>
+                    </div>
+                    <div style="background: var(--slate-50); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <b style="display: block; font-size: 14px; color: #059669; margin-bottom: 6px;">
+                            <i class="fa-solid fa-chart-column"></i> Evaluation Bar
+                        </b>
+                        <span style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5; display: block;">
+                            Đánh giá điểm số Centipawn và tỷ lệ thắng Win-rate trực quan sau mỗi nước cờ.
+                        </span>
+                    </div>
+                    <div style="background: var(--slate-50); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <b style="display: block; font-size: 14px; color: #d97706; margin-bottom: 6px;">
+                            <i class="fa-solid fa-network-wired"></i> Mạng Nơ-ron Định Giá
+                        </b>
+                        <span style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5; display: block;">
+                            Học hỏi từ hàng trăm ngàn ván đấu FEN chuyên nghiệp để dự đoán thế trận chính xác.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Top Kỳ Thủ -->
+        <div>
+            <div class="panel-card">
+                <div class="panel-card-header">
+                    <div class="panel-card-title">
+                        <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i>
+                        Top Kỳ Thủ (Elo)
+                    </div>
+                    <a href="/Dashboard" style="font-size: 12px; color: var(--accent-gold-dark); text-decoration: none; font-weight: 700;">
+                        Xem bảng đầy đủ
+                    </a>
+                </div>
+                <ul class="home-leaderboard-list">
+                    @{
+                        int rank = 1;
+                        foreach (var player in Model.TopPlayers)
+                        {
+                            <li class="leader-item">
+                                <span class="leader-rank top-@rank">@rank</span>
+                                <div class="leader-user">
+                                    <div style="font-weight: 700;">@player.Username</div>
+                                </div>
+                                <span class="leader-elo">@player.Elo</span>
+                            </li>
+                            rank++;
+                        }
+                    }
+                    @if (!Model.TopPlayers.Any())
+                    {
+                        <li style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                            Chưa có dữ liệu xếp hạng.
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. THỐNG KÊ TOÀN HỆ THỐNG -->
+    <div class="system-stats-strip">
+        <div class="strip-item">
+            <b>@Model.TotalUsers</b>
+            <span>Kỳ thủ tham gia</span>
+        </div>
+        <div class="strip-item">
+            <b>@Model.TotalGames</b>
+            <span>Ván đấu đã diễn ra</span>
+        </div>
+        <div class="strip-item">
+            <b>@Model.TotalPuzzles</b>
+            <span>Thế cờ sát cục</span>
+        </div>
+        <div class="strip-item">
+            <b>@Model.TotalLessons</b>
+            <span>Bài học cờ tướng</span>
+        </div>
+    </div>
+</div>

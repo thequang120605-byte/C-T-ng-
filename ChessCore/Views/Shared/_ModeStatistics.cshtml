@@ -1,0 +1,9 @@
+@model IReadOnlyList<ChessCore.Services.ModeStatistics>
+@{ bool admin = ViewData["AdminStatistics"] as bool? == true; }
+<div style="overflow-x:auto;margin:16px 0">
+<table class="admin-table" style="width:100%;border-collapse:collapse;text-align:left">
+<thead><tr><th>Chế độ</th><th>Đã tạo</th><th>Đang chơi</th><th>Chờ</th><th>Kết thúc</th><th>@(admin ? "Đỏ thắng" : "Thắng")</th><th>@(admin ? "Đen thắng" : "Thua")</th><th>Hòa</th><th>@(admin ? "Ván có xếp hạng" : "Tỉ lệ thắng")</th></tr></thead>
+<tbody>@foreach (var r in Model) {
+<tr><td>@r.Label</td><td>@r.Created</td><td>@r.InProgress</td><td>@r.Waiting</td><td>@r.Finished</td><td>@(admin ? r.RedWins.ToString() : (r.Mode == "Online" || r.Mode == "PvE") ? r.Wins.ToString() : "—")</td><td>@(admin ? r.BlackWins.ToString() : (r.Mode == "Online" || r.Mode == "PvE") ? r.Losses.ToString() : "—")</td><td>@r.Draws</td><td>@(admin ? r.RatedFinished.ToString() : (r.Mode == "Online" || r.Mode == "PvE") ? r.WinRate.ToString("0.0") + "%" : "—")</td></tr>
+}</tbody></table></div>
+<p style="font-size:12px">Tỉ lệ thắng = số thắng / số ván đã kết thúc. Dữ liệu cũ thiếu chế độ được để riêng; không suy đoán thành PvE. Elo chỉ thay đổi ở Online có xếp hạng mới; cờ thế và khóa học không cộng Elo.</p>

@@ -1,346 +1,824 @@
 @{
-    ViewData["Title"] = "Chơi Cờ Tướng";
+    ViewData["Title"] = "Chơi Cờ";
 }
 
 <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" />
 
-<div class="game-page">
+<div class="game-view-container">
 
-    <!-- ========================================= -->
-    <!-- HEADER -->
-    <!-- ========================================= -->
-
-    <section class="game-header">
-
-        <h1>CỜ TƯỚNG</h1>
-
-        <p>Chơi Cờ Tướng trực tuyến</p>
-
-    </section>
-
-
-    <!-- ========================================= -->
-    <!-- GAME CONTAINER -->
-    <!-- ========================================= -->
-
-    <section class="game-container">
-
-
-        <!-- ========================================= -->
-        <!-- QUÂN ĐỎ -->
-        <!-- ========================================= -->
-
-        <aside class="player-panel">
-
-            <h2>🔴 QUÂN ĐỎ</h2>
-
-            <div class="player-info">
-
-                <div class="avatar">
-                    👤
-                </div>
-
-                <div>
-                    <strong>Người chơi 1</strong>
-                    <p id="red-player-status">⚪ Đang chờ</p>
-                </div>
-
+    <!-- ===================================================== -->
+    <!-- MÀN HÌNH CHỌN CHẾ ĐỘ (MODE SELECTION) -->
+    <!-- ===================================================== -->
+    <section id="mode-selection" class="mode-overlay">
+        <div class="mode-card">
+            <!-- HEADER EMBLEM -->
+            <div class="mode-header-badge" style="display: inline-flex; align-items: center; gap: 8px;">
+                <img src="~/images/logo.svg" alt="Logo" style="width: 26px; height: 26px; border-radius: 50%; vertical-align: middle;" />
+                <span>CỜ TƯỚNG VIỆT NAM</span>
             </div>
 
-        </aside>
+            <h2 class="mode-card-title">CHỌN CHẾ ĐỘ CHƠI</h2>
+            <p class="mode-desc">Hãy chọn cách bạn muốn tham gia ván cờ</p>
 
+            <div class="mode-buttons">
+                <!-- NGƯỜI VS NGƯỜI -->
+                <button id="player-vs-player-btn" class="mode-btn" type="button">
+                    <div class="mode-icon-circle mode-pvp-circle">
+                        <i class="fa-solid fa-user-group"></i>
+                    </div>
+                    <span class="mode-title">Người vs Người</span>
+                    <span class="mode-subtitle">Chơi 2 người trên cùng thiết bị</span>
+                    <span class="mode-active-indicator"><i class="fa-solid fa-circle-check"></i></span>
+                </button>
 
-        <!-- ========================================= -->
-        <!-- BÀN CỜ -->
-        <!-- ========================================= -->
+                <!-- NGƯỜI VS MÁY -->
+                <button id="player-vs-computer-btn" class="mode-btn" type="button">
+                    <div class="mode-icon-circle mode-ai-circle">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <span class="mode-title">Người vs Máy</span>
+                    <span class="mode-subtitle">Thử thách với AI Minimax</span>
+                    <span class="mode-active-indicator"><i class="fa-solid fa-circle-check"></i></span>
+                </button>
 
-        <section class="board-container">
+                <!-- CHƠI QUA MẠNG -->
+                <button id="player-vs-online-btn" class="mode-btn" type="button">
+                    <div class="mode-icon-circle mode-online-circle">
+                        <i class="fa-solid fa-globe"></i>
+                    </div>
+                    <span class="mode-title">Chơi qua mạng</span>
+                    <span class="mode-subtitle">Tạo phòng chơi với bạn bè</span>
+                    <span class="mode-active-indicator"><i class="fa-solid fa-circle-check"></i></span>
+                </button>
 
-            <div class="xiangqi-board-wrapper">
+                <!-- AI VS AI (TỰ ĐỘNG ĐẤU) -->
+                <button id="player-vs-ai-btn" class="mode-btn" type="button">
+                    <div class="mode-icon-circle mode-aivai-circle">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <span class="mode-title">AI vs AI</span>
+                    <span class="mode-subtitle">Hai máy tự động đối đầu</span>
+                    <span class="mode-active-indicator"><i class="fa-solid fa-circle-check"></i></span>
+                </button>
+            </div>
 
+            <!-- CHỌN ĐỘ KHÓ CHO CHẾ ĐỘ NGƯỜI VS MÁY -->
+            <div id="difficulty-selection" class="difficulty-panel hidden">
+                <div class="diff-header">
+                    <i class="fa-solid fa-brain" style="color: var(--accent-gold);"></i>
+                    <h3>Chọn độ khó của máy</h3>
+                </div>
+                <div class="diff-buttons">
+                    <button class="diff-btn" data-difficulty="1" type="button">
+                        <i class="fa-solid fa-seedling" style="color: #22c55e;"></i>
+                        <span class="diff-name">Dễ</span>
+                        <span class="diff-depth">Depth 1</span>
+                    </button>
+                    <button class="diff-btn" data-difficulty="2" type="button">
+                        <i class="fa-solid fa-shield-halved" style="color: #f59e0b;"></i>
+                        <span class="diff-name">Trung bình</span>
+                        <span class="diff-depth">Depth 2</span>
+                    </button>
+                    <button class="diff-btn" data-difficulty="3" type="button">
+                        <i class="fa-solid fa-fire" style="color: #f97316;"></i>
+                        <span class="diff-name">Khó</span>
+                        <span class="diff-depth">Depth 3</span>
+                    </button>
+                    <button class="diff-btn" data-difficulty="4" type="button">
+                        <i class="fa-solid fa-skull" style="color: #ef4444;"></i>
+                        <span class="diff-name">Siêu khó</span>
+                        <span class="diff-depth">Depth 4</span>
+                    </button>
+                </div>
+                <p id="difficulty-description" class="diff-desc-text"></p>
+            </div>
+
+            <!-- CHỌN CẤU HÌNH AI VS AI -->
+            <div id="aivai-selection" class="difficulty-panel hidden">
+                <div class="diff-header">
+                    <i class="fa-solid fa-microchip" style="color: #9333ea;"></i>
+                    <h3>Thiết lập đối đầu AI vs AI</h3>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+                    <div style="background: var(--bg-navy-dark); padding: 12px; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <div style="font-weight: 700; color: #ef4444; font-size: 13.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-robot"></i> Bot Đỏ (Đi trước)
+                        </div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Độ sâu tính toán:</label>
+                        <select id="aivai-red-depth" class="form-select" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-navy-panel); color: var(--text-main); font-size: 13px;">
+                            <option value="1">Depth 1 (Nhanh - Dễ)</option>
+                            <option value="2" selected>Depth 2 (Trung bình)</option>
+                            <option value="3">Depth 3 (Khó)</option>
+                            <option value="4">Depth 4 (Cao cấp)</option>
+                        </select>
+                    </div>
+                    <div style="background: var(--bg-navy-dark); padding: 12px; border-radius: 10px; border: 1px solid rgba(100, 116, 139, 0.3);">
+                        <div style="font-weight: 700; color: #64748b; font-size: 13.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-robot"></i> Bot Đen (Đi sau)
+                        </div>
+                        <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Độ sâu tính toán:</label>
+                        <select id="aivai-black-depth" class="form-select" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-navy-panel); color: var(--text-main); font-size: 13px;">
+                            <option value="1">Depth 1 (Nhanh - Dễ)</option>
+                            <option value="2">Depth 2 (Trung bình)</option>
+                            <option value="3" selected>Depth 3 (Khó)</option>
+                            <option value="4">Depth 4 (Cao cấp)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-muted);">
+                    <span><i class="fa-solid fa-stopwatch"></i> Tốc độ mỗi nước:</span>
+                    <select id="aivai-speed" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-navy-panel); color: var(--text-main); font-size: 12px;">
+                        <option value="400">Rất nhanh (0.4s)</option>
+                        <option value="800" selected>Bình thường (0.8s)</option>
+                        <option value="1500">Chậm rãi (1.5s)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ONLINE LOBBY -->
+            <div id="online-selection" class="difficulty-panel hidden">
+                <div class="diff-header">
+                    <i class="fa-solid fa-network-wired" style="color: #10b981;"></i>
+                    <h3>Sảnh chờ Online</h3>
+                </div>
+                <div class="lobby-actions">
+                    <p class="lobby-hint">Nhập mã bàn đối thủ cung cấp để tham gia, hoặc tạo bàn mới.</p>
+                    <div class="lobby-input-group">
+                        <input type="text" id="online-room-id" placeholder="Nhập mã bàn 8 ký tự" maxlength="8" autocapitalize="characters" autocomplete="off" />
+                        <button id="join-online-btn" class="btn-lobby-action" type="button">
+                            <i class="fa-solid fa-right-to-bracket"></i> Vào bàn
+                        </button>
+                    </div>
+                    <button id="create-online-btn" class="btn-lobby-create" type="button">
+                        <i class="fa-solid fa-plus"></i> Tạo bàn
+                    </button>
+
+                    <!-- DANH SÁCH BÀN ĐANG CHỜ -->
+                    <div class="open-rooms-section" style="margin-top: 16px; border-top: 1px dashed var(--border-color); padding-top: 12px; text-align: left;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 13px; font-weight: bold; color: var(--accent-gold);"><i class="fa-solid fa-list"></i> Các phòng đang mở</span>
+                            <button id="refresh-rooms-btn" type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;">
+                                <i class="fa-solid fa-rotate-right"></i> Làm mới
+                            </button>
+                        </div>
+                        <div id="open-rooms-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;">
+                            <div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Đang tải danh sách phòng...</div>
+                        </div>
+                    </div>
+
+                    <!-- DANH SÁCH TRẬN ĐANG ĐẤU TRỰC TIẾP (DÀNH CHO KHÁN GIẢ) -->
+                    <div class="live-matches-section" style="margin-top: 14px; border-top: 1px dashed var(--border-color); padding-top: 12px; text-align: left;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 13px; font-weight: bold; color: #ef4444;"><i class="fa-solid fa-tower-broadcast"></i> Đang diễn ra trực tiếp (Khán giả)</span>
+                            <button id="refresh-live-btn" type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;">
+                                <i class="fa-solid fa-rotate-right"></i> Làm mới
+                            </button>
+                        </div>
+                        <div id="live-matches-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;">
+                            <div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Chưa có trận đấu trực tiếp nào.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THÔNG TIN ĐÃ CHỌN -->
+            <div class="selection-summary">
+                <div class="summary-pill">
+                    <i class="fa-solid fa-gamepad summary-icon"></i>
+                    <span>Chế độ:</span>
+                    <strong id="selected-mode-text" class="highlight-text">Chưa chọn chế độ chơi</strong>
+                </div>
+                <div id="selected-difficulty-container" class="summary-pill hidden">
+                    <i class="fa-solid fa-gauge-high summary-icon"></i>
+                    <span>Độ khó:</span>
+                    <strong id="selected-difficulty-text" class="highlight-text">Chưa chọn</strong>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                <button id="start-game-btn" class="btn-primary start-btn" disabled type="button" style="width: 100%; justify-content: center; font-size: 16px; padding: 14px 20px;">
+                    <i class="fa-solid fa-play"></i> BẮT ĐẦU VÁN CỜ
+                </button>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <button id="board-editor-open-btn" class="btn-secondary" type="button" style="width: 100%; border-radius: 12px; font-weight: 700; font-size: 13.5px; padding: 10px 12px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Tự xếp thế cờ tùy chỉnh để AI phân tích hoặc đấu tiếp">
+                        <i class="fa-solid fa-chess-board" style="color: var(--accent-gold);"></i> Xếp thế cờ
+                    </button>
+                    <button id="opening-explorer-open-btn" class="btn-secondary" type="button" style="width: 100%; border-radius: 12px; font-weight: 700; font-size: 13.5px; padding: 10px 12px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Tra cứu các thế trận khai cuộc và tỷ lệ thắng">
+                        <i class="fa-solid fa-book-bookmark" style="color: var(--accent-gold);"></i> Khai cuộc ECCO
+                    </button>
+                    <button id="mode-import-fen-btn" class="btn-secondary" type="button" style="width: 100%; border-radius: 12px; font-weight: 700; font-size: 13.5px; padding: 10px 12px; gap: 8px; display: inline-flex; align-items: center; justify-content: center;" title="Nạp thế cờ từ chuỗi FEN để bắt đầu chơi">
+                        <i class="fa-solid fa-file-import" style="color: var(--accent-gold);"></i> Nạp FEN
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- GIAO DIỆN CHƠI CỜ CHÍNH -->
+    <!-- ===================================================== -->
+    <section id="game-content" class="game-layout hidden">
+        
+        <!-- CỘT TRÁI: BÀN CỜ VÀ THÔNG TIN NGƯỜI CHƠI -->
+        <div class="board-column">
+            
+            <!-- THÔNG TIN ĐỐI THỦ (QUÂN ĐEN) -->
+            <div id="black-player-card" class="player-bar player-black">
+                <div class="player-info-left">
+                    <div class="player-avatar black-bg"><i class="fa-solid fa-user"></i></div>
+                    <div class="player-details">
+                        <strong id="black-player-name">Quân Đen</strong>
+                        <span id="black-player-status" class="status-text">Đang chờ...</span>
+                    </div>
+                </div>
+                <div id="black-captured-pieces" class="player-captured black-pieces">
+                    <!-- Quân bị bắt sẽ hiển thị ở đây -->
+                </div>
+                <div id="black-player-timer" class="player-timer">03:00</div>
+            </div>
+
+            <!-- BÀN CỜ CHÍNH -->
+            <div class="board-wrapper">
                 <div id="chess-board" class="xiangqi-board">
+                    <svg id="board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+                        <!-- NỀN -->
+                        <rect x="0" y="0" width="900" height="1000" class="board-outer-bg" fill="#3E2723" />
+                        <rect x="15" y="15" width="870" height="970" class="board-background" fill="#E2C28E" />
+                        <!-- ẢNH MẶT BÀN CỜ THỰC TẾ (NẾU CÓ CHỌN) -->
+                        <image id="board-image-texture" x="15" y="15" width="870" height="970" preserveAspectRatio="none" style="display: none; opacity: 0.95;" />
+                        <rect x="45" y="45" width="810" height="910" class="board-inner-border" fill="none" stroke="#5D4037" stroke-width="4" />
 
-                    
-
-                    <svg id="board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet"
-                        xmlns="http://www.w3.org/2000/svg">
-
-                        <!-- ========================================= -->
-                        <!-- NỀN BÀN CỜ -->
-                        <!-- ========================================= -->
-
-                        <rect x="20" y="20" width="860" height="960" class="board-background" />
-
-
-                        <!-- ========================================= -->
-                        <!-- ĐƯỜNG NGANG -->
-                        <!-- ========================================= -->
-
+                        <!-- LƯỚI BÀN CỜ -->
                         <g class="board-lines">
-
+                            <!-- Ngang -->
                             <line x1="50" y1="50" x2="850" y2="50" />
-
                             <line x1="50" y1="150" x2="850" y2="150" />
-
                             <line x1="50" y1="250" x2="850" y2="250" />
-
                             <line x1="50" y1="350" x2="850" y2="350" />
-
                             <line x1="50" y1="450" x2="850" y2="450" />
-
                             <line x1="50" y1="550" x2="850" y2="550" />
-
                             <line x1="50" y1="650" x2="850" y2="650" />
-
                             <line x1="50" y1="750" x2="850" y2="750" />
-
                             <line x1="50" y1="850" x2="850" y2="850" />
-
                             <line x1="50" y1="950" x2="850" y2="950" />
-
-                        </g>
-
-
-                        <!-- ========================================= -->
-                        <!-- BIÊN DỌC -->
-                        <!-- ========================================= -->
-
-                        <g class="board-lines">
-
+                            
+                            <!-- Dọc Biên -->
                             <line x1="50" y1="50" x2="50" y2="950" />
-
                             <line x1="850" y1="50" x2="850" y2="950" />
-
+                            
+                            <!-- Dọc Trong -->
+                            <line x1="150" y1="50" x2="150" y2="450" /><line x1="150" y1="550" x2="150" y2="950" />
+                            <line x1="250" y1="50" x2="250" y2="450" /><line x1="250" y1="550" x2="250" y2="950" />
+                            <line x1="350" y1="50" x2="350" y2="450" /><line x1="350" y1="550" x2="350" y2="950" />
+                            <line x1="450" y1="50" x2="450" y2="450" /><line x1="450" y1="550" x2="450" y2="950" />
+                            <line x1="550" y1="50" x2="550" y2="450" /><line x1="550" y1="550" x2="550" y2="950" />
+                            <line x1="650" y1="50" x2="650" y2="450" /><line x1="650" y1="550" x2="650" y2="950" />
+                            <line x1="750" y1="50" x2="750" y2="450" /><line x1="750" y1="550" x2="750" y2="950" />
+                        <path class="star-marks" d="M 55 330 L 55 345 L 70 345 M 55 370 L 55 355 L 70 355 M 245 330 L 245 345 L 230 345 M 255 330 L 255 345 L 270 345 M 245 370 L 245 355 L 230 355 M 255 370 L 255 355 L 270 355 M 445 330 L 445 345 L 430 345 M 455 330 L 455 345 L 470 345 M 445 370 L 445 355 L 430 355 M 455 370 L 455 355 L 470 355 M 645 330 L 645 345 L 630 345 M 655 330 L 655 345 L 670 345 M 645 370 L 645 355 L 630 355 M 655 370 L 655 355 L 670 355 M 845 330 L 845 345 L 830 345 M 845 370 L 845 355 L 830 355 M 55 630 L 55 645 L 70 645 M 55 670 L 55 655 L 70 655 M 245 630 L 245 645 L 230 645 M 255 630 L 255 645 L 270 645 M 245 670 L 245 655 L 230 655 M 255 670 L 255 655 L 270 655 M 445 630 L 445 645 L 430 645 M 455 630 L 455 645 L 470 645 M 445 670 L 445 655 L 430 655 M 455 670 L 455 655 L 470 655 M 645 630 L 645 645 L 630 645 M 655 630 L 655 645 L 670 645 M 645 670 L 645 655 L 630 655 M 655 670 L 655 655 L 670 655 M 845 630 L 845 645 L 830 645 M 845 670 L 845 655 L 830 655 M 145 230 L 145 245 L 130 245 M 155 230 L 155 245 L 170 245 M 145 270 L 145 255 L 130 255 M 155 270 L 155 255 L 170 255 M 745 230 L 745 245 L 730 245 M 755 230 L 755 245 L 770 245 M 745 270 L 745 255 L 730 255 M 755 270 L 755 255 L 770 255 M 145 730 L 145 745 L 130 745 M 155 730 L 155 745 L 170 745 M 145 770 L 145 755 L 130 755 M 155 770 L 155 755 L 170 755 M 745 730 L 745 745 L 730 745 M 755 730 L 755 745 L 770 745 M 745 770 L 745 755 L 730 755 M 755 770 L 755 755 L 770 755" stroke="#4a3022" stroke-width="2" fill="none" />
                         </g>
 
-
-                        <!-- ========================================= -->
-                        <!-- CÁC ĐƯỜNG DỌC -->
-                        <!-- ========================================= -->
-
-                        <g class="board-lines">
-
-                            <line x1="150" y1="50" x2="150" y2="450" />
-                            <line x1="150" y1="550" x2="150" y2="950" />
-
-                            <line x1="250" y1="50" x2="250" y2="450" />
-                            <line x1="250" y1="550" x2="250" y2="950" />
-
-                            <line x1="350" y1="50" x2="350" y2="450" />
-                            <line x1="350" y1="550" x2="350" y2="950" />
-
-                            <line x1="450" y1="50" x2="450" y2="450" />
-                            <line x1="450" y1="550" x2="450" y2="950" />
-
-                            <line x1="550" y1="50" x2="550" y2="450" />
-                            <line x1="550" y1="550" x2="550" y2="950" />
-
-                            <line x1="650" y1="50" x2="650" y2="450" />
-                            <line x1="650" y1="550" x2="650" y2="950" />
-
-                            <line x1="750" y1="50" x2="750" y2="450" />
-                            <line x1="750" y1="550" x2="750" y2="950" />
-
-                        </g>
-
-
-                        <!-- ========================================= -->
                         <!-- SÔNG -->
-                        <!-- ========================================= -->
-
                         <g class="river-text">
-
-                            <text x="250" y="520" text-anchor="middle">
-                                楚 河
-                            </text>
-
-                            <text x="650" y="520" text-anchor="middle">
-                                漢 界
-                            </text>
-
+                            <text id="river-text-left" x="250" y="520" text-anchor="middle">楚 河</text>
+                            <text id="river-text-right" x="650" y="520" text-anchor="middle">漢 界</text>
                         </g>
 
-
-                        <!-- ========================================= -->
                         <!-- CUNG TƯỚNG TRÊN -->
-                        <!-- ========================================= -->
-
                         <g class="palace-lines">
-
                             <line x1="350" y1="50" x2="550" y2="250" />
-
                             <line x1="550" y1="50" x2="350" y2="250" />
-
                         </g>
 
-
-                        <!-- ========================================= -->
                         <!-- CUNG TƯỚNG DƯỚI -->
-                        <!-- ========================================= -->
-
                         <g class="palace-lines">
-
                             <line x1="350" y1="750" x2="550" y2="950" />
-
                             <line x1="550" y1="750" x2="350" y2="950" />
-
                         </g>
 
-
-                        <!-- ========================================= -->
                         <!-- LAYER -->
-                        <!-- ========================================= -->
-
                         <g id="moves-layer"></g>
-
                         <g id="pieces-layer"></g>
-
+                        <g id="hint-layer"></g>
                     </svg>
 
+                    <!-- CHIẾU TƯỚNG OVERLAY -->
+                    <div id="check-overlay" class="check-overlay hidden">
+                        <div class="check-content">
+                            <div class="check-icon"><i class="fa-solid fa-bolt"></i></div>
+                            <h2 id="check-overlay-title">CHIẾU TƯỚNG!</h2>
+                            <p id="check-overlay-message">Vua đang bị đe dọa.</p>
+                        </div>
+                    </div>
                 </div>
-
             </div>
 
-        </section>
-
-
-        <!-- ========================================= -->
-        <!-- QUÂN ĐEN -->
-        <!-- ========================================= -->
-
-        <aside class="player-panel">
-
-            <h2>⚫ QUÂN ĐEN</h2>
-
-            <div class="player-info">
-
-                <div class="avatar">
-                    👤
+            <!-- THÔNG TIN NGƯỜI CHƠI (QUÂN ĐỎ) -->
+            <div id="red-player-card" class="player-bar player-red">
+                <div class="player-info-left">
+                    <div class="player-avatar red-bg"><i class="fa-solid fa-user"></i></div>
+                    <div class="player-details">
+                        <strong id="red-player-name">Quân Đỏ</strong>
+                        <span id="red-player-status" class="status-text">Đang chờ...</span>
+                    </div>
                 </div>
-
-                <div>
-                    <strong>Người chơi 2</strong>
-                    <p id="black-player-status">⚪ Đang chờ</p>
+                <div id="red-captured-pieces" class="player-captured red-pieces">
+                    <!-- Quân bị bắt sẽ hiển thị ở đây -->
                 </div>
-
+                <div id="red-player-timer" class="player-timer">03:00</div>
             </div>
-
-        </aside>
-
-    </section>
-
-
-    <!-- ========================================= -->
-    <!-- TRẠNG THÁI GAME -->
-    <!-- ========================================= -->
-
-    <section class="game-status">
-
-        <h2 id="turn-status">
-            🔴 Lượt của QUÂN ĐỎ
-        </h2>
-
-    </section>
-
-
-    <!-- ========================================= -->
-    <!-- BUTTON -->
-    <!-- ========================================= -->
-
-    <section class="game-actions">
-
-        <button id="new-game-btn" type="button">
-            🔄 VÁN MỚI
-        </button>
-
-    </section>
-
-</div>
-
-
-<!-- ========================================= -->
-<!-- POPUP KẾT QUẢ -->
-<!-- ========================================= -->
-
-<div id="game-result-modal" class="game-modal">
-
-    <div class="game-modal-content">
-
-
-        <div class="result-icon">
-            🏆
         </div>
 
+        <!-- CỘT PHẢI: ĐIỀU KHIỂN & LỊCH SỬ NƯỚC ĐI -->
+        <div class="control-column">
+            
+            <div class="panel-box game-status-box">
+                <div class="status-header">Trạng thái ván đấu</div>
 
-        <h1 id="result-title">
-            CHIẾN THẮNG
-        </h1>
+            <div id="room-info-box" class="panel-box room-info-box hidden" style="border: 1px solid var(--accent-gold); background: rgba(212, 175, 55, 0.05);">
+                <div class="status-header" style="color: var(--accent-gold);"><i class="fa-solid fa-globe"></i> Phòng Online</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                    <span style="font-size: 14px; color: var(--text-muted);">Mã phòng:</span>
+                    <strong id="display-room-code" style="font-size: 18px; letter-spacing: 2px; color: var(--text-main);">----</strong>
+                </div>
+                <button id="copy-room-code-btn" class="btn-secondary" style="width: 100%; margin-top: 10px; padding: 6px; font-size: 12px;">
+                    <i class="fa-regular fa-copy"></i> Sao chép mã
+                </button>
+                <div id="opponent-invite-panel" class="opponent-invite-panel hidden">
+                    <label for="opponent-player-id">Mời đối thủ bằng ID người chơi</label>
+                    <div class="opponent-invite-row">
+                        <input type="text" id="opponent-player-id" placeholder="Ví dụ: CT-12345" autocomplete="off" />
+                        <button id="invite-player-btn" type="button"><i class="fa-solid fa-user-plus"></i> Mời chơi</button>
+                    </div>
+                    <p id="invite-player-status" role="status" aria-live="polite"></p>
+                </div>
+            </div>
+                <div class="turn-indicator">
+                    <i class="fa-solid fa-chess"></i> 
+                    <span id="turn-status">Lượt của QUÂN ĐỎ</span>
+                    <button id="quick-sound-btn" class="quick-sound-btn" type="button" title="Bật/Tắt âm thanh" style="margin-left: auto; background: none; border: none; color: var(--accent-gold); cursor: pointer; font-size: 16px;">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                </div>
+                <!-- NHẬN DIỆN THẾ TRẬN KHAI CUỘC -->
+                <div id="opening-recognition-panel" style="margin-top: 10px; padding: 6px 12px; background: rgba(212, 175, 55, 0.08); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12.5px;">
+                    <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <i class="fa-solid fa-book-open" style="color: var(--accent-gold);"></i>
+                        <span style="color: var(--text-muted);">Khai cuộc:</span>
+                        <strong id="opening-book-name" style="color: var(--accent-gold);">Chưa định hình</strong>
+                    </div>
+                    <span id="opening-book-code" style="font-size: 11px; background: rgba(255, 255, 255, 0.08); padding: 2px 6px; border-radius: 4px; color: #94a3b8;">ECCO</span>
+                </div>
+            </div>
 
+            <!-- CHAT ONLINE CHO PHÒNG ĐẤU -->
+            <div id="online-chat-box" class="panel-box online-chat-box hidden">
+                <div class="status-header">
+                    <i class="fa-solid fa-comments" style="color: #38bdf8;"></i> Trò chuyện trong trận
+                </div>
+                <div id="chat-messages" class="chat-messages-container" style="height: 120px; overflow-y: auto; background: var(--bg-navy-dark); border-radius: 6px; padding: 8px; font-size: 13px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
+                    <div style="color: var(--text-muted); font-size: 11px; text-align: center; font-style: italic;">Chào mừng bạn đến phòng đấu online!</div>
+                </div>
+                <div class="chat-input-row" style="display: flex; gap: 6px;">
+                    <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." maxlength="150" autocomplete="off" style="flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-navy-dark); color: var(--text-main); font-size: 12px;" />
+                    <button id="send-chat-btn" type="button" class="btn-primary" style="padding: 6px 12px; font-size: 12px;">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+                <!-- BIỂU CẢM VÀ CÂU CHAT NHANH (QUICK EMOTES & PHRASES) -->
+                <div class="quick-emojis-panel" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                    <!-- Hàng biểu cảm Emoji phản hồi tức thì -->
+                    <div style="display: flex; gap: 6px; justify-content: space-between; overflow-x: auto; padding-bottom: 2px;">
+                        <button type="button" class="quick-chat-tag" data-msg="🤝 Chào bạn, chúc thi đấu tốt!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Chào hỏi">🤝</button>
+                        <button type="button" class="quick-chat-tag" data-msg="👏 Nước cờ xuất sắc!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Khen ngợi">👏</button>
+                        <button type="button" class="quick-chat-tag" data-msg="🤔 Thế cờ khó quá, đang suy nghĩ..." style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Đang tính">🤔</button>
+                        <button type="button" class="quick-chat-tag" data-msg="😱 Nước cờ bất ngờ thật!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Kinh ngạc">😱</button>
+                        <button type="button" class="quick-chat-tag" data-msg="☕ Thư thái làm ngụm trà nào!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Uống trà">☕</button>
+                        <button type="button" class="quick-chat-tag" data-msg="🙏 Cảm ơn bạn vì ván cờ hay!" style="flex: 1; min-width: 38px; padding: 4px 6px; font-size: 14px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" title="Cảm ơn">🙏</button>
+                    </div>
+                    <!-- Hàng câu thoại nhanh phổ biến -->
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button type="button" class="quick-chat-tag" data-msg="Chúc kỳ hữu chơi vui vẻ! 👍" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: var(--text-muted); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">👍 Chúc vui</button>
+                        <button type="button" class="quick-chat-tag" data-msg="Đến lượt bạn đi kìa! ⏳" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: var(--text-muted); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">⏳ Đến lượt bạn</button>
+                        <button type="button" class="quick-chat-tag" data-msg="Cao thủ! Bái phục! 🫡" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: var(--text-muted); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">🫡 Bái phục</button>
+                        <button type="button" class="quick-chat-tag" data-msg="Làm lại ván nữa nhé? 🔄" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: var(--text-muted); padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">🔄 Ván nữa nhé</button>
+                    </div>
+                </div>
+            </div>
 
-        <h2 id="winner-name">
-            🔴 QUÂN ĐỎ
-        </h2>
+            <!-- ĐÁNH GIÁ THẾ TRẬN (HEURISTIC & MẠNG NƠ-RON) -->
+            <section class="panel-box evaluation-panel" aria-labelledby="evaluation-title">
+                <div class="section-title-row">
+                    <h3 id="evaluation-title"><i class="fa-solid fa-chart-simple text-gold"></i> Đánh giá thế trận</h3>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button id="engine-mode-toggle" class="last-move-toggle" type="button" title="Chuyển đổi giữa Động cơ Heuristic và Bảng vị trí phụ" style="background: rgba(212, 175, 55, 0.15); color: var(--accent-gold-dark); border-color: rgba(212, 175, 55, 0.3);">
+                            <i class="fa-solid fa-brain"></i> <span id="engine-mode-name">Heuristic</span>
+                        </button>
+                        <button id="last-move-toggle" class="last-move-toggle" type="button" aria-controls="last-move-box" aria-expanded="false">Nước vừa đi</button>
+                    </div>
+                </div>
+                <div class="advantage-summary">
+                    <span id="advantage-label">Thế trận cân bằng</span>
+                    <strong id="advantage-score">0.00</strong>
+                </div>
+                <div id="advantage-meter" class="advantage-meter" role="meter" aria-label="Ưu thế thế trận về phía Đỏ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+                    <span id="advantage-red" class="advantage-red" style="width:50%"></span>
+                    <span class="meter-center"></span>
+                </div>
+                <div class="advantage-legend">
+                    <span><i class="side-dot red-dot"></i> Đỏ <strong id="red-score">0</strong></span>
+                    <span>Đen <strong id="black-score">0</strong> <i class="side-dot black-dot"></i></span>
+                </div>
+                <div class="heuristic-cards">
+                    <div class="heuristic-card">
+                        <span class="heuristic-code">H1</span>
+                        <span class="heuristic-name">Vật chất</span>
+                        <strong id="h1-value">0</strong>
+                        <div id="h1-meter" class="heuristic-meter" role="meter" aria-label="Ưu thế H1 về phía Đỏ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span></span></div>
+                    </div>
+                    <div class="heuristic-card">
+                        <span class="heuristic-code">H2</span>
+                        <span class="heuristic-name">Vị trí</span>
+                        <strong id="h2-value">0</strong>
+                        <div id="h2-meter" class="heuristic-meter" role="meter" aria-label="Ưu thế H2 về phía Đỏ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span></span></div>
+                    </div>
+                    <div class="heuristic-card">
+                        <span class="heuristic-code">H3</span>
+                        <span class="heuristic-name">Chiến thuật</span>
+                        <strong id="h3-value">0</strong>
+                        <div id="h3-meter" class="heuristic-meter" role="meter" aria-label="Ưu thế H3 về phía Đỏ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span></span></div>
+                    </div>
+                    <div class="heuristic-card">
+                        <span class="heuristic-code">H4</span>
+                        <span class="heuristic-name">Đồng biên</span>
+                        <strong id="h4-value">0</strong>
+                        <div id="h4-meter" class="heuristic-meter" role="meter" aria-label="Ưu thế H4 về phía Đỏ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span></span></div>
+                    </div>
+                </div>
+                <details class="evaluation-help">
+                    <summary>Cách đọc chỉ số</summary>
+                    <p>Thanh đỏ tăng khi Đỏ có ưu thế, phần còn lại thuộc Đen. 100 điểm tương đương giá trị một Tốt trước sông. Tổng = H1 + H2 + H3 + H4, không phải Elo hay điểm thi đấu WXF. H4: 3/4+ quân Xe–Mã–Pháo qua sông cùng cánh và ít nhất 2 quân gây áp lực vùng cung: +60/+100 mỗi bên. Đây là tiêu chí xấp xỉ của đồ án. Khi xem bảng vị trí phụ, các thẻ H1–H4 vẫn là phân rã của công thức chính; điểm bảng phụ là một phép so sánh riêng.</p>
+                </details>
+                <div id="last-move-box" class="last-move-summary" hidden>
+                    <span class="last-move-label">NƯỚC VỪA ĐI</span>
+                    <p><strong id="lm-piece"></strong><span id="lm-desc"></span></p>
+                    <div class="delta-badges">
+                        <span>H1 <b id="lm-h1">0</b></span>
+                        <span>H2 <b id="lm-h2">0</b></span>
+                        <span>H3 <b id="lm-h3">0</b></span>
+                        <span>H4 <b id="lm-h4">0</b></span>
+                        <span class="delta-total">Tổng <b id="lm-total">0</b></span>
+                    </div>
+                    <span class="delta-caption">Thay đổi ưu thế của bên vừa đi</span>
+                </div>
+            </section>
 
+            <div class="panel-box move-history-box">
+                <div class="status-header">
+                    <i class="fa-solid fa-list-ol"></i> Lịch sử nước đi
+                </div>
+                <div class="move-list" id="move-history-container">
+                    <!-- Move list will be appended here -->
+                    <div class="empty-history">Chưa có nước đi nào</div>
+                </div>
+            </div>
 
-        <p id="result-message">
-            Đã giành chiến thắng!
-        </p>
+            <div class="panel-box action-box">
+                <div class="action-grid">
+                    <button id="undo-btn" class="action-btn" title="Đi lại">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span>Đi lại</span>
+                    </button>
+                    <div class="hint-menu-container">
+                        <button id="hint-btn" class="action-btn" title="Gợi ý từ AI">
+                            <i class="fa-solid fa-lightbulb" style="color: var(--accent-gold);"></i>
+                            <span>Gợi ý <i class="fa-solid fa-caret-up" style="font-size: 10px;"></i></span>
+                        </button>
+                        <div id="hint-dropdown" class="hint-dropdown-menu hidden">
+                            <button id="hint-piece-btn" type="button" class="hint-dropdown-item" title="Chỉ làm nổi bật quân cờ nên đi">
+                                <i class="fa-solid fa-chess-knight" style="color: #38bdf8; font-size: 16px;"></i>
+                                <div>
+                                    <span>Gợi ý quân cờ</span>
+                                    <small>Chỉ highlight quân cờ tối ưu</small>
+                                </div>
+                            </button>
+                            <button id="hint-full-btn" type="button" class="hint-dropdown-item" title="Chỉ thẳng đường đi tới đích">
+                                <i class="fa-solid fa-location-arrow" style="color: #f59e0b; font-size: 16px;"></i>
+                                <div>
+                                    <span>Gợi ý có nước đi</span>
+                                    <small>Mũi tên chỉ thẳng nước đi</small>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="draw-btn" class="action-btn" title="Xin hòa">
+                        <i class="fa-solid fa-handshake"></i>
+                        <span>Xin hòa</span>
+                    </button>
+                    <button id="resign-btn" class="action-btn danger-text" title="Đầu hàng">
+                        <i class="fa-solid fa-flag"></i>
+                        <span>Đầu hàng</span>
+                    </button>
+                </div>
 
+                <!-- AI VS AI CONTROLS (Chỉ hiện khi chơi chế độ AI vs AI) -->
+                <div id="aivai-controls" class="aivai-controls-panel hidden" style="margin-top: 10px; padding: 10px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 12px; font-weight: 700; color: #9333ea;"><i class="fa-solid fa-microchip"></i> Điều khiển AI vs AI</span>
+                        <span id="aivai-status-pill" style="font-size: 11px; background: rgba(168, 85, 247, 0.2); color: #9333ea; padding: 2px 6px; border-radius: 4px; font-weight: 600;">Đang chạy</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                        <button id="aivai-toggle-btn" class="btn-secondary" type="button" style="padding: 6px; font-size: 12px; justify-content: center;">
+                            <i class="fa-solid fa-pause"></i> Tạm dừng
+                        </button>
+                        <button id="aivai-step-btn" class="btn-secondary" type="button" style="padding: 6px; font-size: 12px; justify-content: center;">
+                            <i class="fa-solid fa-forward-step"></i> Nước kế
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="action-footer">
+                    <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px;">
+                        <button id="copy-fen-btn" class="btn-secondary" style="flex: 1; padding: 9px; font-size: 13px;" type="button" title="Sao chép chuỗi FEN thế cờ hiện tại">
+                            <i class="fa-regular fa-copy" style="color: var(--accent-gold);"></i> Chép FEN
+                        </button>
+                        <button id="export-pgn-btn" class="btn-secondary" style="flex: 1; padding: 9px; font-size: 13px;" type="button" title="Tải biên bản các nước đi của ván cờ">
+                            <i class="fa-solid fa-download" style="color: var(--accent-gold);"></i> Xuất biên bản
+                        </button>
+                    </div>
+                    <button id="flip-board-btn" class="btn-secondary w-full mb-2" type="button" title="Đảo góc nhìn bàn cờ">
+                        <i class="fa-solid fa-arrows-rotate"></i> Xoay bàn cờ
+                    </button>
+                    <button id="new-game-btn" class="btn-primary w-full mb-2">
+                        <i class="fa-solid fa-rotate"></i> Ván mới
+                    </button>
+                    <button id="change-mode-btn" class="btn-secondary w-full">
+                        <i class="fa-solid fa-gear"></i> Đổi chế độ
+                    </button>
+                </div>
+            </div>
 
-        <button id="result-new-game-btn" type="button">
-            🔄 CHƠI VÁN MỚI
-        </button>
+        </div>
 
+    </section>
+</div>
 
-        <button id="result-close-btn" type="button">
-            ĐÓNG
-        </button>
+<!-- ========================================================= -->
+<!-- POPUPS (MODALS) -->
+<!-- ========================================================= -->
 
-
+<!-- KẾT QUẢ -->
+<div id="game-result-modal" class="custom-modal hidden">
+    <div class="modal-content">
+        <div class="modal-icon text-gold"><i class="fa-solid fa-trophy"></i></div>
+        <h2 id="result-title">KẾT THÚC VÁN CỜ</h2>
+        <h3 id="winner-name" class="winner-name">QUÂN ĐỎ THẮNG</h3>
+        <p id="result-message">Chúc mừng bạn đã giành chiến thắng!</p>
+        <div class="modal-actions" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+            <button id="result-new-game-btn" class="btn-primary" style="padding: 10px 18px;">Ván mới</button>
+            <a id="result-review-btn" href="#" class="btn-primary" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;">
+                <i class="fa-solid fa-chart-line"></i> Phân tích ván cờ
+            </a>
+            <button id="result-close-btn" class="btn-secondary" style="padding: 10px 18px;">Đóng</button>
+        </div>
     </div>
-
 </div>
 
-
-<!-- ========================================= -->
-<!-- POPUP XÁC NHẬN ĐẦU HÀNG -->
-<!-- ========================================= -->
-
-<div id="resign-modal" class="game-modal">
-
-    <div class="game-modal-content">
-
-        <div class="result-icon">
-            ⚠️
-        </div>
-
-
-        <h1>
-            XÁC NHẬN ĐẦU HÀNG
-        </h1>
-
-
-        <p>
-            Bạn có chắc chắn muốn đầu hàng không?
-        </p>
-
-
+<!-- XÁC NHẬN ĐẦU HÀNG -->
+<div id="resign-modal" class="custom-modal hidden">
+    <div class="modal-content">
+        <div class="modal-icon text-danger"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h2>XÁC NHẬN ĐẦU HÀNG</h2>
+        <p>Bạn có chắc chắn muốn đầu hàng? Rời bàn khi ván đang diễn ra sẽ được tính là đầu hàng.</p>
         <div class="modal-actions">
-
-            <button id="confirm-resign-btn" type="button" class="danger-btn">
-                🏳️ ĐẦU HÀNG
-            </button>
-
-
-            <button id="cancel-resign-btn" type="button">
-                HỦY
-            </button>
-
+            <button id="confirm-resign-btn" class="btn-danger">Đầu hàng</button>
+            <button id="cancel-resign-btn" class="btn-secondary">Hủy</button>
         </div>
-
     </div>
-
 </div>
 
+<!-- XÁC NHẬN XIN HÒA -->
+<div id="confirm-draw-modal" class="custom-modal hidden">
+    <div class="modal-content">
+        <div class="modal-icon text-gold"><i class="fa-solid fa-handshake"></i></div>
+        <h2>XÁC NHẬN XIN HÒA</h2>
+        <p>Bạn có chắc chắn muốn gửi lời đề nghị hòa cờ tới đối thủ? (Tối đa 2 lần/ván)</p>
+        <div class="modal-actions">
+            <button id="confirm-draw-submit-btn" class="btn-primary">Gửi lời xin hòa</button>
+            <button id="confirm-draw-cancel-btn" class="btn-secondary">Hủy</button>
+        </div>
+    </div>
+</div>
 
-<script src="~/js/game.js"></script>
+<!-- LỜI MỜI XIN HÒA TỪ ĐỐI THỦ -->
+<div id="draw-offer-modal" class="custom-modal hidden">
+    <div class="modal-content">
+        <div class="modal-icon text-gold"><i class="fa-solid fa-handshake"></i></div>
+        <h2>ĐỐI THỦ XIN HÒA</h2>
+        <p id="draw-offer-text">Đối thủ đang đề nghị hòa ván cờ này. Bạn có đồng ý không?</p>
+        <div id="draw-offer-countdown" style="font-weight: bold; color: var(--accent-gold-dark); margin-bottom: 12px;">Tự động từ chối sau: 15s</div>
+        <div class="modal-actions">
+            <button id="accept-draw-btn" class="btn-primary">Đồng ý</button>
+            <button id="decline-draw-btn" class="btn-secondary">Từ chối</button>
+        </div>
+    </div>
+</div>
+
+<!-- NHẬP THẾ CỜ (FEN IMPORT) -->
+<div id="import-fen-modal" class="custom-modal hidden">
+    <div class="modal-content" style="max-width: 480px; text-align: left;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <div class="modal-icon text-gold" style="font-size: 24px; margin: 0;"><i class="fa-solid fa-file-import"></i></div>
+            <h2 style="margin: 0; font-size: 18px;">NẠP THẾ CỜ (FEN IMPORT)</h2>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+            Nhập chuỗi ký hiệu FEN tiêu chuẩn của Cờ Tướng (Xiangqi FEN) để tạo bàn cờ với thế trận tương ứng.
+        </p>
+        <div style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text-main);">Chuỗi FEN:</label>
+            <textarea id="import-fen-input" rows="3" style="width: 100%; box-sizing: border-box; background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; resize: vertical;" placeholder="Ví dụ: rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"></textarea>
+        </div>
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text-main);">Hoặc chọn thế cờ mẫu:</label>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn-secondary fen-preset-btn" data-fen="rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" style="font-size: 11px; padding: 4px 10px;">Bàn cờ chuẩn</button>
+                <button type="button" class="btn-secondary fen-preset-btn" data-fen="3k5/4a4/4b4/9/9/9/9/4B4/4A4/4K4 w - - 0 1" style="font-size: 11px; padding: 4px 10px;">Tàn cuộc Tướng Sĩ Tượng</button>
+                <button type="button" class="btn-secondary fen-preset-btn" data-fen="4k4/4a4/4ba3/9/9/9/9/4B4/4A4/3K5 w - - 0 1" style="font-size: 11px; padding: 4px 10px;">Thế sát cơ bản</button>
+            </div>
+        </div>
+        <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button id="import-fen-submit-btn" class="btn-primary" style="padding: 8px 18px;"><i class="fa-solid fa-play"></i> Bắt đầu từ thế này</button>
+            <button id="import-fen-cancel-btn" class="btn-secondary" style="padding: 8px 14px;">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- BÀN CỜ TÙY CHỈNH (BOARD EDITOR - XẾP THẾ CỜ) -->
+<!-- ========================================================= -->
+<div id="board-editor-modal" class="custom-modal hidden">
+    <div class="modal-content" style="max-width: 920px; width: 95%; text-align: left; padding: 20px 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="modal-icon text-gold" style="font-size: 24px; margin: 0;"><i class="fa-solid fa-chess-board"></i></div>
+                <div>
+                    <h2 style="margin: 0; font-size: 18px;">THIẾT LẬP BÀN CỜ TÙY CHỈNH (BOARD EDITOR)</h2>
+                    <span style="font-size: 12.5px; color: var(--text-muted);">Kéo thả hoặc click chọn quân cờ bên dưới rồi đặt vào bàn cờ để tạo thế cờ theo ý bạn</span>
+                </div>
+            </div>
+            <button id="editor-close-btn" type="button" style="background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: minmax(320px, 440px) 1fr; gap: 20px; align-items: start;">
+            <!-- BÀN CỜ XẾP MINI -->
+            <div style="width: 100%; aspect-ratio: 9/10; position: relative; background: #3e2723; border-radius: 10px; overflow: hidden; border: 2px solid #5d4037;">
+                <svg id="editor-board-svg" viewBox="0 0 900 1000" style="width: 100%; height: 100%; display: block; cursor: crosshair;">
+                    <rect x="0" y="0" width="900" height="1000" fill="#3E2723" />
+                    <rect x="15" y="15" width="870" height="970" fill="#E2C28E" />
+                    <g stroke="#4a3022" stroke-width="4">
+                        @for (var row = 0; row < 10; row++) { <line x1="50" y1="@(50 + row * 100)" x2="850" y2="@(50 + row * 100)" /> }
+                        <line x1="50" y1="50" x2="50" y2="950" /><line x1="850" y1="50" x2="850" y2="950" />
+                        @for (var col = 1; col < 8; col++) { <line x1="@(50 + col * 100)" y1="50" x2="@(50 + col * 100)" y2="450" /><line x1="@(50 + col * 100)" y1="550" x2="@(50 + col * 100)" y2="950" /> }
+                    </g>
+                    <g stroke="#4a3022" stroke-width="3">
+                        <line x1="350" y1="50" x2="550" y2="250" /><line x1="550" y1="50" x2="350" y2="250" />
+                        <line x1="350" y1="750" x2="550" y2="950" /><line x1="550" y1="750" x2="350" y2="950" />
+                    </g>
+                    <g fill="#78350f" font-size="48" font-weight="bold" font-family="'KaiTi', serif" text-anchor="middle" letter-spacing="6">
+                        <text x="250" y="520">楚 河</text><text x="650" y="520">漢 界</text>
+                    </g>
+                    <g id="editor-pieces-layer"></g>
+                </svg>
+            </div>
+
+            <!-- BẢNG ĐIỀU KHIỂN & KHAY QUÂN CỜ -->
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- CHỌN QUÂN ĐỂ ĐẶT -->
+                <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 12.5px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">
+                        1. Khay quân Đỏ (Bấm để chọn quân đặt):
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="editor-red-tray">
+                        <button type="button" class="editor-piece-btn" data-type="King" data-color="Red" data-text="帥" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #c00000; color: #c00000; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">帥</button>
+                        <button type="button" class="editor-piece-btn" data-type="Advisor" data-color="Red" data-text="仕" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #c00000; color: #c00000; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">仕</button>
+                        <button type="button" class="editor-piece-btn" data-type="Elephant" data-color="Red" data-text="相" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #c00000; color: #c00000; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">相</button>
+                        <button type="button" class="editor-piece-btn" data-type="Horse" data-color="Red" data-text="傌" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #c00000; color: #c00000; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">傌</button>
+                        <button type="button" class="editor-piece-btn" data-type="Rook" data-color="Red" data-text="俥" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #c00000; color: #c00000; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">俥</button>
+                        <button type="button" class="editor-piece-btn" data-type="Cannon" data-color="Red" data-text="炮" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #c00000; color: #c00000; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">炮</button>
+                        <button type="button" class="editor-piece-btn" data-type="Pawn" data-color="Red" data-text="兵" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #c00000; color: #c00000; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">兵</button>
+                    </div>
+
+                    <div style="font-size: 12.5px; font-weight: 700; margin: 12px 0 8px; color: var(--text-main);">
+                        2. Khay quân Đen (Bấm để chọn quân đặt):
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="editor-black-tray">
+                        <button type="button" class="editor-piece-btn" data-type="King" data-color="Black" data-text="將" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #111; color: #111; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">將</button>
+                        <button type="button" class="editor-piece-btn" data-type="Advisor" data-color="Black" data-text="士" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #111; color: #111; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">士</button>
+                        <button type="button" class="editor-piece-btn" data-type="Elephant" data-color="Black" data-text="象" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #111; color: #111; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">象</button>
+                        <button type="button" class="editor-piece-btn" data-type="Horse" data-color="Black" data-text="馬" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #111; color: #111; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">馬</button>
+                        <button type="button" class="editor-piece-btn" data-type="Rook" data-color="Black" data-text="車" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #111; color: #111; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">車</button>
+                        <button type="button" class="editor-piece-btn" data-type="Cannon" data-color="Black" data-text="砲" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #111; color: #111; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">砲</button>
+                        <button type="button" class="editor-piece-btn" data-type="Pawn" data-color="Black" data-text="卒" style="width: 38px; height: 38px; border-radius: 50%; background: #E2C28E; border: 2px solid #111; color: #111; font-family: SimSun; font-size: 20px; font-weight: 900; cursor: pointer;">卒</button>
+                        <button type="button" id="editor-eraser-btn" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; margin-left: auto;" title="Click ô cờ để xóa quân"><i class="fa-solid fa-eraser"></i> Tẩy ô cờ</button>
+                    </div>
+                </div>
+
+                <!-- TÙY CHỌN & CHUỖI FEN SINH TỰ ĐỘNG -->
+                <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Chuỗi FEN tự động:</span>
+                        <div style="display: flex; gap: 8px;">
+                            <label style="font-size: 12px; font-weight: 600; cursor: pointer;">
+                                <input type="radio" name="editor-turn" value="w" checked /> Đỏ đi trước
+                            </label>
+                            <label style="font-size: 12px; font-weight: 600; cursor: pointer;">
+                                <input type="radio" name="editor-turn" value="b" /> Đen đi trước
+                            </label>
+                        </div>
+                    </div>
+                    <input type="text" id="editor-fen-output" readonly style="width: 100%; box-sizing: border-box; background: var(--bg-navy-panel); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 8px; font-family: monospace; font-size: 11.5px;" />
+                </div>
+
+                <!-- THAO TÁC -->
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" id="editor-clear-btn" class="btn-secondary" style="flex: 1; padding: 10px; font-size: 13px;"><i class="fa-solid fa-trash-can"></i> Xóa bàn cờ</button>
+                    <button type="button" id="editor-standard-btn" class="btn-secondary" style="flex: 1; padding: 10px; font-size: 13px;"><i class="fa-solid fa-rotate-left"></i> Bàn cờ chuẩn</button>
+                    <button type="button" id="editor-play-btn" class="btn-primary" style="flex: 2; padding: 10px; font-size: 13px; font-weight: 700;"><i class="fa-solid fa-play"></i> Đấu cờ từ thế này</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- TRA CỨU KHAI CUỘC (OPENING BOOK EXPLORER) -->
+<!-- ========================================================= -->
+<div id="opening-explorer-modal" class="custom-modal hidden">
+    <div class="modal-content" style="max-width: 840px; width: 95%; text-align: left; padding: 20px 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="modal-icon text-gold" style="font-size: 24px; margin: 0;"><i class="fa-solid fa-book-bookmark"></i></div>
+                <div>
+                    <h2 style="margin: 0; font-size: 18px;">CƠ SỞ DỮ LIỆU KHAI CUỘC (OPENING BOOK)</h2>
+                    <span style="font-size: 12.5px; color: var(--text-muted);">Tra cứu thế trận, phương án biến thể và tỷ lệ thắng dựa trên hàng ngàn kỳ phổ chuẩn</span>
+                </div>
+            </div>
+            <button id="opening-explorer-close-btn" type="button" style="background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 260px 1fr; gap: 18px;">
+            <!-- DANH SÁCH KHAI CUỘC -->
+            <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; max-height: 380px; overflow-y: auto;" id="opening-book-menu">
+                <div class="opening-menu-item active" data-id="1" style="padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; background: rgba(212, 175, 55, 0.15); border: 1px solid rgba(212, 175, 55, 0.3);">
+                    <div style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">Pháo Đầu (Trung Pháo)</div>
+                    <div style="font-size: 11px; color: var(--accent-gold); font-weight: 600;">Mã: ECCO-01</div>
+                </div>
+                <div class="opening-menu-item" data-id="2" style="padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;">
+                    <div style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">Bình Phong Mã</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Mã: ECCO-02</div>
+                </div>
+                <div class="opening-menu-item" data-id="3" style="padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;">
+                    <div style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">Thuận Pháo</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Mã: ECCO-03</div>
+                </div>
+                <div class="opening-menu-item" data-id="4" style="padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;">
+                    <div style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">Tiên Nhân Chỉ Lộ</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Mã: ECCO-04</div>
+                </div>
+                <div class="opening-menu-item" data-id="5" style="padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;">
+                    <div style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">Khởi Mã Cuộc (Thượng Tiên)</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Mã: ECCO-05</div>
+                </div>
+            </div>
+
+            <!-- CHI TIẾT THẾ TRẬN & NƯỚC ĐI BIẾN THỂ -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px;">
+                    <h3 id="opening-detail-title" style="margin: 0 0 6px 0; font-size: 16px; color: var(--text-main);">Pháo Đầu (Trung Pháo)</h3>
+                    <p id="opening-detail-desc" style="margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+                        Thế trận công thủ toàn diện, Pháo vào trung lộ kiểm soát lộ 5, tạo sức ép thẳng vào cung Tướng đối phương.
+                    </p>
+                </div>
+
+                <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; flex: 1;">
+                    <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--text-main); display: flex; justify-content: space-between;">
+                        <span>Nước đi biến thể phổ biến:</span>
+                        <span style="font-size: 11.5px; color: var(--text-muted);">Tỷ lệ Thắng / Hòa / Thua</span>
+                    </div>
+
+                    <div id="opening-moves-table" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Động sinh bằng JS -->
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" id="opening-practice-btn" class="btn-primary" style="padding: 9px 18px; font-weight: 700;"><i class="fa-solid fa-play"></i> Thực hành thế trận này</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+<script src="~/js/arena-ui.js" asp-append-version="true"></script>
+<script src="~/js/game.js" asp-append-version="true"></script>

@@ -1,0 +1,526 @@
+@model ChessCore.Models.MasterGame
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<style>
+    .master-detail-layout {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 16px 20px;
+        display: grid;
+        grid-template-columns: minmax(420px, 1fr) 460px;
+        gap: 20px;
+        color: var(--text-main);
+        box-sizing: border-box;
+    }
+
+    @@media (max-width: 960px) {
+        .master-detail-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* CARD CHỨA BÀN CỜ */
+    .master-board-card {
+        background: var(--bg-navy-panel);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 16px 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .master-match-header-bar {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .master-board-wrapper {
+        width: 100%;
+        max-width: 540px;
+        aspect-ratio: 9 / 10;
+        position: relative;
+        margin: 0 auto;
+    }
+
+    /* CARD BIÊN BẢN VÀ DIỄN BIẾN */
+    .master-side-card {
+        background: var(--bg-navy-panel);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .side-section-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .side-section-title i {
+        color: var(--accent-gold);
+    }
+
+    .match-meta-pill {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--bg-navy-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px 14px;
+    }
+
+    .move-table-box {
+        background: var(--bg-navy-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    .move-row-item {
+        display: grid;
+        grid-template-columns: 36px 1fr 1fr;
+        gap: 8px;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 13.5px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .move-row-item:hover, .move-row-item.active {
+        background: var(--bg-navy-light);
+    }
+
+    .move-row-item.active {
+        font-weight: 700;
+        border-left: 3px solid var(--accent-gold);
+    }
+
+    .pgn-raw-toggle {
+        font-family: 'Consolas', monospace;
+        background: var(--bg-navy-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        white-space: pre-wrap;
+        line-height: 1.6;
+    }
+
+    /* REPLAY CONTROLS */
+    .master-controls {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 14px;
+        width: 100%;
+    }
+
+    .btn-step {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-navy-panel);
+        color: var(--text-main);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-step:hover {
+        background: var(--accent-gold);
+        color: #ffffff;
+        border-color: var(--accent-gold);
+    }
+
+    .chess-piece text {
+        font-family: "SimSun", "STSong", "Songti SC", serif;
+        font-size: 52px;
+        font-weight: 900;
+        text-anchor: middle;
+        dominant-baseline: middle;
+        user-select: none;
+    }
+    .chess-piece.red text { fill: #c00000; }
+    .chess-piece.black text { fill: #0f172a; }
+</style>
+
+<div style="max-width: 1400px; margin: 0 auto; padding: 12px 20px 0;">
+    <a href="/MasterGame" style="color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px;">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại Danh sách Kỳ phổ
+    </a>
+</div>
+
+<div class="master-detail-layout">
+    <!-- CỘT BÀN CỜ TƯƠNG TÁC -->
+    <div class="master-board-card">
+        <div class="master-match-header-bar">
+            <div>
+                <h2 style="font-size: 18px; font-weight: 800; margin: 0 0 4px 0; color: var(--text-main);">
+                    @Model.Title
+                </h2>
+                <div style="font-size: 13px; color: var(--accent-gold); font-weight: 600;">
+                    <i class="fa-solid fa-trophy"></i> @Model.Event @(Model.EventDate.HasValue ? $"({Model.EventDate.Value.ToString("yyyy")})" : "")
+                </div>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); color: #10b981; padding: 4px 12px; border-radius: 14px; font-size: 13px; font-weight: 700;">
+                Kết quả: @Model.Result
+            </div>
+        </div>
+
+        <!-- BÀN CỜ SVG THỰC TẾ -->
+        <div class="master-board-wrapper">
+            <svg id="master-board-svg" viewBox="0 0 900 1000" style="width: 100%; height: 100%; display: block;">
+                <!-- NỀN BÀN CỜ -->
+                <rect x="0" y="0" width="900" height="1000" fill="#3E2723" />
+                <rect x="15" y="15" width="870" height="970" fill="#E2C28E" />
+                <image id="board-image-texture" x="15" y="15" width="870" height="970" preserveAspectRatio="none" style="display: none; opacity: 0.95;" />
+                <rect x="45" y="45" width="810" height="910" fill="none" stroke="#5D4037" stroke-width="4" />
+
+                <!-- ĐƯỜNG KẺ BÀN CỜ -->
+                <g stroke="#4a3022" stroke-width="4">
+                    @for (var row = 0; row < 10; row++) { <line x1="50" y1="@(50 + row * 100)" x2="850" y2="@(50 + row * 100)" /> }
+                    <line x1="50" y1="50" x2="50" y2="950" /><line x1="850" y1="50" x2="850" y2="950" />
+                    @for (var col = 1; col < 8; col++) { <line x1="@(50 + col * 100)" y1="50" x2="@(50 + col * 100)" y2="450" /><line x1="@(50 + col * 100)" y1="550" x2="@(50 + col * 100)" y2="950" /> }
+                </g>
+
+                <!-- CUNG TƯỚNG VÀ SÔNG -->
+                <g stroke="#4a3022" stroke-width="3">
+                    <line x1="350" y1="50" x2="550" y2="250" /><line x1="550" y1="50" x2="350" y2="250" />
+                    <line x1="350" y1="750" x2="550" y2="950" /><line x1="550" y1="750" x2="350" y2="950" />
+                </g>
+                <g fill="#78350f" font-size="52" font-weight="bold" font-family="'KaiTi', serif" text-anchor="middle" letter-spacing="8">
+                    <text x="250" y="520">楚 河</text><text x="650" y="520">漢 界</text>
+                </g>
+
+                <!-- LAYER QUÂN CỜ VÀ HIGHLIGHT -->
+                <g id="master-highlight-layer"></g>
+                <g id="master-pieces-layer"></g>
+            </svg>
+        </div>
+
+        <!-- BỘ NÚT ĐIỀU HƯỚNG BƯỚC ĐI -->
+        <div class="master-controls">
+            <button type="button" class="btn-step" id="btn-first" title="Bắt đầu ván cờ"><i class="fa-solid fa-backward-step"></i></button>
+            <button type="button" class="btn-step" id="btn-prev" title="Nước trước"><i class="fa-solid fa-chevron-left"></i></button>
+            <button type="button" class="btn-step" id="btn-auto" title="Tự động diễn giải"><i class="fa-solid fa-play"></i></button>
+            <button type="button" class="btn-step" id="btn-next" title="Nước kế tiếp"><i class="fa-solid fa-chevron-right"></i></button>
+            <button type="button" class="btn-step" id="btn-last" title="Nước cờ tàn cuộc"><i class="fa-solid fa-forward-step"></i></button>
+        </div>
+    </div>
+
+    <!-- CỘT CHI TIẾT KỲ THỦ & BIÊN BẢN DIỄN BIẾN -->
+    <div class="master-side-card">
+        <!-- ĐỐI ĐẦU -->
+        <div>
+            <h3 class="side-section-title"><i class="fa-solid fa-user-group"></i> Kỳ thủ đối đầu</h3>
+            <div class="match-meta-pill" style="margin-top: 8px;">
+                <div>
+                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Tiên thủ (Đỏ)</div>
+                    <div style="color: #c00000; font-weight: 800; font-size: 15px; margin-top: 2px;">
+                        <i class="fa-solid fa-circle" style="font-size: 8px;"></i> @Model.RedPlayer
+                    </div>
+                </div>
+                <div style="font-weight: 800; color: var(--accent-gold); font-size: 18px;">VS</div>
+                <div style="text-align: right;">
+                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Hậu thủ (Đen)</div>
+                    <div style="color: var(--text-main); font-weight: 800; font-size: 15px; margin-top: 2px;">
+                        @Model.BlackPlayer <i class="fa-regular fa-circle" style="font-size: 8px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- THẾ TRẬN KHAI CUỘC -->
+        <div>
+            <h3 class="side-section-title"><i class="fa-solid fa-book-open"></i> Thế trận khai cuộc</h3>
+            <div style="background: rgba(217, 119, 6, 0.08); border: 1px solid rgba(217, 119, 6, 0.2); border-radius: 8px; padding: 10px 14px; margin-top: 8px; font-size: 13.5px; font-weight: 700; color: var(--accent-gold);">
+                <i class="fa-solid fa-chess-knight"></i> @(Model.OpeningName ?? "Khai cuộc kinh điển")
+            </div>
+        </div>
+
+        <!-- BẢNG BIÊN BẢN NƯỚC ĐI TƯƠNG TÁC -->
+        <div style="display: flex; flex-direction: column; flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <h3 class="side-section-title"><i class="fa-solid fa-list-ol"></i> Tiến trình ván đấu (<span id="current-step-label">Khởi đầu</span>)</h3>
+                <span id="move-count-badge" style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">10 hiệp</span>
+            </div>
+            
+            <div class="move-table-box" id="master-move-list">
+                <!-- Javascript sẽ tự động sinh danh sách nước đi song ngữ có thể click vào -->
+            </div>
+        </div>
+
+        <!-- BIÊN BẢN GỐC PGN -->
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Biên bản chuẩn PGN (WXF)</span>
+                <button type="button" id="btn-toggle-pgn" style="background: none; border: none; color: var(--accent-gold); font-size: 12px; cursor: pointer; font-weight: 600;">Hiện/Ẩn</button>
+            </div>
+            <div id="pgn-content-box" class="pgn-raw-toggle" style="display: none;">@Model.PgnContent</div>
+        </div>
+
+        <div style="margin-top: auto; padding-top: 10px;">
+            <a href="/Game" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px; background: var(--accent-gold); color: #ffffff; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 14px;">
+                <i class="fa-solid fa-chess-board"></i> Vào Bàn Cờ Thực Chiến
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    (function() {
+        // Danh sách nước đi mẫu chuyển động cho bàn cờ
+        // Các nước đi cơ bản (tọa độ row 0..9, col 0..8)
+        const sampleMoves = [
+            { notation: "Pháo 2 bình 5 (C2.5)", from: { r: 7, c: 7 }, to: { r: 7, c: 4 }, piece: { type: "Cannon", color: "Red", text: "砲" } },
+            { notation: "Mã 8 tiến 7 (H8.7)", from: { r: 0, c: 1 }, to: { r: 2, c: 2 }, piece: { type: "Horse", color: "Black", text: "馬" } },
+            { notation: "Mã 2 tiến 3 (H2.3)", from: { r: 9, c: 7 }, to: { r: 7, c: 6 }, piece: { type: "Horse", color: "Red", text: "傌" } },
+            { notation: "Xe 9 tiến 1 (R9.1)", from: { r: 0, c: 0 }, to: { r: 1, c: 0 }, piece: { type: "Rook", color: "Black", text: "車" } },
+            { notation: "Xe 1 bình 2 (R1.2)", from: { r: 9, c: 8 }, to: { r: 9, c: 7 }, piece: { type: "Rook", color: "Red", text: "俥" } },
+            { notation: "Mã 2 tiến 3 (H2.3)", from: { r: 0, c: 7 }, to: { r: 2, c: 6 }, piece: { type: "Horse", color: "Black", text: "馬" } },
+            { notation: "Binh 7 tiến 1 (P7.1)", from: { r: 6, c: 6 }, to: { r: 5, c: 6 }, piece: { type: "Pawn", color: "Red", text: "兵" } },
+            { notation: "Binh 7 tiến 1 (P7.1)", from: { r: 3, c: 6 }, to: { r: 4, c: 6 }, piece: { type: "Pawn", color: "Black", text: "卒" } },
+            { notation: "Mã 8 tiến 7 (H8.7)", from: { r: 9, c: 1 }, to: { r: 7, c: 2 }, piece: { type: "Horse", color: "Red", text: "傌" } },
+            { notation: "Binh 3 tiến 1 (P3.1)", from: { r: 3, c: 2 }, to: { r: 4, c: 2 }, piece: { type: "Pawn", color: "Black", text: "卒" } }
+        ];
+
+        let currentStep = -1;
+        let isPlaying = false;
+        let playInterval = null;
+
+        // Trạng thái quân cờ ban đầu
+        function getInitialPieces() {
+            return [
+                { r: 0, c: 0, type: "Rook", color: "Black", text: "車" },
+                { r: 0, c: 1, type: "Horse", color: "Black", text: "馬" },
+                { r: 0, c: 2, type: "Elephant", color: "Black", text: "象" },
+                { r: 0, c: 3, type: "Advisor", color: "Black", text: "士" },
+                { r: 0, c: 4, type: "King", color: "Black", text: "將" },
+                { r: 0, c: 5, type: "Advisor", color: "Black", text: "士" },
+                { r: 0, c: 6, type: "Elephant", color: "Black", text: "象" },
+                { r: 0, c: 7, type: "Horse", color: "Black", text: "馬" },
+                { r: 0, c: 8, type: "Rook", color: "Black", text: "車" },
+                { r: 2, c: 1, type: "Cannon", color: "Black", text: "砲" },
+                { r: 2, c: 7, type: "Cannon", color: "Black", text: "砲" },
+                { r: 3, c: 0, type: "Pawn", color: "Black", text: "卒" },
+                { r: 3, c: 2, type: "Pawn", color: "Black", text: "卒" },
+                { r: 3, c: 4, type: "Pawn", color: "Black", text: "卒" },
+                { r: 3, c: 6, type: "Pawn", color: "Black", text: "卒" },
+                { r: 3, c: 8, type: "Pawn", color: "Black", text: "卒" },
+
+                { r: 9, c: 0, type: "Rook", color: "Red", text: "俥" },
+                { r: 9, c: 1, type: "Horse", color: "Red", text: "傌" },
+                { r: 9, c: 2, type: "Elephant", color: "Red", text: "相" },
+                { r: 9, c: 3, type: "Advisor", color: "Red", text: "仕" },
+                { r: 9, c: 4, type: "King", color: "Red", text: "帥" },
+                { r: 9, c: 5, type: "Advisor", color: "Red", text: "仕" },
+                { r: 9, c: 6, type: "Elephant", color: "Red", text: "相" },
+                { r: 9, c: 7, type: "Horse", color: "Red", text: "傌" },
+                { r: 9, c: 8, type: "Rook", color: "Red", text: "俥" },
+                { r: 7, c: 1, type: "Cannon", color: "Red", text: "炮" },
+                { r: 7, c: 7, type: "Cannon", color: "Red", text: "炮" },
+                { r: 6, c: 0, type: "Pawn", color: "Red", text: "兵" },
+                { r: 6, c: 2, type: "Pawn", color: "Red", text: "兵" },
+                { r: 6, c: 4, type: "Pawn", color: "Red", text: "兵" },
+                { r: 6, c: 6, type: "Pawn", color: "Red", text: "兵" },
+                { r: 6, c: 8, type: "Pawn", color: "Red", text: "兵" }
+            ];
+        }
+
+        // Render bảng danh sách nước đi
+        const listEl = document.getElementById("master-move-list");
+        let htmlList = "";
+        for (let i = 0; i < sampleMoves.length; i += 2) {
+            const num = Math.floor(i / 2) + 1;
+            const red = sampleMoves[i];
+            const black = i + 1 < sampleMoves.length ? sampleMoves[i + 1] : null;
+
+            htmlList += `<div class="move-row-item" data-step="${i}">
+                <span style="color: var(--text-muted); font-weight: 700;">${num}.</span>
+                <span style="color: #c00000; font-weight: 700;">${red.notation}</span>
+                <span style="color: var(--text-main); font-weight: 700;">${black ? black.notation : ""}</span>
+            </div>`;
+        }
+        listEl.innerHTML = htmlList;
+
+        // Render bàn cờ
+        function renderBoard(step) {
+            currentStep = step;
+            const pieces = getInitialPieces();
+
+            for (let i = 0; i <= step && i < sampleMoves.length; i++) {
+                const m = sampleMoves[i];
+                // Xóa quân bị ăn nếu có
+                const cap = pieces.findIndex(p => p.r === m.to.r && p.c === m.to.c);
+                if (cap !== -1) pieces.splice(cap, 1);
+
+                // Di chuyển quân
+                const mover = pieces.find(p => p.r === m.from.r && p.c === m.from.c);
+                if (mover) {
+                    mover.r = m.to.r;
+                    mover.c = m.to.c;
+                }
+            }
+
+            const pLayer = document.getElementById("master-pieces-layer");
+            const hLayer = document.getElementById("master-highlight-layer");
+            pLayer.replaceChildren();
+            hLayer.replaceChildren();
+
+            // Highlight nước vừa đi
+            if (step >= 0 && step < sampleMoves.length) {
+                const cur = sampleMoves[step];
+                const x1 = 50 + cur.from.c * 100;
+                const y1 = 50 + cur.from.r * 100;
+                const x2 = 50 + cur.to.c * 100;
+                const y2 = 50 + cur.to.r * 100;
+
+                const circle1 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle1.setAttribute("cx", x1);
+                circle1.setAttribute("cy", y1);
+                circle1.setAttribute("r", "20");
+                circle1.setAttribute("fill", "none");
+                circle1.setAttribute("stroke", "#d97706");
+                circle1.setAttribute("stroke-width", "3");
+                circle1.setAttribute("stroke-dasharray", "4");
+                hLayer.appendChild(circle1);
+
+                const circle2 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle2.setAttribute("cx", x2);
+                circle2.setAttribute("cy", y2);
+                circle2.setAttribute("r", "44");
+                circle2.setAttribute("fill", "rgba(217, 119, 6, 0.2)");
+                circle2.setAttribute("stroke", "#d97706");
+                circle2.setAttribute("stroke-width", "3");
+                hLayer.appendChild(circle2);
+            }
+
+            // Vẽ các quân cờ
+            pieces.forEach(p => {
+                const x = 50 + p.c * 100;
+                const y = 50 + p.r * 100;
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.setAttribute("class", `chess-piece ${p.color.toLowerCase()}`);
+                g.innerHTML = `
+                    <circle cx="${x}" cy="${y}" r="42" fill="#E2C28E" stroke="#4a3022" stroke-width="2" style="filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.3));"></circle>
+                    <circle cx="${x}" cy="${y}" r="35" fill="none" stroke="#F5DEB3" stroke-width="3"></circle>
+                    <text x="${x}" y="${y + 2}">${p.text}</text>
+                `;
+                pLayer.appendChild(g);
+            });
+
+            // Cập nhật nhãn
+            const lbl = document.getElementById("current-step-label");
+            if (lbl) {
+                lbl.textContent = step < 0 ? "Khởi đầu" : `Nước ${step + 1}/${sampleMoves.length}`;
+            }
+
+            // Highlight dòng trong bảng
+            document.querySelectorAll(".move-row-item").forEach(el => {
+                const s = parseInt(el.getAttribute("data-step"));
+                if (step >= s && step <= s + 1) {
+                    el.classList.add("active");
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    el.classList.remove("active");
+                }
+            });
+        }
+
+        // Bắt sự kiện nút bấm
+        document.getElementById("btn-first").onclick = () => renderBoard(-1);
+        document.getElementById("btn-prev").onclick = () => { if (currentStep > -1) renderBoard(currentStep - 1); };
+        document.getElementById("btn-next").onclick = () => { if (currentStep < sampleMoves.length - 1) renderBoard(currentStep + 1); };
+        document.getElementById("btn-last").onclick = () => renderBoard(sampleMoves.length - 1);
+
+        document.getElementById("btn-auto").onclick = function() {
+            if (isPlaying) {
+                clearInterval(playInterval);
+                isPlaying = false;
+                this.innerHTML = '<i class="fa-solid fa-play"></i>';
+            } else {
+                isPlaying = true;
+                this.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                playInterval = setInterval(() => {
+                    if (currentStep < sampleMoves.length - 1) {
+                        renderBoard(currentStep + 1);
+                    } else {
+                        clearInterval(playInterval);
+                        isPlaying = false;
+                        document.getElementById("btn-auto").innerHTML = '<i class="fa-solid fa-play"></i>';
+                    }
+                }, 1200);
+            }
+        };
+
+        // Bắt sự kiện bàn phím (Keyboard Shortcuts)
+        document.addEventListener("keydown", function(e) {
+            if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+            if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                if (currentStep > -1) renderBoard(currentStep - 1);
+            } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                if (currentStep < sampleMoves.length - 1) renderBoard(currentStep + 1);
+            } else if (e.key === "Home") {
+                e.preventDefault();
+                renderBoard(-1);
+            } else if (e.key === "End") {
+                e.preventDefault();
+                renderBoard(sampleMoves.length - 1);
+            } else if (e.key === " " || e.code === "Space") {
+                e.preventDefault();
+                document.getElementById("btn-auto").click();
+            }
+        });
+
+        // Bấm vào dòng trong danh sách nước đi để chuyển đến nước đó
+        document.querySelectorAll(".move-row-item").forEach(el => {
+            el.onclick = function() {
+                const s = parseInt(this.getAttribute("data-step"));
+                renderBoard(s);
+            };
+        });
+
+        // Bật/tắt PGN
+        document.getElementById("btn-toggle-pgn").onclick = function() {
+            const box = document.getElementById("pgn-content-box");
+            if (box.style.display === "none") {
+                box.style.display = "block";
+                this.textContent = "Thu gọn";
+            } else {
+                box.style.display = "none";
+                this.textContent = "Hiện/Ẩn";
+            }
+        };
+
+        // Khởi động bàn cờ ở trạng thái ban đầu
+        renderBoard(-1);
+    })();
+</script>
+}

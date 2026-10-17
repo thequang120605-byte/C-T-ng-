@@ -1,0 +1,237 @@
+@model List<ChessCore.Models.MasterGame>
+@{
+    ViewData["Title"] = "Kỳ phổ Danh thủ";
+}
+
+<style>
+    .master-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 20px;
+        color: var(--text-main);
+    }
+
+    .master-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .master-title h1 {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+    }
+
+    .master-title h1 i {
+        color: var(--accent-gold);
+    }
+
+    .master-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin: 6px 0 0;
+    }
+
+    .master-badge-count {
+        background: rgba(217, 119, 6, 0.1);
+        color: var(--accent-gold);
+        border: 1px solid rgba(217, 119, 6, 0.25);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13.5px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .master-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+    }
+
+    .master-card {
+        background: var(--bg-navy-panel);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 22px;
+        transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        position: relative;
+    }
+
+    .master-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        border-color: var(--accent-gold);
+    }
+
+    .master-event-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent-gold);
+        background: rgba(217, 119, 6, 0.08);
+        border: 1px solid rgba(217, 119, 6, 0.2);
+        padding: 4px 10px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+    }
+
+    .master-match-title {
+        color: var(--text-main);
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1.4;
+        margin-bottom: 14px;
+    }
+
+    .master-players-box {
+        background: var(--bg-navy-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 14px;
+    }
+
+    .player-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13.5px;
+        padding: 4px 0;
+    }
+
+    .player-side-red {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #c00000;
+        font-weight: 700;
+    }
+
+    .player-side-black {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-main);
+        font-weight: 700;
+    }
+
+    .master-meta-info {
+        font-size: 13px;
+        color: var(--text-muted);
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 18px;
+        padding-top: 4px;
+    }
+
+    .master-meta-info strong {
+        color: var(--text-main);
+    }
+
+    .btn-view-master {
+        padding: 10px 18px;
+        background: var(--bg-navy-dark);
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        font-weight: 600;
+        font-size: 13.5px;
+        border-radius: 8px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-view-master:hover {
+        background: var(--accent-gold);
+        color: #ffffff;
+        border-color: var(--accent-gold);
+        transform: translateY(-1px);
+    }
+</style>
+
+<div class="master-container">
+    <div class="master-header">
+        <div class="master-title">
+            <h1><i class="fa-solid fa-scroll"></i> Kỳ phổ Danh thủ Kinh điển</h1>
+            <p>Tuyển tập những kiệt tác ván cờ đỉnh cao của các Đại kiện tướng quốc tế và danh kỳ hàng đầu.</p>
+        </div>
+        <div>
+            <span class="master-badge-count">
+                <i class="fa-solid fa-book-bookmark"></i> @(Model?.Count ?? 0) ván đấu kinh điển
+            </span>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="master-grid">
+            @foreach (var g in Model)
+            {
+                <div class="master-card">
+                    <div>
+                        <div class="master-event-tag">
+                            <i class="fa-solid fa-trophy"></i> @(string.IsNullOrEmpty(g.Event) ? "Kỳ Đài" : g.Event)
+                        </div>
+
+                        <div class="master-match-title">@g.Title</div>
+
+                        <div class="master-players-box">
+                            <div class="player-line">
+                                <span class="player-side-red">
+                                    <i class="fa-solid fa-circle" style="font-size: 8px;"></i> Đỏ: @g.RedPlayer
+                                </span>
+                                <span style="font-weight: 700; font-size: 13px; color: @(g.Result == "1-0" ? "#10b981" : "var(--text-muted)");">
+                                    @(g.Result == "1-0" ? "Thắng" : (g.Result == "0-1" ? "Bại" : "Hòa"))
+                                </span>
+                            </div>
+                            <div class="player-line" style="border-top: 1px solid var(--border-color); margin-top: 4px; padding-top: 6px;">
+                                <span class="player-side-black">
+                                    <i class="fa-regular fa-circle" style="font-size: 8px;"></i> Đen: @g.BlackPlayer
+                                </span>
+                                <span style="font-weight: 700; font-size: 13px; color: @(g.Result == "0-1" ? "#10b981" : "var(--text-muted)");">
+                                    @(g.Result == "0-1" ? "Thắng" : (g.Result == "1-0" ? "Bại" : "Hòa"))
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="master-meta-info">
+                            <span><i class="fa-solid fa-chess-knight" style="color: var(--accent-gold);"></i> Khai cuộc: <strong>@(g.OpeningName ?? "Kinh điển")</strong></span>
+                            <span><i class="fa-regular fa-calendar"></i> @(g.EventDate?.ToString("yyyy") ?? "1988")</span>
+                        </div>
+                    </div>
+
+                    <a href="/MasterGame/Detail/@g.Id" class="btn-view-master">
+                        <i class="fa-solid fa-eye"></i> Xem biên bản & Khai cuộc
+                    </a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div style="text-align: center; padding: 60px 20px; color: var(--text-muted); background: var(--bg-navy-panel); border: 1px solid var(--border-color); border-radius: 14px;">
+            <i class="fa-solid fa-box-open" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+            <p>Chưa có dữ liệu kỳ phổ trong hệ thống.</p>
+        </div>
+    }
+</div>

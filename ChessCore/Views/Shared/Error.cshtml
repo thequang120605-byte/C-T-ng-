@@ -1,0 +1,188 @@
+@{
+    int statusCode = ViewBag.StatusCode ?? 404;
+    bool is404 = statusCode == 404;
+    ViewData["Title"] = is404 ? "404 - Không tìm thấy nước cờ" : $"{statusCode} - Sự cố thế cờ";
+}
+
+<style>
+    .error-container {
+        min-height: 72vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    .error-card {
+        background: radial-gradient(circle at top, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        padding: 48px 36px;
+        max-width: 580px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 40px rgba(220, 38, 38, 0.08);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .error-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ef4444, #f59e0b, #ef4444);
+    }
+
+    .error-badge-chess {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.12);
+        border: 2px dashed rgba(239, 68, 68, 0.4);
+        margin: 0 auto 24px;
+        font-size: 46px;
+        color: #ef4444;
+        animation: pulseSlow 3s infinite ease-in-out;
+    }
+
+    @@keyframes pulseSlow {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); }
+        50% { transform: scale(1.04); box-shadow: 0 0 25px 5px rgba(239, 68, 68, 0.25); }
+    }
+
+    .error-code {
+        font-size: 64px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: 2px;
+        background: linear-gradient(135deg, #f87171, #ef4444, #b91c1c);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px;
+    }
+
+    .error-title {
+        color: #f8fafc;
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 14px;
+    }
+
+    .error-desc {
+        color: #94a3b8;
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 32px;
+    }
+
+    .error-actions {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-error-primary {
+        padding: 12px 26px;
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        color: #fff;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+    }
+
+    .btn-error-primary:hover {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+    }
+
+    .btn-error-secondary {
+        padding: 12px 24px;
+        background: rgba(51, 65, 85, 0.8);
+        color: #e2e8f0;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.2s ease;
+    }
+
+    .btn-error-secondary:hover {
+        background: rgba(71, 85, 105, 0.9);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-card">
+        <div class="error-badge-chess">
+            @if (is404)
+            {
+                <i class="fa-solid fa-chess-king"></i>
+            }
+            else
+            {
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            }
+        </div>
+
+        <div class="error-code">@statusCode</div>
+
+        <h1 class="error-title">
+            @if (is404)
+            {
+                <span>Nước cờ không tồn tại trên bàn đấu!</span>
+            }
+            else
+            {
+                <span>Thế cờ gián đoạn - Máy chủ đang xử lý!</span>
+            }
+        </h1>
+
+        <p class="error-desc">
+            @if (is404)
+            {
+                <span>Đường dẫn bạn yêu cầu không khả dụng, có thể trang đã được di dời hoặc bạn vừa đi nhầm một nước cờ ngoài kỳ bàn.</span>
+            }
+            else
+            {
+                <span>Đã có sự cố bất ngờ trong quá trình tính toán thế cờ. Hệ thống đã ghi nhận lỗi và đang khôi phục. Vui lòng thử lại sau ít phút.</span>
+                @if (ViewBag.ErrorMessage != null)
+                {
+                    <div style="margin-top: 12px; font-size: 11px; color: #fca5a5; background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 8px; text-align: left; overflow-x: auto; font-family: monospace;">
+                        @ViewBag.ErrorMessage
+                    </div>
+                }
+            }
+        </p>
+
+        <div class="error-actions">
+            <a href="/" class="btn-error-primary">
+                <i class="fa-solid fa-house"></i> Về Trang chủ
+            </a>
+            <a href="/Game" class="btn-error-secondary">
+                <i class="fa-solid fa-chess-board"></i> Vào Bàn cờ
+            </a>
+            <a href="javascript:history.back()" class="btn-error-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+</div>

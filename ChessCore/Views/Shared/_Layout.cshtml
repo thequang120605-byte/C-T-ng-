@@ -3,29 +3,505 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>@ViewData["Title"] - Hệ thống Cờ Tướng</title>
-
-    <link rel="stylesheet" href="~/css/game.css" />
+    <title>@ViewData["Title"] - Cờ Tướng Pro</title>
+    
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/svg+xml" href="~/images/logo.svg" asp-append-version="true" />
+    <link rel="alternate icon" href="~/images/logo.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="~/images/logo.svg" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/settings.css" asp-append-version="true" />
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('chess_theme') || 'wood';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) { document.body.setAttribute('data-theme', savedTheme); }
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.setAttribute('data-theme', savedTheme);
+            });
+        })();
+    </script>
+    @RenderSection("Styles", required: false)
 </head>
-
 <body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+        <aside class="app-sidebar" id="app-sidebar">
+            <div class="sidebar-logo">
+                <img src="~/images/logo.svg" alt="Logo" class="sidebar-logo-img" asp-append-version="true" />
+                <span class="logo-text">CỜ TƯỚNG <span class="logo-sub">PRO</span></span>
+            </div>
+            <nav class="sidebar-nav">
+                @{
+                    var path = Context.Request.Path.Value ?? "";
+                    var isHome = path == "/" || path == "";
+                    var isGame = path.StartsWith("/Game", StringComparison.OrdinalIgnoreCase);
+                    var isPuzzle = path.StartsWith("/Puzzle", StringComparison.OrdinalIgnoreCase);
+                    var isMasterGame = path.StartsWith("/MasterGame", StringComparison.OrdinalIgnoreCase);
+                    var isCourse = path.StartsWith("/Course", StringComparison.OrdinalIgnoreCase);
+                    var isDashboard = path.StartsWith("/Dashboard", StringComparison.OrdinalIgnoreCase);
+                    var isAccount = path.StartsWith("/Account", StringComparison.OrdinalIgnoreCase);
+                    var isAdmin = path.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase);
+                    var userRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
+                }
+                <a href="/" class="nav-item @(isHome ? "active" : "")">
+                    <i class="fa-solid fa-house"></i>
+                    <span data-i18n="menu_home">Trang chủ</span>
+                </a>
+                <a href="/Game" class="nav-item @(isGame ? "active" : "")">
+                    <i class="fa-solid fa-chess-board"></i>
+                    <span data-i18n="menu_play">Chơi cờ</span>
+                </a>
+                <a href="/Puzzle" class="nav-item @(isPuzzle ? "active" : "")">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                    <span data-i18n="menu_puzzle">Cờ thế</span>
+                </a>
+                <a href="/MasterGame" class="nav-item @(isMasterGame ? "active" : "")">
+                    <i class="fa-solid fa-scroll"></i>
+                    <span>Kỳ phổ danh thủ</span>
+                </a>
+                <a href="/Dashboard" class="nav-item @(isDashboard ? "active" : "")">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span>Xếp hạng & Thống kê</span>
+                </a>
+                <a href="/Course" class="nav-item @(isCourse ? "active" : "")">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span data-i18n="menu_course">Khóa học</span>
+                </a>
+                <a href="/Account" class="nav-item @(isAccount ? "active" : "")">
+                    <i class="fa-solid fa-medal" style="color: var(--accent-gold);"></i>
+                    <span>Tài khoản & Thành tựu</span>
+                </a>
+                @if (string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    <a href="/Admin" class="nav-item @(isAdmin ? "active" : "")">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span data-i18n="menu_admin">Quản trị</span>
+                    </a>
+                }
+            </nav>
+            <div class="sidebar-footer">
+                <a href="#" class="nav-item" id="nav-settings-btn" onclick="event.preventDefault(); document.getElementById('settings-modal').classList.add('show');">
+                    <i class="fa-solid fa-gear"></i>
+                    <span data-i18n="menu_settings">Cài đặt</span>
+                </a>
+            </div>
+        </aside>
 
-    <header class="main-header">
-        <div class="logo">
-            ♟ HỆ THỐNG CỜ TƯỚNG
+        <!-- MAIN CONTENT WRAPPER -->
+        <div class="main-wrapper">
+            <!-- TOP NAVBAR -->
+            <header class="app-navbar">
+                <div class="mobile-menu-toggle" id="mobile-menu-toggle">
+                    <i class="fa-solid fa-bars"></i>
+                </div>
+                <div class="navbar-title">
+                    @ViewData["Title"]
+                </div>
+                <div class="navbar-user">
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
+                    {
+                        var playerIdClaim = User.Claims.FirstOrDefault(c => c.Type == "PlayerId")?.Value;
+                        if (string.IsNullOrEmpty(playerIdClaim))
+                        {
+                            var userIdVal = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "1";
+                            playerIdClaim = "CT-" + (userIdVal.PadLeft(5, '0'));
+                        }
+                        var initial = !string.IsNullOrEmpty(User.Identity.Name) ? User.Identity.Name.Substring(0, 1).ToUpper() : "U";
+
+                        <div class="navbar-user-card" id="navbar-user-card">
+                            <a href="/Account" class="user-avatar-badge" title="Tài khoản: @User.Identity.Name (Nhấn để quản lý)" style="text-decoration: none; cursor: pointer;">
+                                <span class="avatar-initial">@initial</span>
+                                <span class="status-indicator-dot" title="Đang trực tuyến"></span>
+                            </a>
+                            <div class="user-meta">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <a href="/Account" class="user-display-name" style="text-decoration: none; color: inherit;" title="Xem hồ sơ tài khoản">@User.Identity.Name</a>
+                                    <span id="navbar-user-elo" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent-gold); color: var(--accent-gold-light); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px;" title="Elo online nội bộ; không phải điểm học tập"><i class="fa-solid fa-star" style="font-size: 9px;"></i> @(User.Claims.FirstOrDefault(c => c.Type == "Elo")?.Value ?? "1200")</span>
+                                </div>
+                                <div class="user-id-chip" title="Nhấn để sao chép mã ID người chơi" onclick="copyPlayerId('@playerIdClaim');">
+                                    <i class="fa-solid fa-id-badge id-icon"></i>
+                                    <span class="id-text">ID: <strong id="current-player-id">@playerIdClaim</strong></span>
+                                    <i class="fa-regular fa-copy copy-icon"></i>
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <button type="button" class="btn-user-logout" onclick="document.getElementById('logout-modal').classList.add('show');" title="Đăng xuất">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                </button>
+                            </div>
+                            <form id="logout-form" asp-controller="Auth" asp-action="Logout" method="post" style="display: none;"></form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="navbar-user-card guest-card">
+                            <div class="user-avatar-badge guest-avatar">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div class="user-meta">
+                                <span class="user-display-name">Khách (Guest)</span>
+                                <a asp-controller="Auth" asp-action="Login" class="guest-login-link">
+                                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập / Đăng ký
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </header>
+
+            <!-- PAGE CONTENT -->
+            <main class="app-main">
+                @RenderBody()
+            </main>
         </div>
+    </div>
 
-        <nav>
-            <a href="/">Trang chủ</a>
-            <a href="/Game">Chơi cờ</a>
-        </nav>
-    </header>
+    <!-- LOGOUT MODAL -->
+    <div id="logout-modal" class="custom-modal" style="display: none; position: fixed; inset: 0; justify-content: center; align-items: center; background: rgba(15, 23, 42, 0.85); z-index: 9999;">
+        <div class="modal-content" style="background: var(--bg-navy-panel); border: 2px solid var(--accent-gold-dark); border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <i class="fa-solid fa-right-from-bracket" style="font-size: 48px; color: var(--accent-gold); margin-bottom: 16px;"></i>
+            <h2 style="font-size: 20px; color: var(--text-main); margin-bottom: 8px;">Xác nhận đăng xuất</h2>
+            <p style="color: var(--text-muted); margin-bottom: 24px;">Bạn có chắc chắn muốn đăng xuất khỏi tài khoản hiện tại?</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" style="padding: 10px 20px; border: none; border-radius: 8px; background: #64748b; color: white; cursor: pointer; font-weight: bold;" onclick="document.getElementById('logout-modal').classList.remove('show');">Hủy</button>
+                <button type="button" style="padding: 10px 20px; border: none; border-radius: 8px; background: #ef4444; color: white; cursor: pointer; font-weight: bold;" onclick="if (window.requestLogoutWithResign) { window.requestLogoutWithResign(); } else { document.getElementById('logout-form').submit(); }">Đăng xuất</button>
+            </div>
+        </div>
+    </div>
+    <style>
+        #logout-modal.show { display: flex !important; }
+    </style>
 
-    <main>
-        @RenderBody()
-    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    @RenderSection("Scripts", required: false)
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('mobile-menu-toggle');
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            
+            if (toggleBtn && sidebar && backdrop) {
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.add('open');
+                    backdrop.classList.add('show');
+                });
+                
+                backdrop.addEventListener('click', function() {
+                    sidebar.classList.remove('open');
+                    backdrop.classList.remove('show');
+                });
+            }
+        });
+
+        function copyPlayerId(id) {
+            if (!id) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(id).then(function() {
+                    showPlayerIdToast('Đã sao chép ID: ' + id);
+                }).catch(function() {
+                    fallbackCopy(id);
+                });
+            } else {
+                fallbackCopy(id);
+            }
+        }
+
+        function fallbackCopy(text) {
+            var tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showPlayerIdToast('Đã sao chép ID: ' + text);
+        }
+
+        function showPlayerIdToast(msg) {
+            var toast = document.getElementById('user-copy-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'user-copy-toast';
+                toast.className = 'user-copy-toast';
+                document.body.appendChild(toast);
+            }
+            toast.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #22c55e;"></i> ' + msg;
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 2200);
+        }
+
+        // Lắng nghe lời mời thách đấu thời gian thực qua SignalR
+        document.addEventListener('DOMContentLoaded', function() {
+            var pidEl = document.getElementById('current-player-id');
+            var myPid = pidEl ? pidEl.textContent.trim() : null;
+            if (myPid && window.signalR) {
+                var globalHub = new signalR.HubConnectionBuilder()
+                    .withUrl("/gameHub")
+                    .withAutomaticReconnect()
+                    .build();
+
+                globalHub.start().then(function() {
+                    globalHub.invoke("RegisterUser", myPid).catch(function(e){ console.warn("Lỗi đăng ký ID thách đấu:", e); });
+                }).catch(function(err){ console.warn("SignalR kết nối thất bại:", err); });
+
+                globalHub.on("ReceiveChallenge", function(data) {
+                    showChallengeModal(data);
+                });
+            }
+        });
+
+        function showChallengeModal(data) {
+            var modal = document.getElementById('incoming-challenge-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'incoming-challenge-modal';
+                modal.style.cssText = "position: fixed; top: 24px; right: 24px; z-index: 10000; background: var(--bg-navy-panel, #1e293b); border: 2px solid var(--accent-gold, #d4af37); border-radius: 12px; padding: 18px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #fff; max-width: 360px; animation: slideIn 0.3s ease;";
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <i class="fa-solid fa-gamepad" style="color: var(--accent-gold, #d4af37); font-size: 22px;"></i>
+                    <strong style="font-size: 15px;">LỜI MỜI THÁCH ĐẤU!</strong>
+                </div>
+                <p style="font-size: 13px; margin: 0 0 12px 0; color: #cbd5e1;">
+                    Người chơi <strong style="color: #38bdf8;">${data.fromPlayerName}</strong> (${data.fromPlayerId}) mời bạn vào ván cờ.
+                </p>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button type="button" onclick="this.closest('#incoming-challenge-modal').remove()" style="padding: 6px 12px; border: 1px solid #64748b; background: transparent; color: #94a3b8; border-radius: 6px; cursor: pointer; font-size: 12px;">Từ chối</button>
+                    <a href="/Game?joinRoom=${encodeURIComponent(data.roomCode)}" style="padding: 6px 14px; background: #22c55e; color: #fff; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-check"></i> Chấp nhận
+                    </a>
+                </div>
+            `;
+        }
+    </script>
 
 
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="settings-modal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2 data-i18n="settings_title"><i class="fa-solid fa-sliders"></i> Cài đặt hệ thống</h2>
+                <button class="close-settings" onclick="document.getElementById('settings-modal').classList.remove('show');"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="settings-body">
+                <!-- GIAO DIỆN HỆ THỐNG -->
+                <div class="setting-group">
+                    <div class="setting-title" data-i18n="settings_theme_title"><i class="fa-solid fa-palette"></i> Màu nền hệ thống</div>
+                    <div class="theme-options">
+                        <button class="theme-btn active" data-theme="wood" title="Giao diện Gỗ truyền thống ấm áp">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/themes/wood.svg" alt="Gỗ Cổ Điển" class="theme-preview-img" asp-append-version="true" />
+                            </div>
+                            <span data-i18n="theme_wood">Gỗ Cổ Điển</span>
+                        </button>
+                        <button class="theme-btn" data-theme="light" title="Giao diện sáng sủa, thanh lịch">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/themes/light.svg" alt="Sáng Sủa" class="theme-preview-img" asp-append-version="true" />
+                            </div>
+                            <span data-i18n="theme_light">Sáng Sủa</span>
+                        </button>
+                        <button class="theme-btn" data-theme="night" title="Chế độ tối huyền bí, bảo vệ mắt">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/themes/night.svg" alt="Night Mode" class="theme-preview-img" asp-append-version="true" />
+                            </div>
+                            <span data-i18n="theme_night">Night Mode</span>
+                        </button>
+                        <button class="theme-btn" data-theme="emerald" title="Tông xanh ngọc bích sang trọng">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/themes/emerald.svg" alt="Ngọc Bích" class="theme-preview-img" asp-append-version="true" />
+                            </div>
+                            <span>Ngọc Bích</span>
+                        </button>
+                        <button class="theme-btn" data-theme="ocean" title="Xanh đại dương tươi mới, hiện đại">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/themes/ocean.svg" alt="Đại Dương" class="theme-preview-img" asp-append-version="true" />
+                            </div>
+                            <span>Đại Dương</span>
+                        </button>
+                        <button class="theme-btn" data-theme="parchment" title="Giấy cổ thư pháp, phong cách hoài niệm">
+                            <div class="theme-img-wrap">
+                                <img src="~/images/themes/parchment.svg" alt="Giấy Cổ" class="theme-preview-img" asp-append-version="true" />
+                            </div>
+                            <span>Giấy Cổ</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CHỦ ĐỀ BÀN CỜ THỰC TẾ -->
+                <div class="setting-group">
+                    <div class="setting-title"><i class="fa-solid fa-chess-board"></i> Chất liệu mặt bàn cờ</div>
+                    <div class="theme-options board-skin-options">
+                        <button type="button" class="theme-btn board-skin-btn active" data-board-skin="vector" title="Bàn cờ Vector chuẩn nét truyền thống">
+                            <div class="theme-img-wrap" style="background: #e2c28e; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-border-all" style="font-size: 24px; color: #5d4037;"></i>
+                            </div>
+                            <span>Vector Chuẩn</span>
+                        </button>
+                        <button type="button" class="theme-btn board-skin-btn" data-board-skin="wood" title="Bàn cờ vân gỗ tự nhiên cao cấp">
+                            <div class="theme-img-wrap" style="background: #3e2723;">
+                                <img src="~/images/boards/Wood-grain Chessboard.png" alt="Bàn cờ vân gỗ" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Vân Gỗ Cổ</span>
+                        </button>
+                        <button type="button" class="theme-btn board-skin-btn" data-board-skin="stone" title="Bàn cờ đá cẩm thạch sang trọng">
+                            <div class="theme-img-wrap" style="background: #1e293b;">
+                                <img src="~/images/boards/Stone-textured Chessboard.png" alt="Bàn cờ đá" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Đá Cẩm Thạch</span>
+                        </button>
+                        <button type="button" class="theme-btn board-skin-btn" data-board-skin="cardboard" title="Bàn cờ da nâu vintage">
+                            <div class="theme-img-wrap" style="background: #5d4037;">
+                                <img src="~/images/boards/Simple Brown Cardboard Chessboard.png" alt="Bàn cờ nâu cổ" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Bìa Da Cổ</span>
+                        </button>
+                        <button type="button" class="theme-btn board-skin-btn" data-board-skin="minimalist" title="Bàn cờ tối giản trắng">
+                            <div class="theme-img-wrap" style="background: #f8fafc;">
+                                <img src="~/images/boards/Minimalist White Chessboard.png" alt="Bàn cờ tối giản" class="theme-preview-img" style="object-fit: cover;" asp-append-version="true" />
+                            </div>
+                            <span>Tối Giản Trắng</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KIỂU QUÂN CỜ THỰC TẾ -->
+                <div class="setting-group">
+                    <div class="setting-title"><i class="fa-solid fa-chess"></i> Phong cách quân cờ</div>
+                    <div class="theme-options piece-skin-options">
+                        <button type="button" class="theme-btn piece-skin-btn active" data-piece-skin="traditional" title="Quân cờ thư pháp truyền thống Vector">
+                            <div class="theme-img-wrap" style="display: flex; align-items: center; justify-content: center; background: #e2c28e;">
+                                <span style="font-size: 26px; font-weight: 900; color: #c00000; font-family: serif;">帥</span>
+                            </div>
+                            <span>Thư Pháp Gốc</span>
+                        </button>
+                        <button type="button" class="theme-btn piece-skin-btn" data-piece-skin="Wooden" title="Quân cờ tiện gỗ 3D cao cấp">
+                            <div class="theme-img-wrap" style="background: #5d4037;">
+                                <img src="~/images/pieces/Wooden Red Shuai.png" alt="Quân gỗ 3D" class="theme-preview-img" style="object-fit: contain;" asp-append-version="true" />
+                            </div>
+                            <span>Gỗ Khắc 3D</span>
+                        </button>
+                        <button type="button" class="theme-btn piece-skin-btn" data-piece-skin="Shadowed" title="Quân cờ đổ bóng nổi bật">
+                            <div class="theme-img-wrap" style="background: #334155;">
+                                <img src="~/images/pieces/Shadowed Red Shuai.png" alt="Quân đổ bóng" class="theme-preview-img" style="object-fit: contain;" asp-append-version="true" />
+                            </div>
+                            <span>Đổ Bóng Nổi</span>
+                        </button>
+                        <button type="button" class="theme-btn piece-skin-btn" data-piece-skin="Brown" title="Quân gỗ nâu sẫm mạ đồng">
+                            <div class="theme-img-wrap" style="background: #3e2723;">
+                                <img src="~/images/pieces/Brown Red Shuai.png" alt="Quân gỗ nâu" class="theme-preview-img" style="object-fit: contain;" asp-append-version="true" />
+                            </div>
+                            <span>Gỗ Mun Nâu</span>
+                        </button>
+                        <button type="button" class="theme-btn piece-skin-btn" data-piece-skin="Minimalist White" title="Quân ngọc trắng tối giản">
+                            <div class="theme-img-wrap" style="background: #e2e8f0;">
+                                <img src="~/images/pieces/Minimalist White Red Shuai.png" alt="Quân tối giản trắng" class="theme-preview-img" style="object-fit: contain;" asp-append-version="true" />
+                            </div>
+                            <span>Bạch Ngọc</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TÙY CHỈNH CHUNG -->
+                <div class="setting-group">
+                    <div class="setting-title" data-i18n="settings_general">Tùy chỉnh chung</div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label" data-i18n="setting_sound">
+                            <i class="fa-solid fa-volume-high"></i> Âm thanh trò chơi
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked id="setting-sound">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <i class="fa-solid fa-bullhorn" style="color: var(--accent-gold);"></i> Giọng đọc bình luận (Voice)
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked id="setting-voice">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label" data-i18n="setting_lang">
+                            <i class="fa-solid fa-language"></i> Ngôn ngữ
+                        </div>
+                        <select class="setting-select" id="setting-lang">
+                            <option value="vi" selected>Tiếng Việt</option>
+                            <option value="en">English</option>
+                            <option value="zh">中文 (Chinese)</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label" data-i18n="setting_hint">
+                            <i class="fa-solid fa-chess-knight"></i> Hiện gợi ý nước đi
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked id="setting-hint">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-footer">
+                <button class="btn-save-settings" data-i18n="settings_save" onclick="document.getElementById('settings-modal').classList.remove('show');">Lưu cài đặt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GLOBAL APP DIALOG MODAL (THAY THẾ WINDOW.ALERT & WINDOW.CONFIRM) -->
+    <div id="app-dialog-overlay" class="app-dialog-overlay">
+        <div class="app-dialog-card">
+            <div id="app-dialog-icon" class="app-dialog-icon-circle warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="app-dialog-title" class="app-dialog-title">Xác nhận</h3>
+            <p id="app-dialog-message" class="app-dialog-message">Nội dung thông báo</p>
+            <div class="app-dialog-actions" id="app-dialog-actions">
+                <button type="button" class="app-dialog-btn app-dialog-btn-cancel" id="app-dialog-cancel-btn">Hủy bỏ</button>
+                <button type="button" class="app-dialog-btn app-dialog-btn-confirm" id="app-dialog-confirm-btn">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/js/app-dialog.js" asp-append-version="true"></script>
+    <script src="~/js/i18n.js" asp-append-version="true"></script>
+    <script src="~/js/settings.js" asp-append-version="true"></script>
+    <script>
+        // Đồng bộ điểm Elo động từ Database lên Navbar Header
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/api/auth/me')
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.isAuthenticated && typeof d.elo !== 'undefined') {
+                        const eloEl = document.getElementById('navbar-user-elo');
+                        if (eloEl) {
+                            eloEl.innerHTML = `<i class="fa-solid fa-star" style="font-size: 9px;"></i> ${d.elo}`;
+                        }
+                    }
+                })
+                .catch(() => {});
+        });
+    </script>
 </body>
 </html>
