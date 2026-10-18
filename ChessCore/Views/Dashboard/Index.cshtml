@@ -27,7 +27,7 @@
         <div class="stat-card">
             <div class="stat-icon" style="color: #10b981; background: rgba(16,185,129,0.1);"><i class="fa-solid fa-medal"></i></div>
             <div class="stat-info">
-                <h3>TỈ LỆ THẮNG ONLINE</h3>
+                <h3>TỈ LỆ THẮNG</h3>
                 <p class="stat-value">@Model.WinRate%</p>
             </div>
         </div>
@@ -35,7 +35,7 @@
             <div class="stat-icon" style="color: #3b82f6; background: rgba(59,130,246,0.1);"><i class="fa-solid fa-chess"></i></div>
             <div class="stat-info">
                 <h3>TỔNG SỐ TRẬN</h3>
-                <p class="stat-value">@Model.FinishedGames</p>
+                <p class="stat-value">@Model.CurrentUser.GamesPlayed</p>
             </div>
         </div>
         <div class="stat-card">
@@ -47,13 +47,174 @@
         </div>
     </div>
 
-    <section class="panel-box" style="padding:20px;margin-bottom:20px">
-        <h2>Thống kê theo chế độ</h2>
-        <a href="/Dashboard/Export">Tải báo cáo CSV</a>
-        <partial name="_ModeStatistics" model="Model.ModeStats" />
-        <p>Khóa học: @Model.Learning.CompletedLessonRecords / @Model.Learning.TotalLessons bài hoàn thành · @Model.Learning.QuizAttempts lượt quiz · Điểm quiz tốt nhất trung bình: @Model.Learning.AverageBestQuizScore%.</p>
-        <p>Cờ thế: @Model.Learning.PuzzlesSolved bài duy nhất đã giải · @Model.Learning.PuzzleAttempts lượt gửi lời giải. Time Rush: điểm phiên luyện tập, chưa có BXH server.</p>
-    </section>
+    <!-- BẢNG THỐNG KÊ THEO CHẾ ĐỘ CHƠI (HIỆN ĐẠI & CHUYÊN NGHIỆP) -->
+    <div class="panel-box" style="margin-bottom: 24px; padding: 22px 24px; background: var(--bg-navy-panel); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(217, 119, 6, 0.12); color: var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text-main);">Thống kê ván đấu theo chế độ</h2>
+                    <span style="font-size: 12.5px; color: var(--text-muted);">Chi tiết số lượng ván đấu, kết quả và tỉ lệ thắng theo từng hình thức thi đấu</span>
+                </div>
+            </div>
+            <a href="/Dashboard/Export" style="padding: 9px 18px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                <i class="fa-solid fa-file-arrow-down"></i> Tải báo cáo CSV
+            </a>
+        </div>
+
+        <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-navy-dark);">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px;">
+                <thead>
+                    <tr style="background: var(--bg-navy-panel); border-bottom: 2px solid var(--border-color); color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="padding: 12px 18px; font-weight: 700;">Chế độ thi đấu</th>
+                        <th style="padding: 12px 14px; text-align: center;">Đã tạo</th>
+                        <th style="padding: 12px 14px; text-align: center;">Đang chơi</th>
+                        <th style="padding: 12px 14px; text-align: center;">Chờ đấu</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: var(--text-main);">Kết thúc</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;">Thắng</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: #ef4444;">Thua</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: #f59e0b;">Hòa</th>
+                        <th style="padding: 12px 18px; text-align: right; font-weight: 800; color: var(--accent-gold);">Tỉ lệ thắng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.ModeStats != null && Model.ModeStats.Any())
+                    {
+                        foreach (var r in Model.ModeStats)
+                        {
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 12px 18px; font-weight: 700; color: var(--text-main);">
+                                    @if (r.Mode == "Online") { <i class="fa-solid fa-earth-americas" style="color: #3b82f6; margin-right: 8px;" title="Online"></i> }
+                                    else if (r.Mode == "PvE") { <i class="fa-solid fa-robot" style="color: #10b981; margin-right: 8px;" title="Chơi với máy"></i> }
+                                    else if (r.Mode == "PvP" || r.Mode == "Local") { <i class="fa-solid fa-user-group" style="color: #8b5cf6; margin-right: 8px;" title="Hai người cùng máy"></i> }
+                                    else if (r.Mode == "AiVsAi") { <i class="fa-solid fa-microchip" style="color: #ec4899; margin-right: 8px;" title="Máy với máy"></i> }
+                                    else { <i class="fa-solid fa-box-archive" style="color: #f59e0b; margin-right: 8px;" title="Dữ liệu cũ / chưa xác định"></i> }
+                                    @r.Label
+                                </td>
+                                <td style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.Created</td>
+                                <td style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.InProgress</td>
+                                <td style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.Waiting</td>
+                                <td style="padding: 12px 14px; text-align: center; font-weight: 700; color: var(--text-main);">@r.Finished</td>
+                                <td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;">@((r.Mode == "Online" || r.Mode == "PvE") ? r.Wins.ToString() : "—")</td>
+                                <td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #ef4444;">@((r.Mode == "Online" || r.Mode == "PvE") ? r.Losses.ToString() : "—")</td>
+                                <td style="padding: 12px 14px; text-align: center; font-weight: 600; color: #f59e0b;">@r.Draws</td>
+                                <td style="padding: 12px 18px; text-align: right; font-weight: 800; color: var(--accent-gold);">
+                                    @((r.Mode == "Online" || r.Mode == "PvE") ? r.WinRate.ToString("0.0") + "%" : "—")
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-top: 12px;">
+            <i class="fa-solid fa-circle-info" style="color: var(--accent-gold); margin-right: 4px;"></i>
+            <em>Tỉ lệ thắng = Số ván thắng / Số ván đã hoàn thành. Điểm Elo xếp hạng chỉ được áp dụng trong chế độ PvP Online.</em>
+        </div>
+
+        <!-- THỐNG KÊ TIẾN ĐỘ HỌC TẬP & CỜ THẾ -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
+            <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tiến độ Khóa học</div>
+                    <div style="font-size: 15px; font-weight: 800; color: var(--text-main); margin-top: 2px;">
+                        @Model.Learning.CompletedLessonRecords / @Model.Learning.TotalLessons bài hoàn thành
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                        @Model.Learning.QuizAttempts lượt làm Quiz · Điểm trung bình: <strong style="color: #10b981;">@Model.Learning.AverageBestQuizScore%</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); color: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                </div>
+                <div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tiến độ Cờ Thế</div>
+                    <div style="font-size: 15px; font-weight: 800; color: var(--text-main); margin-top: 2px;">
+                        @Model.Learning.PuzzlesSolved bài giải thành công
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                        Tổng @Model.Learning.PuzzleAttempts lượt gửi lời giải · Điểm phiên rèn luyện
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CỤM BIỂU ĐỒ TRỰC QUAN HÓA (CHART.JS) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 24px;">
+        <!-- BIỂU ĐỒ 1: TỈ LỆ THẮNG - THUA - HÒA (DOUGHNUT CHART VỚI BADGE TRUNG TÂM) -->
+        <div class="panel-box" style="padding: 22px 24px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                <h2 class="panel-title" style="margin: 0; font-size: 16px;">
+                    <i class="fa-solid fa-chart-pie" style="color: #10b981;"></i> Phân bố kết quả trận đấu
+                </h2>
+                <!-- SELECT LỌC THEO CHẾ ĐỘ CHƠI CHO BIỂU ĐỒ TRÒN -->
+                <select id="donutModeFilter" onchange="onDonutFilterChange()" style="background: var(--bg-navy-dark); color: #1e293b; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 700; cursor: pointer; outline: none;">
+                    <option value="ALL">Tất cả chế độ</option>
+                    @if (Model.ModeStats != null)
+                    {
+                        foreach (var m in Model.ModeStats)
+                        {
+                            <option value="@m.Mode">@m.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+            
+            <div style="position: relative; width: 100%; height: 210px; display: flex; align-items: center; justify-content: center;">
+                <canvas id="outcomeDonutChart"></canvas>
+                <!-- Badge hiển thị số liệu nổi bật ngay chính giữa vòng tròn -->
+                <div style="position: absolute; text-align: center; pointer-events: none; transform: translateY(-14px);">
+                    <div id="donutWinRateValue" style="font-size: 26px; font-weight: 900; color: #b45309; line-height: 1.1;">
+                        @Model.WinRate%
+                    </div>
+                    <div style="font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Tỉ lệ thắng
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-color);">
+                <div style="text-align: center; background: rgba(0,0,0,0.03); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <span style="color: #334155; font-size: 11px; display: block; font-weight: 800;">THẮNG</span>
+                    <strong id="donutWinsCount" style="color: #10b981; font-size: 18px; font-weight: 800;">@Model.CurrentUser.Wins</strong>
+                </div>
+                <div style="text-align: center; background: rgba(0,0,0,0.03); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <span style="color: #334155; font-size: 11px; display: block; font-weight: 800;">HÒA</span>
+                    <strong id="donutDrawsCount" style="color: #d97706; font-size: 18px; font-weight: 800;">@Model.CurrentUser.Draws</strong>
+                </div>
+                <div style="text-align: center; background: rgba(0,0,0,0.03); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <span style="color: #334155; font-size: 11px; display: block; font-weight: 800;">THUA</span>
+                    <strong id="donutLossesCount" style="color: #ef4444; font-size: 18px; font-weight: 800;">@Model.CurrentUser.Losses</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- BIỂU ĐỒ 2: SO SÁNH CÁC CHẾ ĐỘ CHƠI (HORIZONTAL BAR CHART GỌN GÀNG) -->
+        <div class="panel-box" style="padding: 22px 24px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h2 class="panel-title" style="margin: 0; font-size: 16px;">
+                    <i class="fa-solid fa-chart-column" style="color: #3b82f6;"></i> Ván đấu theo chế độ
+                </h2>
+                <span style="font-size: 12px; font-weight: 700; color: #1e293b; background: rgba(0, 0, 0, 0.05); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    Toàn bộ 5 chế độ thi đấu
+                </span>
+            </div>
+            <div style="position: relative; width: 100%; height: 260px;">
+                <canvas id="modeCompareChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- ELO RATING GRAPH PANEL -->
     <div class="panel-box" style="margin-bottom: 24px; padding: 20px 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
@@ -68,19 +229,42 @@
         <div style="position: relative; width: 100%; height: 220px;">
             <canvas id="eloRatingChart"></canvas>
         </div>
+        @if (Model.EloHistory.Count <= 1)
+        {
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 10px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-circle-info" style="color: #3b82f6;"></i>
+                <span>Đang hiển thị mốc Elo khởi đầu. Tham gia thêm các ván đấu <strong>PvP Online</strong> để theo dõi biến động phong độ chi tiết.</span>
+            </div>
+        }
     </div>
 
     <div class="dashboard-content">
         <!-- MATCH HISTORY -->
         <div class="panel-box">
-            <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đấu gần đây</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <h2 class="panel-title" style="margin: 0;"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đấu gần đây</h2>
+                <!-- SELECT LỌC THEO CHẾ ĐỘ CHƠI CHO LỊCH SỬ ĐẤU -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="historyModeFilter" style="font-size: 12.5px; font-weight: 700; color: #334155;">Chế độ:</label>
+                    <select id="historyModeFilter" onchange="filterHistoryByMode()" style="background: var(--bg-navy-dark); color: #1e293b; border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; outline: none;">
+                        <option value="ALL">Tất cả chế độ</option>
+                        @if (Model.ModeStats != null)
+                        {
+                            foreach (var m in Model.ModeStats)
+                            {
+                                <option value="@m.Label">@m.Label</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
             <div class="history-list" id="history-list-container">
                 @if (Model.RecentGames.Any())
                 {
                     var index = 0;
                     foreach (var game in Model.RecentGames)
                     {
-                        <a href="/Game/Review/@game.GameId" class="history-item @game.Result match-row" data-index="@index" style="text-decoration: none; cursor: pointer; display: none;" title="Nhấn để xem chi tiết phân tích ván đấu">
+                        <a href="/Game/Review/@game.GameId" class="history-item @game.Result match-row" data-index="@index" data-mode="@game.GameMode" style="text-decoration: none; cursor: pointer; display: none;" title="Nhấn để xem chi tiết phân tích ván đấu">
                             <div class="history-main">
                                 <div class="history-opp">
                                     vs. @game.OpponentName 
@@ -93,7 +277,7 @@
                                 <div class="history-meta">
                                     <span><i class="fa-regular fa-calendar"></i> @game.PlayedAt.ToString("dd/MM/yyyy HH:mm")</span>
                                     <span><i class="fa-solid fa-chess-board"></i> @game.TotalMoves nước</span>
-                                    <span style="color: var(--text-muted);"><i class="fa-solid fa-star" style="color: var(--accent-gold); font-size: 11px;"></i> Elo sau ván: <strong style="color: var(--accent-gold);">@(game.PlayerElo?.ToString() ?? "Không có bản ghi")</strong> · Δ @(game.EloChange?.ToString("+0;-0;0") ?? "—")</span>
+                                    <span style="color: var(--text-muted);"><i class="fa-solid fa-star" style="color: var(--accent-gold); font-size: 11px;"></i> Elo của bạn: <strong style="color: var(--accent-gold);">@game.PlayerElo</strong></span>
                                     <span class="history-review-hint"><i class="fa-solid fa-magnifying-glass-chart"></i> Phân tích ván đấu</span>
                                 </div>
                             </div>
@@ -174,14 +358,8 @@
 
                         <div class="leaderboard-item lb-pz-row rank-@(user.Rank <= 3 ? user.Rank : 0)" data-index="@lbPzIdx" style="@extraStyle">
                             <div class="rank-badge" style="@rankBadgeStyle">@user.Rank</div>
-                            <div class="lb-player" style="@lbPlayerStyle">
-                                @user.Username
-                                <span style="font-size: 11px; color: #38bdf8; margin-left: 6px; font-weight: 600;">(@user.LevelTitle)</span>
-                            </div>
-                            <div class="lb-elo" style="color: #10b981;">
-                                <span style="font-size: 12px; color: #38bdf8; margin-right: 6px;" title="Điểm Cờ Thế"><i class="fa-solid fa-gem" style="font-size: 10px;"></i> @user.Score</span>
-                                <i class="fa-solid fa-check" style="font-size: 11px;"></i> @user.SolvedCount bài
-                            </div>
+                            <div class="lb-player" style="@lbPlayerStyle">@user.Username</div>
+                            <div class="lb-elo" style="color: #10b981;"><i class="fa-solid fa-check" style="font-size: 11px;"></i> @user.SolvedCount bài</div>
                         </div>
                         lbPzIdx++;
                     }
@@ -219,34 +397,50 @@
             }
 
             // ==========================================
-            // HỆ THỐNG PHÂN TRANG LỊCH SỬ ĐẤU
+            // HỆ THỐNG PHÂN TRANG & LỌC LỊCH SỬ ĐẤU
             // ==========================================
             (function() {
                 const pageSize = 5; // Số ván đấu trên mỗi trang
                 let currentPage = 1;
-                const rows = document.querySelectorAll('.match-row');
-                const totalItems = rows.length;
-                const totalPages = Math.ceil(totalItems / pageSize);
+                let activeFilteredRows = [];
+                const allRows = Array.from(document.querySelectorAll('.match-row'));
                 const infoEl = document.getElementById('pagination-info');
                 const controlsEl = document.getElementById('pagination-controls');
                 const paginationWrapper = document.getElementById('history-pagination');
 
-                if (totalItems === 0) {
-                    if (paginationWrapper) paginationWrapper.style.display = 'none';
-                    return;
+                function applyFilter(selectedMode) {
+                    if (selectedMode === 'ALL') {
+                        activeFilteredRows = allRows.slice();
+                    } else {
+                        activeFilteredRows = allRows.filter(r => (r.getAttribute('data-mode') || '').trim() === selectedMode.trim());
+                    }
+
+                    // Ẩn tất cả trước
+                    allRows.forEach(r => r.style.display = 'none');
+
+                    if (activeFilteredRows.length === 0) {
+                        if (paginationWrapper) paginationWrapper.style.display = 'none';
+                        if (infoEl) infoEl.textContent = 'Không có ván đấu nào ở chế độ này.';
+                        if (controlsEl) controlsEl.innerHTML = '';
+                        return;
+                    }
+
+                    if (paginationWrapper) paginationWrapper.style.display = 'flex';
+                    renderPage(1);
                 }
 
                 function renderPage(page) {
                     currentPage = page;
+                    const totalItems = activeFilteredRows.length;
+                    const totalPages = Math.ceil(totalItems / pageSize) || 1;
                     const start = (page - 1) * pageSize;
                     const end = Math.min(start + pageSize, totalItems);
 
-                    // Ẩn/Hiện dòng theo trang
-                    rows.forEach((row, i) => {
+                    // Ẩn toàn bộ rồi hiện các dòng thuộc trang hiện tại
+                    allRows.forEach(r => r.style.display = 'none');
+                    activeFilteredRows.forEach((row, i) => {
                         if (i >= start && i < end) {
                             row.style.display = 'flex';
-                        } else {
-                            row.style.display = 'none';
                         }
                     });
 
@@ -256,12 +450,13 @@
                     }
 
                     // Render các nút bấm phân trang
-                    renderControls();
+                    renderControls(totalPages);
                 }
 
-                function renderControls() {
+                function renderControls(totalPages) {
                     if (!controlsEl) return;
                     controlsEl.innerHTML = '';
+                    if (totalPages <= 1) return;
 
                     // Nút Về trang trước
                     const prevBtn = document.createElement('button');
@@ -303,7 +498,7 @@
                         }
                     });
 
-                    // Nút Sang trang sau
+                    // Nút Tới trang sau
                     const nextBtn = document.createElement('button');
                     nextBtn.type = 'button';
                     nextBtn.className = 'page-btn';
@@ -314,8 +509,12 @@
                     controlsEl.appendChild(nextBtn);
                 }
 
-                // Khởi động trang đầu tiên lịch sử đấu
-                renderPage(1);
+                window.filterHistoryByMode = function() {
+                    const select = document.getElementById('historyModeFilter');
+                    applyFilter(select ? select.value : 'ALL');
+                };
+
+                applyFilter('ALL');
             })();
 
             // ==========================================
@@ -396,6 +595,16 @@
                     var ctx = document.getElementById('eloRatingChart');
                     if (!ctx || !window.Chart) return;
 
+                    var displayLabels = labels.slice();
+                    var displayValues = eloValues.slice();
+                    var isSinglePoint = displayValues.length <= 1;
+
+                    // Nếu chỉ có 1 điểm duy nhất (người chơi mới), tạo thêm mốc tham chiếu kéo dài để thành đường biểu đồ
+                    if (isSinglePoint) {
+                        displayLabels = ['Khởi đầu', 'Hiện tại'];
+                        displayValues = [displayValues[0] || @Model.CurrentUser.Elo, displayValues[0] || @Model.CurrentUser.Elo];
+                    }
+
                     var gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 220);
                     gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
                     gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
@@ -403,20 +612,21 @@
                     new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: labels,
+                            labels: displayLabels,
                             datasets: [{
                                 label: 'Điểm Elo',
-                                data: eloValues,
+                                data: displayValues,
                                 borderColor: '#3b82f6',
                                 backgroundColor: gradient,
                                 borderWidth: 2.5,
                                 fill: true,
                                 tension: 0.35,
+                                borderDash: isSinglePoint ? [6, 6] : [], // Nét đứt thể hiện mức tham chiếu nếu chưa có trận
                                 pointBackgroundColor: '#3b82f6',
                                 pointBorderColor: '#ffffff',
-                                pointBorderWidth: 1.5,
-                                pointRadius: 4,
-                                pointHoverRadius: 6
+                                pointBorderWidth: 2,
+                                pointRadius: isSinglePoint ? 5 : 4,
+                                pointHoverRadius: 7
                             }]
                         },
                         options: {
@@ -425,7 +635,7 @@
                             plugins: {
                                 legend: { display: false },
                                 tooltip: {
-                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
                                     titleColor: '#f8fafc',
                                     bodyColor: '#cbd5e1',
                                     borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -434,6 +644,9 @@
                                     displayColors: false,
                                     callbacks: {
                                         label: function(context) {
+                                            if (isSinglePoint) {
+                                                return 'Elo hiện tại: ' + context.raw + ' (Mốc ban đầu)';
+                                            }
                                             var idx = context.dataIndex;
                                             var item = eloDataRaw[idx];
                                             var changeText = item.Change > 0 ? ('+' + item.Change) : (item.Change < 0 ? item.Change : '0');
@@ -444,12 +657,206 @@
                             },
                             scales: {
                                 x: {
-                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                                    ticks: { color: '#94a3b8', font: { size: 11 } }
+                                    grid: { color: 'rgba(0, 0, 0, 0.06)' },
+                                    ticks: { color: '#334155', font: { size: 12, weight: '700' } }
                                 },
                                 y: {
-                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                                    ticks: { color: '#94a3b8', font: { size: 11 }, precision: 0 }
+                                    grid: { color: 'rgba(0, 0, 0, 0.06)' },
+                                    ticks: { color: '#334155', font: { size: 12, weight: '700' }, precision: 0 },
+                                    suggestedMin: (displayValues[0] || 1200) - 50,
+                                    suggestedMax: (displayValues[0] || 1200) + 50
+                                }
+                            }
+                        }
+                    });
+                }
+
+                function initAllCharts() {
+                    initChart();
+                    initOutcomeChart();
+                    initModeCompareChart();
+                }
+
+                var outcomeChartInstance = null;
+                var modeStatsList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ModeStats ?? new List<ChessCore.Services.ModeStatistics>()));
+
+                window.onDonutFilterChange = function() {
+                    var select = document.getElementById('donutModeFilter');
+                    var modeKey = select ? select.value : 'ALL';
+
+                    var wins = 0, draws = 0, losses = 0, winRate = 0;
+
+                    if (modeKey === 'ALL') {
+                        wins = @Model.CurrentUser.Wins;
+                        draws = @Model.CurrentUser.Draws;
+                        losses = @Model.CurrentUser.Losses;
+                        var total = wins + draws + losses;
+                        winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : 0;
+                    } else {
+                        var found = modeStatsList.find(function(m) { return m.Mode === modeKey; });
+                        if (found) {
+                            wins = found.Wins || 0;
+                            draws = found.Draws || 0;
+                            losses = found.Losses || 0;
+                            winRate = found.WinRate || 0;
+                        }
+                    }
+
+                    // Cập nhật DOM số liệu bên ngoài
+                    var elWinRate = document.getElementById('donutWinRateValue');
+                    var elWins = document.getElementById('donutWinsCount');
+                    var elDraws = document.getElementById('donutDrawsCount');
+                    var elLosses = document.getElementById('donutLossesCount');
+
+                    if (elWinRate) elWinRate.textContent = winRate + '%';
+                    if (elWins) elWins.textContent = wins;
+                    if (elDraws) elDraws.textContent = draws;
+                    if (elLosses) elLosses.textContent = losses;
+
+                    // Cập nhật dữ liệu biểu đồ tròn
+                    if (outcomeChartInstance) {
+                        var totalMatches = wins + draws + losses;
+                        outcomeChartInstance.data.datasets[0].data = totalMatches === 0 ? [1, 0, 0] : [wins, draws, losses];
+                        outcomeChartInstance.data.datasets[0].backgroundColor = totalMatches === 0 ? ['#94a3b8', '#94a3b8', '#94a3b8'] : ['#10b981', '#f59e0b', '#ef4444'];
+                        outcomeChartInstance.update();
+                    }
+                };
+
+                function initOutcomeChart() {
+                    var ctx = document.getElementById('outcomeDonutChart');
+                    if (!ctx || !window.Chart) return;
+
+                    var wins = @Model.CurrentUser.Wins;
+                    var draws = @Model.CurrentUser.Draws;
+                    var losses = @Model.CurrentUser.Losses;
+                    var total = wins + draws + losses;
+
+                    outcomeChartInstance = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Thắng', 'Hòa', 'Thua'],
+                            datasets: [{
+                                data: total === 0 ? [1, 0, 0] : [wins, draws, losses],
+                                backgroundColor: total === 0 ? ['#94a3b8', '#94a3b8', '#94a3b8'] : ['#10b981', '#f59e0b', '#ef4444'],
+                                hoverBackgroundColor: ['#059669', '#d97706', '#dc2626'],
+                                borderWidth: 0,
+                                borderRadius: 6,
+                                spacing: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '76%',
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: '#1e293b',
+                                        padding: 14,
+                                        font: { size: 12, weight: '700' },
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                    titleColor: '#f8fafc',
+                                    bodyColor: '#cbd5e1',
+                                    padding: 10,
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    displayColors: true,
+                                    callbacks: {
+                                        label: function(c) {
+                                            var d = c.dataset.data;
+                                            var sum = d.reduce(function(a, b) { return a + b; }, 0);
+                                            if (sum === 1 && d[0] === 1 && d[1] === 0 && d[2] === 0) return ' Chưa có trận đấu';
+                                            var val = c.raw;
+                                            var pct = sum > 0 ? ((val / sum) * 100).toFixed(1) : 0;
+                                            return ' ' + c.label + ': ' + val + ' ván (' + pct + '%)';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                function initModeCompareChart() {
+                    var ctx = document.getElementById('modeCompareChart');
+                    if (!ctx || !window.Chart) return;
+
+                    var modeStatsRaw = modeStatsList;
+                    if (!modeStatsRaw || modeStatsRaw.length === 0) return;
+
+                    // Hiển thị đầy đủ cả 5 chế độ khớp 100% với bảng thống kê bên trên
+                    var labels = modeStatsRaw.map(function(m) { return m.Label || m.Mode; });
+                    var finishedData = modeStatsRaw.map(function(m) { return m.Finished; });
+                    var winsData = modeStatsRaw.map(function(m) { return m.Wins; });
+
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Hoàn tất',
+                                    data: finishedData,
+                                    backgroundColor: '#3b82f6',
+                                    hoverBackgroundColor: '#2563eb',
+                                    borderRadius: 6,
+                                    barPercentage: 0.65,
+                                    categoryPercentage: 0.6
+                                },
+                                {
+                                    label: 'Thắng',
+                                    data: winsData,
+                                    backgroundColor: '#10b981',
+                                    hoverBackgroundColor: '#059669',
+                                    borderRadius: 6,
+                                    barPercentage: 0.65,
+                                    categoryPercentage: 0.6
+                                }
+                            ]
+                        },
+                        options: {
+                            indexAxis: 'y', // Chuyển thành thanh ngang (Horizontal bar)
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    align: 'end',
+                                    labels: {
+                                        color: '#1e293b',
+                                        font: { size: 12, weight: '700' },
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        padding: 12
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                    titleColor: '#f8fafc',
+                                    bodyColor: '#cbd5e1',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    padding: 10
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(0, 0, 0, 0.06)' },
+                                    ticks: { color: '#334155', font: { size: 12, weight: '700' }, precision: 0 },
+                                    beginAtZero: true
+                                },
+                                y: {
+                                    grid: { display: false },
+                                    ticks: { 
+                                        color: '#0f172a', 
+                                        font: { size: 12, weight: '800' }
+                                    }
                                 }
                             }
                         }
@@ -457,11 +864,11 @@
                 }
 
                 if (window.Chart) {
-                    initChart();
+                    initAllCharts();
                 } else {
                     var script = document.createElement('script');
                     script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                    script.onload = initChart;
+                    script.onload = initAllCharts;
                     document.head.appendChild(script);
                 }
             })();
