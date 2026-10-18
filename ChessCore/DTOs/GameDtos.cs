@@ -3,16 +3,6 @@ using System.Collections.Generic;
 
 namespace ChessCore.DTOs
 {
-    public class LastMoveEvaluationDto
-    {
-        public string PieceName { get; set; } = string.Empty;
-        public string MoveDescription { get; set; } = string.Empty;
-        public int DeltaH1 { get; set; } // Thay doi chenh lech vat chat theo ben vua di
-        public int DeltaH2 { get; set; } // Điểm vị trí / cơ động
-        public int DeltaH3 { get; set; } // Điểm chiến thuật
-        public int TotalDelta => DeltaH1 + DeltaH2 + DeltaH3;
-    }
-
     public class PieceDto
     {
         public int Row { get; set; }

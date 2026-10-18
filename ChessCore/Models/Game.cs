@@ -24,7 +24,9 @@ namespace ChessCore.Models
         public User RedPlayer { get; set; }
         public User BlackPlayer { get; set; }
 
-        public string GameMode { get; set; } = "PvP"; // PvP, PvE, Online
+        public bool IsRated { get; set; }
+        public DateTime? ResultsProcessedAt { get; set; }
+        public string GameMode { get; set; } = "Legacy"; // PvP, PvE, Online
         public int? AiDepth { get; set; }             // AI search depth (1..4) for PvE matches
         public int? OpeningId { get; set; }           // Linked opening book
 

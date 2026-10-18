@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using ChessCore.Data;
+using ChessCore.Services;
 using ChessCore.ViewModels;
 using ChessCore.Enums;
 
@@ -15,10 +16,20 @@ namespace ChessCore.Controllers
     public class DashboardController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly StatisticsService _statistics;
 
-        public DashboardController(AppDbContext context)
+        public DashboardController(AppDbContext context, StatisticsService statistics)
         {
             _context = context;
+            _statistics = statistics;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Export()
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Unauthorized();
+            return File(StatisticsService.Csv(await _statistics.ModesAsync(userId), false, await _statistics.LearningAsync(userId)),
+                "text/csv; charset=utf-8", "thong-ke-ca-nhan.csv");
         }
 
         public async Task<IActionResult> Index()
@@ -37,15 +48,10 @@ namespace ChessCore.Controllers
                 CurrentUser = currentUser
             };
 
-            // Calculate WinRate
-            if (currentUser.GamesPlayed > 0)
-            {
-                vm.WinRate = System.Math.Round((double)currentUser.Wins / currentUser.GamesPlayed * 100, 1);
-            }
-            else
-            {
-                vm.WinRate = 0;
-            }
+            vm.ModeStats = await _statistics.ModesAsync(userId, HttpContext.RequestAborted);
+            vm.Learning = await _statistics.LearningAsync(userId, HttpContext.RequestAborted);
+            var online = vm.ModeStats.Single(r => r.Mode == GameModes.Online);
+            vm.WinRate = online.WinRate;
 
             // Puzzles solved
             vm.PuzzlesSolved = await _context.PuzzleProgresses
@@ -117,19 +123,24 @@ namespace ChessCore.Controllers
                 var userIds = topPuzzleUsers.Select(x => x.UserId).ToList();
                 var pzUsers = await _context.Users
                     .Where(u => userIds.Contains(u.Id))
-                    .ToDictionaryAsync(u => u.Id, u => u.Username);
+                    .ToDictionaryAsync(u => u.Id, u => u);
 
                 int pzRank = 1;
                 foreach (var pu in topPuzzleUsers)
                 {
-                    string uName = pzUsers.TryGetValue(pu.UserId, out var n) ? n : $"Kỳ thủ #{pu.UserId}";
+                    bool found = pzUsers.TryGetValue(pu.UserId, out var u);
+                    string uName = found && u != null ? u.Username : $"Kỳ thủ #{pu.UserId}";
                     if (pu.UserId == userId) uName += " (Bạn)";
+                    int uScore = found && u != null ? u.PuzzleScore : 500;
+                    var lvInfo = PuzzleScoringService.CalculateLevel(uScore);
 
                     vm.PuzzleLeaderboard.Add(new PuzzleLeaderboardItem
                     {
                         Rank = pzRank++,
                         Username = uName,
                         SolvedCount = pu.SolvedCount,
+                        Score = uScore,
+                        LevelTitle = $"Cấp {lvInfo.Level}",
                         IsCurrentUser = (pu.UserId == userId)
                     });
                 }
@@ -149,24 +160,11 @@ namespace ChessCore.Controllers
             {
                 bool isRed = g.RedPlayerId == userId;
                 var opponent = isRed ? g.BlackPlayer : g.RedPlayer;
-                bool isOnlinePvP = g.RedPlayerId.HasValue && g.BlackPlayerId.HasValue;
-
-                string opponentName;
-                int? opponentElo;
-                string mode;
-
-                if (isOnlinePvP)
-                {
-                    opponentName = opponent != null ? opponent.Username : "Người chơi khác";
-                    opponentElo = opponent?.Elo ?? 1200;
-                    mode = "PvP Online";
-                }
-                else
-                {
-                    opponentName = "Máy (AI)";
-                    opponentElo = null; // Máy không có điểm Elo người chơi
-                    mode = "Chơi với Máy";
-                }
+                string opponentName = g.GameMode == GameModes.Online
+                    ? opponent?.Username ?? "Người chơi khác"
+                    : g.GameMode == GameModes.PvE ? "Máy (AI)" : GameModes.Label(g.GameMode);
+                int? opponentElo = null; // Historical opponent rating was not stored.
+                string mode = GameModes.Label(g.GameMode);
 
                 string resultClass = "draw";
                 string resultText = "Hòa";
@@ -191,7 +189,7 @@ namespace ChessCore.Controllers
                     GameId = g.Id,
                     OpponentName = opponentName,
                     OpponentElo = opponentElo,
-                    PlayerElo = currentUser.Elo,
+                    PlayerElo = null,
                     GameMode = mode,
                     PlayedAt = g.CreatedAt,
                     TotalMoves = g.Moves.Count,
@@ -200,48 +198,25 @@ namespace ChessCore.Controllers
                 });
             }
 
-            // 4. Lấy lịch sử biến động Elo từ UserEloHistories
-            var eloHistories = await _context.UserEloHistories
-                .Where(h => h.UserId == userId)
-                .OrderBy(h => h.RecordedAt)
-                .Take(30)
-                .ToListAsync();
-
-            if (eloHistories.Any())
+            var recentIds = vm.RecentGames.Select(g => g.GameId).ToArray();
+            var ratingForGames = await _context.UserEloHistories.AsNoTracking()
+                .Where(h => h.UserId == userId && h.GameId.HasValue && recentIds.Contains(h.GameId.Value))
+                .OrderBy(h => h.Id).ToListAsync();
+            foreach (var item in vm.RecentGames)
             {
-                foreach (var h in eloHistories)
-                {
-                    vm.EloHistory.Add(new EloPointDto
-                    {
-                        DateLabel = h.RecordedAt.ToString("dd/MM HH:mm"),
-                        Elo = h.NewElo,
-                        Change = h.EloChange,
-                        Reason = h.Reason ?? "Ván đấu"
-                    });
-                }
+                var rating = ratingForGames.LastOrDefault(h => h.GameId == item.GameId);
+                item.PlayerElo = rating?.NewElo;
+                item.EloChange = rating?.EloChange;
             }
-            else
-            {
-                // Nếu chưa có ván nào ghi lịch sử, tạo điểm mốc khởi đầu từ ngày tạo tài khoản
-                vm.EloHistory.Add(new EloPointDto
-                {
-                    DateLabel = currentUser.CreatedAt.ToString("dd/MM"),
-                    Elo = 1200,
-                    Change = 0,
-                    Reason = "Khởi tạo tài khoản"
-                });
-
-                if (currentUser.Elo != 1200)
-                {
-                    vm.EloHistory.Add(new EloPointDto
-                    {
-                        DateLabel = "Hiện tại",
-                        Elo = currentUser.Elo,
-                        Change = currentUser.Elo - 1200,
-                        Reason = "Điểm số hiện tại"
-                    });
-                }
-            }
+            var eloHistories = await _context.UserEloHistories.AsNoTracking()
+                .Where(h => h.UserId == userId).OrderByDescending(h => h.RecordedAt)
+                .ThenByDescending(h => h.Id).Take(30).ToListAsync();
+            foreach (var h in eloHistories.OrderBy(h => h.RecordedAt).ThenBy(h => h.Id))
+                vm.EloHistory.Add(new EloPointDto { DateLabel = h.RecordedAt.ToString("dd/MM HH:mm"),
+                    Elo = h.NewElo, Change = h.EloChange, Reason = h.Reason ?? "Lịch sử cũ" });
+            if (vm.EloHistory.Count == 0)
+                vm.EloHistory.Add(new EloPointDto { DateLabel = "Hiện tại", Elo = currentUser.Elo,
+                    Change = 0, Reason = "Chưa có lịch sử biến động được ghi nhận" });
 
             return View(vm);
         }

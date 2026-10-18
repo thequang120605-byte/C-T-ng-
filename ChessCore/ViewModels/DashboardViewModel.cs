@@ -8,6 +8,9 @@ namespace ChessCore.ViewModels
     public class DashboardViewModel
     {
         public User CurrentUser { get; set; }
+        public List<ChessCore.Services.ModeStatistics> ModeStats { get; set; } = new();
+        public ChessCore.Services.LearningStatistics Learning { get; set; } = new();
+        public int FinishedGames => ModeStats.Where(r => r.Mode == "Online" || r.Mode == "PvE").Sum(r => r.Finished);
         public int PuzzlesSolved { get; set; }
         public double WinRate { get; set; }
         public int RankIndex { get; set; }
@@ -30,6 +33,8 @@ namespace ChessCore.ViewModels
         public int Rank { get; set; }
         public string Username { get; set; }
         public int SolvedCount { get; set; }
+        public int Score { get; set; }
+        public string LevelTitle { get; set; } = string.Empty;
         public bool IsCurrentUser { get; set; }
     }
 
@@ -38,7 +43,8 @@ namespace ChessCore.ViewModels
         public int GameId { get; set; }
         public string OpponentName { get; set; }
         public int? OpponentElo { get; set; }
-        public int PlayerElo { get; set; }
+        public int? PlayerElo { get; set; }
+        public int? EloChange { get; set; }
         public string GameMode { get; set; } = "PvE"; // "PvE" hoặc "PvP"
         public DateTime PlayedAt { get; set; }
         public int TotalMoves { get; set; }

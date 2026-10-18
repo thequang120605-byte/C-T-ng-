@@ -100,6 +100,7 @@ namespace ChessCore.Data
                 entity.HasIndex(e => e.PlayerId).IsUnique();
                 entity.HasIndex(e => e.Username).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
+                entity.Property(e => e.PuzzleScore).HasDefaultValue(500);
             });
 
             // Cấu hình bảng Game
@@ -117,7 +118,8 @@ namespace ChessCore.Data
 
                 entity.Property(e => e.GameMode)
                     .HasMaxLength(20)
-                    .HasDefaultValue("PvP");
+                    .HasDefaultValue("Legacy");
+                entity.HasIndex(e => new { e.GameMode, e.Status });
                 entity.HasOne(g => g.Opening)
                     .WithMany()
                     .HasForeignKey(g => g.OpeningId)

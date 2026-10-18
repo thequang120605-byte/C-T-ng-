@@ -22,6 +22,9 @@ namespace ChessCore.Models
         public int Losses { get; set; } = 0;
         public int Draws { get; set; } = 0;
 
+        // Điểm tích lũy Cờ Thế (dùng để tăng cấp độ và mua gợi ý)
+        public int PuzzleScore { get; set; } = 500;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation properties

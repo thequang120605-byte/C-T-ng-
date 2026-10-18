@@ -1054,10 +1054,13 @@ namespace ChessCore.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
-                        .HasDefaultValue("PvP");
+                        .HasDefaultValue("Legacy");
 
                     b.Property<string>("InitialFen")
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("IsRated")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<DateTime?>("LastMoveAt")
                         .HasColumnType("datetime(6)");
@@ -1067,6 +1070,9 @@ namespace ChessCore.Migrations
 
                     b.Property<int?>("RedPlayerId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("ResultsProcessedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("RoomCode")
                         .IsRequired()
@@ -1088,6 +1094,8 @@ namespace ChessCore.Migrations
 
                     b.HasIndex("RoomCode")
                         .IsUnique();
+
+                    b.HasIndex("GameMode", "Status");
 
                     b.ToTable("Games");
                 });
@@ -1616,6 +1624,11 @@ namespace ChessCore.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
+
+                    b.Property<int>("PuzzleScore")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(500);
 
                     b.Property<string>("Role")
                         .IsRequired()
