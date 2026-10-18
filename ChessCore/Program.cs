@@ -106,6 +106,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Đăng ký các Services
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddSingleton<PuzzleCampaignService>();
+builder.Services.AddScoped<StatisticsService>();
 
 builder.Services.AddScoped<IMoveService, MoveService>();
 builder.Services.AddHostedService<GameTimeoutWorker>();
