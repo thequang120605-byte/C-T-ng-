@@ -8,16 +8,19 @@ public struct SideScores
     public int H1;
     public int H2;
     public int H3;
-    public int Total => H1 + H2 + H3;
+    public int H4;
+    public int Total => H1 + H2 + H3 + H4;
 }
 
 /// <summary>
-/// H1 = vat chat; H2 = vi tri/co dong; H3 = phong thu/chien thuat.
+/// H1 = vat chat; H2 = vi tri/co dong; H3 = phong thu/chien thuat; H4 = tam/tu tu dong bien (heuristic do an).
 /// Heuristic nay la tham so cua do an, khong phai bang diem bat buoc cua lien doan.
 /// Tat ca dac trung chi phu thuoc vi tri hien tai, phu hop voi transposition table.
 /// </summary>
 public static class BoardEvaluator
 {
+    public const int ThreePieceWingBonus = 60;
+    public const int FourPieceWingBonus = 100;
     public const int AdvisorPairBonus = 70;
     public const int ElephantPairBonus = 55;
     public const int MissingGuardPenalty = 35;
@@ -57,6 +60,9 @@ public static class BoardEvaluator
         public readonly int[] Elephants = new int[2];
         public readonly Position?[] Kings = new Position?[2];
         public int Opening;
+        public bool ControlsEnemyPalace;
+        public readonly int[,] WingCount = new int[2, 2];
+        public readonly int[,] WingPressure = new int[2, 2];
     }
 
     // Build geometric control maps once per evaluation, including friendly targets.
@@ -77,6 +83,12 @@ public static class BoardEvaluator
                 (p.Type == PieceType.Horse && rank == 0 && (c == 1 || c == 7)) ||
                 (p.Type == PieceType.Cannon && rank == 2 && (c == 1 || c == 7))) undeveloped++;
             AddControls(board, f, p, r, c);
+            if (Major(p.Type) && rank >= 5 && c != 4)
+            {
+                int wing = c < 4 ? 0 : 1;
+                f.WingCount[side, wing]++;
+                if (f.ControlsEnemyPalace) f.WingPressure[side, wing]++;
+            }
         }
         // Position-based opening estimate: fades as majors develop or leave the board.
         f.Opening = Math.Clamp(undeveloped * 100 / 12, 0, 100);
@@ -88,6 +100,7 @@ public static class BoardEvaluator
         if (row < 0 || row > 9 || col < 0 || col > 8) return;
         int side = Side(p.Color), square = Index(row, col);
         f.Attacks[side, square]++;
+        if (Palace(GameRules.Opponent(p.Color), row, col)) f.ControlsEnemyPalace = true;
         int value = p.Type == PieceType.King ? 10000 : GetPieceValue(p.Type);
         int previous = f.CheapestAttacker[side, square];
         if (previous == 0 || value < previous) f.CheapestAttacker[side, square] = value;
@@ -98,6 +111,7 @@ public static class BoardEvaluator
 
     private static void AddControls(Board board, Features f, Piece p, int row, int col)
     {
+        f.ControlsEnemyPalace = false;
         if (p.Type is PieceType.Rook or PieceType.Cannon)
         {
             foreach (var (dr, dc) in Directions)
@@ -217,8 +231,31 @@ public static class BoardEvaluator
                     result.H3 -= Math.Max(0, value - f.CheapestAttacker[enemy, square]) / 5;
             }
         }
+        result.H4 = WingScore(f, color);
         result.H3 += KingSafety(board, color, f);
         return result;
+    }
+
+    /// <summary>
+    /// Project approximation: 3 or >=4 attacking Rook/Horse/Cannon pieces on
+    /// the same flank, all across the river. Central file is excluded; at least
+    /// two of those pieces must geometrically control the enemy palace zone.
+    /// Count each piece once. H4 is capped at 100, not stacked with 60.
+    /// Does not prove a forced attack or override terminal game results.
+    /// </summary>
+    public static int EvaluateWingCoordination(Board board, PieceColor color)
+    {
+        return WingScore(BuildFeatures(board), color);
+    }
+
+    private static int WingScore(Features f, PieceColor color)
+    {
+        int side = Side(color), best = 0;
+        for (int wing = 0; wing < 2; wing++)
+            if (f.WingPressure[side, wing] >= 2)
+                best = Math.Max(best, f.WingCount[side, wing] >= 4 ? FourPieceWingBonus
+                    : f.WingCount[side, wing] == 3 ? ThreePieceWingBonus : 0);
+        return best;
     }
 
     private static int KingSafety(Board board, PieceColor color, Features f)

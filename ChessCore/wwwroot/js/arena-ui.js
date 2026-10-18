@@ -57,7 +57,7 @@
     setSignedValue("black-score", isNeural ? -score : data.blackScore);
     setMeter("advantage-meter", score, 650);
     const components = data.evaluation || {};
-    for (const [key, scale] of [["h1", 700], ["h2", 200], ["h3", 250]]) {
+    for (const [key, scale] of [["h1", 700], ["h2", 200], ["h3", 250], ["h4", 100]]) {
       setSignedValue(`${key}-value`, components[key]);
       setMeter(`${key}-meter`, components[key], scale);
     }
@@ -71,7 +71,7 @@
     const last = ordered(data.moves).at(-1);
     setText("lm-piece", last ? `${last.pieceColor === "Red" ? "Đỏ" : "Đen"} · ${names[last.pieceType] || "Quân"}` : names[lm.pieceName] || lm.pieceName);
     setText("lm-desc", last ? `${square(last.fromX, last.fromY)} → ${square(last.toX, last.toY)}` : lm.moveDescription);
-    for (const key of ["h1", "h2", "h3"]) setSignedValue(`lm-${key}`, lm[`delta${key.toUpperCase()}`]);
+    for (const key of ["h1", "h2", "h3", "h4"]) setSignedValue(`lm-${key}`, lm[`delta${key.toUpperCase()}`]);
     setSignedValue("lm-total", lm.totalDelta);
   }
 

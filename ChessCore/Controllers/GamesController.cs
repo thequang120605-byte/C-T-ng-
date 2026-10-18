@@ -1284,7 +1284,8 @@ namespace ChessCore.Controllers
                     MoveDescription = $"({last.FromX},{last.FromY}) -> ({last.ToX},{last.ToY})",
                     DeltaH1 = (delta.H1 - opponentAfter.H1) - (previous.H1 - opponentBefore.H1),
                     DeltaH2 = (delta.H2 - opponentAfter.H2) - (previous.H2 - opponentBefore.H2),
-                    DeltaH3 = (delta.H3 - opponentAfter.H3) - (previous.H3 - opponentBefore.H3)
+                    DeltaH3 = (delta.H3 - opponentAfter.H3) - (previous.H3 - opponentBefore.H3),
+                    DeltaH4 = (delta.H4 - opponentAfter.H4) - (previous.H4 - opponentBefore.H4)
                 };
             }
 
@@ -1321,7 +1322,8 @@ namespace ChessCore.Controllers
                     {
                         H1 = redEvaluation.H1 - blackEvaluation.H1,
                         H2 = redEvaluation.H2 - blackEvaluation.H2,
-                        H3 = redEvaluation.H3 - blackEvaluation.H3
+                        H3 = redEvaluation.H3 - blackEvaluation.H3,
+                        H4 = redEvaluation.H4 - blackEvaluation.H4
                     },
                     RedScore = redScore,
                     BlackScore = -redScore,

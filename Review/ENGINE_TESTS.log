@@ -1,0 +1,85 @@
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Models/EngineMove.cs(12,77): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Models/Position.cs(16,30): warning CS8765: Nullability of type of parameter 'obj' doesn't match overridden member (possibly because of nullability attributes). [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/RegisterViewModel.cs(9,23): warning CS8618: Non-nullable property 'Username' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/RegisterViewModel.cs(13,23): warning CS8618: Non-nullable property 'Email' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/RegisterViewModel.cs(18,23): warning CS8618: Non-nullable property 'Password' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/RegisterViewModel.cs(23,23): warning CS8618: Non-nullable property 'ConfirmPassword' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/LoginViewModel.cs(8,23): warning CS8618: Non-nullable property 'Username' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/LoginViewModel.cs(12,23): warning CS8618: Non-nullable property 'Password' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/DashboardViewModel.cs(56,23): warning CS8618: Non-nullable property 'Username' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/DashboardViewModel.cs(42,23): warning CS8618: Non-nullable property 'OpponentName' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/DashboardViewModel.cs(49,23): warning CS8618: Non-nullable property 'Result' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/DashboardViewModel.cs(50,23): warning CS8618: Non-nullable property 'ResultText' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/DashboardViewModel.cs(34,23): warning CS8618: Non-nullable property 'Username' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ViewModels/DashboardViewModel.cs(10,21): warning CS8618: Non-nullable property 'CurrentUser' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/MoveGenerator.cs(82,38): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/MoveGenerator.cs(95,36): warning CS8601: Possible null reference assignment. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Controllers/AuthController.cs(188,48): warning CS8602: Dereference of a possibly null reference. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Controllers/AuthController.cs(253,65): warning CS8602: Dereference of a possibly null reference. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Services/PuzzleCampaignService.cs(442,36): warning CS8600: Converting null literal or possible null value to non-nullable type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/MinimaxEngine.cs(138,52): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/MinimaxEngine.cs(147,48): warning CS8601: Possible null reference assignment. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Controllers/MasterGameController.cs(34,30): warning CS0168: The variable 'ex' is declared but never used [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/GameRules.cs(110,58): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/GameRules.cs(149,55): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/Board.cs(27,34): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/Board.cs(155,24): warning CS8603: Possible null reference return. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/Board.cs(219,17): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/Board.cs(233,40): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Engine/Board.cs(252,25): warning CS8601: Possible null reference assignment. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Services/GameService.cs(72,20): warning CS8603: Possible null reference return. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Models/User.cs(8,23): warning CS8618: Non-nullable property 'Username' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Models/User.cs(9,23): warning CS8618: Non-nullable property 'Email' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Models/User.cs(10,23): warning CS8618: Non-nullable property 'PasswordHash' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Models/User.cs(13,23): warning CS8618: Non-nullable property 'PlayerId' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Controllers/GameController.cs(129,54): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Models/Game.cs(24,21): warning CS8618: Non-nullable property 'RedPlayer' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Models/Game.cs(25,21): warning CS8618: Non-nullable property 'BlackPlayer' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Controllers/GamesController.cs(538,56): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/Controllers/GamesController.cs(755,17): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/ChessCore/ChessCore.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/Validation/Program.cs(21,55): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/Validation/ChessCore.Checks.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/Validation/Program.cs(64,19): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/Validation/ChessCore.Checks.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/Validation/Program.cs(69,72): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/Validation/ChessCore.Checks.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/Validation/Program.cs(104,79): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/Validation/ChessCore.Checks.csproj]
+/workspace/scratch/7071ccf2817b/work-scoring/Validation/Program.cs(8,78): warning CS8625: Cannot convert null literal to non-nullable reference type. [/workspace/scratch/7071ccf2817b/work-scoring/Validation/ChessCore.Checks.csproj]
+PASS Initial position has 44 legal red moves
+AI depth=2, ms=124, nodes=937, cutoffs=266, ttHits=0, qNodes=893, completed=2
+PASS AI selects a legal move
+PASS Search restores board and turn
+PASS Evaluation perspectives are opposites
+PASS Capturing a horse adds 400 H1 advantage
+PASS H3 recognizes a friendly defended piece
+PASS Checkmate detected
+PASS Checkmate is a loss
+PASS No-legal-move position without check
+PASS No legal moves is a loss, not draw
+PASS AI scores no moves as loss
+PASS Facing kings detected
+PASS King capture excluded
+AI depth=1, ms=10, nodes=55, cutoffs=5, ttHits=0, qNodes=55, completed=1
+PASS Depth 1 completed: ms=10, nodes=55, cutoffs=5
+AI depth=2, ms=113, nodes=937, cutoffs=266, ttHits=0, qNodes=893, completed=2
+PASS Depth 2 completed: ms=113, nodes=937, cutoffs=266
+AI depth=3, ms=596, nodes=5947, cutoffs=971, ttHits=0, qNodes=5649, completed=3
+PASS Depth 3 completed: ms=596, nodes=5947, cutoffs=971
+AI depth=4, ms=3229, nodes=31078, cutoffs=6815, ttHits=739, qNodes=27106, completed=4
+PASS Depth 4 completed: ms=3229, nodes=31078, cutoffs=6815
+PASS HTTP/SignalR DTO retains H1 capture delta
+PASS DTO reports opposite perspective scores
+PASS UI camelCase evaluation contract
+PASS DTO distinguishes no moves from checkmate
+PASS DTO reports checkmate
+PASS Current H1 H2 H3 H4 breakdown adds up to the displayed Red advantage
+PASS DTO preserves initial FEN for accurate captured-piece reconstruction
+PASS Breaking the advisor pair carries a meaningful H3 defence penalty
+PASS A developed rook is preferred to a blocked home rook
+PASS Strategic evaluation treats mirrored Red and Black symmetrically
+PASS The poisoned pawn capture is legal, so declining it is a search decision
+AI depth=3, ms=11, nodes=277, cutoffs=57, ttHits=0, qNodes=230, completed=3
+PASS AI does not trade its rook for a defended pawn
+PASS Depth 3 completes with quiescence enabled
+PASS Iterative deepening reports the actual completed depth
+PASS A checkmate at the tactical horizon remains a loss
+AI depth=4, ms=2642, nodes=25395, cutoffs=5919, ttHits=456, qNodes=22619, completed=4
+PASS Developed position depth 4 completed: ms=2642, nodes=25395, qNodes=22619
+PASS An unnecessary early elephant advance weakens the defensive formation

@@ -51,12 +51,24 @@ namespace ChessCore.DTOs
     }
 
 
+    public class LastMoveEvaluationDto
+    {
+        public string PieceName { get; set; } = string.Empty;
+        public string MoveDescription { get; set; } = string.Empty;
+        public int DeltaH1 { get; set; } // Thay doi chenh lech vat chat theo ben vua di
+        public int DeltaH2 { get; set; } // Điểm vị trí / cơ động
+        public int DeltaH3 { get; set; } // Điểm chiến thuật
+        public int DeltaH4 { get; set; }
+        public int TotalDelta => DeltaH1 + DeltaH2 + DeltaH3 + DeltaH4;
+    }
+
     public class HeuristicEvaluationDto
     {
-        // All three components are from Red's perspective, in raw heuristic points.
+        // All four components are from Red's perspective, in raw heuristic points.
         public int H1 { get; set; }
         public int H2 { get; set; }
         public int H3 { get; set; }
+        public int H4 { get; set; }
     }
 
     public class GameResponseDto
