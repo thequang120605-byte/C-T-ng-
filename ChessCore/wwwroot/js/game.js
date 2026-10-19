@@ -3784,24 +3784,61 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
   function appendChatMessage(sender, message, time) {
     if (!chatMessagesContainer) return;
-    const msgDiv = document.createElement("div");
-    msgDiv.style.display = "flex";
-    msgDiv.style.flexDirection = "column";
-    msgDiv.style.background = "rgba(255, 255, 255, 0.05)";
-    msgDiv.style.padding = "4px 8px";
-    msgDiv.style.borderRadius = "4px";
 
-    const isMe = sender === (document.getElementById("current-player-name")?.textContent || "Bạn");
+    // Xác định xem có phải chính người dùng gửi hay không
+    const myColor = localStorage.getItem("onlinePlayerColor"); // "Red" hoặc "Black"
+    const myRoleName = myColor === "Red" ? "Quân Đỏ" : (myColor === "Black" ? "Quân Đen" : "");
+    const myUserName = document.querySelector(".user-display-name")?.textContent?.trim() || "";
+    const isMe = sender === "Tôi" || sender === "Bạn" || (myRoleName && sender === myRoleName) || (myUserName && sender === myUserName);
 
-    msgDiv.innerHTML = `
-      <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--accent-gold);">
-        <strong>${sender}</strong>
-        <span style="color: var(--text-muted);">${time || ""}</span>
-      </div>
-      <div style="color: var(--text-main); font-size: 12px; margin-top: 2px; word-break: break-word;">${message}</div>
-    `;
+    const msgWrapper = document.createElement("div");
+    msgWrapper.style.display = "flex";
+    msgWrapper.style.width = "100%";
+    msgWrapper.style.justifyContent = isMe ? "flex-end" : "flex-start";
+    msgWrapper.style.marginBottom = "4px";
 
-    chatMessagesContainer.appendChild(msgDiv);
+    const bubble = document.createElement("div");
+    bubble.style.maxWidth = "78%";
+    bubble.style.padding = "6px 12px";
+    bubble.style.borderRadius = isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px";
+    bubble.style.background = isMe ? "linear-gradient(135deg, #059669, #10b981)" : "var(--bg-navy-panel, #1e293b)";
+    bubble.style.color = isMe ? "#ffffff" : "var(--text-main, #f8fafc)";
+    bubble.style.boxShadow = "0 1px 3px rgba(0,0,0,0.15)";
+    bubble.style.border = isMe ? "1px solid rgba(255,255,255,0.2)" : "1px solid var(--border-color, rgba(255,255,255,0.1))";
+    bubble.style.fontSize = "12.5px";
+    bubble.style.lineHeight = "1.4";
+    bubble.style.wordBreak = "break-word";
+
+    // Header tên người gửi + thời gian
+    const headerDiv = document.createElement("div");
+    headerDiv.style.display = "flex";
+    headerDiv.style.justifyContent = "space-between";
+    headerDiv.style.alignItems = "center";
+    headerDiv.style.gap = "8px";
+    headerDiv.style.marginBottom = "2px";
+    headerDiv.style.fontSize = "10px";
+    headerDiv.style.opacity = isMe ? "0.9" : "0.75";
+    headerDiv.style.color = isMe ? "#e2e8f0" : "var(--accent-gold, #d97706)";
+
+    const senderSpan = document.createElement("strong");
+    senderSpan.textContent = isMe ? "Bạn" : sender;
+
+    const timeSpan = document.createElement("span");
+    timeSpan.style.fontSize = "9.5px";
+    timeSpan.textContent = time || "";
+
+    headerDiv.appendChild(senderSpan);
+    headerDiv.appendChild(timeSpan);
+
+    // Nội dung tin nhắn
+    const textDiv = document.createElement("div");
+    textDiv.textContent = message;
+
+    bubble.appendChild(headerDiv);
+    bubble.appendChild(textDiv);
+    msgWrapper.appendChild(bubble);
+
+    chatMessagesContainer.appendChild(msgWrapper);
     chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
   }
 
