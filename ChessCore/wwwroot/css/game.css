@@ -332,8 +332,9 @@
 .lobby-input-group {
     display: flex;
     gap: 8px;
-    max-width: 380px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
 }
 
 #online-room-id {
@@ -1064,8 +1065,8 @@
 
 .btn-lobby-create {
     width: 100%;
-    max-width: 380px;
-    margin: 10px auto 0;
+    max-width: 100%;
+    margin: 0;
     padding: 11px 18px;
     display: flex;
     align-items: center;
