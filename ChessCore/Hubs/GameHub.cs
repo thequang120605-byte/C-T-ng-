@@ -15,6 +15,16 @@ namespace ChessCore.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
         }
 
+        public async Task JoinLobby()
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, "lobby");
+        }
+
+        public async Task LeaveLobby()
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "lobby");
+        }
+
         public async Task RegisterUser(string playerId)
         {
             if (!string.IsNullOrWhiteSpace(playerId))

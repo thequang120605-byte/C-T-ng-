@@ -53,7 +53,7 @@ namespace ChessCore.Controllers
         public async Task<IActionResult> GetOpenRooms()
         {
             var openRooms = await _dbContext.Games
-                .Where(g => g.Status == GameStatus.WaitingForPlayers && g.RedPlayerId != null && g.BlackPlayerId == null)
+                .Where(g => g.Status == GameStatus.WaitingForPlayers && g.GameMode == "OnlinePublic" && g.RedPlayerId != null && g.BlackPlayerId == null)
                 .OrderByDescending(g => g.CreatedAt)
                 .Take(10)
                 .Select(g => new
@@ -97,13 +97,27 @@ namespace ChessCore.Controllers
         // remain available for local/offline play.
         [Authorize]
         [HttpPost("online")]
-        public async Task<ActionResult<GameResponseDto>> CreateOnlineGame()
+        public async Task<ActionResult<GameResponseDto>> CreateOnlineGame([FromQuery] bool isPublic = false)
         {
             if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
 
             var game = await _gameService.CreateGameAsync(status: GameStatus.WaitingForPlayers);
             game.RedPlayerId = userId;
+            game.GameMode = isPublic ? "OnlinePublic" : "OnlinePrivate";
             await _dbContext.SaveChangesAsync();
+
+            if (isPublic)
+            {
+                var creatorUser = await _dbContext.Users.FindAsync(userId);
+                await _hubContext.Clients.Group("lobby").SendAsync("RoomCreated", new
+                {
+                    id = game.Id,
+                    roomCode = game.RoomCode,
+                    createdAt = game.CreatedAt,
+                    creatorUsername = creatorUser?.Username ?? "Người chơi",
+                    creatorElo = creatorUser?.Elo ?? 1200
+                });
+            }
 
             var board = GameRules.RebuildBoard(game.InitialFen, null, game.CurrentTurn);
             var response = BuildGameResponse(game, board);
@@ -140,6 +154,13 @@ namespace ChessCore.Controllers
             game.Status = GameStatus.InProgress;
             game.LastMoveAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
+
+            // Ràng buộc phòng kín khi đủ 2 người: Phát tín hiệu ẩn/khóa phòng khỏi sảnh chờ công khai
+            await _hubContext.Clients.Group("lobby").SendAsync("RoomLocked", new
+            {
+                id = game.Id,
+                roomCode = game.RoomCode
+            });
 
             var opponent = game.RedPlayerId.HasValue
                 ? await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == game.RedPlayerId.Value)

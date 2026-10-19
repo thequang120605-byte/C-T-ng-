@@ -137,46 +137,75 @@
 
             <!-- ONLINE LOBBY -->
             <div id="online-selection" class="difficulty-panel hidden">
-                <div class="diff-header">
-                    <i class="fa-solid fa-network-wired" style="color: #10b981;"></i>
-                    <h3>Sảnh chờ Online</h3>
+                <div class="diff-header" style="justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-network-wired" style="color: #10b981;"></i>
+                        <h3>Sảnh Chơi Qua Mạng</h3>
+                    </div>
                 </div>
-                <div class="lobby-actions">
-                    <p class="lobby-hint">Nhập mã bàn đối thủ cung cấp để tham gia, hoặc tạo bàn mới.</p>
-                    <div class="lobby-input-group">
-                        <input type="text" id="online-room-id" placeholder="Nhập mã bàn 8 ký tự" maxlength="8" autocapitalize="characters" autocomplete="off" />
-                        <button id="join-online-btn" class="btn-lobby-action" type="button">
-                            <i class="fa-solid fa-right-to-bracket"></i> Vào bàn
+
+                <!-- 2 TAB CHỌN LOẠI TẠO PHÒNG -->
+                <div class="online-tab-headers" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+                    <button type="button" id="tab-online-public-btn" class="btn-lobby-tab active" style="padding: 10px 8px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid #10b981; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fa-solid fa-users"></i> Khu phòng chờ
+                    </button>
+                    <button type="button" id="tab-online-private-btn" class="btn-lobby-tab" style="padding: 10px 8px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-navy-dark); color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fa-solid fa-lock" style="color: var(--accent-gold);"></i> Phòng riêng (Mã/ID)
+                    </button>
+                </div>
+
+                <!-- TAB 1: KHU PHÒNG CHỜ CÔNG KHAI -->
+                <div id="tab-online-public-content" class="online-tab-pane">
+                    <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                        <button id="create-public-room-btn" class="btn-lobby-create" type="button" style="margin: 0; flex: 1; padding: 10px 14px; font-size: 13.5px; background: linear-gradient(135deg, #059669, #10b981);">
+                            <i class="fa-solid fa-plus-circle"></i> Tạo phòng công khai
+                        </button>
+                        <button id="refresh-rooms-btn" type="button" class="btn-secondary" style="padding: 10px 14px; font-size: 12.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-rotate-right"></i> Làm mới
                         </button>
                     </div>
-                    <button id="create-online-btn" class="btn-lobby-create" type="button">
-                        <i class="fa-solid fa-plus"></i> Tạo bàn
-                    </button>
 
-                    <!-- DANH SÁCH BÀN ĐANG CHỜ (ĐÃ TẮT THEO YÊU CẦU) -->
-                    <div class="open-rooms-section" style="display: none; margin-top: 16px; border-top: 1px dashed var(--border-color); padding-top: 12px; text-align: left;">
+                    <!-- DANH SÁCH BÀN ĐANG CHỜ TRONG KHU PHÒNG CHỜ -->
+                    <div class="open-rooms-section" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: var(--bg-navy-dark);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 13px; font-weight: bold; color: var(--accent-gold);"><i class="fa-solid fa-list"></i> Các phòng đang mở</span>
-                            <button id="refresh-rooms-btn" type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;">
-                                <i class="fa-solid fa-rotate-right"></i> Làm mới
-                            </button>
+                            <span style="font-size: 12.5px; font-weight: bold; color: var(--accent-gold);"><i class="fa-solid fa-door-open"></i> Các bàn đang chờ đối thủ (Giới hạn 2 người)</span>
+                            <span id="open-rooms-count" style="font-size: 11px; color: var(--text-muted);">0 phòng</span>
                         </div>
-                        <div id="open-rooms-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;">
-                            <div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Đang tải danh sách phòng...</div>
+                        <div id="open-rooms-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto;">
+                            <div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 12px;">Đang tải danh sách phòng chờ...</div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- DANH SÁCH TRẬN ĐANG ĐẤU TRỰC TIẾP (DÀNH CHO KHÁN GIẢ) -->
-                    <div class="live-matches-section" style="margin-top: 14px; border-top: 1px dashed var(--border-color); padding-top: 12px; text-align: left;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 13px; font-weight: bold; color: #ef4444;"><i class="fa-solid fa-tower-broadcast"></i> Đang diễn ra trực tiếp (Khán giả)</span>
-                            <button id="refresh-live-btn" type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;">
-                                <i class="fa-solid fa-rotate-right"></i> Làm mới
+                <!-- TAB 2: TẠO PHÒNG RIÊNG / GỬI MÃ PHÒNG / NHẬP ID BẠN -->
+                <div id="tab-online-private-content" class="online-tab-pane hidden" style="display: none;">
+                    <p class="lobby-hint" style="text-align: left; margin-bottom: 12px; font-size: 12.5px;">Tạo phòng kín chỉ bạn và đối thủ có mã hoặc được mời qua ID người chơi.</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button id="create-private-room-btn" class="btn-lobby-create" type="button" style="margin: 0; width: 100%; padding: 11px 14px; font-size: 13.5px; background: linear-gradient(135deg, #d97706, var(--accent-gold));">
+                            <i class="fa-solid fa-key"></i> Tạo phòng riêng (Lấy mã phòng)
+                        </button>
+                        
+                        <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin: 4px 0;">— HOẶC VÀO PHÒNG CỦA BẠN BÈ —</div>
+
+                        <div class="lobby-input-group" style="margin: 0;">
+                            <input type="text" id="online-room-id" placeholder="Nhập mã phòng (8 ký tự)" maxlength="8" autocapitalize="characters" autocomplete="off" />
+                            <button id="join-online-btn" class="btn-lobby-action" type="button">
+                                <i class="fa-solid fa-right-to-bracket"></i> Vào phòng
                             </button>
                         </div>
-                        <div id="live-matches-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;">
-                            <div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px;">Chưa có trận đấu trực tiếp nào.</div>
-                        </div>
+                    </div>
+                </div>
+
+                <!-- DANH SÁCH TRẬN ĐANG ĐẤU TRỰC TIẾP (DÀNH CHO KHÁN GIẢ) -->
+                <div class="live-matches-section" style="margin-top: 14px; border-top: 1px dashed var(--border-color); padding-top: 10px; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 12px; font-weight: bold; color: #ef4444;"><i class="fa-solid fa-tower-broadcast"></i> Đang diễn ra trực tiếp (Khán giả)</span>
+                        <button id="refresh-live-btn" type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px;">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                    <div id="live-matches-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 100px; overflow-y: auto;">
+                        <div style="color: var(--text-muted); font-size: 11.5px; text-align: center; padding: 8px;">Chưa có trận đấu trực tiếp nào.</div>
                     </div>
                 </div>
             </div>

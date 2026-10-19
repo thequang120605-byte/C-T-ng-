@@ -88,8 +88,27 @@ document.addEventListener("DOMContentLoaded", function () {
           }
       });
 
+      // Lắng nghe sự kiện khu phòng chờ (Lobby Realtime)
+      connection.on("RoomCreated", function (data) {
+          console.log("Realtime: Phòng mới được tạo ở sảnh chờ:", data);
+          if (typeof loadOpenRooms === "function") {
+              loadOpenRooms();
+          }
+      });
+
+      connection.on("RoomLocked", function (data) {
+          console.log("Realtime: Phòng đã đủ 2 người, ẩn khỏi sảnh chờ:", data);
+          if (typeof loadOpenRooms === "function") {
+              loadOpenRooms();
+          }
+          if (typeof loadLiveMatches === "function") {
+              loadLiveMatches();
+          }
+      });
+
       connection.start().then(function () {
           console.log("SignalR kết nối thành công.");
+          connection.invoke("JoinLobby").catch(err => console.warn("Lỗi JoinLobby SignalR:", err));
           if (typeof gameId !== 'undefined' && gameId) {
               joinSignalRGroup(gameId);
           }
@@ -189,6 +208,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const onlineSelection = document.getElementById("online-selection");
   const joinOnlineButton = document.getElementById("join-online-btn");
   const createOnlineButton = document.getElementById("create-online-btn");
+  const createPublicRoomBtn = document.getElementById("create-public-room-btn");
+  const createPrivateRoomBtn = document.getElementById("create-private-room-btn");
+  const tabOnlinePublicBtn = document.getElementById("tab-online-public-btn");
+  const tabOnlinePrivateBtn = document.getElementById("tab-online-private-btn");
+  const tabOnlinePublicContent = document.getElementById("tab-online-public-content");
+  const tabOnlinePrivateContent = document.getElementById("tab-online-private-content");
   const onlineRoomIdInput = document.getElementById("online-room-id");
   const opponentPlayerIdInput = document.getElementById("opponent-player-id");
   const invitePlayerButton = document.getElementById("invite-player-btn");
@@ -2557,13 +2582,10 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  async function createOnlineGame() {
+  async function createOnlineGame(isPublic = false) {
       isCreatingGame = true;
       try {
-          const response = await fetch(API_BASE_URL + "/online", { method: "POST" });
-          if (response.status === 401) {
-              window.location.href = "/Auth/Login?returnUrl=%2FGame";
-              return;
+          const response = await fetch(`${API_BASE_URL}/online?isPublic=${isPublic}`, { method: "POST" });
           }
           if (!response.ok) throw new Error("Không thể tạo bàn online.");
           const data = await response.json();
@@ -2645,10 +2667,62 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
+  // Xử lý chuyển đổi 2 Tab trong Sảnh Chơi Qua Mạng
+  if (tabOnlinePublicBtn && tabOnlinePrivateBtn) {
+    tabOnlinePublicBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      tabOnlinePublicBtn.classList.add("active");
+      tabOnlinePublicBtn.style.background = "rgba(16, 185, 129, 0.15)";
+      tabOnlinePublicBtn.style.borderColor = "#10b981";
+      tabOnlinePublicBtn.style.color = "#10b981";
+
+      tabOnlinePrivateBtn.classList.remove("active");
+      tabOnlinePrivateBtn.style.background = "var(--bg-navy-dark)";
+      tabOnlinePrivateBtn.style.borderColor = "var(--border-color)";
+      tabOnlinePrivateBtn.style.color = "var(--text-muted)";
+
+      if (tabOnlinePublicContent) { tabOnlinePublicContent.classList.remove("hidden"); tabOnlinePublicContent.style.display = "block"; }
+      if (tabOnlinePrivateContent) { tabOnlinePrivateContent.classList.add("hidden"); tabOnlinePrivateContent.style.display = "none"; }
+      loadOpenRooms();
+    });
+
+    tabOnlinePrivateBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      tabOnlinePrivateBtn.classList.add("active");
+      tabOnlinePrivateBtn.style.background = "rgba(212, 175, 55, 0.15)";
+      tabOnlinePrivateBtn.style.borderColor = "var(--accent-gold)";
+      tabOnlinePrivateBtn.style.color = "var(--accent-gold)";
+
+      tabOnlinePublicBtn.classList.remove("active");
+      tabOnlinePublicBtn.style.background = "var(--bg-navy-dark)";
+      tabOnlinePublicBtn.style.borderColor = "var(--border-color)";
+      tabOnlinePublicBtn.style.color = "var(--text-muted)";
+
+      if (tabOnlinePrivateContent) { tabOnlinePrivateContent.classList.remove("hidden"); tabOnlinePrivateContent.style.display = "block"; }
+      if (tabOnlinePublicContent) { tabOnlinePublicContent.classList.add("hidden"); tabOnlinePublicContent.style.display = "none"; }
+    });
+  }
+
+  // 1. Tạo phòng công khai trong khu phòng chờ
+  if (createPublicRoomBtn) {
+    createPublicRoomBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      createOnlineGame(true);
+    });
+  }
+
+  // 2. Tạo phòng riêng (gửi mã / nhập ID bạn)
+  if (createPrivateRoomBtn) {
+    createPrivateRoomBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      createOnlineGame(false);
+    });
+  }
+
   if (createOnlineButton) {
       createOnlineButton.addEventListener("click", function (event) {
           event.stopPropagation();
-          createOnlineGame();
+          createOnlineGame(true);
       });
   }
 
