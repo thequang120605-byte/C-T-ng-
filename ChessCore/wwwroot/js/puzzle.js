@@ -960,21 +960,33 @@
     title.innerHTML = `<i class="fa-solid fa-list-ol"></i> Cấp ${lv.level} — ${escapeHtml(lv.name)}`;
     grid.innerHTML = "";
 
+    // Tìm vị trí bài đầu tiên chưa hoàn thành trong cấp này
+    const firstUnfinishedIdx = lv.keys.findIndex((k) => !completed.has(k));
+    // Những bài được phép chơi: tất cả bài đã hoàn thành + bài đầu tiên chưa hoàn thành (bài kế tiếp)
+    const maxAccessibleIdx = firstUnfinishedIdx === -1 ? lv.keys.length - 1 : firstUnfinishedIdx;
+
     lv.keys.forEach((k, idx) => {
       const num = idx + 1;
       const isDone = completed.has(k);
       const isCurrent = puzzle && puzzle.key === k;
+      const isAccessible = idx <= maxAccessibleIdx;
 
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = `pz-pick-btn ${isDone ? "done" : ""} ${isCurrent ? "current" : ""}`;
+      btn.className = `pz-pick-btn ${isDone ? "done" : ""} ${isCurrent ? "current" : ""} ${!isAccessible ? "locked" : ""}`;
       btn.innerHTML = `<span style="font-size: 15px; font-weight: 800;">Bài ${num}</span>`;
-      btn.title = `Bài ${num}${isDone ? " (Đã giải thành công)" : ""}`;
+      btn.title = isDone 
+        ? `Bài ${num} (Đã giải thành công)` 
+        : (isAccessible ? `Bài ${num} (Sẵn sàng giải)` : `Bài ${num} (Hãy hoàn thành bài trước để mở khóa)`);
 
-      btn.addEventListener("click", () => {
-        closePuzzleSelectorModal();
-        startPuzzle(k);
-      });
+      if (isAccessible) {
+        btn.addEventListener("click", () => {
+          closePuzzleSelectorModal();
+          startPuzzle(k);
+        });
+      } else {
+        btn.disabled = true;
+      }
 
       grid.appendChild(btn);
     });
@@ -1020,6 +1032,14 @@
     }
     if (newIdx >= lv.keys.length) {
       setMsg("info", "Đây là bài cuối cùng trong cấp này!");
+      return;
+    }
+
+    // Ràng buộc nếu tiến lên (direction > 0): chỉ cho phép nếu bài đó đã mở khóa
+    const firstUnfinishedIdx = lv.keys.findIndex((k) => !completed.has(k));
+    const maxAccessibleIdx = firstUnfinishedIdx === -1 ? lv.keys.length - 1 : firstUnfinishedIdx;
+    if (newIdx > maxAccessibleIdx) {
+      setMsg("wrong", "Bạn cần hoàn thành bài hiện tại trước khi qua bài kế tiếp!");
       return;
     }
 

@@ -555,6 +555,31 @@
     font-weight: 900;
 }
 
+.pz-pick-btn.locked {
+    opacity: 0.45;
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.pz-pick-btn.locked:hover {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+    transform: none;
+}
+
+.pz-pick-btn.locked::after {
+    content: "\f023";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    font-size: 10px;
+    color: #94a3b8;
+}
+
 /* MODAL OVERLAY CHỌN BÀI THẾ */
 .pz-modal-overlay {
     position: fixed;

@@ -50,11 +50,11 @@ namespace ChessCore.Services
 
         public static readonly PuzzleLevelDef[] Levels =
         {
-            new() { Level = 1, Name = "Làm quen",  Rule = "Sát cục cơ bản, chiếu bí trong 1 nước" },
-            new() { Level = 2, Name = "Cơ bản",    Rule = "Sát cục cơ bản chiếu bí trong 2–3 nước; sát cục nâng cao chiếu bí trong 1 nước" },
-            new() { Level = 3, Name = "Trung cấp", Rule = "Sát cục nâng cao, chiếu bí trong 2 nước, từ 6 quân trở xuống" },
-            new() { Level = 4, Name = "Nâng cao",  Rule = "Sát cục nâng cao, chiếu bí trong 2 nước (trên 6 quân) hoặc 3 nước (từ 6 quân trở xuống)" },
-            new() { Level = 5, Name = "Chuyên sâu", Rule = "Sát cục nâng cao, chiếu bí trong 3 nước, trên 6 quân" },
+            new() { Level = 1, Name = "Làm quen",  Rule = "Sát cục nhập môn, chiếu bí trong 1 nước (Bài 1 - 30)" },
+            new() { Level = 2, Name = "Cơ bản",    Rule = "Sát cục cơ bản, chiếu bí trong 1–2 nước (Bài 31 - 60)" },
+            new() { Level = 3, Name = "Trung cấp", Rule = "Sát cục trung cấp, chiếu bí trong 2 nước (Bài 61 - 90)" },
+            new() { Level = 4, Name = "Nâng cao",  Rule = "Sát cục nâng cao, chiếu bí trong 2–3 nước (Bài 91 - 120)" },
+            new() { Level = 5, Name = "Chuyên sâu", Rule = "Sát cục chuyên sâu, chiếu bí trong 3 nước hiểm hóc (Bài 121 - 150)" },
         };
 
         /// <summary>Tỉ lệ bài cần hoàn thành ở một cấp để mở cấp kế tiếp.</summary>
@@ -181,22 +181,52 @@ namespace ChessCore.Services
                 Stats[$"{source}_valid"] = valid;
             }
 
-            // Cờ tàn: chỉ thống kê (không đưa vào cấp độ chấm bài).
+            // Cờ tàn thực chiến: Nạp các thế cờ tàn chuẩn để mở rộng kho cờ thế
             string endPath = Path.Combine(dataDir, "endgames_all.json");
             if (File.Exists(endPath))
             {
-                int read = 0, validFen = 0, withMove = 0;
+                int read = 0, valid = 0, withMove = 0;
                 using JsonDocument doc = JsonDocument.Parse(ReadText(endPath));
+                int index = -1;
                 foreach (JsonElement el in doc.RootElement.EnumerateArray())
                 {
+                    index++;
                     read++;
-                    string fen = el.TryGetProperty("fen", out var f) ? f.GetString() ?? "" : "";
-                    if (Board.TryParseFen(fen, out _, out _)) validFen++;
-                    if (el.TryGetProperty("bestMove", out var bm) && !string.IsNullOrWhiteSpace(bm.GetString()?.Replace("\0", "")))
-                        withMove++;
+                    try
+                    {
+                        string fen = el.TryGetProperty("fen", out var f) ? f.GetString() ?? "" : "";
+                        string type = el.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
+                        if (el.TryGetProperty("bestMove", out var bm) && !string.IsNullOrWhiteSpace(bm.GetString()?.Replace("\0", "")))
+                            withMove++;
+
+                        if (!Board.TryParseFen(fen, out Board? board, out _) || board == null)
+                            continue;
+
+                        string normalized = board.ToFen();
+                        if (!seen.Add(normalized))
+                            continue;
+
+                        valid++;
+                        list.Add(new PuzzleEntry
+                        {
+                            Key = $"endgame:{index}",
+                            Source = "endgame",
+                            OriginalIndex = index,
+                            OriginalName = type,
+                            Fen = normalized,
+                            Attacker = board.CurrentTurn,
+                            Pieces = CountPieces(board),
+                            Category = "Cờ tàn thực chiến",
+                            Title = PuzzleTitles.Translate("endgame", type, index + 1),
+                        });
+                    }
+                    catch
+                    {
+                        // Bỏ qua bản ghi lỗi trong endgames
+                    }
                 }
                 Stats["endgames_read"] = read;
-                Stats["endgames_valid"] = validFen;
+                Stats["endgames_valid"] = valid;
                 Stats["endgames_with_best_move"] = withMove;
             }
 
@@ -294,28 +324,31 @@ namespace ChessCore.Services
 
         private void Finish()
         {
-            foreach (var p in _all)
-                p.Level = p.MateIn > 0 ? Classify(p) : 0;
-
-            var playable = _all
-                .Where(p => p.Level > 0)
-                .OrderBy(p => p.Level)
-                .ThenBy(p => p.MateIn)
+            // Lấy tất cả các bài có nước sát cục hợp lệ (MateIn > 0)
+            // Sắp xếp tăng dần theo độ khó: MateIn (1, 2, 3), số quân (Pieces) và nguồn
+            var verifiedSorted = _all
+                .Where(p => p.MateIn > 0)
+                .OrderBy(p => p.MateIn)
                 .ThenBy(p => p.Pieces)
-                .ThenBy(p => p.Source)
+                .ThenBy(p => p.Source == "basic" ? 1 : (p.Source == "advanced" ? 2 : 3))
                 .ThenBy(p => p.OriginalIndex)
+                .Take(150) // Đúng 150 thế cờ chất lượng cao nhất
                 .ToList();
 
-            foreach (var group in playable.GroupBy(p => p.Level))
+            // Phân bổ đều vào 5 cấp độ (mỗi cấp đúng 30 bài, độ khó tăng dần tuyến tính)
+            for (int i = 0; i < verifiedSorted.Count; i++)
             {
-                int n = 0;
-                foreach (var p in group) p.Number = ++n;
+                var p = verifiedSorted[i];
+                p.Level = Math.Min(5, (i / 30) + 1);
+                p.Number = (i % 30) + 1;
             }
 
-            Stats["verified"] = _all.Count(p => p.MateIn > 0);
-            Stats["unverified"] = _all.Count(p => p.MateIn == 0);
+            var playable = verifiedSorted;
+
+            Stats["verified"] = playable.Count;
+            Stats["unverified"] = _all.Count - playable.Count;
             for (int m = 1; m <= AnalysisDepth; m++)
-                Stats[$"mate_in_{m}"] = _all.Count(p => p.MateIn == m);
+                Stats[$"mate_in_{m}"] = playable.Count(p => p.MateIn == m);
             for (int l = 1; l <= Levels.Length; l++)
                 Stats[$"level_{l}"] = playable.Count(p => p.Level == l);
 
@@ -323,23 +356,6 @@ namespace ChessCore.Services
             _playable = playable;
             AnalysisState = "Sẵn sàng";
             Ready = true;
-        }
-
-        /// <summary>
-        /// Quy tắc phân cấp minh bạch: dựa trên nguồn (cơ bản/nâng cao), số nước chiếu bí
-        /// do MateSolver xác minh và số quân trên bàn. Đây là phân loại ước lượng độ khó.
-        /// </summary>
-        public static int Classify(PuzzleEntry p)
-        {
-            bool basic = p.Source == "basic";
-            if (basic) return p.MateIn == 1 ? 1 : 2;
-
-            return p.MateIn switch
-            {
-                1 => 2,
-                2 => p.Pieces <= 6 ? 3 : 4,
-                _ => p.Pieces <= 6 ? 4 : 5,
-            };
         }
 
         // =====================================================
@@ -371,6 +387,30 @@ namespace ChessCore.Services
             }
 
             return true;
+        }
+
+        /// <summary>Kiểm tra xem một bài có được phép chơi theo tiến trình tuyến tính hay không.</summary>
+        public bool IsPuzzleAccessible(PuzzleEntry entry, ISet<string> done)
+        {
+            if (entry.Level <= 0) return false;
+            if (!IsLevelUnlocked(entry.Level, done)) return false;
+
+            var levelPuzzles = InLevel(entry.Level);
+            int idx = -1;
+            for (int i = 0; i < levelPuzzles.Count; i++)
+            {
+                if (levelPuzzles[i].Key == entry.Key)
+                {
+                    idx = i;
+                    break;
+                }
+            }
+
+            if (idx <= 0) return true; // Bài đầu tiên của cấp luôn mở khi cấp mở
+
+            // Chỉ cho phép chơi bài này nếu bài ngay trước đó đã được giải xong
+            var prevKey = levelPuzzles[idx - 1].Key;
+            return done.Contains(prevKey);
         }
     }
 
@@ -423,13 +463,37 @@ namespace ChessCore.Services
 
         private static readonly Dictionary<char, string> PieceNames = new()
         {
-            ['车'] = "Xe", ['马'] = "Mã", ['炮'] = "Pháo", ['兵'] = "Tốt",
+            ['车'] = "Xe", ['車'] = "Xe",
+            ['马'] = "Mã", ['馬'] = "Mã",
+            ['炮'] = "Pháo", ['砲'] = "Pháo",
+            ['兵'] = "Tốt", ['卒'] = "Tốt",
+            ['仕'] = "Sĩ", ['士'] = "Sĩ",
+            ['相'] = "Tượng", ['象'] = "Tượng",
+            ['帅'] = "Tướng", ['帥'] = "Tướng",
+            ['将'] = "Tướng", ['將'] = "Tướng",
         };
 
         public static string Translate(string source, string originalName, int fallbackNumber)
         {
             string neutral = $"Thế cờ số {fallbackNumber}";
             if (string.IsNullOrWhiteSpace(originalName)) return neutral;
+
+            if (source == "endgame")
+            {
+                // Thí dụ: "單車 vs 單砲", "單車單兵 vs 單士2卒"
+                string trans = originalName;
+                foreach (var kv in PieceNames)
+                {
+                    trans = trans.Replace(kv.Key.ToString(), kv.Value + " ");
+                }
+                trans = trans.Replace("單", "1 ")
+                             .Replace("双", "2 ")
+                             .Replace("雙", "2 ")
+                             .Replace("vs", "đấu")
+                             .Replace("  ", " ")
+                             .Trim();
+                return $"Cờ tàn {trans}";
+            }
 
             string head = originalName.Split(" - ")[0];
 

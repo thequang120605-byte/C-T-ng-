@@ -259,8 +259,8 @@ namespace ChessCore.Controllers
             if (userId != null && !isCustom)
             {
                 var done = await LoadCompleted(userId);
-                if (!_campaign.IsLevelUnlocked(entry.Level, done))
-                    return StatusCode(403, new { message = "Cấp độ này chưa được mở." });
+                if (!_campaign.IsPuzzleAccessible(entry, done))
+                    return StatusCode(403, new { message = "Bạn cần hoàn thành bài cờ thế trước đó để mở khóa bài này." });
             }
 
             Board board = Board.FromFen(entry.Fen);
