@@ -50,11 +50,11 @@ namespace ChessCore.Services
 
         public static readonly PuzzleLevelDef[] Levels =
         {
-            new() { Level = 1, Name = "Làm quen",  Rule = "Sát cục nhập môn, chiếu bí trong 1 nước (Bài 1 - 30)" },
-            new() { Level = 2, Name = "Cơ bản",    Rule = "Sát cục cơ bản, chiếu bí trong 1–2 nước (Bài 31 - 60)" },
-            new() { Level = 3, Name = "Trung cấp", Rule = "Sát cục trung cấp, chiếu bí trong 2 nước (Bài 61 - 90)" },
-            new() { Level = 4, Name = "Nâng cao",  Rule = "Sát cục nâng cao, chiếu bí trong 2–3 nước (Bài 91 - 120)" },
-            new() { Level = 5, Name = "Chuyên sâu", Rule = "Sát cục chuyên sâu, chiếu bí trong 3 nước hiểm hóc (Bài 121 - 150)" },
+            new() { Level = 1, Name = "Làm quen",  Rule = "Sát cục nhập môn, chiếu bí trong 1 nước (Bài 1 - 60)" },
+            new() { Level = 2, Name = "Cơ bản",    Rule = "Sát cục cơ bản, chiếu bí trong 1–2 nước (Bài 61 - 120)" },
+            new() { Level = 3, Name = "Trung cấp", Rule = "Sát cục trung cấp, chiếu bí trong 2 nước (Bài 121 - 180)" },
+            new() { Level = 4, Name = "Nâng cao",  Rule = "Sát cục nâng cao, chiếu bí trong 2–3 nước (Bài 181 - 240)" },
+            new() { Level = 5, Name = "Chuyên sâu", Rule = "Sát cục chuyên sâu, chiếu bí trong 3 nước hiểm hóc (Bài 241 - 300)" },
         };
 
         /// <summary>Tỉ lệ bài cần hoàn thành ở một cấp để mở cấp kế tiếp.</summary>
@@ -324,26 +324,56 @@ namespace ChessCore.Services
 
         private void Finish()
         {
-            // Lấy tất cả các bài có nước sát cục hợp lệ (MateIn > 0)
-            // Sắp xếp tăng dần theo độ khó: MateIn (1, 2, 3), số quân (Pieces) và nguồn
-            var verifiedSorted = _all
-                .Where(p => p.MateIn > 0)
-                .OrderBy(p => p.MateIn)
-                .ThenBy(p => p.Pieces)
-                .ThenBy(p => p.Source == "basic" ? 1 : (p.Source == "advanced" ? 2 : 3))
-                .ThenBy(p => p.OriginalIndex)
-                .Take(150) // Đúng 150 thế cờ chất lượng cao nhất
-                .ToList();
+            // Lọc các bài đã có lời giải sát cục cưỡng bức (MateIn 1..3)
+            var m1 = _all.Where(p => p.MateIn == 1)
+                         .OrderBy(p => p.Pieces)
+                         .ThenBy(p => p.Source == "basic" ? 1 : (p.Source == "advanced" ? 2 : 3))
+                         .ThenBy(p => p.OriginalIndex)
+                         .ToList();
 
-            // Phân bổ đều vào 5 cấp độ (mỗi cấp đúng 30 bài, độ khó tăng dần tuyến tính)
-            for (int i = 0; i < verifiedSorted.Count; i++)
+            var m2 = _all.Where(p => p.MateIn == 2)
+                         .OrderBy(p => p.Pieces)
+                         .ThenBy(p => p.Source == "basic" ? 1 : (p.Source == "advanced" ? 2 : 3))
+                         .ThenBy(p => p.OriginalIndex)
+                         .ToList();
+
+            var m3 = _all.Where(p => p.MateIn == 3)
+                         .OrderBy(p => p.Pieces)
+                         .ThenBy(p => p.Source == "basic" ? 1 : (p.Source == "advanced" ? 2 : 3))
+                         .ThenBy(p => p.OriginalIndex)
+                         .ToList();
+
+            // Phân bổ đều và mượt mà thành 300 bài (5 cấp, mỗi cấp đúng 60 bài):
+            // Cấp 1 (Bài 1 - 60): 60 bài chiếu bí 1 nước
+            var l1 = m1.Take(60).ToList();
+
+            // Cấp 2 (Bài 61 - 120): 20 bài chiếu bí 1 nước tiếp theo + 40 bài chiếu bí 2 nước
+            var l2 = m1.Skip(60).Take(20).Concat(m2.Take(40)).ToList();
+
+            // Cấp 3 (Bài 121 - 180): 60 bài chiếu bí 2 nước tiếp theo
+            var l3 = m2.Skip(40).Take(60).ToList();
+
+            // Cấp 4 (Bài 181 - 240): 30 bài chiếu bí 2 nước tiếp theo + 30 bài chiếu bí 3 nước
+            var l4 = m2.Skip(100).Take(30).Concat(m3.Take(30)).ToList();
+
+            // Cấp 5 (Bài 241 - 300): 60 bài chiếu bí 3 nước đỉnh cao
+            var l5 = m3.Skip(30).Take(60).ToList();
+
+            var levelsList = new[] { l1, l2, l3, l4, l5 };
+            var playable = new List<PuzzleEntry>();
+
+            for (int lv = 0; lv < levelsList.Length; lv++)
             {
-                var p = verifiedSorted[i];
-                p.Level = Math.Min(5, (i / 30) + 1);
-                p.Number = (i % 30) + 1;
+                int levelNum = lv + 1;
+                var list = levelsList[lv];
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var p = list[i];
+                    p.Level = levelNum;
+                    p.Number = i + 1;
+                    playable.Add(p);
+                }
             }
-
-            var playable = verifiedSorted;
 
             Stats["verified"] = playable.Count;
             Stats["unverified"] = _all.Count - playable.Count;
