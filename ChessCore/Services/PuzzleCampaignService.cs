@@ -50,11 +50,11 @@ namespace ChessCore.Services
 
         public static readonly PuzzleLevelDef[] Levels =
         {
-            new() { Level = 1, Name = "Làm quen",  Rule = "Sát cục nhập môn, chiếu bí trong 1 nước (Bài 1 - 60)" },
-            new() { Level = 2, Name = "Cơ bản",    Rule = "Sát cục cơ bản, chiếu bí trong 1–2 nước (Bài 61 - 120)" },
-            new() { Level = 3, Name = "Trung cấp", Rule = "Sát cục trung cấp, chiếu bí trong 2 nước (Bài 121 - 180)" },
-            new() { Level = 4, Name = "Nâng cao",  Rule = "Sát cục nâng cao, chiếu bí trong 2–3 nước (Bài 181 - 240)" },
-            new() { Level = 5, Name = "Chuyên sâu", Rule = "Sát cục chuyên sâu, chiếu bí trong 3 nước hiểm hóc (Bài 241 - 300)" },
+            new() { Level = 1, Name = "Làm quen",  Rule = "Sát cục nhập môn, chiếu bí trong 1 nước (Bài 1 - 100)" },
+            new() { Level = 2, Name = "Cơ bản",    Rule = "Sát cục cơ bản, chiếu bí trong 1–2 nước (Bài 101 - 200)" },
+            new() { Level = 3, Name = "Trung cấp", Rule = "Sát cục trung cấp, chiếu bí trong 2 nước (Bài 201 - 300)" },
+            new() { Level = 4, Name = "Nâng cao",  Rule = "Sát cục nâng cao, chiếu bí trong 2–3 nước (Bài 301 - 400)" },
+            new() { Level = 5, Name = "Chuyên sâu", Rule = "Sát cục chuyên sâu, chiếu bí trong 3 nước hiểm hóc (Bài 401 - 500)" },
         };
 
         /// <summary>Tỉ lệ bài cần hoàn thành ở một cấp để mở cấp kế tiếp.</summary>
@@ -343,21 +343,21 @@ namespace ChessCore.Services
                          .ThenBy(p => p.OriginalIndex)
                          .ToList();
 
-            // Phân bổ đều và mượt mà thành 300 bài (5 cấp, mỗi cấp đúng 60 bài):
-            // Cấp 1 (Bài 1 - 60): 60 bài chiếu bí 1 nước
-            var l1 = m1.Take(60).ToList();
+            // Phân bổ đều và mượt mà thành 500 bài (5 cấp, mỗi cấp đúng 100 bài):
+            // Cấp 1 (Bài 1 - 100): 100 bài chiếu bí 1 nước nhập môn
+            var l1 = m1.Take(100).ToList();
 
-            // Cấp 2 (Bài 61 - 120): 20 bài chiếu bí 1 nước tiếp theo + 40 bài chiếu bí 2 nước
-            var l2 = m1.Skip(60).Take(20).Concat(m2.Take(40)).ToList();
+            // Cấp 2 (Bài 101 - 200): 60 bài chiếu bí 1 nước tiếp theo + 40 bài chiếu bí 2 nước
+            var l2 = m1.Skip(100).Take(60).Concat(m2.Take(40)).ToList();
 
-            // Cấp 3 (Bài 121 - 180): 60 bài chiếu bí 2 nước tiếp theo
-            var l3 = m2.Skip(40).Take(60).ToList();
+            // Cấp 3 (Bài 201 - 300): 100 bài chiếu bí 2 nước tiếp theo
+            var l3 = m2.Skip(40).Take(100).ToList();
 
-            // Cấp 4 (Bài 181 - 240): 30 bài chiếu bí 2 nước tiếp theo + 30 bài chiếu bí 3 nước
-            var l4 = m2.Skip(100).Take(30).Concat(m3.Take(30)).ToList();
+            // Cấp 4 (Bài 301 - 400): 36 bài chiếu bí 2 nước tiếp theo + 64 bài chiếu bí 3 nước
+            var l4 = m2.Skip(140).Take(36).Concat(m3.Take(64)).ToList();
 
-            // Cấp 5 (Bài 241 - 300): 60 bài chiếu bí 3 nước đỉnh cao
-            var l5 = m3.Skip(30).Take(60).ToList();
+            // Cấp 5 (Bài 401 - 500): 100 bài chiếu bí 3 nước đỉnh cao
+            var l5 = m3.Skip(64).Take(100).ToList();
 
             var levelsList = new[] { l1, l2, l3, l4, l5 };
             var playable = new List<PuzzleEntry>();
