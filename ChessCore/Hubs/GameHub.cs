@@ -41,7 +41,7 @@ namespace ChessCore.Hubs
                 fromPlayerName = fromPlayerName ?? "Đối thủ",
                 fromPlayerId = fromPlayerId ?? "",
                 roomCode = roomCode,
-                sentAt = System.DateTime.UtcNow.ToString("HH:mm:ss")
+                sentAt = System.DateTime.UtcNow.AddHours(7).ToString("HH:mm:ss")
             });
         }
 
@@ -66,7 +66,7 @@ namespace ChessCore.Hubs
                 gameId = gameId,
                 sender = sender ?? "Người chơi",
                 message = safeMessage,
-                sentAt = System.DateTime.UtcNow.ToString("HH:mm")
+                sentAt = System.DateTime.UtcNow.AddHours(7).ToString("HH:mm")
             });
         }
     }
