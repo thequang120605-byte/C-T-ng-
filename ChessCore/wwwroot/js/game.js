@@ -2586,6 +2586,9 @@ document.addEventListener("DOMContentLoaded", function () {
       isCreatingGame = true;
       try {
           const response = await fetch(`${API_BASE_URL}/online?isPublic=${isPublic}`, { method: "POST" });
+          if (response.status === 401) {
+              window.location.href = "/Auth/Login?returnUrl=%2FGame";
+              return;
           }
           if (!response.ok) throw new Error("Không thể tạo bàn online.");
           const data = await response.json();
