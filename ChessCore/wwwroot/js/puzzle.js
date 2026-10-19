@@ -291,7 +291,7 @@
         const hasNext = l.keys.some((k) => !completed.has(k));
         let action = "";
         if (!unlocked) {
-          action = `<div class="pz-lock"><i class="fa-solid fa-lock"></i> Hoàn thành ${catalog.unlockPercent}% các bài ở cấp trước để mở</div>`;
+          action = `<div class="pz-lock"><i class="fa-solid fa-lock"></i> Hoàn thành 100% các bài ở cấp trước để mở</div>`;
         } else {
           action = `
             <div style="display: flex; gap: 8px;">

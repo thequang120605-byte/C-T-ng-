@@ -57,8 +57,8 @@ namespace ChessCore.Services
             new() { Level = 5, Name = "Chuyên sâu", Rule = "Sát cục chuyên sâu, chiếu bí trong 3 nước hiểm hóc (Bài 401 - 500)" },
         };
 
-        /// <summary>Tỉ lệ bài cần hoàn thành ở một cấp để mở cấp kế tiếp.</summary>
-        public const double UnlockRatio = 0.8;
+        /// <summary>Tỉ lệ bài cần hoàn thành ở một cấp để mở cấp kế tiếp (100% để đảm bảo tuần tự).</summary>
+        public const double UnlockRatio = 1.0;
 
         private readonly ILogger<PuzzleCampaignService> _logger;
         private readonly object _lock = new();
