@@ -173,7 +173,14 @@
   function loadLocalDone() {
     try {
       const arr = JSON.parse(localStorage.getItem(LS_DONE) || "[]");
-      return new Set(Array.isArray(arr) ? arr : []);
+      const set = new Set(Array.isArray(arr) ? arr : []);
+      // Nếu đã có catalog, chuẩn hóa tuyến tính
+      if (catalog && catalog.levels && catalog.levels.length > 0) {
+        const allKeys = catalog.levels.flatMap(l => l.keys);
+        const validCount = allKeys.filter(k => set.has(k)).length;
+        return new Set(allKeys.slice(0, validCount));
+      }
+      return set;
     } catch (e) {
       return new Set();
     }

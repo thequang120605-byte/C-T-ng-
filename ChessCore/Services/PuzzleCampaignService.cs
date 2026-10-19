@@ -442,6 +442,24 @@ namespace ChessCore.Services
             var prevKey = levelPuzzles[idx - 1].Key;
             return done.Contains(prevKey);
         }
+
+        /// <summary>
+        /// Chuẩn hóa tiến độ hoàn thành trong Campaign:
+        /// Trong chế độ Campaign vượt ải 500 bài tuần tự, tiến trình phải là chuỗi liên tục từ bài 1 Cấp 1 trở đi.
+        /// Nếu người chơi đã hoàn thành tổng cộng N bài (hoặc có các bài giải rải rác từ trước khi phân cấp mới),
+        /// N bài hoàn thành đó sẽ được chuẩn hóa chính xác thành N bài đầu tiên của Campaign (Cấp 1 từ bài 1 đến N).
+        /// </summary>
+        public HashSet<string> GetLinearCampaignCompletedKeys(ISet<string> rawCompletedKeys)
+        {
+            var validPlayableKeys = _playable.Select(p => p.Key).ToHashSet();
+            int validCount = rawCompletedKeys.Count(k => validPlayableKeys.Contains(k));
+
+            if (validCount <= 0) return new HashSet<string>();
+
+            // Lấy đúng validCount bài đầu tiên trong Playable (bắt đầu từ Bài 1 Cấp 1)
+            var linearKeys = _playable.Take(validCount).Select(p => p.Key).ToHashSet();
+            return linearKeys;
+        }
     }
 
     /// <summary>

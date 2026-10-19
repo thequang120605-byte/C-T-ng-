@@ -78,7 +78,10 @@ namespace ChessCore.Controllers
                 });
             }
 
-            var done = await LoadCompleted(userId);
+            var rawDone = await LoadCompleted(userId);
+            // Chuẩn hóa theo tiến trình Campaign tuyến tính:
+            // N bài hoàn thành hợp lệ luôn là N bài đầu tiên từ Bài 1 Cấp 1 trở đi
+            var done = _campaign.GetLinearCampaignCompletedKeys(rawDone);
 
             var levels = PuzzleCampaignService.Levels.Select(def =>
             {
@@ -258,7 +261,8 @@ namespace ChessCore.Controllers
             int? userId = CurrentUserId();
             if (userId != null && !isCustom)
             {
-                var done = await LoadCompleted(userId);
+                var rawDone = await LoadCompleted(userId);
+                var done = _campaign.GetLinearCampaignCompletedKeys(rawDone);
                 if (!_campaign.IsPuzzleAccessible(entry, done))
                     return StatusCode(403, new { message = "Bạn cần hoàn thành bài cờ thế trước đó để mở khóa bài này." });
             }
