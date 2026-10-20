@@ -106,6 +106,27 @@ document.addEventListener("DOMContentLoaded", function () {
           }
       });
 
+      connection.on("RoomCancelled", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
+              showToast(data.message || "Phòng chơi đã bị hủy.", "warning");
+              backToModeSelection();
+          }
+      });
+
+      connection.on("RematchStarted", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.oldGameId == gameId) {
+              closeGameResult();
+              const oldColor = localStorage.getItem("onlinePlayerColor");
+              const newColor = oldColor === "Red" ? "Black" : "Red";
+              localStorage.setItem("onlinePlayerColor", newColor);
+              localStorage.setItem("xiangqiGameId", data.newGameId);
+              gameId = data.newGameId;
+              showToast("Đã bắt đầu ván mới! Hai bên hoán đổi màu quân thành công.", "success");
+              updateBoardOrientation();
+              updateGameFromApi(data.game);
+          }
+      });
+
       connection.start().then(function () {
           console.log("SignalR kết nối thành công.");
           connection.invoke("JoinLobby").catch(err => console.warn("Lỗi JoinLobby SignalR:", err));
@@ -950,6 +971,15 @@ document.addEventListener("DOMContentLoaded", function () {
         timerInterval = null;
         activeTimer.textContent = "00:00";
         activeTimer.classList.add("danger");
+
+        // Nếu đang trong trận online và đối thủ hết giờ -> Tự động kích hoạt claim timeout
+        const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+        if (isOnline && gameId && gameStatus === "InProgress") {
+          const myColor = localStorage.getItem("onlinePlayerColor");
+          if (currentTurn !== myColor) {
+            claimOpponentTimeout();
+          }
+        }
       }
     }, 1000);
   }
@@ -2012,15 +2042,13 @@ document.addEventListener("DOMContentLoaded", function () {
       closeConfirmDrawModal();
       closeDrawOfferModal();
 
-      const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
-      if (isOnline) {
-        // Nếu vừa chơi ván online xong mà bấm ván mới, đưa về màn hình chọn chế độ hoặc tạo lại phòng
-        backToModeSelection();
-        return;
-      }
+        const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+        if (isOnline) {
+          await requestOnlineRematch();
+          return;
+        }
 
-      // Đảm bảo chế độ chơi hợp lệ nếu reload trang
-      if (!gameModeSelected) {
+        if (!gameModeSelected) {
         gameModeSelected = true;
       }
 
@@ -4357,6 +4385,94 @@ document.addEventListener("DOMContentLoaded", function () {
   // =====================================================
   // START
   // =====================================================
+
+  
+  // =====================================================
+  // HỦY PHÒNG CHỜ / RỜI SẢNH ONLINE
+  // =====================================================
+  const cancelRoomWaitBtn = document.getElementById("cancel-room-wait-btn");
+  if (cancelRoomWaitBtn) {
+    cancelRoomWaitBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      if (!gameId) {
+        backToModeSelection();
+        return;
+      }
+      try {
+        await fetch(`${API_BASE_URL}/${gameId}/cancel-wait`, { method: "POST" });
+        showToast("Đã hủy bàn chờ và rời sảnh thành công.", "info");
+      } catch (err) {
+        console.warn("Lỗi khi hủy phòng chờ:", err);
+      } finally {
+        backToModeSelection();
+      }
+    });
+  }
+
+  // =====================================================
+  // XỬ THUA DO HẾT GIỜ (CLAIM TIMEOUT)
+  // =====================================================
+  async function claimOpponentTimeout() {
+    if (!gameId || gameStatus !== "InProgress") return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/${gameId}/claim-timeout`, { method: "POST" });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.game) {
+        showToast(data.message || "Đối thủ đã hết thời gian! Bạn giành chiến thắng.", "success");
+        updateGameFromApi(data.game);
+      }
+    } catch (err) {
+      console.warn("Lỗi claim timeout:", err);
+    }
+  }
+
+  // =====================================================
+  // TÁI ĐẤU TRONG PHÒNG ONLINE (REMATCH)
+  // =====================================================
+  const rematchOfferModal = document.getElementById("rematch-offer-modal");
+  const acceptRematchBtn = document.getElementById("accept-rematch-btn");
+  const declineRematchBtn = document.getElementById("decline-rematch-btn");
+
+  async function requestOnlineRematch() {
+    if (!gameId) return;
+    try {
+      showToast("Đang tạo ván mới và hoán đổi màu quân...", "info");
+      const response = await fetch(`${API_BASE_URL}/${gameId}/rematch`, { method: "POST" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        showToast(data.message || "Không thể khởi tạo ván đấu mới.", "warning");
+        return;
+      }
+      closeGameResult();
+      const oldColor = localStorage.getItem("onlinePlayerColor");
+      const newColor = oldColor === "Red" ? "Black" : "Red";
+      localStorage.setItem("onlinePlayerColor", newColor);
+      localStorage.setItem("xiangqiGameId", data.id);
+      gameId = data.id;
+      showToast("Đã bắt đầu ván mới thành công!", "success");
+      updateBoardOrientation();
+      updateGameFromApi(data);
+    } catch (err) {
+      console.error("Lỗi yêu cầu tái đấu:", err);
+      showToast("Không thể kết nối ván mới.", "danger");
+    }
+  }
+
+  if (acceptRematchBtn) {
+    acceptRematchBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      if (rematchOfferModal) rematchOfferModal.classList.add("hidden");
+      await requestOnlineRematch();
+    });
+  }
+
+  if (declineRematchBtn) {
+    declineRematchBtn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (rematchOfferModal) rematchOfferModal.classList.add("hidden");
+      showToast("Đã từ chối lời đề nghị tái đấu.", "info");
+    });
+  }
 
   initializePage();
 });

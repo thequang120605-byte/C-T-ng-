@@ -91,6 +91,51 @@ namespace ChessCore.Services
             }
         }
 
+
+        private static async Task UpdateUserStatsOnTimeoutAsync(AppDbContext dbContext, Models.Game game, GameStatus status)
+        {
+            if (status != GameStatus.RedWins && status != GameStatus.BlackWins) return;
+
+            if (game.RedPlayerId.HasValue)
+            {
+                var redUser = await dbContext.Users.FindAsync(game.RedPlayerId.Value);
+                if (redUser != null)
+                {
+                    redUser.GamesPlayed++;
+                    if (status == GameStatus.RedWins)
+                    {
+                        redUser.Wins++;
+                        redUser.Elo += 15;
+                    }
+                    else if (status == GameStatus.BlackWins)
+                    {
+                        redUser.Losses++;
+                        redUser.Elo = Math.Max(400, redUser.Elo - 10);
+                    }
+                }
+            }
+
+            if (game.BlackPlayerId.HasValue)
+            {
+                var blackUser = await dbContext.Users.FindAsync(game.BlackPlayerId.Value);
+                if (blackUser != null)
+                {
+                    blackUser.GamesPlayed++;
+                    if (status == GameStatus.BlackWins)
+                    {
+                        blackUser.Wins++;
+                        blackUser.Elo += 15;
+                    }
+                    else if (status == GameStatus.RedWins)
+                    {
+                        blackUser.Losses++;
+                        blackUser.Elo = Math.Max(400, blackUser.Elo - 10);
+                    }
+                }
+            }
+
+            await dbContext.SaveChangesAsync();
+        }
         private static GameResponseDto BuildTimeoutResponse(Models.Game game, Board board)
         {
             var pieces = new System.Collections.Generic.List<PieceDto>();

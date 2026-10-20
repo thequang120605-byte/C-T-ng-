@@ -171,6 +171,97 @@ namespace ChessCore.Controllers
             return Ok(new { game = response, opponentUsername = opponent?.Username });
         }
 
+
+        [Authorize]
+        [HttpPost("{id}/cancel-wait")]
+        public async Task<IActionResult> CancelWaitingRoom(int id)
+        {
+            if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null) return NotFound(new { message = "Không tìm thấy bàn cờ." });
+            if (game.RedPlayerId != userId) return Forbid();
+            if (game.Status != GameStatus.WaitingForPlayers) return BadRequest(new { message = "Bàn đã bắt đầu hoặc đã kết thúc." });
+
+            game.Status = GameStatus.Resigned;
+            await _dbContext.SaveChangesAsync();
+
+            await _hubContext.Clients.Group("lobby").SendAsync("RoomLocked", new { id = game.Id, roomCode = game.RoomCode });
+            await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("RoomCancelled", new { gameId = game.Id, message = "Chủ phòng đã hủy bàn." });
+            return Ok(new { success = true, message = "Đã hủy bàn thành công." });
+        }
+
+        [Authorize]
+        [HttpPost("{id}/claim-timeout")]
+        public async Task<IActionResult> ClaimTimeout(int id)
+        {
+            if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null) return NotFound(new { message = "Không tìm thấy bàn cờ." });
+            if (game.Status != GameStatus.InProgress) return BadRequest(new { message = "Ván cờ không trong trạng thái đang diễn ra." });
+            if (game.RedPlayerId != userId && game.BlackPlayerId != userId) return Forbid();
+
+            var lastActionTime = game.LastMoveAt ?? game.CreatedAt;
+            if (DateTime.UtcNow - lastActionTime <= TimeSpan.FromSeconds(180))
+            {
+                return BadRequest(new { message = "Thời gian của đối thủ vẫn chưa kết thúc (chưa đủ 3 phút)." });
+            }
+
+            // Bên đang tới lượt đi bị hết giờ -> Xử bên kia thắng
+            game.Status = game.CurrentTurn == PieceColor.Red ? GameStatus.BlackWins : GameStatus.RedWins;
+            _dbContext.Games.Update(game);
+            await _dbContext.SaveChangesAsync();
+
+            await UpdateUserStatsOnGameEndAsync(game, game.Status);
+
+            var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+            var response = BuildGameResponse(game, board);
+            await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("GameUpdated", response);
+            return Ok(new { success = true, message = "Đối thủ đã hết thời gian! Bạn được xử thắng vì đối thủ rụng kim.", game = response });
+        }
+
+        [Authorize]
+        [HttpPost("{id}/rematch")]
+        public async Task<ActionResult<GameResponseDto>> CreateRematch(int id)
+        {
+            if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+            var game = await _gameService.GetGameByIdAsync(id);
+            if (game == null) return NotFound(new { message = "Không tìm thấy bàn cờ cũ." });
+            if (game.RedPlayerId != userId && game.BlackPlayerId != userId) return Forbid();
+            if (game.Status == GameStatus.InProgress || game.Status == GameStatus.WaitingForPlayers)
+            {
+                return BadRequest(new { message = "Ván cờ hiện tại chưa kết thúc." });
+            }
+
+            // Hoán đổi màu quân giữa 2 người chơi cho ván đấu mới
+            int newRed = game.BlackPlayerId ?? userId;
+            int newBlack = game.RedPlayerId ?? userId;
+            if (newRed == newBlack)
+            {
+                // Nếu chơi với chính mình
+                newBlack = (userId == game.RedPlayerId ? game.BlackPlayerId : game.RedPlayerId) ?? userId;
+            }
+
+            var newGame = await _gameService.CreateGameAsync(status: GameStatus.InProgress);
+            newGame.RedPlayerId = newRed;
+            newGame.BlackPlayerId = newBlack;
+            newGame.GameMode = game.GameMode;
+            newGame.LastMoveAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+
+            var board = GameRules.RebuildBoard(newGame.InitialFen, null, newGame.CurrentTurn);
+            var response = BuildGameResponse(newGame, board);
+
+            // Báo cho cả 2 người chơi chuyển sang ván cờ mới
+            await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("RematchStarted", new
+            {
+                oldGameId = game.Id,
+                newGameId = newGame.Id,
+                newRoomCode = newGame.RoomCode,
+                game = response
+            });
+
+            return Ok(response);
+        }
         [Authorize]
         [HttpPost("{id}/invite")]
         public async Task<IActionResult> InvitePlayer(int id, [FromBody] InvitePlayerRequest request)
@@ -214,9 +305,10 @@ namespace ChessCore.Controllers
         private bool CanAccessOnlineGame(Game game, bool readOnly = false)
         {
             if (!game.RedPlayerId.HasValue && !game.BlackPlayerId.HasValue) return true;
-            if (readOnly) return true; // Cho phép khán giả xem ván cờ (Spectator Mode)
-            return TryGetCurrentUserId(out var userId) &&
-                (game.RedPlayerId == userId || game.BlackPlayerId == userId);
+            if (!TryGetCurrentUserId(out var userId)) return false;
+            if (game.GameMode == "OnlinePrivate") { return game.RedPlayerId == userId || game.BlackPlayerId == userId; }
+            if (readOnly) return true;
+            return game.RedPlayerId == userId || game.BlackPlayerId == userId;
         }
 
         // =====================================================
@@ -1359,6 +1451,9 @@ namespace ChessCore.Controllers
 
                 RemainingSeconds =
                     remainingSeconds,
+                GameMode = game.GameMode,
+                RedPlayerId = game.RedPlayerId,
+                BlackPlayerId = game.BlackPlayerId,
 
                 BoardPieces =
                     pieces,

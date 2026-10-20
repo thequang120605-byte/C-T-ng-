@@ -87,6 +87,9 @@ namespace ChessCore.DTOs
 
         public DateTime? LastMoveAt { get; set; }
         public int RemainingSeconds { get; set; } = 180;
+        public string GameMode { get; set; } = string.Empty;
+        public int? RedPlayerId { get; set; }
+        public int? BlackPlayerId { get; set; }
 
         public List<PieceDto> BoardPieces { get; set; }
             = new();
