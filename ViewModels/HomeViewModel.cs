@@ -20,6 +20,11 @@ public sealed class HomeViewModel : BaseViewModel
         GoToPuzzlesCommand = new AsyncCommand(async () => await OpenWebAsync("Puzzle"), Error);
         GoToCoursesCommand = new AsyncCommand(async () => await OpenWebAsync("Course"), Error);
         LogoutCommand = new AsyncCommand(AccountAsync, Error);
+        ComingSoonCommand = new AsyncCommand(async () =>
+        {
+            if (Shell.Current != null)
+                await Shell.Current.DisplayAlert("Thông báo", "Tính năng đang hoàn thiện và sẽ sớm ra mắt trong bản cập nhật tới!", "Đã hiểu");
+        }, Error);
     }
     public string PlayerName => _user?.Username ?? "Kỳ thủ mới";
     public string PlayerIdDisplay => _user?.PlayerId ?? "Chơi thử với máy hoặc đăng nhập";
@@ -27,6 +32,11 @@ public sealed class HomeViewModel : BaseViewModel
     public string EloDisplay => _user?.Elo.ToString("N0") ?? "—";
     public int TotalGames => (_user?.Wins ?? 0) + (_user?.Draws ?? 0) + (_user?.Losses ?? 0);
     public string AccountText => _user == null ? "Đăng nhập" : "Đăng xuất";
+    public string CoinsDisplay => "30.000";
+    public string JadeDisplay => "0";
+    public string GemsDisplay => "0";
+    public string LevelDisplay => "Cấp: 1";
+    public string RankTitle => "TẬP SỰ ★";
     public int SelectedDifficulty { get => _selectedDifficulty; set { if (SetProperty(ref _selectedDifficulty, Math.Clamp(value, 1, 4))) OnPropertyChanged(nameof(DifficultyName)); } }
     public string DifficultyName => SelectedDifficulty switch { 1 => "Tập sự", 2 => "Kỳ thủ", 3 => "Kiện tướng", _ => "Đại sư" };
     public ICommand PlayAiCommand { get; }
@@ -36,6 +46,7 @@ public sealed class HomeViewModel : BaseViewModel
     public ICommand GoToPuzzlesCommand { get; }
     public ICommand GoToCoursesCommand { get; }
     public ICommand LogoutCommand { get; }
+    public ICommand ComingSoonCommand { get; }
     public async Task LoadUserAsync()
     {
         _user = await _auth.GetCurrentUserAsync();

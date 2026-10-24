@@ -1,54 +1,375 @@
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:vm="clr-namespace:ChessCore.Mobile.ViewModels"
-             x:Class="ChessCore.Mobile.Views.HomePage" x:DataType="vm:HomeViewModel" Title="Sảnh cờ">
- <ScrollView><VerticalStackLayout Padding="18,16,18,24" Spacing="18" MaximumWidthRequest="1000" HorizontalOptions="Fill">
-  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-   <VerticalStackLayout><Label Text="KỲ ĐẠO · PIXEL 1.2" CharacterSpacing="4" FontSize="12" TextColor="#8E6937" FontAttributes="Bold"/><Label Text="Sảnh kỳ đạo" FontSize="28" FontAttributes="Bold"/></VerticalStackLayout>
-   <Button Grid.Column="1" Text="Cài đặt" Command="{Binding GoToSettingsCommand}" Style="{StaticResource QuietButton}" VerticalOptions="Center" SemanticProperties.Description="Cài đặt kết nối và chuyển động"/>
-  </Grid>
-  <Border BackgroundColor="#282B29" Stroke="#B68A4A" StrokeShape="RoundRectangle 20" Padding="16">
-   <Grid ColumnDefinitions="64,*,Auto" ColumnSpacing="12">
-    <Border BackgroundColor="#416A60" Stroke="#D6B16D" StrokeThickness="2" StrokeShape="RoundRectangle 32" HeightRequest="64" WidthRequest="64"><Label Text="{Binding AvatarLetter}" FontSize="30" TextColor="#FFF3D6" HorizontalOptions="Center" VerticalOptions="Center"/></Border>
-    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center"><Label Text="{Binding PlayerName}" TextColor="#F7E6BE" FontSize="18" FontAttributes="Bold" LineBreakMode="TailTruncation"/><Label Text="{Binding PlayerIdDisplay}" TextColor="#BABAA9" FontSize="11" LineBreakMode="TailTruncation"/></VerticalStackLayout>
-    <VerticalStackLayout Grid.Column="2" VerticalOptions="Center" Spacing="3"><Label Text="ELO" FontSize="10" TextColor="#D6B16D" HorizontalOptions="End"/><Label Text="{Binding EloDisplay}" TextColor="#F5D99D" FontSize="23" FontAttributes="Bold"/></VerticalStackLayout>
-   </Grid>
-  </Border>
-  <Border Stroke="#D2BD95" StrokeShape="RoundRectangle 22" HeightRequest="216" Padding="0">
-   <Grid><Image Source="pavilion.png" Aspect="AspectFill"/>
-    <VerticalStackLayout Padding="20" Spacing="8" VerticalOptions="Center" HorizontalOptions="Start" MaximumWidthRequest="290">
-     <Label Text="TĨNH TÂM · ĐẤU TRÍ" FontSize="10" CharacterSpacing="2" TextColor="#7B5C33" FontAttributes="Bold"/>
-     <Label Text="Một nước cờ,&#10;một thế giới." FontSize="28" FontAttributes="Bold" TextColor="#493A29"/>
-     <Button Text="CHƠI VỚI MÁY  →" Command="{Binding PlayAiCommand}" HorizontalOptions="Start" Margin="0,6,0,0"/>
-    </VerticalStackLayout>
-   </Grid>
-  </Border>
-  <Grid ColumnDefinitions="*,Auto"><Label Text="Bắt đầu ván cờ" FontSize="20" FontAttributes="Bold"/><Label Grid.Column="1" Text="{Binding TotalGames, StringFormat='{0} ván đã chơi'}" FontSize="12" TextColor="#786956" VerticalOptions="Center"/></Grid>
-  <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
-   <Border Grid.Column="0" BackgroundColor="#EBC49A" Stroke="#BD8049" StrokeShape="RoundRectangle 18" Padding="14">
-    <VerticalStackLayout Spacing="8"><Grid HeightRequest="62"><Image Source="chess_emblem.png" WidthRequest="68" HeightRequest="68" HorizontalOptions="End"/><Label Text="01" FontSize="13" TextColor="#87532D" VerticalOptions="Start"/></Grid><Label Text="Đấu với máy" FontSize="18" FontAttributes="Bold"/><Label Text="{Binding DifficultyName, StringFormat='{0} · Không cần mạng'}" FontSize="12" TextColor="#6F5135"/><Button Text="Chơi ngay" Command="{Binding PlayAiCommand}" BackgroundColor="#9F422F"/></VerticalStackLayout>
-   </Border>
-   <Border Grid.Column="1" BackgroundColor="#C8D7C7" Stroke="#7C9D87" StrokeShape="RoundRectangle 18" Padding="14">
-    <VerticalStackLayout Spacing="8"><Grid HeightRequest="62"><Label Text="車" FontSize="49" TextColor="#3E6C62" HorizontalOptions="End"/><Label Text="02" FontSize="13" TextColor="#416A60"/></Grid><Label Text="Đấu online" FontSize="18" FontAttributes="Bold"/><Label Text="Tạo bàn · Nhập mã" FontSize="12" TextColor="#486555"/><Button Text="Chọn bàn" Command="{Binding GoToLobbyCommand}" BackgroundColor="#3E6C62"/></VerticalStackLayout>
-   </Border>
-   <Border Grid.Row="1" BackgroundColor="#ECDDAB" Stroke="#B7A063" StrokeShape="RoundRectangle 18" Padding="14">
-    <VerticalStackLayout Spacing="8"><Grid HeightRequest="50"><Label Text="炮" FontSize="42" TextColor="#96712E" HorizontalOptions="End"/><Label Text="03 · BẢN WEB" FontSize="10" TextColor="#7C6738"/></Grid><Label Text="Kho cờ thế" FontSize="18" FontAttributes="Bold"/><Label Text="Khám phá thế cờ" FontSize="12" TextColor="#756343"/><Button Text="Mở kho cờ" Command="{Binding GoToPuzzlesCommand}" BackgroundColor="#97753A"/></VerticalStackLayout>
-   </Border>
-   <Border Grid.Row="1" Grid.Column="1" BackgroundColor="#DED2C2" Stroke="#B29A7E" StrokeShape="RoundRectangle 18" Padding="14">
-    <VerticalStackLayout Spacing="8"><Grid HeightRequest="50"><Label Text="士" FontSize="42" TextColor="#75614B" HorizontalOptions="End"/><Label Text="04 · BẢN WEB" FontSize="10" TextColor="#75614B"/></Grid><Label Text="Kỳ thư" FontSize="18" FontAttributes="Bold"/><Label Text="Học từ từng nước đi" FontSize="12" TextColor="#75614B"/><Button Text="Vào khóa học" Command="{Binding GoToCoursesCommand}" BackgroundColor="#75614B"/></VerticalStackLayout>
-   </Border>
-  </Grid>
-  <Border Style="{StaticResource CardStyle}"><VerticalStackLayout Spacing="12">
-   <Grid ColumnDefinitions="*,Auto"><Label Text="Máy trên thiết bị" FontAttributes="Bold"/><Label Grid.Column="1" Text="{Binding DifficultyName}" FontSize="12" TextColor="#9F422F"/></Grid>
-   <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
-    <Button Grid.Column="0" Text="Dễ" Clicked="OnDifficulty1Clicked" BackgroundColor="#E7DCC8" TextColor="#493A29" Padding="4,6" FontSize="12"><Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedDifficulty}" Value="1"><Setter Property="BackgroundColor" Value="#9F422F"/><Setter Property="TextColor" Value="#FFF9EF"/></DataTrigger></Button.Triggers></Button>
-    <Button Grid.Column="1" Text="Vừa" Clicked="OnDifficulty2Clicked" BackgroundColor="#E7DCC8" TextColor="#493A29" Padding="4,6" FontSize="12"><Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedDifficulty}" Value="2"><Setter Property="BackgroundColor" Value="#9F422F"/><Setter Property="TextColor" Value="#FFF9EF"/></DataTrigger></Button.Triggers></Button>
-    <Button Grid.Column="2" Text="Khó" Clicked="OnDifficulty3Clicked" BackgroundColor="#E7DCC8" TextColor="#493A29" Padding="4,6" FontSize="12"><Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedDifficulty}" Value="3"><Setter Property="BackgroundColor" Value="#9F422F"/><Setter Property="TextColor" Value="#FFF9EF"/></DataTrigger></Button.Triggers></Button>
-    <Button Grid.Column="3" Text="Đại sư" Clicked="OnDifficulty4Clicked" BackgroundColor="#E7DCC8" TextColor="#493A29" Padding="4,6" FontSize="12"><Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedDifficulty}" Value="4"><Setter Property="BackgroundColor" Value="#9F422F"/><Setter Property="TextColor" Value="#FFF9EF"/></DataTrigger></Button.Triggers></Button>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChessCore.Mobile.ViewModels"
+             x:Class="ChessCore.Mobile.Views.HomePage"
+             x:DataType="vm:HomeViewModel"
+             BackgroundColor="#1C1814"
+             Shell.NavBarIsVisible="False"
+             Title="Kỳ Chiến">
 
-   </Grid>
-  </VerticalStackLayout></Border>
-  <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}"/>
-  <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="#A34032"/>
-  <Button Text="{Binding AccountText}" Command="{Binding LogoutCommand}" Style="{StaticResource QuietButton}"/>
-  <Label Text="Tập trung vào thế cờ. Tận hưởng từng nước đi." FontSize="11" TextColor="#8A7B66" HorizontalTextAlignment="Center"/>
- </VerticalStackLayout></ScrollView>
+    <Grid>
+        <!-- 1. HÌNH NỀN HOÀNG CUNG THỦY MẶC VÀ GRADIENT CỔ ĐIỂN -->
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#F3E5CB" Offset="0.0"/>
+                <GradientStop Color="#E6D1AC" Offset="0.5"/>
+                <GradientStop Color="#D8BC8E" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <Image Source="pavilion.png" Aspect="AspectFill" Opacity="0.14" VerticalOptions="Start" HeightRequest="380"/>
+
+        <!-- 2. NỘI DUNG CUỘN CHÍNH -->
+        <ScrollView>
+            <VerticalStackLayout Padding="14,8,14,20" Spacing="12" MaximumWidthRequest="600" HorizontalOptions="Center">
+
+                <!-- THANH TÀI NGUYÊN TRÊN CÙNG (TOP CURRENCY BAR) -->
+                <Grid ColumnDefinitions="*,*,Auto,Auto" ColumnSpacing="6" Margin="0,4,0,2">
+                    <!-- Vàng (Coins) -->
+                    <Border BackgroundColor="#D9222421" Stroke="#C6A052" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="6,3">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="4">
+                            <Label Text="🪙" FontSize="13" VerticalOptions="Center"/>
+                            <Label Grid.Column="1" Text="{Binding CoinsDisplay}" TextColor="#FFD700" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Border Grid.Column="2" BackgroundColor="#2D6A4F" StrokeThickness="0" StrokeShape="RoundRectangle 8" WidthRequest="16" HeightRequest="16">
+                                <Label Text="+" TextColor="#FFF" FontSize="11" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Ngọc / Token xanh -->
+                    <Border Grid.Column="1" BackgroundColor="#D9222421" Stroke="#52B788" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="6,3">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="4">
+                            <Label Text="🟢" FontSize="12" VerticalOptions="Center"/>
+                            <Label Grid.Column="1" Text="{Binding JadeDisplay}" TextColor="#74C69D" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Border Grid.Column="2" BackgroundColor="#2D6A4F" StrokeThickness="0" StrokeShape="RoundRectangle 8" WidthRequest="16" HeightRequest="16">
+                                <Label Text="+" TextColor="#FFF" FontSize="11" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- VIP Gem -->
+                    <Border Grid.Column="2" BackgroundColor="#D9222421" Stroke="#9D4EDD" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="8,3">
+                        <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="4">
+                            <Label Text="💎" FontSize="12" VerticalOptions="Center"/>
+                            <Label Grid.Column="1" Text="{Binding GemsDisplay}" TextColor="#E0AAFF" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Nút Cài đặt -->
+                    <Border Grid.Column="3" BackgroundColor="#D9222421" Stroke="#8D6E63" StrokeThickness="1" StrokeShape="RoundRectangle 16" WidthRequest="32" HeightRequest="30" Padding="0">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToSettingsCommand}"/>
+                        </Border.GestureRecognizers>
+                        <Label Text="⚙️" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+                </Grid>
+
+                <!-- KHU VỰC THÔNG TIN KỲ THỦ & PHÚC LỢI (PROFILE & OFFERS) -->
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,2,0,4">
+                    <!-- Avatar tròn viền ngọc / cọ mực -->
+                    <VerticalStackLayout Spacing="-6">
+                        <Border BackgroundColor="#0F5B60" Stroke="#E0A944" StrokeThickness="2.5" StrokeShape="RoundRectangle 30" WidthRequest="58" HeightRequest="58">
+                            <Label Text="{Binding AvatarLetter}" TextColor="#FFF7E6" FontSize="26" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        <Border BackgroundColor="#8B4513" Stroke="#FFD700" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="6,1" HorizontalOptions="Center">
+                            <Label Text="{Binding RankTitle}" TextColor="#FFF7D6" FontSize="9" FontAttributes="Bold"/>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Thông tin tên & cấp độ -->
+                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                        <Label Text="{Binding PlayerName}" TextColor="#1B4332" FontSize="16" FontAttributes="Bold" LineBreakMode="TailTruncation"/>
+                        <HorizontalStackLayout Spacing="6">
+                            <Border BackgroundColor="#40000000" StrokeThickness="0" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="{Binding LevelDisplay}" TextColor="#F4F1DE" FontSize="10" FontAttributes="Bold"/>
+                            </Border>
+                            <Border BackgroundColor="#40000000" StrokeThickness="0" StrokeShape="RoundRectangle 6" Padding="6,2">
+                                <Label Text="{Binding EloDisplay, StringFormat='Elo: {0}'}" TextColor="#F6BD60" FontSize="10" FontAttributes="Bold"/>
+                            </Border>
+                        </HorizontalStackLayout>
+                        <!-- Cảnh báo chơi quá 180 phút -->
+                        <Border BackgroundColor="#35000000" StrokeThickness="0" StrokeShape="RoundRectangle 6" Padding="6,2">
+                            <Label Text="12+ Chơi quá 180 phút một ngày sẽ ảnh hưởng xấu đến sức khỏe." TextColor="#FFFFFF" FontSize="8.5" LineBreakMode="TailTruncation"/>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- 3 Biểu tượng Phúc Lợi / Nhiệm Vụ nổi -->
+                    <HorizontalStackLayout Grid.Column="2" Spacing="4" VerticalOptions="Center">
+                        <Border BackgroundColor="#E6F2ECB6" Stroke="#C29B38" StrokeShape="RoundRectangle 12" Padding="4" WidthRequest="42" HeightRequest="52">
+                            <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ComingSoonCommand}"/></Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                                <Label Text="🎁" FontSize="16" HorizontalOptions="Center"/>
+                                <Label Text="Nhiệm Vụ" FontSize="7.5" TextColor="#6B4F10" HorizontalOptions="Center" FontAttributes="Bold"/>
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border BackgroundColor="#E6F2ECB6" Stroke="#C29B38" StrokeShape="RoundRectangle 12" Padding="4" WidthRequest="42" HeightRequest="52">
+                            <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding ComingSoonCommand}"/></Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                                <Label Text="📦" FontSize="16" HorizontalOptions="Center"/>
+                                <Label Text="Tích Lũy" FontSize="7.5" TextColor="#6B4F10" HorizontalOptions="Center" FontAttributes="Bold"/>
+                            </VerticalStackLayout>
+                        </Border>
+                    </HorizontalStackLayout>
+                </Grid>
+
+                <!-- KHUNG CUỘN TRẬN ĐẤU KỲ ĐÀI NỔI BẬT (FEATURED SPECTATE MATCH) -->
+                <Border BackgroundColor="#FAF0DD" Stroke="#B38A56" StrokeThickness="1.5" StrokeShape="RoundRectangle 16" Padding="10,8">
+                    <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
+                        <!-- Đấu thủ 1 -->
+                        <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                            <Border BackgroundColor="#3E6C62" Stroke="#D4AF37" StrokeThickness="1.5" StrokeShape="RoundRectangle 18" WidthRequest="36" HeightRequest="36">
+                                <Label Text="Đ" TextColor="#FFF" FontSize="15" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                            <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                                <Label Text="Lê Đức" TextColor="#3A2818" FontSize="12" FontAttributes="Bold" LineBreakMode="TailTruncation" MaximumWidthRequest="75"/>
+                                <Label Text="Kỳ thủ ⭐" TextColor="#8C6D37" FontSize="9"/>
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+
+                        <!-- Giữa: VS & Nút Xem Ngay -->
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center" HorizontalOptions="Center">
+                            <Grid ColumnDefinitions="Auto,Auto,Auto" HorizontalOptions="Center" ColumnSpacing="4">
+                                <Label Text="⚔️" FontSize="11" VerticalOptions="Center"/>
+                                <Label Grid.Column="1" Text="VS" TextColor="#B91C1C" FontSize="16" FontAttributes="Bold" VerticalOptions="Center"/>
+                                <Label Grid.Column="2" Text="👥 10" TextColor="#5C4D3C" FontSize="10" VerticalOptions="Center"/>
+                            </Grid>
+                            <Border BackgroundColor="#A43C2E" Stroke="#E7D28E" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="12,3">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding GoToLobbyCommand}"/>
+                                </Border.GestureRecognizers>
+                                <Label Text="〈 Xem ngay 〉" TextColor="#FFF5D8" FontSize="11" FontAttributes="Bold" HorizontalOptions="Center"/>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Đấu thủ 2 -->
+                        <HorizontalStackLayout Grid.Column="2" Spacing="6" HorizontalOptions="End" VerticalOptions="Center">
+                            <VerticalStackLayout Spacing="1" VerticalOptions="Center" HorizontalOptions="End">
+                                <Label Text="Huy Hoàng" TextColor="#3A2818" FontSize="12" FontAttributes="Bold" LineBreakMode="TailTruncation" MaximumWidthRequest="75"/>
+                                <Label Text="Kỳ thủ ⭐⭐⭐" TextColor="#8C6D37" FontSize="9" HorizontalTextAlignment="End"/>
+                            </VerticalStackLayout>
+                            <Border BackgroundColor="#6B2D5C" Stroke="#D4AF37" StrokeThickness="1.5" StrokeShape="RoundRectangle 18" WidthRequest="36" HeightRequest="36">
+                                <Label Text="H" TextColor="#FFF" FontSize="15" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                        </HorizontalStackLayout>
+                    </Grid>
+                </Border>
+
+                <!-- 4 THẺ CHẾ ĐỘ CHƠI CHÍNH (2X2 GRID MATCHING SCREENSHOT) -->
+                <Grid ColumnDefinitions="*,*" RowDefinitions="130,130" ColumnSpacing="10" RowSpacing="10">
+
+                    <!-- THẺ 1: CỜ TƯỚNG (Đấu Trực Tuyến) -->
+                    <Border Grid.Row="0" Grid.Column="0" Stroke="#FFA266" StrokeThickness="1.5" StrokeShape="RoundRectangle 18" Padding="10">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#ED7E44" Offset="0.0"/>
+                                <GradientStop Color="#C8501E" Offset="1.0"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToLobbyCommand}"/>
+                        </Border.GestureRecognizers>
+                        <Grid>
+                            <!-- Quân cờ gỗ 3D "帥" trang trí góc trái -->
+                            <Border BackgroundColor="#FFF5D8" Stroke="#8B4513" StrokeThickness="2" StrokeShape="RoundRectangle 28" WidthRequest="56" HeightRequest="56" HorizontalOptions="Start" VerticalOptions="Center">
+                                <Grid>
+                                    <Ellipse Stroke="#A43C2E" StrokeThickness="1.5" Margin="3"/>
+                                    <Label Text="帥" TextColor="#A43C2E" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                </Grid>
+                            </Border>
+                            <!-- Thẻ gỗ son thư pháp bên phải -->
+                            <VerticalStackLayout HorizontalOptions="End" VerticalOptions="Center" Spacing="4">
+                                <Border BackgroundColor="#932414" Stroke="#FCD34D" StrokeThickness="1.2" StrokeShape="RoundRectangle 10" Padding="8,4">
+                                    <Label Text="CỜ TƯỚNG" TextColor="#FFF5D8" FontSize="13" FontAttributes="Bold" HorizontalOptions="Center"/>
+                                </Border>
+                                <Label Text="Đấu Online" TextColor="#FFE8D6" FontSize="11" HorizontalOptions="End" FontAttributes="Bold"/>
+                                <Label Text="Tạo bàn · Giao hữu" TextColor="#FFD8BE" FontSize="9" HorizontalOptions="End"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+
+                    <!-- THẺ 2: CỜ ÚP (Biến Hóa Khôn Lường) -->
+                    <Border Grid.Row="0" Grid.Column="1" Stroke="#FFA266" StrokeThickness="1.5" StrokeShape="RoundRectangle 18" Padding="10">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#E68249" Offset="0.0"/>
+                                <GradientStop Color="#B84B1E" Offset="1.0"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ComingSoonCommand}"/>
+                        </Border.GestureRecognizers>
+                        <Grid>
+                            <!-- Quân cờ úp lưng gỗ 3D -->
+                            <Border BackgroundColor="#E9D5B5" Stroke="#7F4F24" StrokeThickness="2" StrokeShape="RoundRectangle 28" WidthRequest="56" HeightRequest="56" HorizontalOptions="Start" VerticalOptions="Center">
+                                <Grid>
+                                    <Ellipse Stroke="#A68A68" StrokeThickness="1.5" Margin="4"/>
+                                    <Label Text="🎋" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                </Grid>
+                            </Border>
+                            <!-- Thẻ ngọc bích -->
+                            <VerticalStackLayout HorizontalOptions="End" VerticalOptions="Center" Spacing="4">
+                                <Border BackgroundColor="#2D6A4F" Stroke="#A7C957" StrokeThickness="1.2" StrokeShape="RoundRectangle 10" Padding="10,4">
+                                    <Label Text="CỜ ÚP" TextColor="#FFF" FontSize="13" FontAttributes="Bold" HorizontalOptions="Center"/>
+                                </Border>
+                                <Label Text="Kỳ Ảo" TextColor="#FFE8D6" FontSize="11" HorizontalOptions="End" FontAttributes="Bold"/>
+                                <Label Text="Sắp ra mắt" TextColor="#FFD8BE" FontSize="9" HorizontalOptions="End"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+
+                    <!-- THẺ 3: CỜ THẾ (Phá Giải Tàn Cuộc) -->
+                    <Border Grid.Row="1" Grid.Column="0" Stroke="#FCD34D" StrokeThickness="1.5" StrokeShape="RoundRectangle 18" Padding="10">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#F59E0B" Offset="0.0"/>
+                                <GradientStop Color="#B45309" Offset="1.0"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToPuzzlesCommand}"/>
+                        </Border.GestureRecognizers>
+                        <Grid>
+                            <!-- Bàn cờ thế thu nhỏ -->
+                            <Border BackgroundColor="#FFF5D8" Stroke="#92400E" StrokeThickness="2" StrokeShape="RoundRectangle 12" WidthRequest="54" HeightRequest="54" HorizontalOptions="Start" VerticalOptions="Center">
+                                <VerticalStackLayout Spacing="0" VerticalOptions="Center" HorizontalOptions="Center">
+                                    <Label Text="☵ 帥 ☲" TextColor="#92400E" FontSize="10" FontAttributes="Bold" HorizontalOptions="Center"/>
+                                    <Label Text="車 炮 兵" TextColor="#A43C2E" FontSize="9" HorizontalOptions="Center"/>
+                                </VerticalStackLayout>
+                            </Border>
+                            <!-- Thẻ vàng kim -->
+                            <VerticalStackLayout HorizontalOptions="End" VerticalOptions="Center" Spacing="4">
+                                <Border BackgroundColor="#B45309" Stroke="#FDE68A" StrokeThickness="1.2" StrokeShape="RoundRectangle 10" Padding="8,4">
+                                    <Label Text="CỜ THẾ" TextColor="#FFF9EF" FontSize="13" FontAttributes="Bold" HorizontalOptions="Center"/>
+                                </Border>
+                                <Label Text="Kho Thế Cờ" TextColor="#FEF3C7" FontSize="11" HorizontalOptions="End" FontAttributes="Bold"/>
+                                <Label Text="Học nghệ sát cục" TextColor="#FDE68A" FontSize="9" HorizontalOptions="End"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+
+                    <!-- THẺ 4: LUYỆN TẬP (Chơi Với Máy - OFFLINE ENGINE NỔI BẬT) -->
+                    <Border Grid.Row="1" Grid.Column="1" Stroke="#FBBF24" StrokeThickness="2" StrokeShape="RoundRectangle 18" Padding="10">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#EAA329" Offset="0.0"/>
+                                <GradientStop Color="#AA6408" Offset="1.0"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding PlayAiCommand}"/>
+                        </Border.GestureRecognizers>
+                        <Grid>
+                            <!-- Cuốn kỳ thư và chén trà -->
+                            <VerticalStackLayout HorizontalOptions="Start" VerticalOptions="Center" Spacing="2">
+                                <Border BackgroundColor="#FFF5D8" Stroke="#78350F" StrokeThickness="1.5" StrokeShape="RoundRectangle 8" Padding="6,2" HorizontalOptions="Start">
+                                    <Label Text="📜 Kỳ Thư" TextColor="#78350F" FontSize="10" FontAttributes="Bold"/>
+                                </Border>
+                                <Border BackgroundColor="#2D6A4F" Stroke="#A7C957" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="4,2">
+                                    <Label Text="+50.000 🪙" TextColor="#FFF7D6" FontSize="8.5" FontAttributes="Bold"/>
+                                </Border>
+                            </VerticalStackLayout>
+                            <!-- Thẻ lam ngọc -->
+                            <VerticalStackLayout HorizontalOptions="End" VerticalOptions="Center" Spacing="4">
+                                <Border BackgroundColor="#1E40AF" Stroke="#93C5FD" StrokeThickness="1.2" StrokeShape="RoundRectangle 10" Padding="8,4">
+                                    <Label Text="LUYỆN TẬP" TextColor="#FFF" FontSize="13" FontAttributes="Bold" HorizontalOptions="Center"/>
+                                </Border>
+                                <Label Text="{Binding DifficultyName, StringFormat='Máy: {0}'}" TextColor="#FEF3C7" FontSize="11" HorizontalOptions="End" FontAttributes="Bold"/>
+                                <Label Text="Chơi ngay không mạng" TextColor="#FDE68A" FontSize="9" HorizontalOptions="End"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- BẢNG CHỌN CẤP ĐỘ MÁY ĐẤU (DIFFICULTY SELECTOR) -->
+                <Border BackgroundColor="#FDF7EE" Stroke="#D2BD95" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="12,10">
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Cấp độ máy luyện tập" TextColor="#42301E" FontSize="13" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Label Grid.Column="1" Text="{Binding DifficultyName, StringFormat='Đang chọn: {0}'}" TextColor="#9F422F" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+                            <Button Grid.Column="0" Text="Dễ" Clicked="OnDifficulty1Clicked" BackgroundColor="#EBE1D0" TextColor="#493A29" Padding="4,4" HeightRequest="36" FontSize="11" CornerRadius="8">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button" Binding="{Binding SelectedDifficulty}" Value="1">
+                                        <Setter Property="BackgroundColor" Value="#9F422F"/>
+                                        <Setter Property="TextColor" Value="#FFF9EF"/>
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="1" Text="Vừa" Clicked="OnDifficulty2Clicked" BackgroundColor="#EBE1D0" TextColor="#493A29" Padding="4,4" HeightRequest="36" FontSize="11" CornerRadius="8">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button" Binding="{Binding SelectedDifficulty}" Value="2">
+                                        <Setter Property="BackgroundColor" Value="#9F422F"/>
+                                        <Setter Property="TextColor" Value="#FFF9EF"/>
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="2" Text="Khó" Clicked="OnDifficulty3Clicked" BackgroundColor="#EBE1D0" TextColor="#493A29" Padding="4,4" HeightRequest="36" FontSize="11" CornerRadius="8">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button" Binding="{Binding SelectedDifficulty}" Value="3">
+                                        <Setter Property="BackgroundColor" Value="#9F422F"/>
+                                        <Setter Property="TextColor" Value="#FFF9EF"/>
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="3" Text="Đại sư" Clicked="OnDifficulty4Clicked" BackgroundColor="#EBE1D0" TextColor="#493A29" Padding="4,4" HeightRequest="36" FontSize="11" CornerRadius="8">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button" Binding="{Binding SelectedDifficulty}" Value="4">
+                                        <Setter Property="BackgroundColor" Value="#9F422F"/>
+                                        <Setter Property="TextColor" Value="#FFF9EF"/>
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- THANH ĐIỀU HƯỚNG DƯỚI (BOTTOM NAVIGATION - THỦY MẶC MỰC TÀU) -->
+                <Border BackgroundColor="#E61C1F1C" Stroke="#A88B52" StrokeThickness="1.5" StrokeShape="RoundRectangle 22" Padding="12,8" Margin="0,4,0,0">
+                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="4">
+                        <!-- SỰ KIỆN -->
+                        <VerticalStackLayout Grid.Column="0" Spacing="2" HorizontalOptions="Center">
+                            <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Command="{Binding ComingSoonCommand}"/></VerticalStackLayout.GestureRecognizers>
+                            <Border BackgroundColor="#2D302C" Stroke="#786956" StrokeShape="RoundRectangle 16" WidthRequest="34" HeightRequest="34">
+                                <Label Text="📜" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                            <Label Text="SỰ KIỆN" TextColor="#E2D4BC" FontSize="9" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+
+                        <!-- XẾP HẠNG -->
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" HorizontalOptions="Center">
+                            <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Command="{Binding GoToProfileCommand}"/></VerticalStackLayout.GestureRecognizers>
+                            <Border BackgroundColor="#2D302C" Stroke="#786956" StrokeShape="RoundRectangle 16" WidthRequest="34" HeightRequest="34">
+                                <Label Text="🏆" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                            <Label Text="XẾP HẠNG" TextColor="#E2D4BC" FontSize="9" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+
+                        <!-- CHỌN BÀN (Nút Trung Tâm Nổi Bật) -->
+                        <VerticalStackLayout Grid.Column="2" Spacing="2" HorizontalOptions="Center">
+                            <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Command="{Binding GoToLobbyCommand}"/></VerticalStackLayout.GestureRecognizers>
+                            <Border BackgroundColor="#A43C2E" Stroke="#FCD34D" StrokeThickness="2" StrokeShape="RoundRectangle 18" WidthRequest="38" HeightRequest="38">
+                                <Label Text="🍵" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                            <Label Text="CHỌN BÀN" TextColor="#FFD700" FontSize="9.5" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+
+                        <!-- CỬA HÀNG -->
+                        <VerticalStackLayout Grid.Column="3" Spacing="2" HorizontalOptions="Center">
+                            <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Command="{Binding ComingSoonCommand}"/></VerticalStackLayout.GestureRecognizers>
+                            <Border BackgroundColor="#2D302C" Stroke="#786956" StrokeShape="RoundRectangle 16" WidthRequest="34" HeightRequest="34">
+                                <Label Text="💰" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                            <Label Text="CỬA HÀNG" TextColor="#E2D4BC" FontSize="9" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <!-- CHỈ BÁO TRẠNG THÁI & LỖI -->
+                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="#9F422F"/>
+                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="#B91C1C" FontSize="11" HorizontalTextAlignment="Center"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>
