@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChessCore.Mobile.ViewModels"
+             x:Class="ChessCore.Mobile.Views.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             BackgroundColor="#F3EBDD"
+             Title="Cài Đặt Kết Nối">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Cấu Hình Địa Chỉ Server" FontSize="20" FontAttributes="Bold" TextColor="#342B23" />
+                <Label Text="Thiết lập địa chỉ kết nối đến Backend ChessCore" FontSize="13" TextColor="#786956" />
+            </VerticalStackLayout>
+
+            <!-- Card Cấu hình IP -->
+            <Border BackgroundColor="#FFF9EF" StrokeShape="RoundRectangle 16" Stroke="#DDCDB3" Padding="20">
+                <VerticalStackLayout Spacing="16">
+                    
+                    <Label Text="Địa chỉ máy chủ (Base URL):" TextColor="#655541" FontSize="13" FontAttributes="Bold" />
+
+                    <Border BackgroundColor="#F3EBDD" Stroke="#DDCDB3" StrokeShape="RoundRectangle 8" Padding="12,2">
+                        <Entry Text="{Binding BaseUrl}" Placeholder="http://10.0.2.2:5000" TextColor="#342B23" PlaceholderColor="#786956" />
+                    </Border>
+
+                    <!-- Phím tắt chọn nhanh -->
+                    <Label Text="Chọn nhanh theo môi trường:" TextColor="#786956" FontSize="12" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Grid.Column="0" Text="Máy Ảo (10.0.2.2)" Command="{Binding UseEmulatorCommand}"
+                                BackgroundColor="#DDCDB3" TextColor="#342B23" FontSize="12" HeightRequest="48" CornerRadius="6" />
+                        <Button Grid.Column="1" Text="Máy Thật (LAN Wi-Fi)" Command="{Binding UseLanCommand}"
+                                BackgroundColor="#DDCDB3" TextColor="#342B23" FontSize="12" HeightRequest="48" CornerRadius="6" />
+                    </Grid>
+
+                    <!-- Nút Lưu & Kiểm tra -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,6,0,0">
+                        <Button Grid.Column="0" Text="Lưu Địa Chỉ" Command="{Binding SaveCommand}"
+                                BackgroundColor="#3E6C62" TextColor="#ffffff" FontAttributes="Bold" HeightRequest="48" CornerRadius="8" />
+                        <Button Grid.Column="1" Text="Kiểm Tra Kết Nối" Command="{Binding TestConnectionCommand}"
+                                BackgroundColor="#9F422F" TextColor="#ffffff" FontAttributes="Bold" HeightRequest="48" CornerRadius="8" />
+                    </Grid>
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="#9A6B2D" HeightRequest="24" />
+
+                    <!-- Kết quả kiểm tra -->
+                    <Border BackgroundColor="#F3EBDD" StrokeThickness="0" StrokeShape="RoundRectangle 8" Padding="12">
+                        <Label Text="{Binding ConnectionStatus}" TextColor="{Binding StatusColor}" FontSize="13" FontAttributes="Bold" HorizontalOptions="Center" />
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="4"><Label Text="Giảm chuyển động" FontAttributes="Bold"/><Label Text="Tắt hiệu ứng di chuyển quân cờ" FontSize="12" TextColor="#786956"/></VerticalStackLayout>
+                    <Switch Grid.Column="1" IsToggled="{Binding ReduceMotion}" OnColor="#9F422F" />
+                </Grid>
+            </Border>
+            <Label Text="Điện thoại và máy chủ cần kết nối được với nhau. Đổi máy chủ sẽ kết thúc phiên đăng nhập hiện tại." TextColor="#786956" FontSize="13" />
+
+            <Button Text="Quay lại Trang Chủ" Command="{Binding BackCommand}" 
+                    BackgroundColor="Transparent" TextColor="#786956" FontSize="13" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

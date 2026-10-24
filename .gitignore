@@ -1,0 +1,27 @@
+# Visual Studio / .NET / MAUI
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+.vs/
+.idea/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# Build outputs & test APKs
+*.apk
+*.aab
+*.idsig
+
+# Android / Gradle / Java caches
+.gradle/
+build/
+captures/
+.cxx/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
