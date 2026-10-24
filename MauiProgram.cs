@@ -35,6 +35,9 @@ public static class MauiProgram
 		builder.Services.AddTransient<OnlineLobbyViewModel>();
 		builder.Services.AddTransient<ProfileViewModel>();
 		builder.Services.AddTransient<SettingsViewModel>();
+		builder.Services.AddTransient<PuzzleViewModel>();
+		builder.Services.AddTransient<CourseViewModel>();
+		builder.Services.AddTransient<HistoryViewModel>();
 
 		// 3. Đăng ký Views (Pages)
 		builder.Services.AddTransient<LoginPage>();
@@ -44,6 +47,9 @@ public static class MauiProgram
 		builder.Services.AddTransient<OnlineLobbyPage>();
 		builder.Services.AddTransient<ProfilePage>();
 		builder.Services.AddTransient<SettingsPage>();
+		builder.Services.AddTransient<PuzzlePage>();
+		builder.Services.AddTransient<CoursePage>();
+		builder.Services.AddTransient<HistoryPage>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

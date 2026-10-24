@@ -11,6 +11,10 @@ public sealed class HybridApiService : IApiService
     public async Task<T?> GetAsync<T>(string endpoint, CancellationToken cancellationToken = default)
     {
         var (parts, query) = Parse(endpoint);
+        if (parts.SequenceEqual(new[] { "api", "offline", "history" }))
+        {
+            return (T)(object)_local.GetSavedHistory();
+        }
         if (LocalId(parts) is int id)
         {
             object value = parts.Length == 3 ? await _local.GetAsync(id, cancellationToken) :
@@ -23,7 +27,13 @@ public sealed class HybridApiService : IApiService
     public async Task<T?> PostAsync<T>(string endpoint, CancellationToken cancellationToken = default)
     {
         var (parts, query) = Parse(endpoint);
-        if (parts.SequenceEqual(new[] { "api", "offline", "games" })) return (T)(object)await _local.CreateAsync(cancellationToken);
+        if (parts.SequenceEqual(new[] { "api", "offline", "games" }))
+        {
+            var mode = query.TryGetValue("mode", out var m) ? m : "PvE";
+            var fen = query.TryGetValue("fen", out var f) ? f : null;
+            var title = query.TryGetValue("title", out var t) ? t : "Luyện cờ";
+            return (T)(object)await _local.CreateSessionAsync(mode, fen, title, cancellationToken);
+        }
         if (LocalId(parts) is int id && parts.Length == 4)
         {
             object value = parts[3] switch

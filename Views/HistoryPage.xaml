@@ -1,0 +1,85 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChessCore.Mobile.ViewModels"
+             x:Class="ChessCore.Mobile.Views.HistoryPage"
+             x:DataType="vm:HistoryViewModel"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="#F3EBDD"
+             Title="Kỳ Phổ">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- 1. THANH TIÊU ĐỀ NÂU ĐẬM CỔ ĐIỂN -->
+        <Border BackgroundColor="#282B29" StrokeThickness="0" Padding="12,8">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <Button Text="‹ Sảnh" Command="{Binding BackCommand}" BackgroundColor="Transparent" TextColor="#F5DBAA" FontSize="13" Padding="8,4" HeightRequest="40" MinimumHeightRequest="40"/>
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1">
+                    <Label Text="KỲ PHỔ &amp; LỊCH SỬ ĐẤU" FontSize="13" TextColor="#E6C38D" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/>
+                    <Label Text="Lưu ván cờ trên thiết bị" FontSize="10" TextColor="#C1C0AD" HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+                <Button Grid.Column="2" Text="Tải lại" Command="{Binding RefreshCommand}" BackgroundColor="#42463D" TextColor="#F5DBAA" FontSize="11" Padding="8,4" HeightRequest="40" MinimumHeightRequest="40"/>
+            </Grid>
+        </Border>
+
+        <!-- 2. DANH SÁCH VÁN CỜ ĐÃ LƯU -->
+        <Grid Grid.Row="1" Padding="12,8">
+            
+            <!-- THÔNG BÁO KHI CHƯA CÓ VÁN CỜ NÀO -->
+            <VerticalStackLayout IsVisible="{Binding HasNoItems}" VerticalOptions="Center" HorizontalOptions="Center" Spacing="10">
+                <Label Text="📜" FontSize="40" HorizontalOptions="Center"/>
+                <Label Text="Chưa có ván cờ nào được lưu" FontSize="15" FontAttributes="Bold" TextColor="#342B23" HorizontalOptions="Center"/>
+                <Label Text="Hãy bắt đầu một ván chơi với máy hoặc hai người cùng máy để lưu vào kỳ phổ." FontSize="12" TextColor="#786956" HorizontalTextAlignment="Center" MaximumWidthRequest="280"/>
+            </VerticalStackLayout>
+
+            <!-- DANH SÁCH VÁN CỜ -->
+            <CollectionView ItemsSource="{Binding Items}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:HistoryItemViewModel">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,4,0,8" Padding="14,12">
+                            <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
+                                
+                                <!-- HÀNG 1: THÔNG TIN VÁN CỜ -->
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold" TextColor="#342B23"/>
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Label Text="{Binding DateDisplay}" FontSize="11" TextColor="#786956"/>
+                                            <Label Text="•" FontSize="11" TextColor="#786956"/>
+                                            <Label Text="{Binding MovesDisplay}" FontSize="11" TextColor="#786956"/>
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+
+                                    <!-- HUY HIỆU TRẠNG THÁI -->
+                                    <Border Grid.Column="1" BackgroundColor="{Binding StatusColor}" StrokeThickness="0" StrokeShape="RoundRectangle 8" Padding="8,4" VerticalOptions="Start">
+                                        <Label Text="{Binding StatusDisplay}" TextColor="#FFF9EF" FontSize="10" FontAttributes="Bold"/>
+                                    </Border>
+                                </Grid>
+
+                                <!-- HÀNG 2: HAI NÚT RÕ RÀNG TIẾP TỤC VÀ XEM LẠI (>= 48 DIP) -->
+                                <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button Text="Tiếp tục ván"
+                                            Command="{Binding ResumeCommand}"
+                                            IsEnabled="{Binding CanResume}"
+                                            BackgroundColor="#2D6A4F" TextColor="#FFF9EF"
+                                            HeightRequest="48" CornerRadius="10" FontSize="12"/>
+
+                                    <Button Grid.Column="1" Text="Xem lại ván"
+                                            Command="{Binding ReplayCommand}"
+                                            IsEnabled="{Binding CanReplay}"
+                                            BackgroundColor="#C6A052" TextColor="#FFF9EF"
+                                            HeightRequest="48" CornerRadius="10" FontSize="12"/>
+                                </Grid>
+
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- CHỈ BÁO ĐANG TẢI -->
+            <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="#9F422F" VerticalOptions="Center" HorizontalOptions="Center"/>
+
+        </Grid>
+
+    </Grid>
+</ContentPage>

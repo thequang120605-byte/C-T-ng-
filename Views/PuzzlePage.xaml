@@ -1,0 +1,65 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChessCore.Mobile.ViewModels"
+             x:Class="ChessCore.Mobile.Views.PuzzlePage"
+             x:DataType="vm:PuzzleViewModel"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="#F3EBDD"
+             Title="Cờ Thế">
+
+    <Grid RowDefinitions="Auto,*">
+        
+        <!-- 1. THANH TIÊU ĐỀ NÂU ĐẬM CỔ ĐIỂN -->
+        <Border BackgroundColor="#282B29" StrokeThickness="0" Padding="12,8">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <Button Text="‹ Sảnh" Command="{Binding BackCommand}" BackgroundColor="Transparent" TextColor="#F5DBAA" FontSize="13" Padding="8,4" HeightRequest="40" MinimumHeightRequest="40"/>
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1">
+                    <Label Text="{Binding PuzzleTitle}" FontSize="13" TextColor="#E6C38D" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/>
+                    <Label Text="{Binding ProgressText}" FontSize="10" TextColor="#74C69D" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+                <Border Grid.Column="2" BackgroundColor="#42463D" StrokeShape="RoundRectangle 8" Padding="8,4" VerticalOptions="Center">
+                    <Label Text="{Binding PuzzleNumber, StringFormat='{0}/20'}" TextColor="#F5DBAA" FontSize="11" FontAttributes="Bold"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 2. BỐ CỤC CHÍNH (MỤC TIÊU + BÀN CỜ + ĐIỀU KHIỂN) -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*,Auto" Padding="8" RowSpacing="6">
+
+            <!-- THẺ MỤC TIÊU & TRẠNG THÁI BÀI THẾ -->
+            <Border BackgroundColor="#FFF9EF" Stroke="#D2BF9E" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="12,8">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                        <Label Text="{Binding PuzzleGoal}" FontSize="12" FontAttributes="Bold" TextColor="#342B23"/>
+                        <Label Text="{Binding StatusMessage}" FontSize="11" TextColor="#9F422F" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <Border Grid.Column="1" BackgroundColor="#2D6A4F" StrokeThickness="0" StrokeShape="RoundRectangle 8" Padding="8,4" VerticalOptions="Center" IsVisible="{Binding IsSolved}">
+                        <Label Text="✓ Hoàn thành" TextColor="#FFF9EF" FontSize="10" FontAttributes="Bold"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- BÀN CỜ TƯỚNG MAUI GRAPHICS VIEW -->
+            <Grid Grid.Row="1">
+                <GraphicsView x:Name="ChessBoardView"
+                              StartInteraction="OnBoardStartInteraction"
+                              HorizontalOptions="Fill"
+                              VerticalOptions="Fill"/>
+            </Grid>
+
+            <!-- CÁC NÚT THAO TÁC (TỐI THIỂU 48 DIP CHIỀU CAO) -->
+            <Border Grid.Row="2" BackgroundColor="#FFF9EF" Stroke="#DDCDB3" StrokeShape="RoundRectangle 14" Padding="10,8">
+                <VerticalStackLayout Spacing="6">
+                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+                        <Button Text="◀ Trước" Command="{Binding PrevCommand}" IsEnabled="{Binding CanGoPrev}" Style="{StaticResource QuietButton}" FontSize="11" HeightRequest="48" CornerRadius="10"/>
+                        <Button Grid.Column="1" Text="🔄 Lại" Command="{Binding ResetCommand}" Style="{StaticResource QuietButton}" FontSize="11" HeightRequest="48" CornerRadius="10"/>
+                        <Button Grid.Column="2" Text="💡 Gợi ý" Command="{Binding HintCommand}" BackgroundColor="#B48440" TextColor="#FFF9EF" FontSize="11" HeightRequest="48" CornerRadius="10"/>
+                        <Button Grid.Column="3" Text="Sau ▶" Command="{Binding NextCommand}" IsEnabled="{Binding CanGoNext}" BackgroundColor="#2D6A4F" TextColor="#FFF9EF" FontSize="11" HeightRequest="48" CornerRadius="10"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+        </Grid>
+
+    </Grid>
+</ContentPage>

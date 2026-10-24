@@ -25,7 +25,7 @@ namespace ChessCore.Mobile.Controls
         private static readonly Color RedInk = Color.FromArgb("#A43C2E");
         private static readonly Color BlackInk = Color.FromArgb("#2D332E");
 
-        public List<PieceDto>? Pieces { get; set; }
+        public IReadOnlyList<PieceDto>? Pieces { get; set; }
         public int? SelectedRow { get; set; }
         public int? SelectedCol { get; set; }
         public List<ValidMoveDto>? ValidMoves { get; set; }

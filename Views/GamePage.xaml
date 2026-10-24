@@ -1,51 +1,202 @@
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:vm="clr-namespace:ChessCore.Mobile.ViewModels"
-             x:Class="ChessCore.Mobile.Views.GamePage" x:DataType="vm:GameViewModel" Shell.TabBarIsVisible="False" Title="Kỳ đài">
- <Grid RowDefinitions="Auto,*">
-  <Border BackgroundColor="#282B29" StrokeThickness="0" Padding="10,6"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-   <Button Text="‹ Sảnh" Command="{Binding ConfirmExitCommand}" BackgroundColor="Transparent" TextColor="#F5DBAA" Padding="8,4"/>
-   <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2"><Label Text="{Binding RoomText}" FontSize="12" TextColor="#E6C38D" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/><Label Text="{Binding ConnectionText}" FontSize="10" TextColor="#C1C0AD" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/></VerticalStackLayout>
-   <Button Grid.Column="2" Text="Đồng bộ" Command="{Binding RefreshCommand}" BackgroundColor="#42463D" TextColor="#F5DBAA" FontSize="11" Padding="8,4"/>
-  </Grid></Border>
-  <Grid Grid.Row="1" x:Name="GameLayout" RowDefinitions="*,Auto" ColumnDefinitions="*" Padding="8" RowSpacing="6" ColumnSpacing="12">
-   <Grid x:Name="BoardArea" RowDefinitions="Auto,*,Auto" RowSpacing="4">
-    <Border x:Name="OpponentCard" BackgroundColor="#E7DCC8" Stroke="#D2BF9E" StrokeShape="RoundRectangle 14" Padding="12,8">
-     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-      <VerticalStackLayout Spacing="2"><Label Text="{Binding OpponentName}" FontAttributes="Bold" FontSize="15"/><Label Text="{Binding OpponentSideText}" FontSize="10" TextColor="#786956"/></VerticalStackLayout>
-      <ActivityIndicator Grid.Column="1" IsVisible="{Binding IsAiThinking}" IsRunning="{Binding IsAiThinking}" Color="#9F422F" WidthRequest="22" HeightRequest="22" VerticalOptions="Center"/>
-      <Label Grid.Column="2" Text="{Binding CurrentTurnText}" FontSize="12" TextColor="#9F422F" VerticalOptions="Center" MaximumWidthRequest="160" HorizontalTextAlignment="End"/>
-     </Grid>
-    </Border>
-    <Grid Grid.Row="1"><GraphicsView x:Name="ChessBoardView" StartInteraction="OnBoardStartInteraction" DragInteraction="OnBoardDragInteraction" EndInteraction="OnBoardEndInteraction" CancelInteraction="OnBoardCancelInteraction" HorizontalOptions="Fill" VerticalOptions="Fill" SemanticProperties.Description="{Binding CurrentTurnText}" SemanticProperties.Hint="Chạm quân của bạn rồi chạm một giao điểm được đánh dấu."/>
-     <Border IsVisible="{Binding IsCheck}" BackgroundColor="#A34032" StrokeThickness="0" StrokeShape="RoundRectangle 8" VerticalOptions="Start" HorizontalOptions="Center" Padding="12,5" InputTransparent="True"><Label Text="CHIẾU TƯỚNG" TextColor="#FFF9EF" FontSize="11" FontAttributes="Bold"/></Border>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChessCore.Mobile.ViewModels"
+             x:Class="ChessCore.Mobile.Views.GamePage"
+             x:DataType="vm:GameViewModel"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="#F3EBDD"
+             Title="Kỳ Đài">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- 1. THANH TIÊU ĐỀ NÂU ĐẬM CỔ ĐIỂN -->
+        <Border BackgroundColor="#282B29" StrokeThickness="0" Padding="12,8">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <Button Text="‹ Sảnh" Command="{Binding ConfirmExitCommand}" BackgroundColor="Transparent" TextColor="#F5DBAA" FontSize="13" Padding="8,4" HeightRequest="40" MinimumHeightRequest="40"/>
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1">
+                    <Label Text="{Binding RoomText}" FontSize="12" TextColor="#E6C38D" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/>
+                    <Label Text="{Binding ConnectionText}" FontSize="10" TextColor="#C1C0AD" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/>
+                </VerticalStackLayout>
+                <Button Grid.Column="2" Text="Đồng bộ" Command="{Binding RefreshCommand}" BackgroundColor="#42463D" TextColor="#F5DBAA" FontSize="11" Padding="8,4" HeightRequest="40" MinimumHeightRequest="40"/>
+            </Grid>
+        </Border>
+
+        <!-- 2. KHU VỰC BÀN CỜ VÀ THÔNG TIN -->
+        <Grid Grid.Row="1" x:Name="GameLayout" RowDefinitions="*,Auto" ColumnDefinitions="*" Padding="8" RowSpacing="6" ColumnSpacing="12">
+            
+            <!-- BÀN CỜ (CHIẾM KHÔNG GIAN LỚN NHẤT) -->
+            <Grid x:Name="BoardArea" RowDefinitions="Auto,*,Auto" RowSpacing="4">
+                
+                <!-- THẺ ĐỐI THỦ NHỎ GỌN -->
+                <Border x:Name="OpponentCard" BackgroundColor="#E7DCC8" Stroke="#D2BF9E" StrokeShape="RoundRectangle 10" Padding="10,6" HeightRequest="40">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                        <Border BackgroundColor="#786956" StrokeThickness="0" StrokeShape="RoundRectangle 12" WidthRequest="24" HeightRequest="24" VerticalOptions="Center">
+                            <Label Text="⚔️" FontSize="11" HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center">
+                            <Label Text="{Binding OpponentName}" FontAttributes="Bold" FontSize="13" TextColor="#342B23" LineBreakMode="TailTruncation"/>
+                            <Label Text="{Binding OpponentSideText}" FontSize="9" TextColor="#786956"/>
+                        </VerticalStackLayout>
+                        <ActivityIndicator Grid.Column="2" IsVisible="{Binding IsAiThinking}" IsRunning="{Binding IsAiThinking}" Color="#9F422F" WidthRequest="20" HeightRequest="20" VerticalOptions="Center"/>
+                        <Border Grid.Column="3" BackgroundColor="#9F422F" StrokeThickness="0" StrokeShape="RoundRectangle 6" Padding="6,2" VerticalOptions="Center" IsVisible="{Binding IsAiThinking}">
+                            <Label Text="Đang tính…" TextColor="#FFF9EF" FontSize="10" FontAttributes="Bold"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- BÀN CỜ TƯỚNG MAUI GRAPHICS VIEW -->
+                <Grid Grid.Row="1">
+                    <GraphicsView x:Name="ChessBoardView"
+                                  StartInteraction="OnBoardStartInteraction"
+                                  DragInteraction="OnBoardDragInteraction"
+                                  EndInteraction="OnBoardEndInteraction"
+                                  CancelInteraction="OnBoardCancelInteraction"
+                                  HorizontalOptions="Fill"
+                                  VerticalOptions="Fill"
+                                  SemanticProperties.Description="{Binding CurrentTurnText}"
+                                  SemanticProperties.Hint="Chạm quân của bạn rồi chạm một giao điểm được đánh dấu."/>
+                    
+                    <!-- BANNER CHIẾU TƯỚNG KHÔNG CHE QUÂN -->
+                    <Border IsVisible="{Binding IsCheck}" BackgroundColor="#D9A34032" Stroke="#FFD700" StrokeThickness="1" StrokeShape="RoundRectangle 8" VerticalOptions="Start" HorizontalOptions="Center" Padding="14,4" Margin="0,4,0,0" InputTransparent="True">
+                        <Label Text="⚠️ CHIẾU TƯỚNG!" TextColor="#FFF9EF" FontSize="12" FontAttributes="Bold"/>
+                    </Border>
+                </Grid>
+
+                <!-- THẺ NGƯỜI CHƠI NHỎ GỌN CÓ HIỆU ỨNG LƯỢT ĐI -->
+                <Border x:Name="PlayerCard" Grid.Row="2" BackgroundColor="#FFF9EF" Stroke="#C6A362" StrokeThickness="1.5" StrokeShape="RoundRectangle 10" Padding="10,6" HeightRequest="40">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding IsMyTurn}" Value="True">
+                            <Setter Property="Stroke" Value="#2D6A4F"/>
+                            <Setter Property="StrokeThickness" Value="2"/>
+                            <Setter Property="BackgroundColor" Value="#EAF4ED"/>
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <Border BackgroundColor="#2D6A4F" StrokeThickness="0" StrokeShape="RoundRectangle 12" WidthRequest="24" HeightRequest="24" VerticalOptions="Center">
+                            <Label Text="👤" FontSize="11" HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center">
+                            <Label Text="{Binding PlayerName}" FontAttributes="Bold" FontSize="13" TextColor="#342B23" LineBreakMode="TailTruncation"/>
+                            <Label Text="{Binding MySideText}" FontSize="9" TextColor="#9F422F"/>
+                        </VerticalStackLayout>
+                        <Border Grid.Column="2" BackgroundColor="#2D6A4F" StrokeThickness="0" StrokeShape="RoundRectangle 6" Padding="6,2" VerticalOptions="Center" IsVisible="{Binding IsMyTurn}">
+                            <Label Text="Đến lượt bạn" TextColor="#FFF9EF" FontSize="10" FontAttributes="Bold"/>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- BẢNG ĐIỀU KHIỂN & ĐÁNH GIÁ (GỌN GÀNG, KHÔNG CHE BÀN CỜ) -->
+            <Border x:Name="DetailPanel" Grid.Row="1" BackgroundColor="#FFF9EF" Stroke="#DDCDB3" StrokeShape="RoundRectangle 14" Padding="10,8">
+                <VerticalStackLayout Spacing="6">
+                    
+                    <!-- DÒNG TRẠNG THÁI VÀ ĐIỂM SỐ GỌN -->
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                            <Label Text="{Binding StatusMessage}" FontSize="12" FontAttributes="Bold" TextColor="#342B23" LineBreakMode="TailTruncation"/>
+                            <Label Text="{Binding SelectionText}" FontSize="10" TextColor="#786956" LineBreakMode="TailTruncation"/>
+                        </VerticalStackLayout>
+
+                        <!-- ĐIỂM TỔNG QUAN VÀ NÚT MỞ ĐÁNH GIÁ -->
+                        <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                            <Border BackgroundColor="#F3EBDD" Stroke="#D2BF9E" StrokeShape="RoundRectangle 8" Padding="8,4">
+                                <Label Text="{Binding TotalScore, StringFormat='Điểm: {0}'}" FontSize="11" FontAttributes="Bold" TextColor="#342B23"/>
+                            </Border>
+                            <Button Text="Đánh giá" Command="{Binding OpenEvalModalCommand}" BackgroundColor="#B48440" TextColor="#FFF9EF" FontSize="11" HeightRequest="36" MinimumHeightRequest="36" Padding="8,2" CornerRadius="8"/>
+                        </HorizontalStackLayout>
+                    </Grid>
+
+                    <!-- CHẾ ĐỘ THƯỜNG: CÁC NÚT THAO TÁC CHÍNH (>= 48 DIP) -->
+                    <Grid IsVisible="{Binding IsNormalMode}" ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                        <Button Text="Đổi góc" Command="{Binding FlipBoardCommand}" Style="{StaticResource QuietButton}" FontSize="12" HeightRequest="48" CornerRadius="10"/>
+                        <Button Grid.Column="1" Text="Ván mới" Command="{Binding NewGameCommand}" Style="{StaticResource QuietButton}" FontSize="12" HeightRequest="48" CornerRadius="10"/>
+                        <Button Grid.Column="2" Text="Xin thua" Command="{Binding ResignCommand}" BackgroundColor="#A34032" TextColor="#FFF9EF" FontSize="12" HeightRequest="48" CornerRadius="10"/>
+                    </Grid>
+
+                    <!-- NÚT TIẾP TỤC LƯỢT MÁY (KHI CẦN) -->
+                    <Button Text="Tiếp tục lượt máy" IsVisible="{Binding CanRetryAi}" Command="{Binding RetryAiCommand}" BackgroundColor="#2D6A4F" TextColor="#FFF9EF" FontSize="12" HeightRequest="48" CornerRadius="10"/>
+
+                    <!-- THANH ĐIỀU HƯỚNG XEM LẠI VÁN (REPLAY MODE) -->
+                    <VerticalStackLayout IsVisible="{Binding IsReplayMode}" Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto" Margin="2,0">
+                            <Label Text="{Binding ReplayStepText}" FontSize="12" FontAttributes="Bold" TextColor="#B48440" VerticalOptions="Center"/>
+                            <Button Grid.Column="1" Text="✕ Đóng xem lại" Command="{Binding ExitReplayCommand}" BackgroundColor="#786956" TextColor="#FFF9EF" FontSize="11" HeightRequest="34" MinimumHeightRequest="34" Padding="8,2" CornerRadius="8"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+                            <Button Text="⏮ Đầu" Command="{Binding ReplayFirstCommand}" Style="{StaticResource QuietButton}" FontSize="12" HeightRequest="48" CornerRadius="10"/>
+                            <Button Grid.Column="1" Text="◀ Trước" Command="{Binding ReplayPrevCommand}" BackgroundColor="#C6A052" TextColor="#FFF9EF" FontSize="12" HeightRequest="48" CornerRadius="10"/>
+                            <Button Grid.Column="2" Text="Sau ▶" Command="{Binding ReplayNextCommand}" BackgroundColor="#C6A052" TextColor="#FFF9EF" FontSize="12" HeightRequest="48" CornerRadius="10"/>
+                            <Button Grid.Column="3" Text="Cuối ⏭" Command="{Binding ReplayLastCommand}" Style="{StaticResource QuietButton}" FontSize="12" HeightRequest="48" CornerRadius="10"/>
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <!-- GIAO DIỆN MÀN HÌNH RỘNG (TABLET / XOAY NGANG) -->
+                    <VerticalStackLayout x:Name="WideDetails" IsVisible="False" Spacing="6">
+                        <BoxView HeightRequest="1" Color="#DDCDB3"/>
+                        <Label Text="{Binding MoveCountText}" FontAttributes="Bold" FontSize="12"/>
+                        <ScrollView MaximumHeightRequest="120">
+                            <Label Text="{Binding HistoryText}" FontSize="11" TextColor="#786956"/>
+                        </ScrollView>
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- 3. POPUP MODAL ĐÁNH GIÁ THẾ CỜ (H1 - H4 CHI TIẾT) -->
+        <Border Grid.RowSpan="2" IsVisible="{Binding IsEvalModalVisible}" BackgroundColor="#99000000" StrokeThickness="0" Padding="20">
+            <Border Style="{StaticResource CardStyle}" VerticalOptions="Center" HorizontalOptions="Center" MaximumWidthRequest="360" Padding="18">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="CHI TIẾT ĐÁNH GIÁ THẾ CỜ" FontSize="14" FontAttributes="Bold" TextColor="#9F422F" HorizontalTextAlignment="Center"/>
+                    <Label Text="{Binding TotalScore, StringFormat='Tổng điểm ưu thế: {0} (Dương: Đỏ ưu · Âm: Đen ưu)'}" FontSize="12" FontAttributes="Bold" TextColor="#342B23" HorizontalTextAlignment="Center"/>
+                    
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="8" ColumnSpacing="10">
+                        <Label Grid.Row="0" Grid.Column="0" Text="{Binding H1Score, StringFormat='H1: {0}'}" FontAttributes="Bold" TextColor="#9F422F" VerticalOptions="Center"/>
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="0">
+                            <Label Text="Lực lượng quân cờ (Vật chất)" FontSize="11" FontAttributes="Bold"/>
+                            <Label Text="Tổng giá trị các quân: Tướng, Xe, Pháo, Mã, Tượng, Sĩ, Tốt" FontSize="10" TextColor="#786956"/>
+                        </VerticalStackLayout>
+
+                        <Label Grid.Row="1" Grid.Column="0" Text="{Binding H2Score, StringFormat='H2: {0}'}" FontAttributes="Bold" TextColor="#9F422F" VerticalOptions="Center"/>
+                        <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="0">
+                            <Label Text="Vị trí &amp; Kiểm soát (Thế trận)" FontSize="11" FontAttributes="Bold"/>
+                            <Label Text="Điểm bảng vị trí: kiểm soát trung lộ, qua sông, vị trí hiểm" FontSize="10" TextColor="#786956"/>
+                        </VerticalStackLayout>
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="{Binding H3Score, StringFormat='H3: {0}'}" FontAttributes="Bold" TextColor="#9F422F" VerticalOptions="Center"/>
+                        <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="0">
+                            <Label Text="Độ cơ động &amp; Linh hoạt" FontSize="11" FontAttributes="Bold"/>
+                            <Label Text="Số lượng nước đi hợp lệ phản ánh thế chủ động trên bàn" FontSize="10" TextColor="#786956"/>
+                        </VerticalStackLayout>
+
+                        <Label Grid.Row="3" Grid.Column="0" Text="{Binding H4Score, StringFormat='H4: {0}'}" FontAttributes="Bold" TextColor="#9F422F" VerticalOptions="Center"/>
+                        <VerticalStackLayout Grid.Row="3" Grid.Column="1" Spacing="0">
+                            <Label Text="An toàn Tướng &amp; Sát chiêu" FontSize="11" FontAttributes="Bold"/>
+                            <Label Text="Độ bảo vệ Tướng, đe dọa chiếu tướng và liên kết phòng thủ" FontSize="10" TextColor="#786956"/>
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Button Text="Đóng" Command="{Binding CloseEvalModalCommand}" BackgroundColor="#342B23" TextColor="#FFF9EF" HeightRequest="48" CornerRadius="10" Margin="0,6,0,0"/>
+                </VerticalStackLayout>
+            </Border>
+        </Border>
+
+        <!-- 4. POPUP KẾT THÚC VÁN CỜ (CHƠI LẠI / XEM LẠI / VỀ SẢNH) -->
+        <Border Grid.RowSpan="2" IsVisible="{Binding IsGameOver}" BackgroundColor="#B31A1A1A" StrokeThickness="0" Padding="20">
+            <Border Style="{StaticResource CardStyle}" VerticalOptions="Center" HorizontalOptions="Center" MaximumWidthRequest="360" Padding="20">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="KẾT THÚC VÁN CỜ" FontSize="11" CharacterSpacing="2" TextColor="#8E6937" HorizontalTextAlignment="Center" FontAttributes="Bold"/>
+                    <Label Text="{Binding GameOverTitle}" FontSize="22" FontAttributes="Bold" TextColor="#9F422F" HorizontalTextAlignment="Center"/>
+                    <Label Text="{Binding GameOverMessage}" FontSize="13" TextColor="#786956" HorizontalTextAlignment="Center"/>
+
+                    <!-- 3 NÚT RÕ RÀNG THEO YÊU CẦU: CHƠI LẠI / XEM LẠI / VỀ SẢNH -->
+                    <VerticalStackLayout Spacing="8" Margin="0,8,0,0">
+                        <Button Text="Chơi ván tiếp theo" Command="{Binding NewGameCommand}" BackgroundColor="#2D6A4F" TextColor="#FFF9EF" HeightRequest="48" CornerRadius="12"/>
+                        <Button Text="Xem lại ván cờ" Command="{Binding StartReplayCommand}" BackgroundColor="#C6A052" TextColor="#FFF9EF" HeightRequest="48" CornerRadius="12"/>
+                        <Button Text="Trở về Sảnh" Command="{Binding BackToHomeCommand}" Style="{StaticResource QuietButton}" HeightRequest="48" CornerRadius="12"/>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+        </Border>
+
     </Grid>
-    <Border x:Name="PlayerCard" Grid.Row="2" BackgroundColor="#FFF9EF" Stroke="#C6A362" StrokeThickness="2" StrokeShape="RoundRectangle 14" Padding="12,8"><Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsMyTurn}" Value="True"><Setter Property="Stroke" Value="#3E6C62"/><Setter Property="BackgroundColor" Value="#E6F0E6"/></DataTrigger></Border.Triggers><Grid ColumnDefinitions="*"><VerticalStackLayout Spacing="2"><Label Text="{Binding PlayerName}" FontAttributes="Bold" FontSize="15"/><Label Text="{Binding MySideText}" FontSize="10" TextColor="#9F422F"/></VerticalStackLayout></Grid></Border>
-   </Grid>
-   <Border x:Name="DetailPanel" Grid.Row="1" BackgroundColor="#FFF9EF" Stroke="#DDCDB3" StrokeShape="RoundRectangle 16" Padding="12,8">
-    <ScrollView><Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
-     <VerticalStackLayout Spacing="3"><Label Text="{Binding StatusMessage}" FontSize="12" FontAttributes="Bold"/><Label Text="{Binding SelectionText}" FontSize="10" TextColor="#786956" LineBreakMode="TailTruncation"/></VerticalStackLayout>
-     <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" ColumnSpacing="3">
-      <VerticalStackLayout Grid.Column="0" Spacing="2"><Label Text="H1" FontSize="10" TextColor="#786956" HorizontalTextAlignment="Center"/><Label Text="{Binding H1Score}" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-      <VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="H2" FontSize="10" TextColor="#786956" HorizontalTextAlignment="Center"/><Label Text="{Binding H2Score}" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-      <VerticalStackLayout Grid.Column="2" Spacing="2"><Label Text="H3" FontSize="10" TextColor="#786956" HorizontalTextAlignment="Center"/><Label Text="{Binding H3Score}" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-      <VerticalStackLayout Grid.Column="3" Spacing="2"><Label Text="H4" FontSize="10" TextColor="#786956" HorizontalTextAlignment="Center"/><Label Text="{Binding H4Score}" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-      <VerticalStackLayout Grid.Column="4" Spacing="2"><Label Text="TỔNG" FontSize="10" TextColor="#786956" HorizontalTextAlignment="Center"/><Label Text="{Binding TotalScore}" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center"/></VerticalStackLayout>
-     </Grid>
-     <VerticalStackLayout Grid.Row="2" Spacing="6"><Button Text="Tiếp tục lượt máy" IsVisible="{Binding CanRetryAi}" Command="{Binding RetryAiCommand}"/><Grid ColumnDefinitions="*,*,*" ColumnSpacing="6"><Button Text="Đổi góc" Command="{Binding FlipBoardCommand}" Style="{StaticResource QuietButton}" FontSize="11" Padding="4,6"/><Button Grid.Column="1" Text="Ván mới" Command="{Binding NewGameCommand}" Style="{StaticResource QuietButton}" FontSize="11" Padding="4,6"/><Button Grid.Column="2" Text="Xin thua" Command="{Binding ResignCommand}" FontSize="11" Padding="4,6"/></Grid></VerticalStackLayout>
-     <VerticalStackLayout x:Name="WideDetails" Grid.Row="3" IsVisible="False" Spacing="8">
-      <Grid ColumnDefinitions="*,Auto"><Label Text="{Binding OpponentName}" FontAttributes="Bold"/><ActivityIndicator Grid.Column="1" IsVisible="{Binding IsAiThinking}" IsRunning="{Binding IsAiThinking}" Color="#9F422F" WidthRequest="20" HeightRequest="20" VerticalOptions="Center"/></Grid>
-      <Label Text="{Binding PlayerName, StringFormat='Bạn: {0}'}" FontSize="12"/>
-      <BoxView HeightRequest="1" Color="#DDCDB3"/>
-      <Label Text="ĐÁNH GIÁ THẾ CỜ" FontSize="11" CharacterSpacing="1" FontAttributes="Bold" TextColor="#8E6937"/>
-      <Label Text="H1 · Vật chất&#10;H2 · Vị trí / cơ động&#10;H3 · Chiến thuật&#10;H4 · Tam / tứ tử đồng biên" FontSize="12" TextColor="#786956"/>
-      <Label Text="Điểm dương nghiêng về Đỏ, điểm âm nghiêng về Đen. Đây là điểm heuristic, không phải Elo." FontSize="11" TextColor="#786956"/>
-      <Label Text="{Binding MoveCountText}" FontAttributes="Bold"/>
-      <ScrollView MaximumHeightRequest="180"><Label Text="{Binding HistoryText}" FontSize="11" TextColor="#786956"/></ScrollView>
-     </VerticalStackLayout>
-    </Grid></ScrollView>
-   </Border>
-  </Grid>
-  <Border Grid.RowSpan="2" IsVisible="{Binding IsGameOver}" BackgroundColor="#C8282B29" StrokeThickness="0" Padding="24">
-   <Border Style="{StaticResource CardStyle}" VerticalOptions="Center" HorizontalOptions="Center" MaximumWidthRequest="380"><ScrollView MaximumHeightRequest="500"><VerticalStackLayout Spacing="16"><Label Text="KẾT THÚC VÁN CỜ" FontSize="10" CharacterSpacing="2" TextColor="#8E6937" HorizontalTextAlignment="Center"/><Label Text="{Binding GameOverTitle}" FontSize="25" FontAttributes="Bold" HorizontalTextAlignment="Center"/><Label Text="{Binding GameOverMessage}" FontSize="14" TextColor="#786956" HorizontalTextAlignment="Center"/><Button Text="Chơi ván tiếp theo" Command="{Binding NewGameCommand}"/><Button Text="Trở về sảnh" Command="{Binding BackToHomeCommand}" Style="{StaticResource QuietButton}"/></VerticalStackLayout></ScrollView></Border>
-  </Border>
- </Grid>
 </ContentPage>

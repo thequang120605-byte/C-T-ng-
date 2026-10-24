@@ -1,0 +1,84 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChessCore.Mobile.ViewModels"
+             xmlns:models="clr-namespace:ChessCore.Mobile.Models"
+             x:Class="ChessCore.Mobile.Views.CoursePage"
+             x:DataType="vm:CourseViewModel"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="#F3EBDD"
+             Title="Học Cờ Tướng">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- 1. THANH TIÊU ĐỀ NÂU ĐẬM CỔ ĐIỂN -->
+        <Border BackgroundColor="#282B29" StrokeThickness="0" Padding="12,8">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <Button Text="‹ Sảnh" Command="{Binding BackCommand}" BackgroundColor="Transparent" TextColor="#F5DBAA" FontSize="13" Padding="8,4" HeightRequest="40" MinimumHeightRequest="40"/>
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1">
+                    <Label Text="{Binding LessonTitle}" FontSize="13" TextColor="#E6C38D" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/>
+                    <Label Text="{Binding ProgressText}" FontSize="10" TextColor="#C1C0AD" HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+                <Border Grid.Column="2" BackgroundColor="#42463D" StrokeShape="RoundRectangle 8" Padding="8,4" VerticalOptions="Center">
+                    <Label Text="Học Cờ" TextColor="#F5DBAA" FontSize="11" FontAttributes="Bold"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 2. NỘI DUNG CHÍNH (CUỘN ĐƯỢC) -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="14,12,14,24" Spacing="14" MaximumWidthRequest="600" HorizontalOptions="Center">
+
+                <!-- THANH CHỌN 3 MODULE TIÊU BIỂU -->
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                    <Button Text="Nhập Môn" Command="{Binding SelectModuleCommand}" CommandParameter="{x:Int32 1}" Style="{StaticResource QuietButton}" FontSize="11" HeightRequest="42" MinimumHeightRequest="42" Padding="4,2" CornerRadius="8"/>
+                    <Button Grid.Column="1" Text="Sát Pháp" Command="{Binding SelectModuleCommand}" CommandParameter="{x:Int32 2}" Style="{StaticResource QuietButton}" FontSize="11" HeightRequest="42" MinimumHeightRequest="42" Padding="4,2" CornerRadius="8"/>
+                    <Button Grid.Column="2" Text="Khai Cuộc" Command="{Binding SelectModuleCommand}" CommandParameter="{x:Int32 3}" Style="{StaticResource QuietButton}" FontSize="11" HeightRequest="42" MinimumHeightRequest="42" Padding="4,2" CornerRadius="8"/>
+                </Grid>
+
+                <!-- THẺ BÀI HỌC LÝ THUYẾT -->
+                <Border Style="{StaticResource CardStyle}" Padding="16">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="{Binding ModuleTitle}" FontSize="11" FontAttributes="Bold" TextColor="#8E6937" CharacterSpacing="1"/>
+                        <Label Text="{Binding LessonTitle}" FontSize="17" FontAttributes="Bold" TextColor="#9F422F"/>
+                        <BoxView HeightRequest="1" Color="#DDCDB3"/>
+                        <Label Text="{Binding Content}" FontSize="13" LineHeight="1.4" TextColor="#342B23"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- THẺ CÂU HỎI TRẮC NGHIỆM TƯƠNG TÁC -->
+                <Border Style="{StaticResource CardStyle}" Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="CÂU HỎI KIỂM TRA KIẾN THỨC" FontSize="11" FontAttributes="Bold" TextColor="#8E6937" CharacterSpacing="1"/>
+                        <Label Text="{Binding Question}" FontSize="14" FontAttributes="Bold" TextColor="#342B23"/>
+
+                        <!-- DANH SÁCH ĐÁP ÁN (BẤM VÀO ĐỔI MÀU NỔI BẬT) -->
+                        <VerticalStackLayout x:Name="OptionsContainer" Spacing="8" Margin="0,4"/>
+
+                        <!-- NÚT NỘP BÀI (>= 48 DIP) -->
+                        <Button Text="Nộp bài kiểm tra" Command="{Binding SubmitCommand}" BackgroundColor="#9F422F" TextColor="#FFF9EF" HeightRequest="48" CornerRadius="10" Margin="0,4,0,0"/>
+
+                        <!-- PHẢN HỒI KẾT QUẢ ĐÚNG / SAI VÀ GIẢI THÍCH -->
+                        <Border x:Name="FeedbackCard" IsVisible="{Binding IsSubmitted}" BackgroundColor="#FDF7EE" Stroke="#D2BF9E" StrokeShape="RoundRectangle 10" Padding="14,12">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="{Binding FeedbackText}" FontSize="13" FontAttributes="Bold" TextColor="#2D6A4F"/>
+                                <BoxView HeightRequest="1" Color="#DDCDB3"/>
+                                <Label Text="Giải thích chi tiết:" FontSize="11" FontAttributes="Bold" TextColor="#8E6937"/>
+                                <Label Text="{Binding Explanation}" FontSize="12" LineHeight="1.3" TextColor="#342B23"/>
+                            </VerticalStackLayout>
+                        </Border>
+
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- THANH ĐIỀU HƯỚNG BÀI HỌC (TRƯỚC / THỬ LẠI / TIẾP THEO) -->
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <Button Text="◀ Bài trước" Command="{Binding PrevLessonCommand}" IsEnabled="{Binding CanGoPrev}" Style="{StaticResource QuietButton}" FontSize="11" HeightRequest="48" CornerRadius="10"/>
+                    <Button Grid.Column="1" Text="🔄 Làm lại" Command="{Binding ResetQuizCommand}" Style="{StaticResource QuietButton}" FontSize="11" HeightRequest="48" CornerRadius="10"/>
+                    <Button Grid.Column="2" Text="Bài tiếp ▶" Command="{Binding NextLessonCommand}" IsEnabled="{Binding CanGoNext}" BackgroundColor="#2D6A4F" TextColor="#FFF9EF" FontSize="11" HeightRequest="48" CornerRadius="10"/>
+                </Grid>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+    </Grid>
+</ContentPage>

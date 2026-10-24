@@ -5,7 +5,8 @@ public static class GameSnapshotRules
     private static bool Matches(string? a, string? b) => !string.IsNullOrWhiteSpace(a) && !string.IsNullOrWhiteSpace(b) && string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
     public static string ResolveColor(GameResponseDto game, AuthUserDto? user, string mode, string confirmedSeat)
     {
-        if (mode == "PvE") return "Red";
+        if (mode is "PvE" or "Puzzle") return "Red";
+        if (mode == "PassAndPlay") return game?.CurrentTurn ?? "Red";
         var hasIdentity = game.RedUserId.HasValue || game.BlackUserId.HasValue ||
             !string.IsNullOrEmpty(game.RedPlayerId) || !string.IsNullOrEmpty(game.BlackPlayerId) ||
             !string.IsNullOrEmpty(game.RedPlayerUsername) || !string.IsNullOrEmpty(game.BlackPlayerUsername);

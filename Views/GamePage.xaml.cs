@@ -78,14 +78,14 @@ public partial class GamePage : ContentPage
     private void OnBoardStateChanged() => MainThread.BeginInvokeOnMainThread(() =>
     {
         if (!_visible) return;
-        var key = $"{_vm.GameId}:{_vm.Game?.Moves?.Count}:{_vm.LastMoveFrom}:{_vm.LastMoveTo}";
-        bool animate = _lastMoveKey.Length > 0 && key != _lastMoveKey && _vm.LastMoveFrom.HasValue && _vm.LastMoveTo.HasValue && _wasFlipped == _vm.IsFlipped && !Preferences.Default.Get("reduce_motion", false);
+        var key = $"{_vm.GameId}:{_vm.Game?.Moves?.Count}:{_vm.ReplayIndex}:{_vm.LastMoveFrom}:{_vm.LastMoveTo}";
+        bool animate = !_vm.IsReplayMode && _lastMoveKey.Length > 0 && key != _lastMoveKey && _vm.LastMoveFrom.HasValue && _vm.LastMoveTo.HasValue && _wasFlipped == _vm.IsFlipped && !Preferences.Default.Get("reduce_motion", false);
         // Don't animate moves across unrelated game IDs.
         animate &= _lastMoveKey.StartsWith($"{_vm.GameId}:", StringComparison.Ordinal);
         _lastMoveKey = key;
         _wasFlipped = _vm.IsFlipped;
         this.AbortAnimation("MovePiece");
-        _drawable.Pieces = _vm.Game?.BoardPieces;
+        _drawable.Pieces = _vm.DisplayPieces;
         _drawable.SelectedRow = _vm.SelectedRow;
         _drawable.SelectedCol = _vm.SelectedCol;
         _drawable.ValidMoves = _vm.ValidMoves;

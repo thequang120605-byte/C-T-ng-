@@ -20,10 +20,5 @@ namespace ChessCore.Mobile.Views
             base.OnAppearing();
             try { await _vm.LoadUserAsync(); } catch (Exception ex) { _vm.ErrorMessage = ex.Message; }
         }
-
-        private void OnDifficulty1Clicked(object sender, EventArgs e) => _vm.SelectedDifficulty = 1;
-        private void OnDifficulty2Clicked(object sender, EventArgs e) => _vm.SelectedDifficulty = 2;
-        private void OnDifficulty3Clicked(object sender, EventArgs e) => _vm.SelectedDifficulty = 3;
-        private void OnDifficulty4Clicked(object sender, EventArgs e) => _vm.SelectedDifficulty = 4;
     }
 }

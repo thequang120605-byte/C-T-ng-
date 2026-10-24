@@ -13,6 +13,9 @@ namespace ChessCore.Mobile
             Routing.RegisterRoute("register", typeof(RegisterPage));
             Routing.RegisterRoute("game", typeof(GamePage));
             Routing.RegisterRoute("settings", typeof(SettingsPage));
+            Routing.RegisterRoute("puzzle", typeof(PuzzlePage));
+            Routing.RegisterRoute("course", typeof(CoursePage));
+            Routing.RegisterRoute("history", typeof(HistoryPage));
         }
     }
 }

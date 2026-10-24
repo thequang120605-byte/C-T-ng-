@@ -20,7 +20,11 @@ public sealed class GameViewModel : BaseViewModel, IQueryAttributable
     private int? _selectedRow, _selectedCol;
     private List<ValidMoveDto> _validMoves = new();
     private (int Row, int Col)? _lastMoveFrom, _lastMoveTo;
-    private bool _isAiThinking, _isFlipped, _isGameOver;
+    private bool _isAiThinking, _isFlipped, _isGameOver, _isReplayMode, _isEvalModalVisible, _startAsReplay;
+    private int _replayIndex;
+    private readonly List<List<PieceDto>> _replayStates = new();
+    private readonly List<MoveHistoryDto> _replayMoves = new();
+    private (int Row, int Col)? _replayMoveFrom, _replayMoveTo;
     private string _statusMessage = "Đang chuẩn bị bàn cờ…", _connectionText = "Chưa kết nối";
     private string _gameOverTitle = "", _gameOverMessage = "";
     private AuthUserDto? _user;
@@ -36,6 +40,14 @@ public sealed class GameViewModel : BaseViewModel, IQueryAttributable
         ConfirmExitCommand = new AsyncCommand(ConfirmExitAsync, ReportError);
         RefreshCommand = new AsyncCommand(ReconnectAndReloadAsync, ReportError);
         RetryAiCommand = new AsyncCommand(RetryAiAsync, ReportError);
+        OpenEvalModalCommand = new Command(() => IsEvalModalVisible = true);
+        CloseEvalModalCommand = new Command(() => IsEvalModalVisible = false);
+        StartReplayCommand = new Command(EnterReplayMode);
+        ExitReplayCommand = new Command(ExitReplayMode);
+        ReplayFirstCommand = new Command(() => SetReplayStep(0));
+        ReplayPrevCommand = new Command(() => SetReplayStep(_replayIndex - 1));
+        ReplayNextCommand = new Command(() => SetReplayStep(_replayIndex + 1));
+        ReplayLastCommand = new Command(() => SetReplayStep(_replayMoves.Count));
     }
     public event Action? BoardStateChanged;
     public ICommand CellTappedCommand { get; }
@@ -46,6 +58,14 @@ public sealed class GameViewModel : BaseViewModel, IQueryAttributable
     public ICommand ConfirmExitCommand { get; }
     public ICommand RefreshCommand { get; }
     public ICommand RetryAiCommand { get; }
+    public ICommand OpenEvalModalCommand { get; }
+    public ICommand CloseEvalModalCommand { get; }
+    public ICommand StartReplayCommand { get; }
+    public ICommand ExitReplayCommand { get; }
+    public ICommand ReplayFirstCommand { get; }
+    public ICommand ReplayPrevCommand { get; }
+    public ICommand ReplayNextCommand { get; }
+    public ICommand ReplayLastCommand { get; }
     public int GameId => _gameId;
     public int Difficulty => _difficulty;
     public string GameMode => _gameMode;
@@ -54,8 +74,18 @@ public sealed class GameViewModel : BaseViewModel, IQueryAttributable
     public int? SelectedRow => _selectedRow;
     public int? SelectedCol => _selectedCol;
     public List<ValidMoveDto> ValidMoves => _validMoves;
-    public (int Row, int Col)? LastMoveFrom => _lastMoveFrom;
-    public (int Row, int Col)? LastMoveTo => _lastMoveTo;
+    public (int Row, int Col)? LastMoveFrom => _isReplayMode ? _replayMoveFrom : _lastMoveFrom;
+    public (int Row, int Col)? LastMoveTo => _isReplayMode ? _replayMoveTo : _lastMoveTo;
+    public IReadOnlyList<PieceDto>? DisplayPieces =>
+        _isReplayMode && _replayIndex >= 0 && _replayIndex < _replayStates.Count
+            ? _replayStates[_replayIndex]
+            : _game?.BoardPieces;
+    public bool IsReplayMode { get => _isReplayMode; private set { if (SetProperty(ref _isReplayMode, value)) OnPropertyChanged(nameof(IsNormalMode)); } }
+    public bool IsNormalMode => !_isReplayMode;
+    public int ReplayIndex => _replayIndex;
+    public int ReplayMax => _replayMoves.Count;
+    public string ReplayStepText => _isReplayMode ? $"Nước {_replayIndex} / {_replayMoves.Count}" : "";
+    public bool IsEvalModalVisible { get => _isEvalModalVisible; set => SetProperty(ref _isEvalModalVisible, value); }
     public bool IsAiThinking { get => _isAiThinking; private set { SetProperty(ref _isAiThinking, value); OnPropertyChanged(nameof(CanRetryAi)); } }
     public bool IsFlipped { get => _isFlipped; set => SetProperty(ref _isFlipped, value); }
     public bool IsGameOver => _isGameOver;
@@ -63,7 +93,7 @@ public sealed class GameViewModel : BaseViewModel, IQueryAttributable
     public string GameOverMessage => _gameOverMessage;
     public string StatusMessage { get => _statusMessage; private set => SetProperty(ref _statusMessage, value); }
     public string ConnectionText { get => _connectionText; private set => SetProperty(ref _connectionText, value); }
-    public bool IsMyTurn => GameSnapshotRules.IsMyTurn(Game, MyPlayerColor);
+    public bool IsMyTurn => GameMode == "PassAndPlay" ? (Game is { Status: "InProgress" }) : GameSnapshotRules.IsMyTurn(Game, MyPlayerColor);
     public bool CanRetryAi => _active && GameMode == "PvE" && Game is { Status: "InProgress" } &&
         string.Equals(Game.CurrentTurn, "Black", StringComparison.OrdinalIgnoreCase) && !IsAiThinking && !IsBusy;
     public bool IsCheck => Game?.IsCheck ?? false;
@@ -72,12 +102,13 @@ public sealed class GameViewModel : BaseViewModel, IQueryAttributable
     public int H3Score => Game?.Evaluation?.H3 ?? 0;
     public int H4Score => Game?.Evaluation?.H4 ?? 0;
     public int TotalScore => Game?.Evaluation?.Total ?? 0;
-    public string RoomText => GameId < 0 ? "LUYỆN CỜ · NGOẠI TUYẾN" : GameMode == "Online" ? $"PHÒNG {Game?.RoomCode}" : $"LUYỆN CỜ · VÁN #{GameId}";
-    public string PlayerName => _user?.Username ?? "Khách";
+    public string RoomText => GameId < 0 ? (GameMode == "PassAndPlay" ? "HAI NGƯỜI CHƠI · CÙNG THIẾT BỊ" : "LUYỆN CỜ · NGOẠI TUYẾN") : GameMode == "Online" ? $"PHÒNG {Game?.RoomCode}" : $"LUYỆN CỜ · VÁN #{GameId}";
+    public string PlayerName => GameMode == "PassAndPlay" ? "Kỳ thủ 1 (Đỏ)" : (_user?.Username ?? "Khách");
     public string OpponentName => GameMode == "PvE" ? $"Máy · Cấp {_difficulty}" :
+        GameMode == "PassAndPlay" ? "Kỳ thủ 2 (Đen)" :
         (MyPlayerColor == "Black" ? Game?.RedPlayerUsername : Game?.BlackPlayerUsername) ?? "Đối thủ";
-    public string MySideText => MyPlayerColor == "Red" ? "QUÂN ĐỎ" : MyPlayerColor == "Black" ? "QUÂN ĐEN" : "ĐANG XEM";
-    public string OpponentSideText => MyPlayerColor == "Black" ? "QUÂN ĐỎ" : "QUÂN ĐEN";
+    public string MySideText => GameMode == "PassAndPlay" ? "LUÂN PHIÊN ĐI QUÂN" : MyPlayerColor == "Red" ? "QUÂN ĐỎ" : MyPlayerColor == "Black" ? "QUÂN ĐEN" : "ĐANG XEM";
+    public string OpponentSideText => GameMode == "PassAndPlay" ? "HAI NGƯỜI" : MyPlayerColor == "Black" ? "QUÂN ĐỎ" : "QUÂN ĐEN";
     public string CurrentTurnText => Game == null ? "Đang tải ván cờ" : IsGameOver ? GameOverTitle :
         Game.Status == "WaitingForPlayers" ? "Đang chờ kỳ thủ vào phòng" :
         $"Lượt quân {(string.Equals(Game.CurrentTurn, "Red", StringComparison.OrdinalIgnoreCase) ? "Đỏ" : "Đen")}{(IsMyTurn ? " · Bạn đi" : "")}";
@@ -91,9 +122,13 @@ public sealed class GameViewModel : BaseViewModel, IQueryAttributable
     {
         if (query.TryGetValue("gameId", out var id) && int.TryParse(id?.ToString(), out var parsed) && parsed != 0) _gameId = parsed;
         if (query.TryGetValue("difficulty", out var diff) && int.TryParse(diff?.ToString(), out var depth)) _difficulty = Math.Clamp(depth, 1, 4);
-        _gameMode = query.TryGetValue("mode", out var mode) && mode?.ToString() == "Online" ? "Online" : "PvE";
-        // Explicit successful create/join flow only. Never silently infer Red for an arbitrary game.
+        var modeStr = query.TryGetValue("mode", out var mode) ? mode?.ToString() : null;
+        _gameMode = modeStr is "Online" or "PassAndPlay" ? modeStr : "PvE";
         _seatHint = query.TryGetValue("seat", out var seat) && seat?.ToString() is "Red" or "Black" ? seat!.ToString()! : "";
+        if (query.TryGetValue("replay", out var rep) && bool.TryParse(rep?.ToString(), out var isRep) && isRep)
+        {
+            _startAsReplay = true;
+        }
     }
     public async Task ActivateAsync()
     {
@@ -185,7 +220,10 @@ public sealed class GameViewModel : BaseViewModel, IQueryAttributable
         if (color != _myPlayerColor)
         {
             _myPlayerColor = color;
-            IsFlipped = color == "Black";
+            if (GameMode != "PassAndPlay")
+            {
+                IsFlipped = color == "Black";
+            }
             OnPropertyChanged(nameof(MyPlayerColor));
         }
     }
@@ -213,18 +251,111 @@ public sealed class GameViewModel : BaseViewModel, IQueryAttributable
         StatusMessage = _isGameOver ? _gameOverTitle : CurrentTurnText;
         NotifySnapshot();
         BoardStateChanged?.Invoke();
+
+        if (_startAsReplay)
+        {
+            _startAsReplay = false;
+            EnterReplayMode();
+        }
+    }
+    public void EnterReplayMode()
+    {
+        if (_game == null) return;
+        IsReplayMode = true;
+        _replayStates.Clear();
+        _replayMoves.Clear();
+
+        var board = new ChessCore.Mobile.Offline.Board();
+        if (!string.IsNullOrWhiteSpace(_game.InitialFen))
+        {
+            if (ChessCore.Mobile.Offline.Board.TryParseFen(_game.InitialFen, out var customBoard, out _))
+            {
+                board = customBoard!;
+            }
+        }
+
+        // State 0: thế cờ ban đầu
+        _replayStates.Add(ToPieceDtos(board));
+
+        if (_game.Moves != null && _game.Moves.Count > 0)
+        {
+            var ordered = _game.Moves.OrderBy(m => m.MoveOrder).ToList();
+            _replayMoves.AddRange(ordered);
+            foreach (var m in ordered)
+            {
+                var piece = board.GetPieceAt(m.FromX, m.FromY);
+                board.Grid[m.ToX, m.ToY] = piece;
+                board.Grid[m.FromX, m.FromY] = null;
+                board.SwitchTurn();
+                _replayStates.Add(ToPieceDtos(board));
+            }
+        }
+
+        SetReplayStep(_replayMoves.Count);
+    }
+    public void ExitReplayMode()
+    {
+        IsReplayMode = false;
+        NotifySnapshot();
+        BoardStateChanged?.Invoke();
+    }
+    private void SetReplayStep(int step)
+    {
+        if (!_isReplayMode || _replayStates.Count == 0) return;
+        _replayIndex = Math.Clamp(step, 0, _replayMoves.Count);
+        if (_replayIndex > 0 && _replayIndex - 1 < _replayMoves.Count)
+        {
+            var mv = _replayMoves[_replayIndex - 1];
+            _replayMoveFrom = (mv.FromX, mv.FromY);
+            _replayMoveTo = (mv.ToX, mv.ToY);
+        }
+        else
+        {
+            _replayMoveFrom = null;
+            _replayMoveTo = null;
+        }
+
+        OnPropertyChanged(nameof(ReplayIndex));
+        OnPropertyChanged(nameof(ReplayStepText));
+        OnPropertyChanged(nameof(DisplayPieces));
+        OnPropertyChanged(nameof(LastMoveFrom));
+        OnPropertyChanged(nameof(LastMoveTo));
+        BoardStateChanged?.Invoke();
+    }
+    private static List<PieceDto> ToPieceDtos(ChessCore.Mobile.Offline.Board b)
+    {
+        var list = new List<PieceDto>();
+        for (int r = 0; r < 10; r++)
+        {
+            for (int c = 0; c < 9; c++)
+            {
+                var p = b.GetPieceAt(r, c);
+                if (p != null)
+                {
+                    list.Add(new PieceDto
+                    {
+                        Row = r,
+                        Col = c,
+                        Type = p.Type.ToString(),
+                        Color = p.Color.ToString()
+                    });
+                }
+            }
+        }
+        return list;
     }
     private void NotifySnapshot()
     {
         foreach (var name in new[] { nameof(Game), nameof(GameId), nameof(IsMyTurn), nameof(IsGameOver), nameof(GameOverTitle), nameof(GameOverMessage),
             nameof(H1Score), nameof(H2Score), nameof(H3Score), nameof(H4Score), nameof(TotalScore), nameof(IsCheck), nameof(CurrentTurnText),
             nameof(RoomText), nameof(PlayerName), nameof(OpponentName), nameof(MySideText), nameof(OpponentSideText), nameof(SelectedRow), nameof(SelectedCol),
-            nameof(ValidMoves), nameof(LastMoveFrom), nameof(LastMoveTo), nameof(SelectionText), nameof(MoveCountText), nameof(HistoryText), nameof(CanRetryAi) }) OnPropertyChanged(name);
+            nameof(ValidMoves), nameof(LastMoveFrom), nameof(LastMoveTo), nameof(DisplayPieces), nameof(IsReplayMode), nameof(IsNormalMode), nameof(ReplayIndex), nameof(ReplayMax),
+            nameof(ReplayStepText), nameof(SelectionText), nameof(MoveCountText), nameof(HistoryText), nameof(CanRetryAi) }) OnPropertyChanged(name);
     }
     private void SetBusy(bool value) { IsBusy = value; OnPropertyChanged(nameof(CanRetryAi)); }
     public async Task OnCellTappedAsync(int row, int col)
     {
-        if (row is < 0 or > 9 || col is < 0 or > 8 || !await _operation.WaitAsync(0)) return;
+        if (row is < 0 or > 9 || col is < 0 or > 8 || _isReplayMode || !await _operation.WaitAsync(0)) return;
         var activation = _activation;
         try
         {
