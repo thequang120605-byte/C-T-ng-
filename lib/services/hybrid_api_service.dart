@@ -35,6 +35,10 @@ class HybridApiService {
     return _local.createAsync();
   }
 
+  Future<GameResponseDto> createGameFromFenAsync(String fen) {
+    return _local.createFromFenAsync(fen);
+  }
+
   Future<GameResponseDto> createOnlineGameAsync() async {
     final json = await _remote.postJsonAsync('api/games/online');
     return GameResponseDto.fromJson(json as Map<String, dynamic>);
@@ -153,5 +157,83 @@ class HybridApiService {
   // 9. Lấy danh sách Cờ Thế từ Database (Puzzles)
   Future<dynamic> getPuzzlesAsync() async {
     return _remote.getJsonAsync('api/puzzles');
+  }
+
+  // 10. Bảng Xếp Hạng Kỳ Thủ thật từ Database (Leaderboard API)
+  Future<List<LeaderboardItemDto>> getLeaderboardAsync({
+    String mode = 'classic',
+    int limit = 20,
+  }) async {
+    try {
+      final json = await _remote.getJsonAsync('api/leaderboard?mode=$mode&limit=$limit');
+      if (json is Map<String, dynamic>) {
+        final list = json['leaderboard'] as List<dynamic>? ?? [];
+        return list
+            .map((e) => LeaderboardItemDto.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  // 11. Toàn bộ danh mục ải Cờ Thế Vượt Màn từ Backend (/api/puzzle-run/catalog)
+  Future<PuzzleCatalogDto?> getPuzzleCatalogAsync() async {
+    try {
+      final json = await _remote.getJsonAsync('api/puzzle-run/catalog');
+      if (json is Map<String, dynamic>) {
+        return PuzzleCatalogDto.fromJson(json);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 12. Chi tiết thế cờ từ Backend (/api/puzzle-run/puzzles/{key})
+  Future<PuzzleDetailDto?> getPuzzleDetailAsync(String key) async {
+    try {
+      final json = await _remote.getJsonAsync('api/puzzle-run/puzzles/$key');
+      if (json is Map<String, dynamic>) {
+        return PuzzleDetailDto.fromJson(json);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 13. Gửi nước đi giải cờ thế lên Backend (/api/puzzle-run/puzzles/{key}/move)
+  Future<Map<String, dynamic>?> submitPuzzleMoveAsync(
+    String key,
+    List<Map<String, int>> moves,
+  ) async {
+    try {
+      final json = await _remote.postJsonAsync(
+        'api/puzzle-run/puzzles/$key/move',
+        {'moves': moves},
+      );
+      if (json is Map<String, dynamic>) return json;
+    } catch (_) {}
+    return null;
+  }
+
+  // 14. Nhận gợi ý cờ thế từ Backend (/api/puzzle-run/puzzles/{key}/hint)
+  Future<Map<String, dynamic>?> getPuzzleHintAsync(
+    String key,
+    List<Map<String, int>> moves,
+  ) async {
+    try {
+      final json = await _remote.postJsonAsync(
+        'api/puzzle-run/puzzles/$key/hint',
+        {'moves': moves},
+      );
+      if (json is Map<String, dynamic>) return json;
+    } catch (_) {}
+    return null;
+  }
+
+  // 15. Lấy đáp án giải cờ thế từng bước từ Backend (/api/puzzle-run/puzzles/{key}/solution)
+  Future<Map<String, dynamic>?> getPuzzleSolutionAsync(String key) async {
+    try {
+      final json = await _remote.getJsonAsync('api/puzzle-run/puzzles/$key/solution');
+      if (json is Map<String, dynamic>) return json;
+    } catch (_) {}
+    return null;
   }
 }

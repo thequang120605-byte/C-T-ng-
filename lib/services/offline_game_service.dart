@@ -58,6 +58,24 @@ class OfflineGameService {
     return _snapshot(session);
   }
 
+  Future<GameResponseDto> createFromFenAsync(String fen) async {
+    _nextId--;
+    final session = _Session(_nextId);
+    final (parsedBoard, _) = Board.tryParseFen(fen);
+    if (parsedBoard != null) {
+      session.board.grid = parsedBoard.grid;
+      session.board.currentTurn = parsedBoard.currentTurn;
+      session.positions.clear();
+      session.positions[fen] = 1;
+    }
+    while (_sessions.length >= 8) {
+      final maxKey = _sessions.keys.reduce(math.max);
+      _sessions.remove(maxKey);
+    }
+    _sessions[session.id] = session;
+    return _snapshot(session);
+  }
+
   _Session _getSession(int id) {
     final s = _sessions[id];
     if (s == null) {

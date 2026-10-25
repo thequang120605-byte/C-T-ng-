@@ -339,4 +339,53 @@ class Board {
     if (board == null) throw FormatException(error);
     return board;
   }
+
+  static PieceType _parsePieceTypeString(String raw) {
+    switch (raw.toLowerCase()) {
+      case 'king':
+      case 'k':
+        return PieceType.king;
+      case 'advisor':
+      case 'guard':
+      case 'a':
+        return PieceType.advisor;
+      case 'elephant':
+      case 'bishop':
+      case 'e':
+      case 'b':
+        return PieceType.elephant;
+      case 'horse':
+      case 'knight':
+      case 'h':
+      case 'n':
+        return PieceType.horse;
+      case 'rook':
+      case 'chariot':
+      case 'r':
+        return PieceType.rook;
+      case 'cannon':
+      case 'c':
+        return PieceType.cannon;
+      case 'pawn':
+      case 'soldier':
+      case 'p':
+      default:
+        return PieceType.pawn;
+    }
+  }
+
+  static Board fromPieceList(List<dynamic> pieces, {PieceColor currentTurn = PieceColor.red}) {
+    final board = Board.empty();
+    board.currentTurn = currentTurn;
+    for (final p in pieces) {
+      final r = (p.row ?? 0) as int;
+      final c = (p.col ?? 0) as int;
+      final t = p.type?.toString() ?? '';
+      final clr = p.color?.toString().toLowerCase() == 'black' ? PieceColor.black : PieceColor.red;
+      if (r >= 0 && r < 10 && c >= 0 && c < 9) {
+        board.grid[r][c] = Piece(_parsePieceTypeString(t), clr);
+      }
+    }
+    return board;
+  }
 }

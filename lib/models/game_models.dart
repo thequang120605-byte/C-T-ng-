@@ -105,7 +105,7 @@ class GameResponseDto {
   final int redScore;
   final int blackScore;
   final int neuralScore;
-  final DateTime createdAt;
+  final DateTime? createdAt;
   final DateTime? lastMoveAt;
   final int remainingSeconds;
   final List<PieceDto> boardPieces;
@@ -134,7 +134,7 @@ class GameResponseDto {
     this.redScore = 0,
     this.blackScore = 0,
     this.neuralScore = 0,
-    required this.createdAt,
+    this.createdAt,
     this.lastMoveAt,
     this.remainingSeconds = 180,
     this.boardPieces = const [],
@@ -228,18 +228,24 @@ class ValidMoveDto {
   final int row;
   final int col;
   final bool isCapture;
+  final int? fromRow;
+  final int? fromCol;
 
   const ValidMoveDto({
     required this.row,
     required this.col,
     required this.isCapture,
+    this.fromRow,
+    this.fromCol,
   });
 
   factory ValidMoveDto.fromJson(Map<String, dynamic> json) {
     return ValidMoveDto(
-      row: (json['row'] ?? json['Row'] ?? 0) as int,
-      col: (json['col'] ?? json['Col'] ?? 0) as int,
+      row: (json['row'] ?? json['Row'] ?? json['toRow'] ?? 0) as int,
+      col: (json['col'] ?? json['Col'] ?? json['toCol'] ?? 0) as int,
       isCapture: (json['isCapture'] ?? json['IsCapture'] ?? false) as bool,
+      fromRow: (json['fromRow'] ?? json['FromRow']) as int?,
+      fromCol: (json['fromCol'] ?? json['FromCol']) as int?,
     );
   }
 }
@@ -474,6 +480,156 @@ class LiveMatchDto {
       redScore: (json['redScore'] ?? json['RedScore'] ?? 0) as int,
       blackScore: (json['blackScore'] ?? json['BlackScore'] ?? 0) as int,
       moveCount: (json['moveCount'] ?? json['MoveCount'] ?? 0) as int,
+    );
+  }
+}
+
+class LeaderboardItemDto {
+  final int rank;
+  final int userId;
+  final String username;
+  final int elo;
+  final int totalGames;
+  final int winGames;
+  final String winRate;
+  final String title;
+  final bool isCurrentUser;
+  final int score;
+  final int solvedCount;
+
+  const LeaderboardItemDto({
+    required this.rank,
+    required this.userId,
+    required this.username,
+    required this.elo,
+    this.totalGames = 0,
+    this.winGames = 0,
+    this.winRate = '0%',
+    required this.title,
+    this.isCurrentUser = false,
+    this.score = 0,
+    this.solvedCount = 0,
+  });
+
+  factory LeaderboardItemDto.fromJson(Map<String, dynamic> json) {
+    return LeaderboardItemDto(
+      rank: (json['rank'] ?? json['Rank'] ?? 0) as int,
+      userId: (json['userId'] ?? json['UserId'] ?? 0) as int,
+      username: (json['username'] ?? json['Username'] ?? 'Kỳ thủ').toString(),
+      elo: (json['elo'] ?? json['Elo'] ?? 1200) as int,
+      totalGames: (json['totalGames'] ?? json['TotalGames'] ?? 0) as int,
+      winGames: (json['winGames'] ?? json['WinGames'] ?? 0) as int,
+      winRate: (json['winRate'] ?? json['WinRate'] ?? '0%').toString(),
+      title: (json['title'] ?? json['Title'] ?? 'Kỳ Thủ').toString(),
+      isCurrentUser: (json['isCurrentUser'] ?? json['IsCurrentUser'] ?? false) as bool,
+      score: (json['score'] ?? json['Score'] ?? 0) as int,
+      solvedCount: (json['solvedCount'] ?? json['SolvedCount'] ?? 0) as int,
+    );
+  }
+}
+
+class PuzzleLevelDto {
+  final int level;
+  final String name;
+  final String rule;
+  final int total;
+  final int required;
+  final int completed;
+  final List<String> keys;
+
+  const PuzzleLevelDto({
+    required this.level,
+    required this.name,
+    required this.rule,
+    required this.total,
+    required this.required,
+    required this.completed,
+    required this.keys,
+  });
+
+  factory PuzzleLevelDto.fromJson(Map<String, dynamic> json) {
+    final rawKeys = json['keys'] as List<dynamic>? ?? [];
+    return PuzzleLevelDto(
+      level: (json['level'] ?? 1) as int,
+      name: (json['name'] ?? '').toString(),
+      rule: (json['rule'] ?? '').toString(),
+      total: (json['total'] ?? 0) as int,
+      required: (json['required'] ?? 0) as int,
+      completed: (json['completed'] ?? 0) as int,
+      keys: rawKeys.map((e) => e.toString()).toList(),
+    );
+  }
+}
+
+class PuzzleCatalogDto {
+  final bool ready;
+  final bool loggedIn;
+  final List<PuzzleLevelDto> levels;
+  final List<String> completedKeys;
+
+  const PuzzleCatalogDto({
+    required this.ready,
+    required this.loggedIn,
+    required this.levels,
+    required this.completedKeys,
+  });
+
+  factory PuzzleCatalogDto.fromJson(Map<String, dynamic> json) {
+    final rawLevels = json['levels'] as List<dynamic>? ?? [];
+    final rawCompleted = json['completed'] as List<dynamic>? ?? [];
+    return PuzzleCatalogDto(
+      ready: (json['ready'] ?? false) as bool,
+      loggedIn: (json['loggedIn'] ?? false) as bool,
+      levels: rawLevels.map((e) => PuzzleLevelDto.fromJson(e as Map<String, dynamic>)).toList(),
+      completedKeys: rawCompleted.map((e) => e.toString()).toList(),
+    );
+  }
+}
+
+class PuzzleDetailDto {
+  final String key;
+  final String title;
+  final String category;
+  final int level;
+  final String levelName;
+  final int number;
+  final int mateIn;
+  final String attacker;
+  final String goal;
+  final List<PieceDto> pieces;
+  final List<ValidMoveDto> legalMoves;
+
+  const PuzzleDetailDto({
+    required this.key,
+    required this.title,
+    required this.category,
+    required this.level,
+    required this.levelName,
+    required this.number,
+    required this.mateIn,
+    required this.attacker,
+    required this.goal,
+    required this.pieces,
+    required this.legalMoves,
+  });
+
+  factory PuzzleDetailDto.fromJson(Map<String, dynamic> json) {
+    final state = json['state'] as Map<String, dynamic>? ?? {};
+    final rawPieces = state['pieces'] as List<dynamic>? ?? [];
+    final rawLegal = state['legalMoves'] as List<dynamic>? ?? [];
+
+    return PuzzleDetailDto(
+      key: (json['key'] ?? '').toString(),
+      title: (json['title'] ?? 'Cờ Thế').toString(),
+      category: (json['category'] ?? 'Sát cục').toString(),
+      level: (json['level'] ?? 1) as int,
+      levelName: (json['levelName'] ?? '').toString(),
+      number: (json['number'] ?? 1) as int,
+      mateIn: (json['mateIn'] ?? 1) as int,
+      attacker: (json['attacker'] ?? 'Red').toString(),
+      goal: (json['goal'] ?? '').toString(),
+      pieces: rawPieces.map((p) => PieceDto.fromJson(p as Map<String, dynamic>)).toList(),
+      legalMoves: rawLegal.map((m) => ValidMoveDto.fromJson(m as Map<String, dynamic>)).toList(),
     );
   }
 }

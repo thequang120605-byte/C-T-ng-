@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/app_services.dart';
 import '../theme/app_theme.dart';
 import 'game_screen.dart';
 
@@ -19,10 +20,11 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
   late final AnimationController _pulseCtrl;
   final ScrollController _scrollController = ScrollController();
 
-  // 10 Ải Cờ Thế Kinh Điển
+  // 10 Ải Cờ Thế (Mặc định trước khi dữ liệu thật từ Backend tải về)
   final List<_PuzzleStage> _stages = [
     _PuzzleStage(
       id: 1,
+      key: 'basic:23',
       title: 'Khởi Mã Phá Trận',
       difficulty: 'Dễ',
       stars: 3,
@@ -31,6 +33,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     ),
     _PuzzleStage(
       id: 2,
+      key: 'endgame:234',
       title: 'Đơn Xa Bạt Trại',
       difficulty: 'Dễ',
       stars: 3,
@@ -39,6 +42,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     ),
     _PuzzleStage(
       id: 3,
+      key: 'endgame:243',
       title: 'Pháo Giác Chiếu Bí',
       difficulty: 'Trung bình',
       stars: 3,
@@ -47,6 +51,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     ),
     _PuzzleStage(
       id: 4,
+      key: 'endgame:308',
       title: 'Thất Tinh Tụ Hội',
       difficulty: 'Cao thủ',
       stars: 2,
@@ -55,6 +60,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     ),
     _PuzzleStage(
       id: 5,
+      key: 'endgame:1795',
       title: 'Dã Mã Thao Điền',
       difficulty: 'Cao thủ',
       stars: 0,
@@ -63,6 +69,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     ),
     _PuzzleStage(
       id: 6,
+      key: 'endgame:2150',
       title: 'Khổng Minh Khóc Bạn',
       difficulty: 'Đại sư',
       stars: 0,
@@ -71,6 +78,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     ),
     _PuzzleStage(
       id: 7,
+      key: 'endgame:2182',
       title: 'Thiềm Thừ Hí Nguyệt',
       difficulty: 'Đại sư',
       stars: 0,
@@ -79,6 +87,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     ),
     _PuzzleStage(
       id: 8,
+      key: 'endgame:2238',
       title: 'Cửu Tử Nhất Sinh',
       difficulty: 'Kỳ thánh',
       stars: 0,
@@ -87,6 +96,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     ),
     _PuzzleStage(
       id: 9,
+      key: 'endgame:3010',
       title: 'Hỏa Đốt Ô Sào',
       difficulty: 'Kỳ thánh',
       stars: 0,
@@ -95,6 +105,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     ),
     _PuzzleStage(
       id: 10,
+      key: 'endgame:3187',
       title: 'Thiên Ngoại Hữu Thiên',
       difficulty: 'Vô song',
       stars: 0,
@@ -117,9 +128,77 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
       duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
 
+    _loadRealPuzzleCampaign();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToActiveStage();
     });
+  }
+
+  Future<void> _loadRealPuzzleCampaign() async {
+    try {
+      final catalog = await AppServices.instance.api.getPuzzleCatalogAsync();
+      if (catalog != null && catalog.levels.isNotEmpty) {
+        final level1 = catalog.levels.first;
+        final keys = level1.keys.take(10).toList();
+        final completedSet = catalog.completedKeys.toSet();
+
+        final List<_PuzzleStage> realStages = [];
+        bool foundActive = false;
+
+        for (int i = 0; i < keys.length; i++) {
+          final key = keys[i];
+          final isDone = completedSet.contains(key);
+          bool isUnlocked = false;
+          int stars = 0;
+
+          if (isDone) {
+            isUnlocked = true;
+            stars = 3;
+          } else if (!foundActive) {
+            isUnlocked = true;
+            stars = 0; // Ải đang khiêu chiến!
+            foundActive = true;
+          } else {
+            isUnlocked = false;
+            stars = 0;
+          }
+
+          realStages.add(
+            _PuzzleStage(
+              id: i + 1,
+              key: key,
+              title: 'Ải ${i + 1}: Thế Cờ #$key',
+              difficulty: level1.name,
+              stars: stars,
+              isUnlocked: isUnlocked,
+              description: 'Nhiệm vụ: ${level1.rule}',
+            ),
+          );
+        }
+
+        if (mounted) {
+          setState(() {
+            _stages.clear();
+            _stages.addAll(realStages);
+          });
+          _scrollToActiveStage();
+        }
+
+        // Tải chi tiết tên thật của bài cờ từ Backend
+        for (final stage in realStages) {
+          final detail = await AppServices.instance.api.getPuzzleDetailAsync(stage.key);
+          if (detail != null && mounted) {
+            setState(() {
+              stage.title = detail.title;
+              stage.description = detail.goal;
+              stage.mateIn = detail.mateIn;
+              stage.difficulty = detail.levelName;
+            });
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   void _scrollToActiveStage() {
@@ -266,19 +345,25 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
               backgroundColor: const Color(0xFFC0392B),
               side: const BorderSide(color: Color(0xFFFFD54F), width: 1.2),
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              Navigator.push(
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => GameScreen(
-                    gameId: 1000 + stage.id,
+                    gameId: 0,
                     difficulty: 3,
-                    mode: 'PvE',
+                    mode: 'Puzzle',
                     seatHint: 'Red',
+                    puzzleKey: stage.key,
+                    puzzleTitle: stage.title,
+                    puzzleGoal: stage.description,
                   ),
                 ),
               );
+              if (result == true && mounted) {
+                _loadRealPuzzleCampaign();
+              }
             },
             child: Text(
               'Vượt Ải Ngay',
@@ -929,20 +1014,23 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
 
 class _PuzzleStage {
   final int id;
-  final String title;
-  final String difficulty;
-  final int stars;
-  final bool isUnlocked;
-  final String description;
+  String key;
+  String title;
+  String difficulty;
+  int stars;
+  bool isUnlocked;
+  String description;
+  int mateIn;
 
   _PuzzleStage({
     required this.id,
+    this.key = '',
     required this.title,
     required this.difficulty,
     required this.stars,
     required this.isUnlocked,
     required this.description,
-  });
+  }) : mateIn = 1;
 }
 
 class _MapWaypoints {

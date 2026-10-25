@@ -12,9 +12,12 @@ import 'game_review_screen.dart';
 class GameScreen extends StatefulWidget {
   final int gameId;
   final int difficulty;
-  final String mode; // 'PvE' or 'Online'
+  final String mode; // 'PvE', 'Online', or 'Puzzle'
   final String seatHint; // 'Red' or 'Black'
   final String timeControl; // '5 Phút' (Cờ Chớp) or '10 Phút' (Cờ Chậm)
+  final String? puzzleKey;
+  final String? puzzleTitle;
+  final String? puzzleGoal;
 
   const GameScreen({
     super.key,
@@ -23,6 +26,9 @@ class GameScreen extends StatefulWidget {
     this.mode = 'PvE',
     this.seatHint = 'Red',
     this.timeControl = 'Cờ Chậm',
+    this.puzzleKey,
+    this.puzzleTitle,
+    this.puzzleGoal,
   });
 
   @override
@@ -34,6 +40,15 @@ class _GameScreenState extends State<GameScreen> {
   late int _difficulty;
   late String _gameMode;
   late String _seatHint;
+
+  // Thuộc tính riêng cho Cờ Thế Vượt Màn
+  bool get _isPuzzleMode => widget.puzzleKey != null && widget.puzzleKey!.isNotEmpty;
+  PuzzleDetailDto? _puzzleDetail;
+  final List<Map<String, int>> _puzzleMovesMade = [];
+  List<ValidMoveDto> _puzzleLegalMoves = [];
+  bool _isPuzzleSolved = false;
+  (int, int)? _hintArrowFrom;
+  (int, int)? _hintArrowTo;
 
   GameResponseDto? _game;
   AuthUserDto? _user;
@@ -93,6 +108,12 @@ class _GameScreenState extends State<GameScreen> {
 
   Future<void> _initSession() async {
     _user = await AppServices.instance.auth.getCurrentUserAsync();
+
+    if (_isPuzzleMode) {
+      _connectionText = 'Chế độ Cờ Thế';
+      await _loadPuzzle();
+      return;
+    }
 
     if (_currentGameId > 0) {
       final signalR = AppServices.instance.signalR;
@@ -272,6 +293,521 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  Future<void> _loadPuzzle() async {
+    setState(() {
+      _isBusy = true;
+      _hintArrowFrom = null;
+      _hintArrowTo = null;
+      _selectedRow = null;
+      _selectedCol = null;
+      _validMoves = [];
+      _isPuzzleSolved = false;
+    });
+    try {
+      final detail = await AppServices.instance.api.getPuzzleDetailAsync(widget.puzzleKey!);
+      if (detail != null && mounted) {
+        _puzzleDetail = detail;
+        _puzzleMovesMade.clear();
+        _puzzleLegalMoves = detail.legalMoves;
+        _myPlayerColor = detail.attacker;
+        _isFlipped = _myPlayerColor.toLowerCase() == 'black';
+        _statusMessage = detail.goal.isNotEmpty
+            ? detail.goal
+            : '${detail.title} - Chiếu bí trong ${detail.mateIn} nước';
+
+        _game = GameResponseDto(
+          id: 0,
+          gameMode: 'Puzzle',
+          currentTurn: detail.attacker,
+          status: 'InProgress',
+          boardPieces: detail.pieces,
+          moves: [],
+          isCheck: false,
+          redPlayerUsername: detail.attacker.toLowerCase() == 'red'
+              ? (_user?.username.isNotEmpty == true ? _user!.username : 'Kỳ Thủ')
+              : 'Trần Thị Phương Thảo (AI)',
+          blackPlayerUsername: detail.attacker.toLowerCase() == 'black'
+              ? (_user?.username.isNotEmpty == true ? _user!.username : 'Kỳ Thủ')
+              : 'Đối Thủ Cờ Thế',
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _statusMessage = 'Lỗi nạp cờ thế: $e');
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _makePuzzleMove(int fromX, int fromY, int toX, int toY) async {
+    setState(() => _isBusy = true);
+
+    _puzzleMovesMade.add({
+      'fromRow': fromX,
+      'fromCol': fromY,
+      'toRow': toX,
+      'toCol': toY,
+    });
+
+    final updatedPieces = List<PieceDto>.from(_game?.boardPieces ?? []);
+    updatedPieces.removeWhere((p) => p.row == toX && p.col == toY);
+    final movingIdx = updatedPieces.indexWhere((p) => p.row == fromX && p.col == fromY);
+    if (movingIdx >= 0) {
+      final moving = updatedPieces[movingIdx];
+      updatedPieces[movingIdx] = PieceDto(
+        row: toX,
+        col: toY,
+        type: moving.type,
+        color: moving.color,
+      );
+    }
+
+    _selectedRow = null;
+    _selectedCol = null;
+    _validMoves = [];
+    _hintArrowFrom = null;
+    _hintArrowTo = null;
+    _lastMoveFrom = (fromX, fromY);
+    _lastMoveTo = (toX, toY);
+
+    if (_game != null) {
+      _game = GameResponseDto(
+        id: _game!.id,
+        gameMode: _game!.gameMode,
+        currentTurn: _game!.currentTurn,
+        status: _game!.status,
+        boardPieces: updatedPieces,
+        moves: _game!.moves,
+        isCheck: _game!.isCheck,
+        redPlayerUsername: _game!.redPlayerUsername,
+        blackPlayerUsername: _game!.blackPlayerUsername,
+      );
+    }
+    setState(() {});
+
+    try {
+      final res = await AppServices.instance.api.submitPuzzleMoveAsync(
+        widget.puzzleKey!,
+        _puzzleMovesMade,
+      );
+
+      if (!mounted) return;
+
+      if (res == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Color(0xFFC0392B),
+            content: Text('Không thể kết nối đến máy chủ.'),
+          ),
+        );
+        _puzzleMovesMade.removeLast();
+        await _loadPuzzle();
+        return;
+      }
+
+      final result = res['result']?.toString() ?? 'wrong';
+      final message = res['message']?.toString() ?? '';
+
+      if (result == 'solved') {
+        _isPuzzleSolved = true;
+        _statusMessage = 'Chiếu bí! Đã hoàn thành ải cờ thế.';
+        if (res['state'] != null && res['state']['pieces'] != null) {
+          final rawPieces = res['state']['pieces'] as List<dynamic>;
+          final finalPieces = rawPieces
+              .map((p) => PieceDto.fromJson(p as Map<String, dynamic>))
+              .toList();
+          _game = GameResponseDto(
+            id: 0,
+            gameMode: 'Puzzle',
+            currentTurn: _myPlayerColor,
+            status: 'RedWins',
+            boardPieces: finalPieces,
+            moves: _game?.moves ?? [],
+            isCheck: true,
+            redPlayerUsername: _game?.redPlayerUsername,
+            blackPlayerUsername: _game?.blackPlayerUsername,
+          );
+        }
+        setState(() {});
+        _showPuzzleVictoryModal(message);
+      } else if (result == 'correct') {
+        _statusMessage = message.isNotEmpty ? message : 'Nước đi chính xác! Tiếp tục hóa giải.';
+
+        if (res['reply'] != null) {
+          final reply = res['reply'] as Map<String, dynamic>;
+          final rfX = (reply['fromRow'] ?? 0) as int;
+          final rfY = (reply['fromCol'] ?? 0) as int;
+          final rtX = (reply['toRow'] ?? 0) as int;
+          final rtY = (reply['toCol'] ?? 0) as int;
+
+          await Future.delayed(const Duration(milliseconds: 350));
+          if (!mounted) return;
+
+          _lastMoveFrom = (rfX, rfY);
+          _lastMoveTo = (rtX, rtY);
+        }
+
+        if (res['state'] != null) {
+          final state = res['state'] as Map<String, dynamic>;
+          final rawPieces = state['pieces'] as List<dynamic>? ?? [];
+          final rawLegal = state['legalMoves'] as List<dynamic>? ?? [];
+          _puzzleLegalMoves = rawLegal
+              .map((m) => ValidMoveDto.fromJson(m as Map<String, dynamic>))
+              .toList();
+          final nextPieces = rawPieces
+              .map((p) => PieceDto.fromJson(p as Map<String, dynamic>))
+              .toList();
+
+          _game = GameResponseDto(
+            id: 0,
+            gameMode: 'Puzzle',
+            currentTurn: _myPlayerColor,
+            status: 'InProgress',
+            boardPieces: nextPieces,
+            moves: _game?.moves ?? [],
+            isCheck: state['checkedColor'] != null,
+            redPlayerUsername: _game?.redPlayerUsername,
+            blackPlayerUsername: _game?.blackPlayerUsername,
+          );
+        }
+        setState(() {});
+      } else if (result == 'wrong') {
+        _statusMessage = message;
+        if (res['reply'] != null) {
+          final reply = res['reply'] as Map<String, dynamic>;
+          final rfX = (reply['fromRow'] ?? 0) as int;
+          final rfY = (reply['fromCol'] ?? 0) as int;
+          final rtX = (reply['toRow'] ?? 0) as int;
+          final rtY = (reply['toCol'] ?? 0) as int;
+          _lastMoveFrom = (rfX, rfY);
+          _lastMoveTo = (rtX, rtY);
+        }
+        if (res['state'] != null && res['state']['pieces'] != null) {
+          final rawPieces = res['state']['pieces'] as List<dynamic>;
+          final afterCounterPieces = rawPieces
+              .map((p) => PieceDto.fromJson(p as Map<String, dynamic>))
+              .toList();
+          _game = GameResponseDto(
+            id: 0,
+            gameMode: 'Puzzle',
+            currentTurn: _myPlayerColor,
+            status: 'InProgress',
+            boardPieces: afterCounterPieces,
+            moves: _game?.moves ?? [],
+            isCheck: false,
+            redPlayerUsername: _game?.redPlayerUsername,
+            blackPlayerUsername: _game?.blackPlayerUsername,
+          );
+        }
+        setState(() {});
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFFC0392B),
+            duration: const Duration(seconds: 4),
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    message.isNotEmpty ? message : 'Nước đi chưa chuẩn xác! Bị phản đòn.',
+                    style: GoogleFonts.philosopher(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            action: SnackBarAction(
+              label: 'Thử lại',
+              textColor: const Color(0xFFFFD54F),
+              onPressed: () => _loadPuzzle(),
+            ),
+          ),
+        );
+      } else {
+        _puzzleMovesMade.removeLast();
+        await _loadPuzzle();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFFC0392B),
+            content: Text(message.isNotEmpty ? message : 'Nước đi không hợp lệ!'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _statusMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _requestPuzzleHint() async {
+    if (_isBusy || !_isPuzzleMode) return;
+    setState(() => _isBusy = true);
+    try {
+      final res = await AppServices.instance.api.getPuzzleHintAsync(
+        widget.puzzleKey!,
+        _puzzleMovesMade,
+      );
+      if (res != null && res['available'] == true && mounted) {
+        final fR = (res['fromRow'] ?? 0) as int;
+        final fC = (res['fromCol'] ?? 0) as int;
+        final tR = (res['toRow'] ?? 0) as int;
+        final tC = (res['toCol'] ?? 0) as int;
+        final msg = res['message']?.toString() ?? 'Gợi ý nước đi';
+
+        setState(() {
+          _selectedRow = fR;
+          _selectedCol = fC;
+          _validMoves = [ValidMoveDto(row: tR, col: tC, isCapture: false)];
+          _hintArrowFrom = (fR, fC);
+          _hintArrowTo = (tR, tC);
+          _statusMessage = msg;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF1565C0),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: Color(0xFFFFD54F), width: 1.2),
+            ),
+            content: Row(
+              children: [
+                const Icon(Icons.lightbulb, color: Color(0xFFFFD54F), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(msg, style: GoogleFonts.philosopher(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (_) {} finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _showPuzzleSolutionModal() async {
+    if (!_isPuzzleMode) return;
+    setState(() => _isBusy = true);
+    try {
+      final res = await AppServices.instance.api.getPuzzleSolutionAsync(widget.puzzleKey!);
+      if (!mounted) return;
+      if (res == null || res['steps'] == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chưa có lời giải chi tiết cho thế cờ này.')),
+        );
+        return;
+      }
+
+      final steps = res['steps'] as List<dynamic>;
+
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: AppColors.darkSurface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          side: BorderSide(color: AppColors.gold, width: 1.2),
+        ),
+        builder: (ctx) => Container(
+          padding: const EdgeInsets.all(16),
+          height: 420,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.auto_stories, color: AppColors.gold),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Đáp Án & Lời Giải Chi Tiết',
+                    style: GoogleFonts.philosopher(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.goldLight,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: steps.length,
+                  itemBuilder: (context, idx) {
+                    final s = steps[idx] as Map<String, dynamic>;
+                    final stepNum = s['step'] ?? (idx + 1);
+                    final att = s['attackerMove'] as Map<String, dynamic>? ?? {};
+                    final def = s['defenderMove'] as Map<String, dynamic>?;
+                    final attDesc = att['description'] ?? '';
+                    final defDesc = def?['description'] ?? 'Chiếu bí!';
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1A16),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF3E2723)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Nước $stepNum:',
+                            style: GoogleFonts.cinzel(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFFFD54F),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.arrow_right, color: Colors.redAccent, size: 16),
+                              Expanded(
+                                child: Text(
+                                  'Đỏ: $attDesc',
+                                  style: GoogleFonts.philosopher(
+                                    color: Colors.redAccent,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (defDesc.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(Icons.arrow_right, color: Colors.lightBlueAccent, size: 16),
+                                Expanded(
+                                  child: Text(
+                                    'Đen: $defDesc',
+                                    style: GoogleFonts.philosopher(
+                                      color: Colors.lightBlueAccent,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (_) {} finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  void _showPuzzleVictoryModal(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dCtx) => AlertDialog(
+        backgroundColor: AppColors.darkSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFFFD54F), width: 2),
+        ),
+        title: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                3,
+                (_) => const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 2),
+                  child: Icon(Icons.star, color: Color(0xFFFFD54F), size: 30),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'CHIẾN THẮNG ẢI CỜ THẾ!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.maShanZheng(
+                color: const Color(0xFFFFE082),
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message.isNotEmpty
+                  ? message
+                  : 'Xuất sắc! Các hạ đã phá vỡ thế cờ hiểm hóc này một cách trọn vẹn.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.philosopher(
+                color: AppColors.paperLight,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C241D),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFD54F), width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.military_tech, color: Color(0xFFFFD54F), size: 20),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Đã lưu tiến trình vượt ải',
+                    style: GoogleFonts.philosopher(
+                      color: const Color(0xFFFFECB3),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC0392B),
+              side: const BorderSide(color: Color(0xFFFFD54F), width: 1.2),
+            ),
+            onPressed: () {
+              Navigator.pop(dCtx);
+              Navigator.pop(context, true);
+            },
+            child: Text(
+              'Trở Về Bản Đồ Vượt Ải',
+              style: GoogleFonts.philosopher(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _applyGameUpdate(GameResponseDto dto) {
     _boardEpoch++;
     _game = dto;
@@ -301,11 +837,14 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   bool get _isGameOver =>
-      _game?.status == 'RedWins' ||
-      _game?.status == 'BlackWins' ||
-      _game?.status == 'Draw';
+      _isPuzzleMode
+          ? false
+          : (_game?.status == 'RedWins' ||
+              _game?.status == 'BlackWins' ||
+              _game?.status == 'Draw');
 
   String get _gameOverTitle {
+    if (_isPuzzleMode) return _isPuzzleSolved ? 'CHIẾN THẮNG ẢI' : 'CỜ THẾ';
     if (_game == null) return '';
     if (_game!.status == 'Draw') return 'VÁN CỜ HÒA';
     final winner = _game!.status == 'RedWins' ? 'Red' : 'Black';
@@ -330,16 +869,23 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   bool get _isMyTurn =>
-      GameSnapshotRules.isMyTurn(_game, _myPlayerColor);
+      _isPuzzleMode ? !_isPuzzleSolved : GameSnapshotRules.isMyTurn(_game, _myPlayerColor);
 
-  String get _opponentName => _gameMode == 'PvE'
-      ? 'Trần Thị Phương Thảo (AI)'
-      : (_myPlayerColor == 'Black'
-              ? _game?.redPlayerUsername
-              : _game?.blackPlayerUsername) ??
-          'Trần Thị Phương Thảo';
+  String get _opponentName => _isPuzzleMode
+      ? (_puzzleDetail?.title ?? widget.puzzleTitle ?? 'Cờ Thế Trận')
+      : (_gameMode == 'PvE'
+          ? 'Trần Thị Phương Thảo (AI)'
+          : (_myPlayerColor == 'Black'
+                  ? _game?.redPlayerUsername
+                  : _game?.blackPlayerUsername) ??
+              'Trần Thị Phương Thảo');
 
   String get _currentTurnText {
+    if (_isPuzzleMode) {
+      return _isPuzzleSolved
+          ? 'Đã hoàn thành ải cờ thế!'
+          : (_puzzleDetail?.goal.isNotEmpty == true ? _puzzleDetail!.goal : 'Lượt của bạn');
+    }
     if (_game == null) return 'Đang tải ván cờ…';
     if (_isGameOver) return _gameOverTitle;
     final isRed = _game!.currentTurn.toLowerCase() == 'red';
@@ -375,12 +921,15 @@ class _GameScreenState extends State<GameScreen> {
 
   Future<void> _onCellTapped(int row, int col) async {
     if (_isBusy || _isAiThinking || !_isMyTurn || _isGameOver) return;
+    if (_isPuzzleMode && _isPuzzleSolved) return;
 
     if (_selectedRow == row && _selectedCol == col) {
       setState(() {
         _selectedRow = null;
         _selectedCol = null;
         _validMoves = [];
+        _hintArrowFrom = null;
+        _hintArrowTo = null;
       });
       return;
     }
@@ -388,7 +937,11 @@ class _GameScreenState extends State<GameScreen> {
     if (_selectedRow != null &&
         _selectedCol != null &&
         _validMoves.any((m) => m.row == row && m.col == col)) {
-      await _makeMove(_selectedRow!, _selectedCol!, row, col);
+      if (_isPuzzleMode) {
+        await _makePuzzleMove(_selectedRow!, _selectedCol!, row, col);
+      } else {
+        await _makeMove(_selectedRow!, _selectedCol!, row, col);
+      }
       return;
     }
 
@@ -409,7 +962,18 @@ class _GameScreenState extends State<GameScreen> {
       _selectedRow = row;
       _selectedCol = col;
       _validMoves = [];
+      _hintArrowFrom = null;
+      _hintArrowTo = null;
     });
+
+    if (_isPuzzleMode) {
+      final moves = _puzzleLegalMoves
+          .where((m) => m.fromRow == row && m.fromCol == col)
+          .map((m) => ValidMoveDto(row: m.row, col: m.col, isCapture: m.isCapture))
+          .toList();
+      setState(() => _validMoves = moves);
+      return;
+    }
 
     final epoch = _boardEpoch;
     try {
@@ -655,39 +1219,39 @@ class _GameScreenState extends State<GameScreen> {
                 setState(() => _isFlipped = !_isFlipped);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.handshake, color: AppColors.gold),
-              title: Text('Xin hòa ván cờ', style: GoogleFonts.philosopher(color: AppColors.paperLight)),
-              onTap: () async {
-                Navigator.pop(ctx);
-                try {
-                  await AppServices.instance.api.offerDrawAsync(_currentGameId);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: const Color(0xFFD49B4B),
-                        content: Text('Đã gửi đề nghị hòa tới đối thủ (chờ 15s)...', style: GoogleFonts.philosopher()),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(backgroundColor: Colors.red, content: Text(e.toString())),
-                    );
-                  }
-                }
-              },
-            ),
-            if (_gameMode == 'PvE')
+            if (_isPuzzleMode) ...[
               ListTile(
-                leading: const Icon(Icons.undo, color: Color(0xFF42A5F5)),
-                title: Text('Đi lại nước cờ (Undo)', style: GoogleFonts.philosopher(color: const Color(0xFF42A5F5))),
+                leading: const Icon(Icons.restart_alt, color: Color(0xFF42A5F5)),
+                title: Text('Đặt lại thế cờ ban đầu', style: GoogleFonts.philosopher(color: const Color(0xFF42A5F5))),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _loadPuzzle();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.auto_stories, color: Color(0xFFFFD54F)),
+                title: Text('Xem đáp án & lời giải', style: GoogleFonts.philosopher(color: const Color(0xFFFFD54F))),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showPuzzleSolutionModal();
+                },
+              ),
+            ] else ...[
+              ListTile(
+                leading: const Icon(Icons.handshake, color: AppColors.gold),
+                title: Text('Xin hòa ván cờ', style: GoogleFonts.philosopher(color: AppColors.paperLight)),
                 onTap: () async {
                   Navigator.pop(ctx);
                   try {
-                    final res = await AppServices.instance.api.undoAsync(_currentGameId);
-                    _applyGameUpdate(res);
+                    await AppServices.instance.api.offerDrawAsync(_currentGameId);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: const Color(0xFFD49B4B),
+                          content: Text('Đã gửi đề nghị hòa tới đối thủ (chờ 15s)...', style: GoogleFonts.philosopher()),
+                        ),
+                      );
+                    }
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -697,25 +1261,44 @@ class _GameScreenState extends State<GameScreen> {
                   }
                 },
               ),
-            ListTile(
-              leading: const Icon(Icons.flag, color: Color(0xFFE53935)),
-              title: Text('Xin thua (Đầu hàng)', style: GoogleFonts.philosopher(color: const Color(0xFFE53935))),
-              onTap: () async {
-                Navigator.pop(ctx);
-                try {
-                  await AppServices.instance.api.resignAsync(_currentGameId);
-                  _reloadGame();
-                } catch (_) {}
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.analytics, color: Color(0xFF00E676)),
-              title: Text('Phân tích ván đấu (AI Review)', style: GoogleFonts.philosopher(color: const Color(0xFF00E676))),
-              onTap: () {
-                Navigator.pop(ctx);
-                _openReviewScreen();
-              },
-            ),
+              if (_gameMode == 'PvE')
+                ListTile(
+                  leading: const Icon(Icons.undo, color: Color(0xFF42A5F5)),
+                  title: Text('Đi lại nước cờ (Undo)', style: GoogleFonts.philosopher(color: const Color(0xFF42A5F5))),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final res = await AppServices.instance.api.undoAsync(_currentGameId);
+                      _applyGameUpdate(res);
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(backgroundColor: Colors.red, content: Text(e.toString())),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.flag, color: Color(0xFFE53935)),
+                title: Text('Xin thua (Đầu hàng)', style: GoogleFonts.philosopher(color: const Color(0xFFE53935))),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  try {
+                    await AppServices.instance.api.resignAsync(_currentGameId);
+                    _reloadGame();
+                  } catch (_) {}
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.analytics, color: Color(0xFF00E676)),
+                title: Text('Phân tích ván đấu (AI Review)', style: GoogleFonts.philosopher(color: const Color(0xFF00E676))),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openReviewScreen();
+                },
+              ),
+            ],
             ListTile(
               leading: const Icon(Icons.exit_to_app, color: AppColors.paperLight),
               title: Text('Rời bàn cờ', style: GoogleFonts.philosopher(color: AppColors.paperLight)),
@@ -768,7 +1351,12 @@ class _GameScreenState extends State<GameScreen> {
                           reduceMotion: false,
                           gameId: _currentGameId,
                           moveCount: _game?.moves.length ?? 0,
-                          riverWatermarkText: widget.timeControl,
+                          riverWatermarkText: _isPuzzleMode
+                              ? (_puzzleDetail?.category ?? 'Sát cục')
+                              : widget.timeControl,
+                          arrowFrom: _hintArrowFrom,
+                          arrowTo: _hintArrowTo,
+                          arrowColor: const Color(0xFFFFD54F),
                           onCellTapped: _onCellTapped,
                         ),
 
@@ -837,16 +1425,25 @@ class _GameScreenState extends State<GameScreen> {
                 height: 52,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0288D1), Color(0xFF01579B)],
+                  gradient: LinearGradient(
+                    colors: _isPuzzleMode
+                        ? [const Color(0xFFD84315), const Color(0xFFBF360C)]
+                        : [const Color(0xFF0288D1), const Color(0xFF01579B)],
                   ),
-                  border: Border.all(color: const Color(0xFF81D4FA), width: 2),
+                  border: Border.all(
+                    color: _isPuzzleMode ? const Color(0xFFFFD54F) : const Color(0xFF81D4FA),
+                    width: 2,
+                  ),
                   boxShadow: const [
                     BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
                   ],
                 ),
-                child: const Center(
-                  child: Icon(Icons.pets, color: Colors.white, size: 26),
+                child: Center(
+                  child: Icon(
+                    _isPuzzleMode ? Icons.military_tech : Icons.pets,
+                    color: Colors.white,
+                    size: 26,
+                  ),
                 ),
               ),
               Container(
@@ -862,7 +1459,7 @@ class _GameScreenState extends State<GameScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Tập sự',
+                      _isPuzzleMode ? (_puzzleDetail?.levelName ?? 'Cờ Thế') : 'Tập sự',
                       style: GoogleFonts.philosopher(
                         fontSize: 8,
                         fontWeight: FontWeight.bold,
@@ -930,20 +1527,26 @@ class _GameScreenState extends State<GameScreen> {
                   ],
                 ),
                 const SizedBox(height: 3),
-                // Đồng hồ đối thủ
+                // Đồng hồ đối thủ hoặc Mục tiêu cờ thế
                 Row(
                   children: [
-                    const Icon(Icons.history_toggle_off, size: 14, color: Color(0xFFFFD54F)),
+                    Icon(
+                      _isPuzzleMode ? Icons.flag_circle : Icons.history_toggle_off,
+                      size: 14,
+                      color: const Color(0xFFFFD54F),
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      _formatTime(_opponentRemainingSeconds),
+                      _isPuzzleMode
+                          ? 'Mục tiêu: ${_puzzleDetail?.mateIn ?? 1} nước chiếu bí'
+                          : _formatTime(_opponentRemainingSeconds),
                       style: GoogleFonts.cinzel(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFFFFD54F),
                       ),
                     ),
-                    if (_isAiThinking) ...[
+                    if (_isAiThinking || _isBusy) ...[
                       const SizedBox(width: 8),
                       const SizedBox(
                         width: 12,
@@ -1009,17 +1612,27 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
 
-                // Hàng nút kim loại bo tròn [•••] [💬] [📝] [⚙️]
+                // Hàng nút kim loại bo tròn
                 Row(
-                  children: [
-                    _buildMetallicRoundBtn(Icons.more_horiz, _showGameMenuModal),
-                    const SizedBox(width: 8),
-                    _buildMetallicRoundBtn(Icons.chat_bubble_outline, _showQuickChatModal),
-                    const SizedBox(width: 8),
-                    _buildMetallicRoundBtn(Icons.edit_note, _showMoveHistoryModal),
-                    const SizedBox(width: 8),
-                    _buildMetallicRoundBtn(Icons.analytics, _openReviewScreen),
-                  ],
+                  children: _isPuzzleMode
+                      ? [
+                          _buildMetallicRoundBtn(Icons.lightbulb, _requestPuzzleHint),
+                          const SizedBox(width: 8),
+                          _buildMetallicRoundBtn(Icons.restart_alt, _loadPuzzle),
+                          const SizedBox(width: 8),
+                          _buildMetallicRoundBtn(Icons.auto_stories, _showPuzzleSolutionModal),
+                          const SizedBox(width: 8),
+                          _buildMetallicRoundBtn(Icons.more_horiz, _showGameMenuModal),
+                        ]
+                      : [
+                          _buildMetallicRoundBtn(Icons.more_horiz, _showGameMenuModal),
+                          const SizedBox(width: 8),
+                          _buildMetallicRoundBtn(Icons.chat_bubble_outline, _showQuickChatModal),
+                          const SizedBox(width: 8),
+                          _buildMetallicRoundBtn(Icons.edit_note, _showMoveHistoryModal),
+                          const SizedBox(width: 8),
+                          _buildMetallicRoundBtn(Icons.analytics, _openReviewScreen),
+                        ],
                 ),
               ],
             ),
