@@ -15,7 +15,8 @@ class ConfigService extends ChangeNotifier {
 
   int get generation => _generation;
   String get defaultEmulatorUrl => 'http://10.0.2.2:5000';
-  String get defaultLanUrl => 'http://192.168.1.10:5000';
+  String get defaultLanUrl => 'http://127.0.0.1:5000';
+  String get lanWifiUrl => 'http://192.168.1.77:5000';
 
   String get baseUrl {
     final defaultUrl = kIsWeb ? 'http://localhost:5000' : defaultLanUrl;
