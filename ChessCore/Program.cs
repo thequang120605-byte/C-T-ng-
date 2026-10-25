@@ -104,6 +104,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 // Đăng ký các Services
+builder.Services.AddSingleton<ChessCore.Services.ITokenService, ChessCore.Services.TokenService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddSingleton<PuzzleCampaignService>();
 builder.Services.AddScoped<StatisticsService>();
@@ -182,6 +183,33 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
+
+// Middleware Bearer Token cho Mobile Client & SignalR
+app.Use(async (context, next) =>
+{
+    string? token = null;
+    var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+    if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+    {
+        token = authHeader.Substring("Bearer ".Length).Trim();
+    }
+    else if (context.Request.Query.TryGetValue("access_token", out var queryToken))
+    {
+        token = queryToken.FirstOrDefault();
+    }
+
+    if (!string.IsNullOrEmpty(token))
+    {
+        var tokenService = context.RequestServices.GetRequiredService<ChessCore.Services.ITokenService>();
+        var principal = tokenService.ValidateToken(token);
+        if (principal != null)
+        {
+            context.User = principal;
+        }
+    }
+
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

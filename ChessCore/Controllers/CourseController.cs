@@ -150,6 +150,18 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveProgress([FromBody] CourseProgressRequest request)
         {
+            return await ExecuteSaveProgress(request);
+        }
+
+        [HttpPost("/api/courses/progress")]
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        public async Task<IActionResult> SaveProgressApi([FromBody] CourseProgressRequest request)
+        {
+            return await ExecuteSaveProgress(request);
+        }
+
+        private async Task<IActionResult> ExecuteSaveProgress(CourseProgressRequest request)
+        {
             var userId = GetUserId();
             if (userId is null)
             {
