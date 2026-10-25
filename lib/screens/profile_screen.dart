@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/game_models.dart';
 import '../services/app_services.dart';
 import '../theme/app_theme.dart';
+import 'game_review_screen.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -572,86 +573,117 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             : (isLoss ? const Color(0xFFEF5350) : const Color(0xFFFFA726));
         final outcomeIcon = isWin ? Icons.check_circle : (isLoss ? Icons.cancel : Icons.remove_circle);
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E1714),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF3E2723), width: 1),
-          ),
-          child: Row(
-            children: [
-              // Badge Thắng/Thua/Hòa
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: outcomeColor.withValues(alpha: 0.15),
-                  border: Border.all(color: outcomeColor, width: 1.2),
-                ),
-                child: Center(
-                  child: Icon(outcomeIcon, color: outcomeColor, size: 20),
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GameReviewScreen(
+                  initialPieces: const [],
+                  moveHistory: const [],
+                  playerRedName: m.myColor == 'Red' ? (_user?.username ?? 'Bạn') : m.opponentName,
+                  playerBlackName: m.myColor == 'Red' ? m.opponentName : (_user?.username ?? 'Bạn'),
                 ),
               ),
-              const SizedBox(width: 12),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1714),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF3E2723), width: 1),
+            ),
+            child: Row(
+              children: [
+                // Badge Thắng/Thua/Hòa
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: outcomeColor.withValues(alpha: 0.15),
+                    border: Border.all(color: outcomeColor, width: 1.2),
+                  ),
+                  child: Center(
+                    child: Icon(outcomeIcon, color: outcomeColor, size: 20),
+                  ),
+                ),
+                const SizedBox(width: 12),
 
-              // Thông tin ván đấu
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Thông tin ván đấu
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'vs ${m.opponentName}',
+                            style: GoogleFonts.philosopher(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2C1E18),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              m.gameMode,
+                              style: GoogleFonts.philosopher(fontSize: 9, color: const Color(0xFFFFD54F)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${m.playedAt} • ${m.totalMoves} nước • Quân ${m.myColor == "Red" ? "Đỏ" : "Đen"}',
+                        style: GoogleFonts.philosopher(fontSize: 11, color: const Color(0xFF8D6E63)),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Kết quả Text & Mũi tên xem lại
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: outcomeColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        m.outcomeText,
+                        style: GoogleFonts.philosopher(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: outcomeColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'vs ${m.opponentName}',
-                          style: GoogleFonts.philosopher(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          'Xem lại',
+                          style: GoogleFonts.philosopher(fontSize: 10, color: const Color(0xFFFFD54F)),
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2C1E18),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            m.gameMode,
-                            style: GoogleFonts.philosopher(fontSize: 9, color: const Color(0xFFFFD54F)),
-                          ),
-                        ),
+                        const Icon(Icons.chevron_right, size: 14, color: Color(0xFFFFD54F)),
                       ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${m.playedAt} • ${m.totalMoves} nước • Quân ${m.myColor == "Red" ? "Đỏ" : "Đen"}',
-                      style: GoogleFonts.philosopher(fontSize: 11, color: const Color(0xFF8D6E63)),
                     ),
                   ],
                 ),
-              ),
-
-              // Kết quả Text
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: outcomeColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  m.outcomeText,
-                  style: GoogleFonts.philosopher(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: outcomeColor,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

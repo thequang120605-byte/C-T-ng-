@@ -4,7 +4,7 @@ import '../models/game_models.dart';
 import '../services/app_services.dart';
 import '../theme/app_theme.dart';
 import 'game_screen.dart';
-import 'login_screen.dart';
+import 'profile_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -525,16 +525,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildTopResourceBar() {
     final playerName = _user?.username.isNotEmpty == true ? _user!.username : 'Quang Nguyễn Thế';
 
+    void openProfile() async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProfileScreen(
+            onBackToHome: () => Navigator.pop(context),
+          ),
+        ),
+      );
+      _loadUser();
+    }
+
     return Row(
       children: [
         // Avatar + Cấp bậc "Tập sự ⭐"
         GestureDetector(
-          onTap: () async {
-            if (_user == null) {
-              await Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-              _loadUser();
-            }
-          },
+          onTap: openProfile,
           child: Stack(
             alignment: Alignment.bottomCenter,
             children: [
@@ -585,28 +592,31 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
         // Tên kỳ thủ & ELO
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                playerName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.philosopher(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: AppColors.paperLight,
+          child: GestureDetector(
+            onTap: openProfile,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  playerName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.philosopher(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: AppColors.paperLight,
+                  ),
                 ),
-              ),
-              Text(
-                '1,200 ELO',
-                style: GoogleFonts.cinzel(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFFD54F),
+                Text(
+                  '${_user?.elo ?? 1200} ELO',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD54F),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
 
