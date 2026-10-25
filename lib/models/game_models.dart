@@ -3,13 +3,35 @@ class PieceDto {
   final int col;
   final String type;
   final String color;
+  final bool isFaceDown;
+  final String? realType;
 
   const PieceDto({
     required this.row,
     required this.col,
     required this.type,
     required this.color,
+    this.isFaceDown = false,
+    this.realType,
   });
+
+  PieceDto copyWith({
+    int? row,
+    int? col,
+    String? type,
+    String? color,
+    bool? isFaceDown,
+    String? realType,
+  }) {
+    return PieceDto(
+      row: row ?? this.row,
+      col: col ?? this.col,
+      type: type ?? this.type,
+      color: color ?? this.color,
+      isFaceDown: isFaceDown ?? this.isFaceDown,
+      realType: realType ?? this.realType,
+    );
+  }
 
   factory PieceDto.fromJson(Map<String, dynamic> json) {
     return PieceDto(
@@ -17,8 +39,19 @@ class PieceDto {
       col: (json['col'] ?? json['Col'] ?? 0) as int,
       type: (json['type'] ?? json['Type'] ?? '').toString(),
       color: (json['color'] ?? json['Color'] ?? '').toString(),
+      isFaceDown: (json['isFaceDown'] ?? json['IsFaceDown'] ?? false) as bool,
+      realType: json['realType']?.toString() ?? json['RealType']?.toString(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'row': row,
+    'col': col,
+    'type': type,
+    'color': color,
+    'isFaceDown': isFaceDown,
+    'realType': realType,
+  };
 }
 
 class MoveHistoryDto {
@@ -840,4 +873,47 @@ class CourseQuizDto {
       explanation: json['explanation']?.toString() ?? '',
     );
   }
+}
+
+class DailyQuestDto {
+  final String id;
+  final String title;
+  final String description;
+  final int rewardGold;
+  final int rewardGems;
+  final int target;
+  int current;
+  bool isClaimed;
+
+  DailyQuestDto({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.rewardGold,
+    required this.rewardGems,
+    required this.target,
+    this.current = 0,
+    this.isClaimed = false,
+  });
+
+  bool get isCompleted => current >= target;
+  double get progress => target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
+}
+
+class PlayerAchievementDto {
+  final String id;
+  final String title;
+  final String icon;
+  final String description;
+  final bool isUnlocked;
+  final String badgeName;
+
+  const PlayerAchievementDto({
+    required this.id,
+    required this.title,
+    required this.icon,
+    required this.description,
+    this.isUnlocked = false,
+    this.badgeName = 'Tân Thủ',
+  });
 }

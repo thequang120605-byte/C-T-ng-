@@ -4,6 +4,7 @@ import '../models/game_models.dart';
 import '../services/app_services.dart';
 import '../theme/app_theme.dart';
 import 'course_academy_screen.dart';
+import 'daily_quests_screen.dart';
 import 'game_screen.dart';
 import 'master_games_screen.dart';
 import 'profile_screen.dart';
@@ -97,6 +98,189 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     } finally {
       if (mounted) setState(() => _isBusy = false);
     }
+  }
+
+  Future<void> _playCoUp({required bool isPassAndPlay}) async {
+    if (_isBusy) return;
+    setState(() => _isBusy = true);
+    try {
+      final game = await AppServices.instance.api.createCoUpGameAsync(isPassAndPlay: isPassAndPlay);
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => GameScreen(
+            gameId: game.id,
+            difficulty: _selectedDifficulty,
+            mode: isPassAndPlay ? 'PassAndPlay' : 'CoUp',
+            seatHint: 'Red',
+            timeControl: 'Cờ Úp 10 Phút',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFFC0392B),
+            content: Text('Lỗi khởi tạo Cờ Úp: $e', style: GoogleFonts.philosopher()),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _playPassAndPlay(String timeControl) async {
+    if (_isBusy) return;
+    setState(() => _isBusy = true);
+    try {
+      final game = await AppServices.instance.api.createPassAndPlayGameAsync();
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => GameScreen(
+            gameId: game.id,
+            difficulty: 1,
+            mode: 'PassAndPlay',
+            seatHint: 'Red',
+            timeControl: timeControl,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFFC0392B),
+            content: Text('Lỗi khởi tạo ván cờ: $e', style: GoogleFonts.philosopher()),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  void _showCoUpChoiceModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1714),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        side: BorderSide(color: Color(0xFF90CAF9), width: 1.5),
+      ),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.help_outline, color: Color(0xFF90CAF9)),
+                const SizedBox(width: 8),
+                Text(
+                  'CHẾ ĐỘ CỜ ÚP BÍ ẨN',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF90CAF9),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            ListTile(
+              leading: const Icon(Icons.smart_toy, color: Color(0xFFFFD54F)),
+              title: Text('Đấu Máy Cờ Úp (AI)', style: GoogleFonts.philosopher(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: Text('Rèn luyện cờ úp với máy thông minh, lật quân ngẫu nhiên chuẩn luật', style: GoogleFonts.philosopher(color: const Color(0xFFBCAAA4), fontSize: 11)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _playCoUp(isPassAndPlay: false);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.people, color: Color(0xFF00E676)),
+              title: Text('Đấu Đôi Cờ Úp Tại Chỗ (Pass & Play)', style: GoogleFonts.philosopher(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: Text('2 người chơi trên cùng 1 máy, lật quân đối kháng trực diện', style: GoogleFonts.philosopher(color: const Color(0xFFBCAAA4), fontSize: 11)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _playCoUp(isPassAndPlay: true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.public, color: Color(0xFF40C4FF)),
+              title: Text('Vào Sảnh Trực Tuyến Cờ Úp', style: GoogleFonts.philosopher(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: Text('Tìm phòng và thách đấu các kỳ thủ cờ úp khắp nơi', style: GoogleFonts.philosopher(color: const Color(0xFFBCAAA4), fontSize: 11)),
+              onTap: () {
+                Navigator.pop(ctx);
+                widget.onGoToLobby();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPracticeChoiceModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1714),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        side: BorderSide(color: Color(0xFFCE93D8), width: 1.5),
+      ),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.sports_esports, color: Color(0xFFCE93D8)),
+                const SizedBox(width: 8),
+                Text(
+                  'CHẾ ĐỘ NGOẠI TUYẾN',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFCE93D8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            ListTile(
+              leading: const Icon(Icons.smart_toy, color: Color(0xFFFFD54F)),
+              title: Text('Đấu Với Máy 4 Cấp Độ (AI)', style: GoogleFonts.philosopher(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: Text('Tập sự, Nghiệp dư, Kiện tướng, Thần sầu (kèm Gợi ý AI Coach)', style: GoogleFonts.philosopher(color: const Color(0xFFBCAAA4), fontSize: 11)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showModeSelectionDialog(
+                  title: 'Luyện Tập Với Máy',
+                  onSelect: (tc) => _playWithAi(tc),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.screen_rotation, color: Color(0xFF00E676)),
+              title: Text('Đấu Đôi Tại Chỗ (Pass & Play - 2 Người)', style: GoogleFonts.philosopher(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: Text('2 người chơi trên 1 máy, hỗ trợ xoay ngược quân 180° đối diện', style: GoogleFonts.philosopher(color: const Color(0xFFBCAAA4), fontSize: 11)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showModeSelectionDialog(
+                  title: 'Đấu Đôi Pass & Play',
+                  onSelect: (tc) => _playPassAndPlay(tc),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showModeSelectionDialog({required String title, required Function(String timeControl) onSelect}) {
@@ -285,63 +469,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  void _showDailyRewardDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1714),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFFFD54F), width: 1.5),
-        ),
-        title: Center(
-          child: Text(
-            'QUÀ ĐĂNG NHẬP MỖI NGÀY',
-            style: GoogleFonts.cinzel(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFFE082),
-            ),
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.card_giftcard, size: 48, color: Color(0xFFFFD54F)),
-            const SizedBox(height: 10),
-            Text(
-              'Chúc mừng bạn đã điểm danh ngày thứ 7!\nPhần thưởng: 🪙 +5,000 Vàng & 💎 +10 Kim cương',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.philosopher(
-                color: AppColors.paperLight,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  content: Text('Đã nhận thành công 5,000 Vàng!', style: GoogleFonts.philosopher()),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFC0392B),
-              side: const BorderSide(color: Color(0xFFFFD54F)),
-            ),
-            child: Text('Nhận Thưởng', style: GoogleFonts.philosopher(fontWeight: FontWeight.bold, color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -423,12 +550,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     char: '?',
                     gradient: const [Color(0xFF1565C0), Color(0xFF0D47A1)],
                     borderColor: const Color(0xFF90CAF9),
-                    onTap: () {
-                      _showModeSelectionDialog(
-                        title: 'Cờ Úp',
-                        onSelect: (tc) => widget.onGoToLobby(),
-                      );
-                    },
+                    onTap: _showCoUpChoiceModal,
                   ),
 
                   // Khối 3: CỜ THẾ (Vượt Ải Thủy Mặc - 10 Ải)
@@ -443,21 +565,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     onTap: widget.onGoToPuzzle,
                   ),
 
-                  // Khối 4: LUYỆN TẬP (AI Thông Thái)
+                  // Khối 4: LUYỆN TẬP (AI Thông Thái & Pass and Play)
                   _build3DModeCard(
                     title: 'LUYỆN TẬP',
-                    subtitle: 'Đấu máy 4 cấp độ',
+                    subtitle: 'Đấu máy & Đấu đôi 2 người',
                     badge: 'OFFLINE',
                     badgeColor: const Color(0xFF9C27B0),
                     char: '將',
                     gradient: const [Color(0xFF4A148C), Color(0xFF311B92)],
                     borderColor: const Color(0xFFCE93D8),
-                    onTap: () {
-                      _showModeSelectionDialog(
-                        title: 'Luyện Tập Với Máy',
-                        onSelect: (tc) => _playWithAi(tc),
-                      );
-                    },
+                    onTap: _showPracticeChoiceModal,
                   ),
                 ],
               ),
@@ -508,7 +625,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: _showDailyRewardDialog,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const DailyQuestsScreen()),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFD54F),
                         foregroundColor: Colors.black87,
@@ -558,12 +680,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         const SizedBox(width: 8),
         _buildFeaturePill(
           icon: Icons.school,
-          label: 'Viện Kỳ Đạo',
+          label: 'Học Cờ',
           color: const Color(0xFF40C4FF),
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => CourseAcademyScreen(onBack: () => Navigator.pop(context))),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        _buildFeaturePill(
+          icon: Icons.military_tech,
+          label: 'Nhiệm Vụ',
+          color: const Color(0xFFFFD54F),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DailyQuestsScreen()),
             );
           },
         ),
@@ -596,12 +730,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: color, size: 16),
-                const SizedBox(width: 5),
+                Icon(icon, color: color, size: 14),
+                const SizedBox(width: 4),
                 Text(
                   label,
                   style: GoogleFonts.philosopher(
-                    fontSize: 12,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),

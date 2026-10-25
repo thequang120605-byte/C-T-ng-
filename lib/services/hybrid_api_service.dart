@@ -35,6 +35,19 @@ class HybridApiService {
     return _local.createAsync();
   }
 
+  Future<GameResponseDto> createCoUpGameAsync({bool isPassAndPlay = false}) {
+    return _local.createCoUpAsync(isPassAndPlay: isPassAndPlay);
+  }
+
+  Future<GameResponseDto> createPassAndPlayGameAsync() {
+    return _local.createPassAndPlayAsync();
+  }
+
+  Future<({int fromRow, int fromCol, int toRow, int toCol, String explanation})?>
+      getAiCoachHintAsync(int gameId) {
+    return _local.getAiCoachHintAsync(gameId);
+  }
+
   Future<GameResponseDto> createGameFromFenAsync(String fen) {
     return _local.createFromFenAsync(fen);
   }

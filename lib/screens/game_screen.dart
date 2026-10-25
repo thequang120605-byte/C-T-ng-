@@ -46,6 +46,11 @@ class _GameScreenState extends State<GameScreen> {
 
   // Thuộc tính riêng cho Cờ Thế Vượt Màn
   bool get _isPuzzleMode => widget.puzzleKey != null && widget.puzzleKey!.isNotEmpty;
+  bool get _isPassAndPlay => _gameMode == 'PassAndPlay';
+  bool _rotateBlackPieces = false;
+  String? _playerBubble;
+  String? _opponentBubble;
+  Timer? _bubbleTimer;
   PuzzleDetailDto? _puzzleDetail;
   final List<Map<String, int>> _puzzleMovesMade = [];
   List<ValidMoveDto> _puzzleLegalMoves = [];
@@ -266,6 +271,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _bubbleTimer?.cancel();
     _updateSub?.cancel();
     _reconnectSub?.cancel();
     _stateSub?.cancel();
@@ -602,6 +608,81 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  Future<void> _requestSmartHint() async {
+    if (_isBusy) return;
+    if (_isPuzzleMode) {
+      await _requestPuzzleHint();
+      return;
+    }
+
+    setState(() => _isBusy = true);
+    try {
+      final hint = await AppServices.instance.api.getAiCoachHintAsync(_currentGameId);
+      if (hint != null && mounted) {
+        setState(() {
+          _selectedRow = hint.fromRow;
+          _selectedCol = hint.fromCol;
+          _validMoves = [ValidMoveDto(row: hint.toRow, col: hint.toCol, isCapture: false)];
+          _hintArrowFrom = (hint.fromRow, hint.fromCol);
+          _hintArrowTo = (hint.toRow, hint.toCol);
+          _statusMessage = 'Gợi ý: ${hint.explanation}';
+        });
+
+        AppServices.instance.sound.playMove();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF1B5E20),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: Color(0xFFFFD54F), width: 1.2),
+            ),
+            content: Row(
+              children: [
+                const Icon(Icons.school, color: Color(0xFFFFD54F), size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '💡 Huấn Luyện Viên AI Gợi Ý',
+                        style: GoogleFonts.philosopher(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD54F),
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        hint.explanation,
+                        style: GoogleFonts.philosopher(fontSize: 11, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy gợi ý phù hợp ở thế cờ này.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không thể lấy gợi ý: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
   Future<void> _showPuzzleSolutionModal() async {
     if (!_isPuzzleMode) return;
     setState(() => _isBusy = true);
@@ -892,17 +973,22 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  bool get _isMyTurn =>
-      _isPuzzleMode ? !_isPuzzleSolved : GameSnapshotRules.isMyTurn(_game, _myPlayerColor);
+  bool get _isMyTurn => _isPassAndPlay
+      ? true
+      : (_isPuzzleMode
+          ? !_isPuzzleSolved
+          : GameSnapshotRules.isMyTurn(_game, _myPlayerColor));
 
   String get _opponentName => _isPuzzleMode
       ? (_puzzleDetail?.title ?? widget.puzzleTitle ?? 'Cờ Thế Trận')
-      : (_gameMode == 'PvE'
-          ? 'Trần Thị Phương Thảo (AI)'
-          : (_myPlayerColor == 'Black'
-                  ? _game?.redPlayerUsername
-                  : _game?.blackPlayerUsername) ??
-              'Trần Thị Phương Thảo');
+      : (_isPassAndPlay
+          ? 'Kỳ Thủ 2 (Đen)'
+          : (_gameMode == 'PvE' || _gameMode == 'CoUp'
+              ? 'Trần Thị Phương Thảo (AI)'
+              : (_myPlayerColor == 'Black'
+                      ? _game?.redPlayerUsername
+                      : _game?.blackPlayerUsername) ??
+                  'Trần Thị Phương Thảo'));
 
   String get _currentTurnText {
     if (_isPuzzleMode) {
@@ -973,7 +1059,10 @@ class _GameScreenState extends State<GameScreen> {
           (p) => p?.row == row && p?.col == col,
           orElse: () => null,
         );
-    if (piece == null || piece.color.toLowerCase() != _myPlayerColor.toLowerCase()) {
+    final expectedTurn = _isPassAndPlay
+        ? (_game?.currentTurn.toLowerCase() ?? 'red')
+        : _myPlayerColor.toLowerCase();
+    if (piece == null || piece.color.toLowerCase() != expectedTurn) {
       setState(() {
         _selectedRow = null;
         _selectedCol = null;
@@ -1031,7 +1120,8 @@ class _GameScreenState extends State<GameScreen> {
       );
       if (mounted && epoch == _boardEpoch) {
         _applyGameUpdate(dto);
-        if (_gameMode == 'PvE' &&
+        if ((_gameMode == 'PvE' || _gameMode == 'Offline' || _gameMode == 'CoUp') &&
+            !_isPassAndPlay &&
             dto.status == 'InProgress' &&
             dto.currentTurn.toLowerCase() == 'black') {
           _triggerAiMove();
@@ -1073,14 +1163,52 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  void _showPlayerBubble(String text) {
+    _bubbleTimer?.cancel();
+    setState(() => _playerBubble = text);
+    _bubbleTimer = Timer(const Duration(milliseconds: 3500), () {
+      if (mounted) setState(() => _playerBubble = null);
+    });
+
+    if (_gameMode == 'PvE' || _gameMode == 'Offline' || _gameMode == 'CoUp') {
+      Timer(const Duration(milliseconds: 1400), () {
+        if (!mounted) return;
+        final aiReplies = [
+          'Các hạ quá khen, ván này ta quyết không lùi bước! ⚔️',
+          'Đa tạ hảo ý! Mời cùng nâng chén trà đàm đạo kỳ nghệ. 🍵',
+          'Thế cờ biến ảo khôn lường, cẩn thận đòn hồi mã thương! 🐎',
+          'Chiến ý của các hạ thật đáng nể, mời ra chiêu! ⚡',
+          'Kỳ phùng địch thủ, ván này thật sảng khoái! 👏',
+        ];
+        aiReplies.shuffle();
+        setState(() => _opponentBubble = aiReplies.first);
+        Timer(const Duration(milliseconds: 3500), () {
+          if (mounted) setState(() => _opponentBubble = null);
+        });
+      });
+    }
+  }
+
   void _showQuickChatModal() {
     final phrases = [
-      'Các hạ kỳ nghệ thật cao cường!',
-      'Xin thứ lỗi, ta đi nhầm một nước!',
-      'Đường cờ biến ảo khôn lường!',
-      'Trận này đấu trí thật sảng khoái!',
-      'Nhanh lên chút nào, ta đợi đã lâu!',
-      'Cảm ơn đã chỉ giáo kỳ nghệ!',
+      'Các hạ kỳ nghệ thật cao cường! 👏',
+      'Đường cờ biến ảo khôn lường! 🔥',
+      'Đang suy tính, xin đợi chút nhé! ⏳',
+      'Xin thứ lỗi, ta vừa đi nhầm một nước! 😅',
+      'Trận này đấu trí thật sảng khoái! 🍵',
+      'Cảm ơn các hạ đã chỉ giáo kỳ nghệ! 🤝',
+      'Cờ tàn tương phùng, xin thỉnh cầu hòa! ⚖️',
+    ];
+
+    final emotes = [
+      ('🍵', 'Mời Trà Đạo'),
+      ('🤔', 'Trầm Ngâm'),
+      ('😰', 'Toát Mồ Hôi'),
+      ('💥', 'Đập Bàn'),
+      ('👏', 'Vỗ Tay'),
+      ('👑', 'Bái Phục'),
+      ('🔥', 'Chiến Ý'),
+      ('⚡', 'Xuất Chiêu'),
     ];
 
     showModalBottomSheet(
@@ -1090,53 +1218,89 @@ class _GameScreenState extends State<GameScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         side: BorderSide(color: AppColors.gold, width: 1.2),
       ),
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.chat_bubble_outline, color: AppColors.gold),
-                const SizedBox(width: 8),
-                Text(
-                  'Tin Nhắn Nhanh',
-                  style: GoogleFonts.philosopher(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.goldLight,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...phrases.map(
-              (p) => ListTile(
-                title: Text(
-                  p,
-                  style: GoogleFonts.philosopher(
-                    color: AppColors.paperLight,
-                    fontSize: 14,
-                  ),
-                ),
-                leading: const Icon(Icons.send, color: AppColors.gold, size: 18),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  final senderName = _user?.username.isNotEmpty == true ? _user!.username : 'Bạn';
-                  if (_currentGameId > 0) {
-                    AppServices.instance.signalR.sendChatMessageAsync(_currentGameId, senderName, p);
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: const Color(0xFF2E7D32),
-                      content: Text('Đã gửi: "$p"'),
-                    ),
-                  );
-                },
+      builder: (ctx) => DefaultTabController(
+        length: 2,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          height: 380,
+          child: Column(
+            children: [
+              TabBar(
+                indicatorColor: AppColors.gold,
+                labelColor: AppColors.gold,
+                unselectedLabelColor: const Color(0xFFBCAAA4),
+                labelStyle: GoogleFonts.philosopher(fontWeight: FontWeight.bold),
+                tabs: const [
+                  Tab(icon: Icon(Icons.chat_bubble_outline), text: 'Câu Thoại'),
+                  Tab(icon: Icon(Icons.sentiment_satisfied_alt), text: 'Sticker & Emote'),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    ListView(
+                      children: phrases.map((p) => ListTile(
+                        dense: true,
+                        title: Text(
+                          p,
+                          style: GoogleFonts.philosopher(
+                            color: AppColors.paperLight,
+                            fontSize: 13,
+                          ),
+                        ),
+                        leading: const Icon(Icons.send, color: AppColors.gold, size: 16),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          final senderName = _user?.username.isNotEmpty == true ? _user!.username : 'Bạn';
+                          if (_currentGameId > 0) {
+                            AppServices.instance.signalR.sendChatMessageAsync(_currentGameId, senderName, p);
+                          }
+                          _showPlayerBubble(p);
+                        },
+                      )).toList(),
+                    ),
+                    GridView.count(
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      children: emotes.map((e) => GestureDetector(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          final msg = '${e.$1} ${e.$2}';
+                          final senderName = _user?.username.isNotEmpty == true ? _user!.username : 'Bạn';
+                          if (_currentGameId > 0) {
+                            AppServices.instance.signalR.sendChatMessageAsync(_currentGameId, senderName, msg);
+                          }
+                          _showPlayerBubble(msg);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF271A15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF5D4037)),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(e.$1, style: const TextStyle(fontSize: 28)),
+                              const SizedBox(height: 4),
+                              Text(
+                                e.$2,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.philosopher(fontSize: 9, color: const Color(0xFFFFECB3)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1588,6 +1752,7 @@ class _GameScreenState extends State<GameScreen> {
                           arrowFrom: _hintArrowFrom,
                           arrowTo: _hintArrowTo,
                           arrowColor: const Color(0xFFFFD54F),
+                          rotateBlackPieces: _rotateBlackPieces,
                           onCellTapped: _onCellTapped,
                         ),
 
@@ -1793,6 +1958,24 @@ class _GameScreenState extends State<GameScreen> {
                     ],
                   ],
                 ),
+                if (_opponentBubble != null) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFFD54F)),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
+                      ],
+                    ),
+                    child: Text(
+                      _opponentBubble!,
+                      style: GoogleFonts.philosopher(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1816,6 +1999,23 @@ class _GameScreenState extends State<GameScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (_playerBubble != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFC0392B),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFFD54F)),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
+                      ],
+                    ),
+                    child: Text(
+                      _playerBubble!,
+                      style: GoogleFonts.philosopher(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 if (_statusMessage.isNotEmpty &&
                     _statusMessage != _currentTurnText &&
                     _statusMessage != _gameOverTitle)
@@ -1856,13 +2056,21 @@ class _GameScreenState extends State<GameScreen> {
                           _buildMetallicRoundBtn(Icons.more_horiz, _showGameMenuModal),
                         ]
                       : [
-                          _buildMetallicRoundBtn(Icons.more_horiz, _showGameMenuModal),
+                          _buildMetallicRoundBtn(Icons.lightbulb, _requestSmartHint),
                           const SizedBox(width: 8),
+                          if (_isPassAndPlay) ...[
+                            _buildMetallicRoundBtn(Icons.screen_rotation, () {
+                              setState(() => _rotateBlackPieces = !_rotateBlackPieces);
+                            }),
+                            const SizedBox(width: 8),
+                          ],
                           _buildMetallicRoundBtn(Icons.chat_bubble_outline, _showQuickChatModal),
                           const SizedBox(width: 8),
                           _buildMetallicRoundBtn(Icons.edit_note, _showMoveHistoryModal),
                           const SizedBox(width: 8),
                           _buildMetallicRoundBtn(Icons.analytics, _openReviewScreen),
+                          const SizedBox(width: 8),
+                          _buildMetallicRoundBtn(Icons.more_horiz, _showGameMenuModal),
                         ],
                 ),
               ],

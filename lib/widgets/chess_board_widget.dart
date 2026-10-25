@@ -20,6 +20,7 @@ class ChessBoardWidget extends StatefulWidget {
   final (int, int)? arrowTo;
   final Color? arrowColor;
   final Map<String, String>? pieceBadges; // key: "$row,$col", value: "??" or "?" or "⭐"
+  final bool rotateBlackPieces;
   final void Function(int row, int col) onCellTapped;
 
   const ChessBoardWidget({
@@ -39,6 +40,7 @@ class ChessBoardWidget extends StatefulWidget {
     this.arrowTo,
     this.arrowColor,
     this.pieceBadges,
+    this.rotateBlackPieces = false,
     required this.onCellTapped,
   });
 
@@ -208,6 +210,7 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget>
                   arrowTo: widget.arrowTo,
                   arrowColor: widget.arrowColor,
                   pieceBadges: widget.pieceBadges,
+                  rotateBlackPieces: widget.rotateBlackPieces,
                 ),
               );
             },
@@ -255,6 +258,7 @@ class _ChessBoardPainter extends CustomPainter {
   final (int, int)? arrowTo;
   final Color? arrowColor;
   final Map<String, String>? pieceBadges;
+  final bool rotateBlackPieces;
 
   _ChessBoardPainter({
     required this.pieces,
@@ -270,6 +274,7 @@ class _ChessBoardPainter extends CustomPainter {
     this.arrowTo,
     this.arrowColor,
     this.pieceBadges,
+    this.rotateBlackPieces = false,
   });
 
   @override
@@ -683,7 +688,49 @@ class _ChessBoardPainter extends CustomPainter {
       ..strokeWidth = 1.3;
     canvas.drawCircle(center, radius - 3.8, innerRingPaint);
 
-    // 6. Ký hiệu chữ Hán Thư Pháp Khắc Chìm
+    // 6. Ký hiệu chữ Hán Thư Pháp Khắc Chìm hoặc Quân Úp Bí Ẩn
+    if (piece.isFaceDown) {
+      final bronzeBorder = Paint()
+        ..color = const Color(0xFFC5A059)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+      canvas.drawCircle(center, radius - 6, bronzeBorder);
+
+      final bronzeInner = Paint()
+        ..color = const Color(0xFF8D6E63).withAlpha(140)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+      canvas.drawCircle(center, radius - 9, bronzeInner);
+
+      _drawCenteredText(
+        canvas,
+        '?',
+        center.translate(0, -0.5),
+        GoogleFonts.cinzel(
+          color: const Color(0xFFFFD54F),
+          fontSize: radius * 1.1,
+          fontWeight: FontWeight.bold,
+          height: 1.0,
+          shadows: [
+            Shadow(
+              color: Colors.black.withAlpha(200),
+              offset: const Offset(1, 1),
+              blurRadius: 2,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final shouldRotate = rotateBlackPieces && !isRed;
+    if (shouldRotate) {
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(math.pi);
+      canvas.translate(-center.dx, -center.dy);
+    }
+
     final label = _getPieceLabel(piece.type, isRed);
     _drawCenteredText(
       canvas,
@@ -708,6 +755,10 @@ class _ChessBoardPainter extends CustomPainter {
         ],
       ),
     );
+
+    if (shouldRotate) {
+      canvas.restore();
+    }
   }
 
   // Vẽ Badge trên quân cờ (??, ?, ⭐)
@@ -968,6 +1019,7 @@ class _ChessBoardPainter extends CustomPainter {
         oldDelegate.arrowFrom != arrowFrom ||
         oldDelegate.arrowTo != arrowTo ||
         oldDelegate.arrowColor != arrowColor ||
-        oldDelegate.pieceBadges != pieceBadges;
+        oldDelegate.pieceBadges != pieceBadges ||
+        oldDelegate.rotateBlackPieces != rotateBlackPieces;
   }
 }
