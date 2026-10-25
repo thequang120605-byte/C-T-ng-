@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/game_models.dart';
+import '../offline/board.dart';
+import '../offline/piece.dart';
 import '../services/app_services.dart';
 import '../theme/app_theme.dart';
 import '../widgets/advantage_bar_widget.dart';
@@ -339,6 +342,12 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _makePuzzleMove(int fromX, int fromY, int toX, int toY) async {
+    final isCapture = _game?.boardPieces.any((p) => p.row == toX && p.col == toY) ?? false;
+    if (isCapture) {
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.lightImpact();
+    }
     setState(() => _isBusy = true);
 
     _puzzleMovesMade.add({
@@ -712,6 +721,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _showPuzzleVictoryModal(String message) {
+    HapticFeedback.heavyImpact();
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -832,6 +842,9 @@ class _GameScreenState extends State<GameScreen> {
       _lastMoveTo = null;
     }
 
+    if (dto.isCheck) {
+      HapticFeedback.heavyImpact();
+    }
     _statusMessage = _isGameOver ? _gameOverTitle : _currentTurnText;
     if (mounted) setState(() {});
   }
@@ -965,6 +978,7 @@ class _GameScreenState extends State<GameScreen> {
       _hintArrowFrom = null;
       _hintArrowTo = null;
     });
+    HapticFeedback.selectionClick();
 
     if (_isPuzzleMode) {
       final moves = _puzzleLegalMoves
@@ -989,6 +1003,12 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _makeMove(int fromX, int fromY, int toX, int toY) async {
+    final isCapture = _game?.boardPieces.any((p) => p.row == toX && p.col == toY) ?? false;
+    if (isCapture) {
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.lightImpact();
+    }
     setState(() => _isBusy = true);
     final epoch = _boardEpoch;
     try {
@@ -1198,6 +1218,41 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  void _copyFenToClipboard() {
+    try {
+      final pieces = _game?.boardPieces ?? [];
+      final board = Board.fromPieceList(
+        pieces,
+        currentTurn: _game?.currentTurn.toLowerCase() == 'black' ? PieceColor.black : PieceColor.red,
+      );
+      final fen = board.toFen();
+      Clipboard.setData(ClipboardData(text: fen));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF2E7D32),
+          content: Text('Đã sao chép chuỗi FEN bàn cờ vào bộ nhớ tạm:\n$fen', style: GoogleFonts.philosopher(fontSize: 12)),
+        ),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể tạo FEN bàn cờ lúc này.')),
+      );
+    }
+  }
+
+  void _copyRoomCodeToClipboard() {
+    final code = _game?.roomCode ?? '';
+    if (code.isNotEmpty) {
+      Clipboard.setData(ClipboardData(text: code));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF2E7D32),
+          content: Text('Đã sao chép mã phòng: $code', style: GoogleFonts.philosopher()),
+        ),
+      );
+    }
+  }
+
   void _showGameMenuModal() {
     showModalBottomSheet(
       context: context,
@@ -1217,6 +1272,23 @@ class _GameScreenState extends State<GameScreen> {
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _isFlipped = !_isFlipped);
+              },
+            ),
+            if (_game?.roomCode.isNotEmpty == true)
+              ListTile(
+                leading: const Icon(Icons.copy, color: Color(0xFFFFD54F)),
+                title: Text('Sao chép mã phòng (${_game!.roomCode})', style: GoogleFonts.philosopher(color: const Color(0xFFFFD54F))),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _copyRoomCodeToClipboard();
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.share, color: Color(0xFF81D4FA)),
+              title: Text('Sao chép FEN bàn cờ hiện tại', style: GoogleFonts.philosopher(color: const Color(0xFF81D4FA))),
+              onTap: () {
+                Navigator.pop(ctx);
+                _copyFenToClipboard();
               },
             ),
             if (_isPuzzleMode) ...[

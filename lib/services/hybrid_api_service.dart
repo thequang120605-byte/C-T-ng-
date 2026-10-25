@@ -236,4 +236,17 @@ class HybridApiService {
     } catch (_) {}
     return null;
   }
+
+  // 16. Lấy lịch sử các ván cờ từ Backend (/api/games/history)
+  Future<List<MatchHistoryItemDto>> getMatchHistoryAsync({int? userId, int limit = 20}) async {
+    try {
+      final query = userId != null ? 'userId=$userId&limit=$limit' : 'limit=$limit';
+      final json = await _remote.getJsonAsync('api/games/history?$query');
+      if (json is Map<String, dynamic>) {
+        final list = json['matches'] as List<dynamic>? ?? [];
+        return list.map((e) => MatchHistoryItemDto.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
 }

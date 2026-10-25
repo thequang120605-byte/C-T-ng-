@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/app_services.dart';
-import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,8 +11,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _urlCtrl;
-  String _connectionStatus = 'Nhập địa chỉ máy chủ của bạn';
-  Color _statusColor = const Color(0xFF75634E);
+  String _connectionStatus = 'Nhập địa chỉ máy chủ ChessCore của bạn';
+  Color _statusColor = const Color(0xFFBCAAA4);
   bool _isBusy = false;
   late bool _reduceMotion;
 
@@ -36,13 +36,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       cfg.baseUrl = _urlCtrl.text;
       _urlCtrl.text = cfg.baseUrl;
       setState(() {
-        _connectionStatus = 'Đã lưu. Khi đổi máy chủ, hãy đăng nhập lại.';
-        _statusColor = AppColors.success;
+        _connectionStatus = 'Đã lưu thành công địa chỉ máy chủ.';
+        _statusColor = const Color(0xFF66BB6A);
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF2E7D32),
+          content: Text('Đã lưu cấu hình máy chủ!', style: GoogleFonts.philosopher()),
+        ),
+      );
     } catch (e) {
       setState(() {
         _connectionStatus = e.toString().replaceFirst('FormatException: ', '');
-        _statusColor = AppColors.danger;
+        _statusColor = const Color(0xFFEF5350);
       });
     }
   }
@@ -58,15 +64,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(() {
         _connectionStatus = ok
-            ? 'Máy chủ phản hồi. Bạn có thể quay lại sảnh.'
-            : 'Chưa kết nối được. Kiểm tra địa chỉ và mạng Wi-Fi.';
-        _statusColor = ok ? AppColors.success : AppColors.danger;
+            ? 'Kết nối thành công! Máy chủ ChessCore đang hoạt động hoàn hảo.'
+            : 'Chưa kết nối được. Vui lòng kiểm tra địa chỉ IP và mạng Wi-Fi.';
+        _statusColor = ok ? const Color(0xFF66BB6A) : const Color(0xFFEF5350);
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _connectionStatus = e.toString().replaceFirst('FormatException: ', '');
-        _statusColor = AppColors.danger;
+        _statusColor = const Color(0xFFEF5350);
       });
     } finally {
       if (mounted) setState(() => _isBusy = false);
@@ -77,186 +83,198 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final cfg = AppServices.instance.config;
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: const Color(0xFF140F0D),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Cấu Hình Địa Chỉ Server',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.ink,
-                    ),
+                  // Top Header
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF2C1E18),
+                            border: Border.all(color: const Color(0xFF8D6E63), width: 1),
+                          ),
+                          child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Color(0xFFFFD54F)),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Text(
+                        'CÀI ĐẶT HỆ THỐNG',
+                        style: GoogleFonts.cinzel(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFE082),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Thiết lập địa chỉ kết nối đến Backend ChessCore',
-                    style: TextStyle(fontSize: 13, color: AppColors.muted),
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
+
+                  // Card Cấu Hình Server
                   Container(
                     padding: const EdgeInsets.all(20),
-                    decoration: AppTheme.cardDecoration(radius: 16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF2C1E18), Color(0xFF1E1511), Color(0xFF140F0D)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 4)),
+                      ],
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
-                          'Địa chỉ máy chủ (Base URL):',
-                          style: TextStyle(
-                            color: Color(0xFF655541),
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            const Icon(Icons.dns, color: Color(0xFFFFD54F), size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Địa Chỉ Máy Chủ (Base URL)',
+                              style: GoogleFonts.philosopher(
+                                color: const Color(0xFFFFECB3),
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
+
+                        // Text Field URL
                         Container(
                           decoration: BoxDecoration(
-                            color: AppColors.paper,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.line),
+                            color: const Color(0xFF140E0B),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF4E342E), width: 1.2),
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: TextField(
                             controller: _urlCtrl,
-                            style: const TextStyle(
-                              color: AppColors.ink,
-                              fontSize: 15,
-                            ),
-                            decoration: const InputDecoration(
-                              hintText: 'http://10.0.2.2:5000',
-                              hintStyle: TextStyle(color: AppColors.muted),
+                            style: GoogleFonts.philosopher(color: const Color(0xFFFFECB3), fontSize: 14),
+                            decoration: InputDecoration(
+                              hintText: 'http://localhost:5000',
+                              hintStyle: GoogleFonts.philosopher(color: const Color(0xFF6D4C41), fontSize: 13),
                               border: InputBorder.none,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Chọn nhanh theo môi trường:',
-                          style:
-                              TextStyle(color: AppColors.muted, fontSize: 12),
+                        const SizedBox(height: 14),
+
+                        Text(
+                          'Chọn nhanh theo môi trường kết nối:',
+                          style: GoogleFonts.philosopher(color: const Color(0xFFBCAAA4), fontSize: 12),
                         ),
                         const SizedBox(height: 8),
+
                         Row(
                           children: [
                             Expanded(
-                              child: SizedBox(
-                                height: 48,
-                                child: ElevatedButton(
-                                  onPressed: () => setState(() =>
-                                      _urlCtrl.text = cfg.defaultEmulatorUrl),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.line,
-                                    foregroundColor: AppColors.ink,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Máy Ảo (10.0.2.2)',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
+                              child: OutlinedButton(
+                                onPressed: () => setState(() => _urlCtrl.text = cfg.defaultEmulatorUrl),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFF5D4037)),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: Text(
+                                  'Máy Ảo (10.0.2.2)',
+                                  style: GoogleFonts.philosopher(fontSize: 11, color: const Color(0xFFFFD54F)),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: SizedBox(
-                                height: 48,
-                                child: ElevatedButton(
-                                  onPressed: () => setState(
-                                      () => _urlCtrl.text = cfg.defaultLanUrl),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.line,
-                                    foregroundColor: AppColors.ink,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Máy Thật (LAN Wi-Fi)',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
+                              child: OutlinedButton(
+                                onPressed: () => setState(() => _urlCtrl.text = cfg.defaultLanUrl),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFF5D4037)),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: Text(
+                                  'Máy Thật (LAN Wi-Fi)',
+                                  style: GoogleFonts.philosopher(fontSize: 11, color: const Color(0xFFFFD54F)),
                                 ),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
+
+                        // Nút Lưu & Kiểm tra
                         Row(
                           children: [
                             Expanded(
-                              child: SizedBox(
-                                height: 48,
-                                child: ElevatedButton(
-                                  onPressed: _save,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.teal,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Lưu Địa Chỉ',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold),
-                                  ),
+                              child: ElevatedButton(
+                                onPressed: _save,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF00695C),
+                                  side: const BorderSide(color: Color(0xFF80CBC4), width: 1),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: Text(
+                                  'Lưu Địa Chỉ',
+                                  style: GoogleFonts.philosopher(fontWeight: FontWeight.bold, color: Colors.white),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: SizedBox(
-                                height: 48,
-                                child: ElevatedButton(
-                                  onPressed: _testConnection,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Kiểm Tra Kết Nối',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold),
-                                  ),
+                              child: ElevatedButton(
+                                onPressed: _testConnection,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFC0392B),
+                                  side: const BorderSide(color: Color(0xFFFFD54F), width: 1),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
+                                child: _isBusy
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      )
+                                    : Text(
+                                        'Kiểm Tra Kết Nối',
+                                        style: GoogleFonts.philosopher(fontWeight: FontWeight.bold, color: Colors.white),
+                                      ),
                               ),
                             ),
                           ],
                         ),
-                        if (_isBusy) ...[
-                          const SizedBox(height: 14),
-                          const Center(
-                            child: SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
+
+                        // Thông báo trạng thái kết nối
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.paper,
+                            color: const Color(0xFF140E0B),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: _statusColor.withValues(alpha: 0.4)),
                           ),
                           child: Text(
                             _connectionStatus,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: GoogleFonts.philosopher(
                               color: _statusColor,
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -264,54 +282,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+
+                  // Card Tùy Chọn Trải Nghiệm Chơi
                   Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: AppTheme.cardDecoration(),
-                    child: Row(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1714),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF3E2723), width: 1),
+                    ),
+                    child: Column(
                       children: [
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Giảm chuyển động',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            const Icon(Icons.motion_photos_off, color: Color(0xFFFFD54F), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Giảm chuyển động (Reduce Motion)',
+                                    style: GoogleFonts.philosopher(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Tắt hiệu ứng lướt quân cờ để tăng tốc độ trên máy cấu hình yếu',
+                                    style: GoogleFonts.philosopher(
+                                      fontSize: 11,
+                                      color: const Color(0xFF8D6E63),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Tắt hiệu ứng di chuyển quân cờ',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.muted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: _reduceMotion,
-                          activeThumbColor: AppColors.primary,
-                          onChanged: (v) {
-                            setState(() => _reduceMotion = v);
-                            cfg.reduceMotion = v;
-                          },
+                            ),
+                            Switch(
+                              value: _reduceMotion,
+                              activeThumbColor: const Color(0xFFFFD54F),
+                              activeTrackColor: const Color(0xFFC0392B),
+                              onChanged: (v) {
+                                setState(() => _reduceMotion = v);
+                                cfg.reduceMotion = v;
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Điện thoại và máy chủ cần kết nối được với nhau. Đổi máy chủ sẽ kết thúc phiên đăng nhập hiện tại.',
-                    style: TextStyle(color: AppColors.muted, fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text(
-                      'Quay lại Trang Chủ',
-                      style: TextStyle(color: AppColors.muted, fontSize: 13),
-                    ),
+
+                  Text(
+                    '💡 Thiết bị di động và máy chủ cần cùng nằm trong một mạng nội bộ Wi-Fi hoặc sử dụng địa chỉ IP công khai.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.philosopher(color: const Color(0xFF8D6E63), fontSize: 11, fontStyle: FontStyle.italic),
                   ),
                 ],
               ),

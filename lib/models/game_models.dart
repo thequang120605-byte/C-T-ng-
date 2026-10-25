@@ -633,3 +633,44 @@ class PuzzleDetailDto {
     );
   }
 }
+
+class MatchHistoryItemDto {
+  final int gameId;
+  final String roomCode;
+  final String gameMode;
+  final String opponentName;
+  final String myColor;
+  final String outcome; // 'Win', 'Loss', 'Draw', 'Playing'
+  final String outcomeText; // 'Thắng', 'Thua', 'Hòa', 'Đang chơi'
+  final String status;
+  final String playedAt;
+  final int totalMoves;
+
+  const MatchHistoryItemDto({
+    required this.gameId,
+    required this.roomCode,
+    required this.gameMode,
+    required this.opponentName,
+    required this.myColor,
+    required this.outcome,
+    required this.outcomeText,
+    required this.status,
+    required this.playedAt,
+    required this.totalMoves,
+  });
+
+  factory MatchHistoryItemDto.fromJson(Map<String, dynamic> json) {
+    return MatchHistoryItemDto(
+      gameId: (json['gameId'] ?? 0) as int,
+      roomCode: (json['roomCode'] ?? '').toString(),
+      gameMode: (json['gameMode'] ?? 'PvE').toString(),
+      opponentName: (json['opponentName'] ?? 'Đối thủ').toString(),
+      myColor: (json['myColor'] ?? 'Red').toString(),
+      outcome: (json['outcome'] ?? 'Draw').toString(),
+      outcomeText: (json['outcomeText'] ?? 'Hòa').toString(),
+      status: (json['status'] ?? '').toString(),
+      playedAt: (json['playedAt'] ?? '').toString(),
+      totalMoves: (json['totalMoves'] ?? 0) as int,
+    );
+  }
+}
