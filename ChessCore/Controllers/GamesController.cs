@@ -167,6 +167,104 @@ namespace ChessCore.Controllers
             });
         }
 
+        // Lịch sử các ván đấu của người chơi (REST API cho Mobile & Web)
+        [AllowAnonymous]
+        [HttpGet("/api/games/history")]
+        public async Task<IActionResult> GetMatchHistory([FromQuery] int? userId, [FromQuery] int limit = 20)
+        {
+            limit = Math.Clamp(limit, 5, 50);
+
+            int targetUserId = 0;
+            if (userId.HasValue && userId.Value > 0)
+            {
+                targetUserId = userId.Value;
+            }
+            else if (User?.Identity?.IsAuthenticated == true)
+            {
+                var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(idStr, out int uid)) targetUserId = uid;
+            }
+
+            if (targetUserId <= 0)
+            {
+                var generalGames = await _dbContext.Games
+                    .Include(g => g.RedPlayer)
+                    .Include(g => g.BlackPlayer)
+                    .Include(g => g.Moves)
+                    .Where(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw)
+                    .OrderByDescending(g => g.CreatedAt)
+                    .Take(limit)
+                    .Select(g => new
+                    {
+                        gameId = g.Id,
+                        roomCode = g.RoomCode,
+                        gameMode = g.GameMode,
+                        opponentName = g.BlackPlayer != null ? g.BlackPlayer.Username : "Người chơi",
+                        myColor = "Red",
+                        outcome = g.Status == GameStatus.RedWins ? "Win" : (g.Status == GameStatus.BlackWins ? "Loss" : "Draw"),
+                        outcomeText = g.Status == GameStatus.RedWins ? "Thắng" : (g.Status == GameStatus.BlackWins ? "Thua" : "Hòa"),
+                        status = g.Status.ToString(),
+                        playedAt = g.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
+                        totalMoves = g.Moves.Count
+                    })
+                    .ToListAsync();
+
+                return Ok(new { total = generalGames.Count, matches = generalGames });
+            }
+
+            var recentGames = await _dbContext.Games
+                .Include(g => g.RedPlayer)
+                .Include(g => g.BlackPlayer)
+                .Include(g => g.Moves)
+                .Where(g => (g.RedPlayerId == targetUserId || g.BlackPlayerId == targetUserId) && g.Status != GameStatus.WaitingForPlayers)
+                .OrderByDescending(g => g.CreatedAt)
+                .Take(limit)
+                .ToListAsync();
+
+            var matches = recentGames.Select(g =>
+            {
+                bool isRed = g.RedPlayerId == targetUserId;
+                var opp = isRed ? g.BlackPlayer : g.RedPlayer;
+                string oppName = g.GameMode == "Online" || g.GameMode == "OnlinePublic"
+                    ? opp?.Username ?? "Đối thủ"
+                    : g.GameMode == "PvE" ? "Máy (AI)" : g.GameMode;
+
+                string outcome = "Draw";
+                string outcomeText = "Hòa";
+                if (g.Status == GameStatus.RedWins)
+                {
+                    outcome = isRed ? "Win" : "Loss";
+                    outcomeText = isRed ? "Thắng" : "Thua";
+                }
+                else if (g.Status == GameStatus.BlackWins)
+                {
+                    outcome = !isRed ? "Win" : "Loss";
+                    outcomeText = !isRed ? "Thắng" : "Thua";
+                }
+                else if (g.Status == GameStatus.InProgress)
+                {
+                    outcome = "Playing";
+                    outcomeText = "Đang chơi";
+                }
+
+                return new
+                {
+                    gameId = g.Id,
+                    roomCode = g.RoomCode,
+                    gameMode = g.GameMode,
+                    opponentName = oppName,
+                    myColor = isRed ? "Red" : "Black",
+                    outcome,
+                    outcomeText,
+                    status = g.Status.ToString(),
+                    playedAt = g.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
+                    totalMoves = g.Moves.Count
+                };
+            }).ToList();
+
+            return Ok(new { total = matches.Count, matches });
+        }
+
         // Danh sách phòng chờ online công khai
         [AllowAnonymous]
         [HttpGet("online/rooms")]
