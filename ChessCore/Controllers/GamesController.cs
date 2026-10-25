@@ -47,8 +47,128 @@ namespace ChessCore.Controllers
             _cache = cache;
         }
 
+        // Bảng xếp hạng kỳ thủ theo Elo và Cờ thế (REST API công khai cho Mobile & Web)
+        [AllowAnonymous]
+        [HttpGet("/api/leaderboard")]
+        public async Task<IActionResult> GetLeaderboard([FromQuery] string mode = "classic", [FromQuery] int limit = 20)
+        {
+            limit = Math.Clamp(limit, 5, 50);
+
+            int? currentUserId = null;
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(idStr, out int uid)) currentUserId = uid;
+            }
+
+            if (mode.ToLower() == "puzzle")
+            {
+                // Bảng xếp hạng Cờ thế (Top giải nhiều bài nhất)
+                var topPuzzles = await _dbContext.PuzzleProgresses
+                    .Where(p => p.CompletedAt != null)
+                    .GroupBy(p => p.UserId)
+                    .Select(g => new
+                    {
+                        UserId = g.Key,
+                        SolvedCount = g.Count()
+                    })
+                    .OrderByDescending(x => x.SolvedCount)
+                    .Take(limit)
+                    .ToListAsync();
+
+                var userIds = topPuzzles.Select(x => x.UserId).ToList();
+                var users = await _dbContext.Users
+                    .Where(u => userIds.Contains(u.Id))
+                    .ToDictionaryAsync(u => u.Id, u => u);
+
+                int pRank = 1;
+                var puzzleItems = topPuzzles.Select(p =>
+                {
+                    users.TryGetValue(p.UserId, out var u);
+                    string uName = u?.Username ?? $"Kỳ thủ #{p.UserId}";
+                    int elo = u?.Elo ?? 1200;
+                    int pScore = u?.PuzzleScore ?? 500;
+                    var lv = PuzzleScoringService.CalculateLevel(pScore);
+
+                    return new
+                    {
+                        rank = pRank++,
+                        userId = p.UserId,
+                        username = uName,
+                        elo = elo,
+                        score = pScore,
+                        solvedCount = p.SolvedCount,
+                        title = $"Cấp {lv.Level}",
+                        isCurrentUser = currentUserId.HasValue && p.UserId == currentUserId.Value
+                    };
+                }).ToList();
+
+                return Ok(new
+                {
+                    mode = "puzzle",
+                    total = puzzleItems.Count,
+                    leaderboard = puzzleItems
+                });
+            }
+
+            // Bảng xếp hạng Cờ Tướng truyền thống theo điểm Elo
+            var topUsers = await _dbContext.Users
+                .OrderByDescending(u => u.Elo)
+                .ThenBy(u => u.Id)
+                .Take(limit)
+                .ToListAsync();
+
+            // Tính toán số ván và tỷ lệ thắng cho từng kỳ thủ từ bảng Games
+            var userIdsList = topUsers.Select(u => u.Id).ToList();
+            var gamesSummary = await _dbContext.Games
+                .Where(g => (g.RedPlayerId != null && userIdsList.Contains(g.RedPlayerId.Value)) ||
+                            (g.BlackPlayerId != null && userIdsList.Contains(g.BlackPlayerId.Value)))
+                .Where(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw)
+                .Select(g => new { g.RedPlayerId, g.BlackPlayerId, g.Status })
+                .ToListAsync();
+
+            int rank = 1;
+            var items = topUsers.Select(u =>
+            {
+                int totalPlayed = gamesSummary.Count(g => g.RedPlayerId == u.Id || g.BlackPlayerId == u.Id);
+                int wins = gamesSummary.Count(g => (g.RedPlayerId == u.Id && g.Status == GameStatus.RedWins) ||
+                                                   (g.BlackPlayerId == u.Id && g.Status == GameStatus.BlackWins));
+                double winRate = totalPlayed == 0 ? 0 : Math.Round(100.0 * wins / totalPlayed, 1);
+
+                string rankTitle = u.Elo switch
+                {
+                    >= 2600 => "Kỳ Thánh",
+                    >= 2400 => "Đại Sư",
+                    >= 2200 => "Kiện Tướng",
+                    >= 1800 => "Kỳ Thủ Cấp 1",
+                    >= 1500 => "Kỳ Thủ",
+                    _ => "Tập Sự"
+                };
+
+                return new
+                {
+                    rank = rank++,
+                    userId = u.Id,
+                    username = u.Username,
+                    elo = u.Elo,
+                    totalGames = totalPlayed,
+                    winGames = wins,
+                    winRate = $"{winRate}%",
+                    title = rankTitle,
+                    isCurrentUser = currentUserId.HasValue && u.Id == currentUserId.Value
+                };
+            }).ToList();
+
+            return Ok(new
+            {
+                mode = "classic",
+                total = items.Count,
+                leaderboard = items
+            });
+        }
+
         // Danh sách phòng chờ online công khai
-        [Authorize]
+        [AllowAnonymous]
         [HttpGet("online/rooms")]
         public async Task<IActionResult> GetOpenRooms()
         {
