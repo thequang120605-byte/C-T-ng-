@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ConfigService extends ChangeNotifier {
   static const String _baseUrlKey = 'app_base_url';
   static const String _reduceMotionKey = 'reduce_motion';
+  static const String _soundEnabledKey = 'sound_enabled';
 
   final SharedPreferences _prefs;
   int _generation = 0;
@@ -31,6 +32,13 @@ class ConfigService extends ChangeNotifier {
 
   set reduceMotion(bool value) {
     _prefs.setBool(_reduceMotionKey, value);
+    notifyListeners();
+  }
+
+  bool get soundEnabled => _prefs.getBool(_soundEnabledKey) ?? true;
+
+  set soundEnabled(bool value) {
+    _prefs.setBool(_soundEnabledKey, value);
     notifyListeners();
   }
 

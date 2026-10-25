@@ -5,6 +5,7 @@ import 'config_service.dart';
 import 'hybrid_api_service.dart';
 import 'offline_game_service.dart';
 import 'signalr_service.dart';
+import 'sound_service.dart';
 
 class AppServices {
   late final ConfigService config;
@@ -13,6 +14,7 @@ class AppServices {
   late final OfflineGameService offlineGame;
   late final HybridApiService api;
   late final SignalRService signalR;
+  late final SoundService sound;
 
   static final AppServices instance = AppServices._();
   AppServices._();
@@ -25,5 +27,7 @@ class AppServices {
     offlineGame = OfflineGameService();
     api = HybridApiService(remoteApi, offlineGame);
     signalR = SignalRService(config, auth);
+    sound = SoundService.instance;
+    await sound.init(config);
   }
 }

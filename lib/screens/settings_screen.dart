@@ -15,6 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Color _statusColor = const Color(0xFFBCAAA4);
   bool _isBusy = false;
   late bool _reduceMotion;
+  late bool _soundEnabled;
 
   @override
   void initState() {
@@ -22,6 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final cfg = AppServices.instance.config;
     _urlCtrl = TextEditingController(text: cfg.baseUrl);
     _reduceMotion = cfg.reduceMotion;
+    _soundEnabled = cfg.soundEnabled;
   }
 
   @override
@@ -294,6 +296,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: Column(
                       children: [
+                        // Tùy chọn Âm thanh hiệu ứng
+                        Row(
+                          children: [
+                            const Icon(Icons.volume_up, color: Color(0xFFFFD54F), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Âm thanh hiệu ứng (Sound Effects)',
+                                    style: GoogleFonts.philosopher(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Tiếng gõ quân cờ, ăn quân và chuông báo chiếu tướng',
+                                    style: GoogleFonts.philosopher(
+                                      fontSize: 11,
+                                      color: const Color(0xFF8D6E63),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: _soundEnabled,
+                              activeThumbColor: const Color(0xFFFFD54F),
+                              activeTrackColor: const Color(0xFFC0392B),
+                              onChanged: (v) {
+                                setState(() => _soundEnabled = v);
+                                cfg.soundEnabled = v;
+                                if (v) {
+                                  AppServices.instance.sound.playMove();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        const Divider(color: Color(0xFF3E2723), height: 24),
+
+                        // Tùy chọn Giảm chuyển động
                         Row(
                           children: [
                             const Icon(Icons.motion_photos_off, color: Color(0xFFFFD54F), size: 20),

@@ -345,8 +345,10 @@ class _GameScreenState extends State<GameScreen> {
     final isCapture = _game?.boardPieces.any((p) => p.row == toX && p.col == toY) ?? false;
     if (isCapture) {
       HapticFeedback.mediumImpact();
+      AppServices.instance.sound.playCapture();
     } else {
       HapticFeedback.lightImpact();
+      AppServices.instance.sound.playMove();
     }
     setState(() => _isBusy = true);
 
@@ -480,6 +482,7 @@ class _GameScreenState extends State<GameScreen> {
         }
         setState(() {});
       } else if (result == 'wrong') {
+        AppServices.instance.sound.playIllegal();
         _statusMessage = message;
         if (res['reply'] != null) {
           final reply = res['reply'] as Map<String, dynamic>;
@@ -722,6 +725,7 @@ class _GameScreenState extends State<GameScreen> {
 
   void _showPuzzleVictoryModal(String message) {
     HapticFeedback.heavyImpact();
+    AppServices.instance.sound.playWin();
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -844,8 +848,15 @@ class _GameScreenState extends State<GameScreen> {
 
     if (dto.isCheck) {
       HapticFeedback.heavyImpact();
+      AppServices.instance.sound.playCheck();
     }
     _statusMessage = _isGameOver ? _gameOverTitle : _currentTurnText;
+    if (_isGameOver) {
+      final winner = _game?.status == 'RedWins' ? 'Red' : 'Black';
+      if (_myPlayerColor.isNotEmpty && winner == _myPlayerColor) {
+        AppServices.instance.sound.playWin();
+      }
+    }
     if (mounted) setState(() {});
   }
 
@@ -1006,8 +1017,10 @@ class _GameScreenState extends State<GameScreen> {
     final isCapture = _game?.boardPieces.any((p) => p.row == toX && p.col == toY) ?? false;
     if (isCapture) {
       HapticFeedback.mediumImpact();
+      AppServices.instance.sound.playCapture();
     } else {
       HapticFeedback.lightImpact();
+      AppServices.instance.sound.playMove();
     }
     setState(() => _isBusy = true);
     final epoch = _boardEpoch;
