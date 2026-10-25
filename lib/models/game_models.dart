@@ -508,10 +508,10 @@ class LiveMatchDto {
     return LiveMatchDto(
       id: (json['id'] ?? json['Id'] ?? 0) as int,
       roomCode: (json['roomCode'] ?? json['RoomCode'] ?? '').toString(),
-      redPlayer: (json['redPlayer'] ?? json['RedPlayer'] ?? 'Đỏ').toString(),
-      blackPlayer: (json['blackPlayer'] ?? json['BlackPlayer'] ?? 'Đen').toString(),
-      redScore: (json['redScore'] ?? json['RedScore'] ?? 0) as int,
-      blackScore: (json['blackScore'] ?? json['BlackScore'] ?? 0) as int,
+      redPlayer: (json['redPlayer'] ?? json['RedPlayer'] ?? json['redPlayerName'] ?? 'Đỏ').toString(),
+      blackPlayer: (json['blackPlayer'] ?? json['BlackPlayer'] ?? json['blackPlayerName'] ?? 'Đen').toString(),
+      redScore: (json['redScore'] ?? json['RedScore'] ?? json['redElo'] ?? 0) as int,
+      blackScore: (json['blackScore'] ?? json['BlackScore'] ?? json['blackElo'] ?? 0) as int,
       moveCount: (json['moveCount'] ?? json['MoveCount'] ?? 0) as int,
     );
   }

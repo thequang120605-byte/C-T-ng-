@@ -373,6 +373,24 @@ class HybridApiService {
     return null;
   }
 
+  // 20.5. Lưu tiến độ bài học và điểm trắc nghiệm (/api/courses/progress)
+  Future<bool> saveCourseProgressAsync({
+    required int lessonId,
+    required bool isCompleted,
+    int quizScore = 100,
+  }) async {
+    try {
+      final res = await _remote.postJsonAsync('api/courses/progress', {
+        'lessonId': lessonId,
+        'isCompleted': isCompleted,
+        'quizScore': quizScore,
+      });
+      return res != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // 21. Lấy danh sách nhiệm vụ hàng ngày từ Backend (/api/quests/daily)
   Future<List<DailyQuestDto>> getDailyQuestsAsync() async {
     try {

@@ -367,6 +367,11 @@ class _LessonDetailScreenState extends State<_LessonDetailScreen> {
                                   setState(() => _hasSubmitted = true);
                                   if (_selectedQuizAnswer == q.correctAnswer) {
                                     AppServices.instance.sound.playWin();
+                                    AppServices.instance.api.saveCourseProgressAsync(
+                                      lessonId: widget.lesson.id,
+                                      isCompleted: true,
+                                      quizScore: 100,
+                                    );
                                   } else {
                                     AppServices.instance.sound.playIllegal();
                                   }
