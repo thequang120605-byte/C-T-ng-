@@ -308,4 +308,78 @@ class HybridApiService {
     } catch (_) {}
     return null;
   }
+
+  // 21. Lấy danh sách nhiệm vụ hàng ngày từ Backend (/api/quests/daily)
+  Future<List<DailyQuestDto>> getDailyQuestsAsync() async {
+    try {
+      final json = await _remote.getJsonAsync('api/quests/daily');
+      if (json is Map<String, dynamic>) {
+        final list = json['quests'] as List<dynamic>? ?? [];
+        return list
+            .map((e) => DailyQuestDto.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  // 22. Nhận thưởng nhiệm vụ hàng ngày (/api/quests/{id}/claim)
+  Future<bool> claimQuestAsync(String questId) async {
+    try {
+      final json = await _remote.postJsonAsync('api/quests/$questId/claim');
+      if (json is Map<String, dynamic>) {
+        return json['success'] as bool? ?? false;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 23. Lấy danh hiệu & thành tựu người chơi từ Backend (/api/achievements)
+  Future<List<PlayerAchievementDto>> getAchievementsAsync() async {
+    try {
+      final json = await _remote.getJsonAsync('api/achievements');
+      if (json is Map<String, dynamic>) {
+        final list = json['achievements'] as List<dynamic>? ?? [];
+        return list
+            .map((e) => PlayerAchievementDto.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  // 24. Lấy phân tích ván cờ bằng AI Minimax từ Backend (/api/games/{id}/review)
+  Future<GameReviewDto?> getGameReviewAsync(int gameId) async {
+    try {
+      final json = await _remote.getJsonAsync('api/games/$gameId/review');
+      if (json is Map<String, dynamic>) {
+        return GameReviewDto.fromJson(json);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 25. Phân tích ván cờ tùy biến từ các nước đi qua AI Minimax (/api/games/review)
+  Future<GameReviewDto?> analyzeMovesReviewAsync(
+    List<String> moves, {
+    String? redName,
+    String? blackName,
+    int? gameId,
+  }) async {
+    try {
+      final json = await _remote.postJsonAsync(
+        'api/games/review',
+        {
+          'gameId': gameId ?? 1,
+          'redPlayerName': redName,
+          'blackPlayerName': blackName,
+          'moves': moves,
+        },
+      );
+      if (json is Map<String, dynamic>) {
+        return GameReviewDto.fromJson(json);
+      }
+    } catch (_) {}
+    return null;
+  }
 }

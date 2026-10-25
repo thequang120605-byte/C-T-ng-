@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/game_models.dart';
+import '../services/app_services.dart';
 import '../theme/app_theme.dart';
 import '../widgets/advantage_bar_widget.dart';
 import '../widgets/chess_board_widget.dart';
@@ -10,6 +11,7 @@ class GameReviewScreen extends StatefulWidget {
   final List<String> moveHistory;
   final String playerRedName;
   final String playerBlackName;
+  final int? gameId;
 
   const GameReviewScreen({
     super.key,
@@ -17,6 +19,7 @@ class GameReviewScreen extends StatefulWidget {
     required this.moveHistory,
     this.playerRedName = 'Quang Nguyễn Thế',
     this.playerBlackName = 'Trần Thị Phương Thảo',
+    this.gameId,
   });
 
   @override
@@ -27,6 +30,7 @@ class _GameReviewScreenState extends State<GameReviewScreen> {
   int _currentTabIndex = 2; // 0: Thế trận, 1: Tổng quan, 2: Nước đi, 3: Sai lầm
   int _currentMoveIndex = 0;
   bool _isFlipped = false;
+  bool _isLoadingReview = false;
 
   late List<PieceDto> _currentPieces;
   int _currentScore = 30; // Điểm thế trận mô phỏng hoặc tính toán
@@ -35,14 +39,83 @@ class _GameReviewScreenState extends State<GameReviewScreen> {
   Color _arrowColor = const Color(0xFF00E676);
   final Map<String, String> _pieceBadges = {};
 
-  // Dữ liệu mô phỏng các nước đi được AI phân tích sâu sắc
+  int _accuracyRed = 88;
+  int _accuracyBlack = 82;
+  String _redRank = 'Kỳ Thủ';
+  String _blackRank = 'Kỳ Thủ';
+
+  // Dữ liệu các nước đi được AI Minimax phân tích sâu sắc
   late List<_ReviewMoveStep> _reviewSteps;
 
   @override
   void initState() {
     super.initState();
+    _currentPieces = List<PieceDto>.from(widget.initialPieces);
     _buildReviewSteps();
     _applyStep(0);
+    _loadApiReview();
+  }
+
+  Future<void> _loadApiReview() async {
+    setState(() => _isLoadingReview = true);
+    try {
+      GameReviewDto? review;
+      if (widget.moveHistory.isNotEmpty) {
+        review = await AppServices.instance.api.analyzeMovesReviewAsync(
+          widget.moveHistory,
+          redName: widget.playerRedName,
+          blackName: widget.playerBlackName,
+          gameId: widget.gameId,
+        );
+      } else {
+        review = await AppServices.instance.api.getGameReviewAsync(widget.gameId ?? 1);
+      }
+
+      final r = review;
+      if (r != null && r.analyzedMoves.isNotEmpty && mounted) {
+        final apiSteps = <_ReviewMoveStep>[];
+        for (final item in r.analyzedMoves) {
+          apiSteps.add(
+            _ReviewMoveStep(
+              moveNumber: item.moveOrder,
+              notation: item.notation,
+              playerSide: item.pieceColor,
+              evaluation: item.evalScore,
+              isOptimal: item.judgment == 'Best' || item.judgment == 'Brilliant',
+              isBlunder: item.judgment == 'Blunder',
+              quality: item.quality,
+              qualityBadge: item.qualityBadge,
+              explanation: item.comment,
+              aiAlternative: item.aiAlternative,
+              aiReasoning: item.aiReasoning,
+              actualFrom: (item.fromX, item.fromY),
+              actualTo: (item.toX, item.toY),
+              optimalFrom: (item.optimalFromX, item.optimalFromY),
+              optimalTo: (item.optimalToX, item.optimalToY),
+            ),
+          );
+        }
+
+        setState(() {
+          _reviewSteps = apiSteps;
+          _accuracyRed = r.accuracyRed;
+          _accuracyBlack = r.accuracyBlack;
+          _redRank = r.redRank;
+          _blackRank = r.blackRank;
+          _isLoadingReview = false;
+        });
+
+        if (_currentMoveIndex < _reviewSteps.length) {
+          _applyStep(_currentMoveIndex);
+        }
+      } else if (mounted) {
+        setState(() => _isLoadingReview = false);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingReview = false);
+      }
+    }
   }
 
   void _buildReviewSteps() {
@@ -271,6 +344,13 @@ class _GameReviewScreenState extends State<GameReviewScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            if (_isLoadingReview)
+              const LinearProgressIndicator(
+                minHeight: 2,
+                color: Color(0xFFFFD54F),
+                backgroundColor: Color(0xFF2C221E),
+              ),
+
             // 1. THANH ƯU THẾ THẾ TRẬN (Advantage Bar)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -325,9 +405,9 @@ class _GameReviewScreenState extends State<GameReviewScreen> {
                           // Đối thủ (Trần T...)
                           _buildMiniPlayerCard(
                             name: widget.playerBlackName,
-                            title: 'Tập sự ⭐',
+                            title: _blackRank,
                             isBlack: true,
-                            score: '0',
+                            score: '$_accuracyBlack%',
                           ),
 
                           // Nút xoay lật bàn cờ
@@ -364,9 +444,9 @@ class _GameReviewScreenState extends State<GameReviewScreen> {
                           // Người chơi (Quang ...)
                           _buildMiniPlayerCard(
                             name: widget.playerRedName,
-                            title: 'Tập sự ⭐',
+                            title: _redRank,
                             isBlack: false,
-                            score: '2.000',
+                            score: '$_accuracyRed%',
                           ),
                         ],
                       ),
@@ -599,6 +679,10 @@ class _GameReviewScreenState extends State<GameReviewScreen> {
 
   // TAB 2: Tổng quan (Accuracy & Stats)
   Widget _buildOverviewTab() {
+    final optimalCount = _reviewSteps.where((s) => s.isOptimal).length;
+    final blunderCount = _reviewSteps.where((s) => s.isBlunder).length;
+    final goodCount = _reviewSteps.where((s) => !s.isOptimal && !s.isBlunder).length;
+
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -608,7 +692,7 @@ class _GameReviewScreenState extends State<GameReviewScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Độ chính xác kỳ thủ',
+                  'Độ chính xác kỳ thủ (AI Minimax)',
                   style: GoogleFonts.philosopher(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -616,8 +700,8 @@ class _GameReviewScreenState extends State<GameReviewScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _buildStatRow('Quang (Đỏ):', '86.4%', const Color(0xFFB71C1C)),
-                _buildStatRow('Thảo (Đen):', '62.1%', const Color(0xFF212121)),
+                _buildStatRow('${widget.playerRedName} (Đỏ):', '$_accuracyRed%', const Color(0xFFB71C1C)),
+                _buildStatRow('${widget.playerBlackName} (Đen):', '$_accuracyBlack%', const Color(0xFF212121)),
                 const Divider(height: 14, color: AppColors.paperBorder),
                 Text(
                   'Phân loại nước đi:',
@@ -628,9 +712,9 @@ class _GameReviewScreenState extends State<GameReviewScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                _buildBadgeStat('⭐ Nước tối ưu:', '4 nước', const Color(0xFF2E7D32)),
-                _buildBadgeStat('✓ Nước tốt:', '1 nước', const Color(0xFF1565C0)),
-                _buildBadgeStat('?? Đại sai lầm:', '1 nước', const Color(0xFFD32F2F)),
+                _buildBadgeStat('⭐ Nước tối ưu:', '$optimalCount nước', const Color(0xFF2E7D32)),
+                _buildBadgeStat('✓ Nước tốt:', '$goodCount nước', const Color(0xFF1565C0)),
+                _buildBadgeStat('?? Đại sai lầm:', '$blunderCount nước', const Color(0xFFD32F2F)),
               ],
             ),
           ),

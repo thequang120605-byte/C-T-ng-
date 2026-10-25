@@ -896,6 +896,19 @@ class DailyQuestDto {
     this.isClaimed = false,
   });
 
+  factory DailyQuestDto.fromJson(Map<String, dynamic> json) {
+    return DailyQuestDto(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      rewardGold: json['rewardGold'] as int? ?? 0,
+      rewardGems: json['rewardGems'] as int? ?? 0,
+      target: json['target'] as int? ?? 1,
+      current: json['current'] as int? ?? 0,
+      isClaimed: json['isClaimed'] as bool? ?? false,
+    );
+  }
+
   bool get isCompleted => current >= target;
   double get progress => target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
 }
@@ -916,4 +929,142 @@ class PlayerAchievementDto {
     this.isUnlocked = false,
     this.badgeName = 'Tân Thủ',
   });
+
+  factory PlayerAchievementDto.fromJson(Map<String, dynamic> json) {
+    return PlayerAchievementDto(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      icon: json['icon'] as String? ?? '🏆',
+      description: json['description'] as String? ?? '',
+      isUnlocked: json['isUnlocked'] as bool? ?? false,
+      badgeName: json['badgeName'] as String? ?? 'Tân Thủ',
+    );
+  }
+}
+
+class GameReviewItemDto {
+  final int moveOrder;
+  final String notation;
+  final String pieceColor;
+  final String pieceType;
+  final int fromX;
+  final int fromY;
+  final int toX;
+  final int toY;
+  final int evalScore;
+  final String judgment;
+  final String quality;
+  final String qualityBadge;
+  final String comment;
+  final int optimalFromX;
+  final int optimalFromY;
+  final int optimalToX;
+  final int optimalToY;
+  final String aiAlternative;
+  final String aiReasoning;
+
+  const GameReviewItemDto({
+    required this.moveOrder,
+    required this.notation,
+    required this.pieceColor,
+    required this.pieceType,
+    required this.fromX,
+    required this.fromY,
+    required this.toX,
+    required this.toY,
+    required this.evalScore,
+    required this.judgment,
+    required this.quality,
+    required this.qualityBadge,
+    required this.comment,
+    required this.optimalFromX,
+    required this.optimalFromY,
+    required this.optimalToX,
+    required this.optimalToY,
+    required this.aiAlternative,
+    required this.aiReasoning,
+  });
+
+  factory GameReviewItemDto.fromJson(Map<String, dynamic> json) {
+    return GameReviewItemDto(
+      moveOrder: json['moveOrder'] as int? ?? 1,
+      notation: json['notation'] as String? ?? '',
+      pieceColor: json['pieceColor'] as String? ?? 'Red',
+      pieceType: json['pieceType'] as String? ?? 'Pawn',
+      fromX: json['fromX'] as int? ?? 0,
+      fromY: json['fromY'] as int? ?? 0,
+      toX: json['toX'] as int? ?? 0,
+      toY: json['toY'] as int? ?? 0,
+      evalScore: json['evalScore'] as int? ?? 0,
+      judgment: json['judgment'] as String? ?? 'Good',
+      quality: json['quality'] as String? ?? 'Nước tốt',
+      qualityBadge: json['qualityBadge'] as String? ?? '✓',
+      comment: json['comment'] as String? ?? '',
+      optimalFromX: json['optimalFromX'] as int? ?? 0,
+      optimalFromY: json['optimalFromY'] as int? ?? 0,
+      optimalToX: json['optimalToX'] as int? ?? 0,
+      optimalToY: json['optimalToY'] as int? ?? 0,
+      aiAlternative: json['aiAlternative'] as String? ?? '',
+      aiReasoning: json['aiReasoning'] as String? ?? '',
+    );
+  }
+}
+
+class GameReviewDto {
+  final int gameId;
+  final String matchTitle;
+  final String gameMode;
+  final String roomCode;
+  final int status;
+  final String createdAt;
+  final String redPlayerName;
+  final String blackPlayerName;
+  final String redRank;
+  final String blackRank;
+  final String resultDescription;
+  final List<GameReviewItemDto> analyzedMoves;
+  final int accuracyRed;
+  final int accuracyBlack;
+  final String initialFen;
+
+  const GameReviewDto({
+    required this.gameId,
+    required this.matchTitle,
+    required this.gameMode,
+    required this.roomCode,
+    required this.status,
+    required this.createdAt,
+    required this.redPlayerName,
+    required this.blackPlayerName,
+    required this.redRank,
+    required this.blackRank,
+    required this.resultDescription,
+    required this.analyzedMoves,
+    required this.accuracyRed,
+    required this.accuracyBlack,
+    required this.initialFen,
+  });
+
+  factory GameReviewDto.fromJson(Map<String, dynamic> json) {
+    final movesJson = json['analyzedMoves'] as List<dynamic>? ?? [];
+    return GameReviewDto(
+      gameId: json['gameId'] as int? ?? 0,
+      matchTitle: json['matchTitle'] as String? ?? '',
+      gameMode: json['gameMode'] as String? ?? '',
+      roomCode: json['roomCode'] as String? ?? '',
+      status: json['status'] as int? ?? 0,
+      createdAt: json['createdAt'] as String? ?? '',
+      redPlayerName: json['redPlayerName'] as String? ?? 'Quân Đỏ',
+      blackPlayerName: json['blackPlayerName'] as String? ?? 'Quân Đen',
+      redRank: json['redRank'] as String? ?? 'Kỳ Thủ',
+      blackRank: json['blackRank'] as String? ?? 'Kỳ Thủ',
+      resultDescription: json['resultDescription'] as String? ?? '',
+      analyzedMoves: movesJson
+          .map((e) => GameReviewItemDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      accuracyRed: json['accuracyRed'] as int? ?? 85,
+      accuracyBlack: json['accuracyBlack'] as int? ?? 82,
+      initialFen: json['initialFen'] as String? ?? '',
+    );
+  }
 }

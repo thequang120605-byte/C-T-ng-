@@ -583,6 +583,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   moveHistory: const [],
                   playerRedName: m.myColor == 'Red' ? (_user?.username ?? 'Bạn') : m.opponentName,
                   playerBlackName: m.myColor == 'Red' ? m.opponentName : (_user?.username ?? 'Bạn'),
+                  gameId: m.gameId,
                 ),
               ),
             );

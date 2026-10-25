@@ -1158,6 +1158,7 @@ class _GameScreenState extends State<GameScreen> {
           moveHistory: _game?.moves.map((m) => m.notation).toList() ?? [],
           playerRedName: _user?.username.isNotEmpty == true ? _user!.username : 'Quang Nguyễn Thế',
           playerBlackName: _opponentName,
+          gameId: _game?.id,
         ),
       ),
     );

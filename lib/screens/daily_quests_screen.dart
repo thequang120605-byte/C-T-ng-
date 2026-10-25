@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/game_models.dart';
+import '../services/app_services.dart';
 import '../services/sound_service.dart';
 import '../theme/app_theme.dart';
 
@@ -33,21 +33,32 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
   }
 
   Future<void> _loadData() async {
-    final prefs = await SharedPreferences.getInstance();
+    setState(() => _isLoading = true);
 
-    final q1Claimed = prefs.getBool('quest_claimed_login') ?? false;
-    final q2Current = prefs.getInt('quest_prog_rush') ?? 1;
-    final q2Claimed = prefs.getBool('quest_claimed_rush') ?? false;
-    final q3Current = prefs.getInt('quest_prog_ai') ?? 0;
-    final q3Claimed = prefs.getBool('quest_claimed_ai') ?? false;
-    final q4Current = prefs.getInt('quest_prog_academy') ?? 1;
-    final q4Claimed = prefs.getBool('quest_claimed_academy') ?? false;
-    final q5Current = prefs.getInt('quest_prog_master') ?? 1;
-    final q5Claimed = prefs.getBool('quest_claimed_master') ?? false;
-    final q6Current = prefs.getInt('quest_prog_chat') ?? 1;
-    final q6Claimed = prefs.getBool('quest_claimed_chat') ?? false;
+    try {
+      final remoteQuests = await AppServices.instance.api.getDailyQuestsAsync();
+      final remoteAchievements = await AppServices.instance.api.getAchievementsAsync();
 
-    _quests = [
+      if (mounted) {
+        setState(() {
+          _quests = remoteQuests.isNotEmpty ? remoteQuests : _buildFallbackQuests();
+          _achievements = remoteAchievements.isNotEmpty ? remoteAchievements : _buildFallbackAchievements();
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _quests = _buildFallbackQuests();
+          _achievements = _buildFallbackAchievements();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  List<DailyQuestDto> _buildFallbackQuests() {
+    return [
       DailyQuestDto(
         id: 'login',
         title: '☀️ Điểm Danh Kỳ Viện',
@@ -56,7 +67,7 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         rewardGems: 2,
         target: 1,
         current: 1,
-        isClaimed: q1Claimed,
+        isClaimed: false,
       ),
       DailyQuestDto(
         id: 'rush',
@@ -65,8 +76,8 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         rewardGold: 1500,
         rewardGems: 5,
         target: 3,
-        current: q2Current.clamp(0, 3),
-        isClaimed: q2Claimed,
+        current: 1,
+        isClaimed: false,
       ),
       DailyQuestDto(
         id: 'ai',
@@ -75,8 +86,8 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         rewardGold: 2000,
         rewardGems: 10,
         target: 1,
-        current: q3Current.clamp(0, 1),
-        isClaimed: q3Claimed,
+        current: 0,
+        isClaimed: false,
       ),
       DailyQuestDto(
         id: 'academy',
@@ -85,8 +96,8 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         rewardGold: 1000,
         rewardGems: 3,
         target: 1,
-        current: q4Current.clamp(0, 1),
-        isClaimed: q4Claimed,
+        current: 1,
+        isClaimed: false,
       ),
       DailyQuestDto(
         id: 'master',
@@ -95,8 +106,8 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         rewardGold: 1000,
         rewardGems: 2,
         target: 1,
-        current: q5Current.clamp(0, 1),
-        isClaimed: q5Claimed,
+        current: 1,
+        isClaimed: false,
       ),
       DailyQuestDto(
         id: 'chat',
@@ -105,13 +116,15 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         rewardGold: 500,
         rewardGems: 1,
         target: 1,
-        current: q6Current.clamp(0, 1),
-        isClaimed: q6Claimed,
+        current: 1,
+        isClaimed: false,
       ),
     ];
+  }
 
-    _achievements = [
-      const PlayerAchievementDto(
+  List<PlayerAchievementDto> _buildFallbackAchievements() {
+    return const [
+      PlayerAchievementDto(
         id: 'novice',
         title: 'Tân Thủ Nhập Môn',
         icon: '🥉',
@@ -119,15 +132,15 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         isUnlocked: true,
         badgeName: 'Tập Sự',
       ),
-      const PlayerAchievementDto(
+      PlayerAchievementDto(
         id: 'rush_5',
         title: 'Tia Chớp Bàn Cờ',
         icon: '⚡',
         description: 'Đạt chuỗi 5 câu đúng liên tục trong Thần Tốc',
-        isUnlocked: true,
+        isUnlocked: false,
         badgeName: 'Kỳ Thủ Nhanh',
       ),
-      const PlayerAchievementDto(
+      PlayerAchievementDto(
         id: 'scholar',
         title: 'Thông Tuệ Binh Pháp',
         icon: '📚',
@@ -135,7 +148,7 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         isUnlocked: true,
         badgeName: 'Kỳ Sĩ',
       ),
-      const PlayerAchievementDto(
+      PlayerAchievementDto(
         id: 'ai_slayer',
         title: 'Thiết Mã Phá Trận',
         icon: '🥋',
@@ -143,7 +156,7 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         isUnlocked: false,
         badgeName: 'Chiến Tướng',
       ),
-      const PlayerAchievementDto(
+      PlayerAchievementDto(
         id: 'grandmaster',
         title: 'Tiêu Diêu Kỳ Thánh',
         icon: '👑',
@@ -152,17 +165,15 @@ class _DailyQuestsScreenState extends State<DailyQuestsScreen>
         badgeName: 'Kỳ Thánh',
       ),
     ];
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
   }
 
   Future<void> _claimReward(DailyQuestDto quest) async {
     if (quest.isClaimed || !quest.isCompleted) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('quest_claimed_${quest.id}', true);
+    // Gửi yêu cầu nhận thưởng lên Backend REST API
+    await AppServices.instance.api.claimQuestAsync(quest.id);
+
+    SoundService.instance.playWin();
 
     SoundService.instance.playWin();
 
