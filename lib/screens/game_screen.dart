@@ -21,6 +21,9 @@ class GameScreen extends StatefulWidget {
   final String? puzzleKey;
   final String? puzzleTitle;
   final String? puzzleGoal;
+  final int aiVsAiRedDepth;
+  final int aiVsAiBlackDepth;
+  final int aiVsAiSpeedMs;
 
   const GameScreen({
     super.key,
@@ -32,6 +35,9 @@ class GameScreen extends StatefulWidget {
     this.puzzleKey,
     this.puzzleTitle,
     this.puzzleGoal,
+    this.aiVsAiRedDepth = 2,
+    this.aiVsAiBlackDepth = 3,
+    this.aiVsAiSpeedMs = 800,
   });
 
   @override
@@ -47,7 +53,12 @@ class _GameScreenState extends State<GameScreen> {
   // Thuộc tính riêng cho Cờ Thế Vượt Màn
   bool get _isPuzzleMode => widget.puzzleKey != null && widget.puzzleKey!.isNotEmpty;
   bool get _isPassAndPlay => _gameMode == 'PassAndPlay';
+  bool get _isAiVsAi => _gameMode == 'AiVsAi';
   bool _rotateBlackPieces = false;
+  bool _aiVsAiPaused = false;
+  late final int _aiVsAiSpeedMs;
+  Timer? _aiVsAiTimer;
+  int? _serverEvalScore;
   String? _playerBubble;
   String? _opponentBubble;
   Timer? _bubbleTimer;
@@ -95,6 +106,7 @@ class _GameScreenState extends State<GameScreen> {
     _difficulty = widget.difficulty;
     _gameMode = widget.mode;
     _seatHint = widget.seatHint;
+    _aiVsAiSpeedMs = widget.aiVsAiSpeedMs;
 
     _startTimer();
     _initSession();
@@ -166,60 +178,81 @@ class _GameScreenState extends State<GameScreen> {
         }
       });
 
-      // Nhận lời xin hòa từ đối thủ thời gian thực
+      // Nhận lời xin hòa từ đối thủ thời gian thực (đếm ngược 15s)
       _drawOfferSub = signalR.onDrawOffered.listen((data) {
         if (!mounted) return;
         final from = data['fromPlayerName']?.toString() ?? 'Đối thủ';
+        int remainingSec = 15;
+        Timer? drawCountdown;
+
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (dCtx) => AlertDialog(
-            backgroundColor: AppColors.darkSurface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: const BorderSide(color: Color(0xFFFFD54F), width: 1.5),
-            ),
-            title: Row(
-              children: [
-                const Icon(Icons.handshake, color: Color(0xFFFFD54F)),
-                const SizedBox(width: 8),
-                Text(
-                  'ĐỀ NGHỊ HÒA VÁN CỜ',
-                  style: GoogleFonts.cinzel(
-                    color: const Color(0xFFFFE082),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+          builder: (dCtx) => StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              drawCountdown ??= Timer.periodic(const Duration(seconds: 1), (t) {
+                if (remainingSec > 1) {
+                  setDialogState(() => remainingSec--);
+                } else {
+                  t.cancel();
+                  if (Navigator.canPop(dCtx)) Navigator.pop(dCtx);
+                  AppServices.instance.api.respondDrawAsync(_currentGameId, false);
+                }
+              });
+
+              return AlertDialog(
+                backgroundColor: AppColors.darkSurface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: const BorderSide(color: Color(0xFFFFD54F), width: 1.5),
+                ),
+                title: Row(
+                  children: [
+                    const Icon(Icons.handshake, color: Color(0xFFFFD54F)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'ĐỀ NGHỊ HÒA ($remainingSec s)',
+                        style: GoogleFonts.cinzel(
+                          color: const Color(0xFFFFE082),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Text(
+                  '$from muốn xin hòa ván cờ này. Bạn có đồng ý bắt tay giảng hòa không?',
+                  style: GoogleFonts.philosopher(color: AppColors.paperLight, fontSize: 13),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      drawCountdown?.cancel();
+                      Navigator.pop(dCtx);
+                      await AppServices.instance.api.respondDrawAsync(_currentGameId, false);
+                    },
+                    child: Text('Từ Chối', style: GoogleFonts.philosopher(color: Colors.redAccent)),
                   ),
-                ),
-              ],
-            ),
-            content: Text(
-              '$from muốn xin hòa ván cờ này. Bạn có đồng ý bắt tay giảng hòa không?',
-              style: GoogleFonts.philosopher(color: AppColors.paperLight, fontSize: 13),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(dCtx);
-                  await AppServices.instance.api.respondDrawAsync(_currentGameId, false);
-                },
-                child: Text('Từ Chối', style: GoogleFonts.philosopher(color: Colors.redAccent)),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  side: const BorderSide(color: Color(0xFFFFD54F)),
-                ),
-                onPressed: () async {
-                  Navigator.pop(dCtx);
-                  await AppServices.instance.api.respondDrawAsync(_currentGameId, true);
-                  _reloadGame();
-                },
-                child: Text('Đồng Ý Hòa', style: GoogleFonts.philosopher(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-            ],
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      side: const BorderSide(color: Color(0xFFFFD54F)),
+                    ),
+                    onPressed: () async {
+                      drawCountdown?.cancel();
+                      Navigator.pop(dCtx);
+                      await AppServices.instance.api.respondDrawAsync(_currentGameId, true);
+                      _reloadGame();
+                    },
+                    child: Text('Đồng Ý Hòa', style: GoogleFonts.philosopher(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              );
+            },
           ),
-        );
+        ).then((_) => drawCountdown?.cancel());
       });
 
       // Nhận thông báo đối thủ từ chối hòa
@@ -271,6 +304,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _aiVsAiTimer?.cancel();
     _bubbleTimer?.cancel();
     _updateSub?.cancel();
     _reconnectSub?.cancel();
@@ -294,6 +328,14 @@ class _GameScreenState extends State<GameScreen> {
           await AppServices.instance.api.getGameAsync(_currentGameId);
       if (mounted && epoch == _boardEpoch) {
         _applyGameUpdate(dto);
+        if (_isAiVsAi && dto.status == 'InProgress') {
+          _scheduleAiVsAiNextMove();
+        } else if ((_gameMode == 'PvE' || _gameMode == 'Offline') &&
+            _seatHint == 'Black' &&
+            dto.moves.isEmpty &&
+            dto.currentTurn.toLowerCase() == 'red') {
+          _triggerAiMove();
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _statusMessage = e.toString());
@@ -938,6 +980,13 @@ class _GameScreenState extends State<GameScreen> {
         AppServices.instance.sound.playWin();
       }
     }
+    if (_currentGameId > 0) {
+      AppServices.instance.api.getEvalAsync(_currentGameId).then((score) {
+        if (mounted && score != null) {
+          setState(() => _serverEvalScore = score);
+        }
+      });
+    }
     if (mounted) setState(() {});
   }
 
@@ -1004,6 +1053,9 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   int _calculateAdvantageScore() {
+    if (_serverEvalScore != null) {
+      return _serverEvalScore!.clamp(-500, 500);
+    }
     final pieces = _game?.boardPieces;
     if (pieces == null || pieces.isEmpty) return 30; // Mặc định Đỏ ưu nhẹ khi khai cuộc
     int redScore = 0;
@@ -1030,7 +1082,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _onCellTapped(int row, int col) async {
-    if (_isBusy || _isAiThinking || !_isMyTurn || _isGameOver) return;
+    if (_isBusy || _isAiThinking || !_isMyTurn || _isGameOver || _isAiVsAi) return;
     if (_isPuzzleMode && _isPuzzleSolved) return;
 
     if (_selectedRow == row && _selectedCol == col) {
@@ -1122,9 +1174,11 @@ class _GameScreenState extends State<GameScreen> {
         _applyGameUpdate(dto);
         if ((_gameMode == 'PvE' || _gameMode == 'Offline' || _gameMode == 'CoUp') &&
             !_isPassAndPlay &&
-            dto.status == 'InProgress' &&
-            dto.currentTurn.toLowerCase() == 'black') {
-          _triggerAiMove();
+            dto.status == 'InProgress') {
+          final opponentTurn = _myPlayerColor == 'Black' ? 'red' : 'black';
+          if (dto.currentTurn.toLowerCase() == opponentTurn) {
+            _triggerAiMove();
+          }
         }
       }
     } catch (e) {
@@ -1138,15 +1192,74 @@ class _GameScreenState extends State<GameScreen> {
     if (_isAiThinking || _currentGameId <= 0) return;
     setState(() => _isAiThinking = true);
     final epoch = _boardEpoch;
+    final aiColor = _myPlayerColor == 'Black' ? 'red' : 'black';
     try {
       final dto = await AppServices.instance.api
-          .computerMoveAsync(_currentGameId, _difficulty);
+          .computerMoveAsync(_currentGameId, _difficulty, computerColor: aiColor);
       if (mounted && epoch == _boardEpoch) {
         _applyGameUpdate(dto);
       }
     } catch (_) {} finally {
       if (mounted) setState(() => _isAiThinking = false);
     }
+  }
+
+  void _scheduleAiVsAiNextMove() {
+    if (!_isAiVsAi || _aiVsAiPaused || _isAiThinking || _isGameOver) return;
+    _aiVsAiTimer?.cancel();
+    _aiVsAiTimer = Timer(Duration(milliseconds: _aiVsAiSpeedMs), () {
+      if (!mounted || _aiVsAiPaused || _isAiThinking || _isGameOver) return;
+      _triggerAiVsAiMove();
+    });
+  }
+
+  Future<void> _triggerAiVsAiMove() async {
+    if (_isAiThinking || _currentGameId <= 0 || _isGameOver || _aiVsAiPaused) return;
+    final turn = (_game?.currentTurn ?? 'Red').toLowerCase();
+    final depth = turn == 'red' ? widget.aiVsAiRedDepth : widget.aiVsAiBlackDepth;
+    setState(() => _isAiThinking = true);
+    final epoch = _boardEpoch;
+    try {
+      final dto = await AppServices.instance.api.computerMoveAsync(
+        _currentGameId,
+        depth,
+        computerColor: turn,
+      );
+      if (mounted && epoch == _boardEpoch) {
+        _applyGameUpdate(dto);
+        if (dto.status == 'InProgress' && !_aiVsAiPaused) {
+          _scheduleAiVsAiNextMove();
+        }
+      }
+    } catch (_) {} finally {
+      if (mounted) setState(() => _isAiThinking = false);
+    }
+  }
+
+  (String code, String name) _getOpeningInfo() {
+    final moves = _game?.moves ?? [];
+    if (moves.isEmpty) return ('ECCO-00', 'Chưa định hình');
+    final m0 = moves.first.notation;
+    final m1 = moves.length > 1 ? moves[1].notation : '';
+    if (m0.contains('P2-5') || m0.contains('P8-5') || m0.contains('Pháo 2 bình 5') || m0.contains('Pháo 8 bình 5') || m0.contains('C2.5') || m0.contains('C8.5')) {
+      if (m1.contains('M8.7') || m1.contains('M2.3') || m1.contains('Mã 8 tiến 7') || m1.contains('Mã 2 tiến 3')) {
+        return ('ECCO-02', 'Pháo Đầu đối Bình Phong Mã');
+      }
+      if (m1.contains('C8.5') || m1.contains('C2.5') || m1.contains('Pháo 8 bình 5') || m1.contains('Pháo 2 bình 5')) {
+        return ('ECCO-03', 'Thuận Pháo (Đại chiến)');
+      }
+      return ('ECCO-01', 'Pháo Đầu (Trung Pháo)');
+    }
+    if (m0.contains('B7.1') || m0.contains('B3.1') || m0.contains('Tốt 7 tiến 1') || m0.contains('Tốt 3 tiến 1') || m0.contains('P7.1')) {
+      return ('ECCO-04', 'Tiên Nhân Chỉ Lộ');
+    }
+    if (m0.contains('M2.3') || m0.contains('M8.7') || m0.contains('Mã 2 tiến 3') || m0.contains('Mã 8 tiến 7') || m0.contains('H2.3')) {
+      return ('ECCO-05', 'Khởi Mã Cuộc (Trận Thượng Tiên)');
+    }
+    if (m0.contains('E3.5') || m0.contains('E7.5') || m0.contains('Tượng 3 tiến 5') || m0.contains('Tượng 7 tiến 5')) {
+      return ('ECCO-06', 'Phi Tượng Cuộc');
+    }
+    return ('ECCO-00', 'Khai cuộc tự do');
   }
 
   void _openReviewScreen() {
@@ -1721,13 +1834,15 @@ class _GameScreenState extends State<GameScreen> {
                 // 1. HEADER ĐỐI THỦ (Matching media_1792897057216_bad991d2.png)
                 _buildOpponentHeader(),
 
-                // 2. THANH ƯU THẾ THẾ TRẬN (Advantage Bar)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: AdvantageBarWidget(
-                    evaluationScore: _calculateAdvantageScore(),
-                  ),
-                ),
+                // 1.5. BANNER ĐIỀU KHIỂN AI VS AI
+                if (_isAiVsAi) _buildAiVsAiControlBanner(),
+
+                // 1.8. BANNER XỬ THẮNG RỤNG KIM (NẾU ĐỐI THỦ ONLINE HẾT GIỜ)
+                if (_gameMode == 'Online' && _opponentRemainingSeconds <= 0 && !_isGameOver)
+                  _buildClaimTimeoutBanner(),
+
+                // 2. THANH ƯU THẾ THẾ TRẬN & NHÃN KHAI CUỘC ECCO
+                _buildAdvantageAndOpeningSection(),
 
                 // 3. BÀN CỜ GỖ 3D CHÍNH
                 Expanded(
@@ -1802,6 +1917,136 @@ class _GameScreenState extends State<GameScreen> {
             if (_isGameOver) _buildGameOverOverlay(),
           ],
         ),
+      ),
+    );
+  }
+
+  // Banner Điều Khiển AI vs AI
+  Widget _buildAiVsAiControlBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2C1E18), Color(0xFF1E1714)],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFFD54F), width: 1),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.smart_toy, color: Color(0xFFFFD54F), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'AI ĐỎ (Độ sâu ${widget.aiVsAiRedDepth}) ⚔️ AI ĐEN (Độ sâu ${widget.aiVsAiBlackDepth})',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFE082),
+                  ),
+                ),
+                Text(
+                  'Tốc độ: ${(widget.aiVsAiSpeedMs / 1000).toStringAsFixed(1)}s/nước ${_aiVsAiPaused ? "• (ĐANG TẠM DỪNG)" : "• (ĐANG ĐẤU TỰ ĐỘNG)"}',
+                  style: GoogleFonts.philosopher(
+                    fontSize: 10,
+                    color: _aiVsAiPaused ? const Color(0xFFEF5350) : const Color(0xFF81C784),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Icon(
+              _aiVsAiPaused ? Icons.play_circle_fill : Icons.pause_circle_filled,
+              color: const Color(0xFFFFD54F),
+              size: 26,
+            ),
+            onPressed: () {
+              setState(() => _aiVsAiPaused = !_aiVsAiPaused);
+              if (!_aiVsAiPaused) {
+                _scheduleAiVsAiNextMove();
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Banner Xử Thắng Rụng Kim
+  Widget _buildClaimTimeoutBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          setState(() => _isBusy = true);
+          try {
+            await AppServices.instance.api.claimTimeoutAsync(_currentGameId);
+            await _reloadGame();
+          } catch (e) {
+            _showPlayerBubble('Không thể xử thắng: $e');
+          } finally {
+            if (mounted) setState(() => _isBusy = false);
+          }
+        },
+        icon: const Icon(Icons.bolt, color: Colors.black, size: 18),
+        label: Text(
+          '⚡ XỬ THẮNG RỤNG KIM (ĐỐI THỦ HẾT GIỜ)',
+          style: GoogleFonts.philosopher(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 12),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFFFD54F),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+        ),
+      ),
+    );
+  }
+
+  // Thanh Ưu Thế & Nhãn Khai Cuộc ECCO
+  Widget _buildAdvantageAndOpeningSection() {
+    final opening = _getOpeningInfo();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(
+        children: [
+          AdvantageBarWidget(
+            evaluationScore: _calculateAdvantageScore(),
+          ),
+          if (opening.$1 != 'ECCO-00')
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2C1E18),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF8D6E63), width: 0.8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.menu_book, size: 11, color: Color(0xFFFFD54F)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${opening.$1}: ${opening.$2}',
+                      style: GoogleFonts.philosopher(
+                        fontSize: 10,
+                        color: const Color(0xFFFFE082),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -2180,13 +2425,32 @@ class _GameScreenState extends State<GameScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
+                      if (_currentGameId > 0) {
+                        try {
+                          final nextGame = await AppServices.instance.api.rematchAsync(_currentGameId);
+                          if (!mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => GameScreen(
+                                gameId: nextGame.id,
+                                difficulty: _difficulty,
+                                mode: _gameMode,
+                                seatHint: _seatHint == 'Red' ? 'Black' : 'Red',
+                              ),
+                            ),
+                          );
+                          return;
+                        } catch (_) {}
+                      }
+                      if (!mounted) return;
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => GameScreen(
-                            gameId: _currentGameId > 0 ? _currentGameId : -1,
+                            gameId: -1,
                             difficulty: _difficulty,
                             mode: _gameMode,
                             seatHint: _seatHint,

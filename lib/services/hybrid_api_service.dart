@@ -39,28 +39,70 @@ class HybridApiService {
     return _local.createCoUpAsync(isPassAndPlay: isPassAndPlay);
   }
 
-  Future<GameResponseDto> createPassAndPlayGameAsync() {
-    return _local.createPassAndPlayAsync();
+  Future<GameResponseDto> createPassAndPlayGameAsync() async {
+    try {
+      final json = await _remote.postJsonAsync('api/games');
+      return GameResponseDto.fromJson(json as Map<String, dynamic>);
+    } catch (_) {
+      return _local.createPassAndPlayAsync();
+    }
+  }
+
+  Future<GameResponseDto> createAiVsAiGameAsync() async {
+    try {
+      final json = await _remote.postJsonAsync('api/games');
+      return GameResponseDto.fromJson(json as Map<String, dynamic>);
+    } catch (_) {
+      return _local.createAsync();
+    }
   }
 
   Future<({int fromRow, int fromCol, int toRow, int toCol, String explanation})?>
-      getAiCoachHintAsync(int gameId) {
+      getAiCoachHintAsync(int gameId) async {
+    if (gameId > 0) {
+      try {
+        final json = await _remote.getJsonAsync('api/games/$gameId/hint?mode=full');
+        if (json is Map<String, dynamic> && json['fromX'] != null && json['toX'] != null) {
+          final fx = (json['fromX'] as num).toInt();
+          final fy = (json['fromY'] as num).toInt();
+          final tx = (json['toX'] as num).toInt();
+          final ty = (json['toY'] as num).toInt();
+          final piece = json['pieceType']?.toString() ?? 'quân cờ';
+          return (
+            fromRow: fx,
+            fromCol: fy,
+            toRow: tx,
+            toCol: ty,
+            explanation: 'Gợi ý AI: Di chuyển $piece ($fx, $fy) đến ($tx, $ty)'
+          );
+        }
+      } catch (_) {}
+    }
     return _local.getAiCoachHintAsync(gameId);
   }
 
-  Future<GameResponseDto> createGameFromFenAsync(String fen) {
-    return _local.createFromFenAsync(fen);
+  Future<GameResponseDto> createGameFromFenAsync(String fen) async {
+    try {
+      final encoded = Uri.encodeComponent(fen);
+      final json = await _remote.postJsonAsync('api/games?initialFen=$encoded');
+      return GameResponseDto.fromJson(json as Map<String, dynamic>);
+    } catch (_) {
+      return _local.createFromFenAsync(fen);
+    }
   }
 
-  Future<GameResponseDto> createOnlineGameAsync() async {
-    final json = await _remote.postJsonAsync('api/games/online');
+  Future<GameResponseDto> createOnlineGameAsync({bool isPublic = true}) async {
+    final json = await _remote.postJsonAsync('api/games/online?isPublic=$isPublic');
     return GameResponseDto.fromJson(json as Map<String, dynamic>);
   }
 
-  Future<GameResponseDto> createPveGameAsync(int gameId) async {
-    if (gameId < 0) return _local.createAsync();
-    final json = await _remote.postJsonAsync('api/games?mode=PvE');
-    return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  Future<GameResponseDto> createPveGameAsync({int difficulty = 2, String side = 'Red'}) async {
+    try {
+      final json = await _remote.postJsonAsync('api/games');
+      return GameResponseDto.fromJson(json as Map<String, dynamic>);
+    } catch (_) {
+      return _local.createAsync();
+    }
   }
 
   Future<GameResponseDto> joinOnlineRoomAsync(String code) async {
@@ -87,14 +129,25 @@ class HybridApiService {
     return GameResponseDto.fromJson(json as Map<String, dynamic>);
   }
 
-  Future<GameResponseDto> computerMoveAsync(int gameId, int difficulty) async {
+  Future<GameResponseDto> computerMoveAsync(int gameId, int difficulty, {String computerColor = 'black'}) async {
     if (gameId < 0) {
       return _local.computerAsync(gameId, difficulty);
     }
     final json = await _remote.postJsonAsync(
-      'api/games/$gameId/computer-move?difficulty=$difficulty&computerColor=black',
+      'api/games/$gameId/computer-move?difficulty=$difficulty&computerColor=$computerColor',
     );
     return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<int?> getEvalAsync(int gameId) async {
+    if (gameId < 0) return null;
+    try {
+      final json = await _remote.getJsonAsync('api/games/$gameId/eval');
+      if (json is Map<String, dynamic> && json['eval'] != null) {
+        return (json['eval'] as num).toInt();
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<GameResponseDto> resignAsync(int gameId) async {
@@ -138,11 +191,11 @@ class HybridApiService {
   }
 
   // 5. Đi lại nước cờ (Undo)
-  Future<GameResponseDto> undoAsync(int gameId) async {
+  Future<GameResponseDto> undoAsync(int gameId, {bool isPvE = true}) async {
     if (gameId < 0) {
       return _local.undoAsync(gameId);
     }
-    final json = await _remote.postJsonAsync('api/games/$gameId/undo');
+    final json = await _remote.postJsonAsync('api/games/$gameId/undo?isPvE=$isPvE');
     return GameResponseDto.fromJson(json as Map<String, dynamic>);
   }
 
@@ -187,6 +240,17 @@ class HybridApiService {
       }
     } catch (_) {}
     return [];
+  }
+
+  // 10.5. Lấy thử thách Cờ Thế Hôm Nay (+20 Elo)
+  Future<Map<String, dynamic>?> getDailyPuzzleAsync() async {
+    try {
+      final list = await _remote.getJsonAsync('api/puzzles');
+      if (list is List && list.isNotEmpty) {
+        return list.first as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
   }
 
   // 11. Toàn bộ danh mục ải Cờ Thế Vượt Màn từ Backend (/api/puzzle-run/catalog)
