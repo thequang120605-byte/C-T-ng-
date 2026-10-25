@@ -1,9 +1,0 @@
-<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:views="clr-namespace:ChessCore.Mobile.Views"
-       x:Class="ChessCore.Mobile.AppShell" Shell.FlyoutBehavior="Disabled" Shell.NavBarIsVisible="False"
-       Shell.TabBarBackgroundColor="#282B29" Shell.TabBarForegroundColor="#EBCB8E" Shell.TabBarTitleColor="#EBCB8E" Shell.TabBarUnselectedColor="#AAA999">
-    <TabBar>
-        <Tab Title="Sảnh cờ" Icon="tab_home.png"><ShellContent Route="home" ContentTemplate="{DataTemplate views:HomePage}" /></Tab>
-        <Tab Title="Chọn bàn" Icon="tab_board.png"><ShellContent Route="lobby" ContentTemplate="{DataTemplate views:OnlineLobbyPage}" /></Tab>
-        <Tab Title="Kỳ thủ" Icon="tab_profile.png"><ShellContent Route="profile" ContentTemplate="{DataTemplate views:ProfilePage}" /></Tab>
-    </TabBar>
-</Shell>

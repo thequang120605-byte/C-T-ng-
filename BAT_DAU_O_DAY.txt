@@ -1,8 +1,0 @@
-﻿KỲ ĐẠO PIXEL 1.2
-
-Mở cả thư mục này trong VS Code.
-Tạo máy ảo Pixel trong Android Studio > Device Manager.
-Chạy .\Run-Pixel.ps1 trong terminal của thư mục này.
-App mới tên Kỳ Đạo Pixel, màu giấy ngà.
-Bấm Chơi với máy để chơi ngay, không cần bật backend.
-Đọc README_VI.md nếu cần chọn SDK/AVD cụ thể.

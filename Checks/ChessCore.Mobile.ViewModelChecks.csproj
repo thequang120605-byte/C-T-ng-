@@ -1,5 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-<PropertyGroup><TargetFramework>net9.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
-<ItemGroup><PackageReference Include="Microsoft.Maui.Controls" Version="9.0.120"/><PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.2"/>
-<Compile Include="../Models/*.cs"/><Compile Include="../Offline/*.cs"/><Compile Include="../Services/*.cs"/><Compile Include="../ViewModels/BaseViewModel.cs"/><Compile Include="../ViewModels/AsyncCommand.cs"/><Compile Include="../ViewModels/GameViewModel.cs"/><Compile Include="RegressionProgram.cs"/><Compile Include="MauiTestUsings.cs"/></ItemGroup>
-</Project>

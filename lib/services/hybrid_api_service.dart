@@ -1,0 +1,157 @@
+import '../models/game_models.dart';
+import 'api_service.dart';
+import 'offline_game_service.dart';
+
+class HybridApiService {
+  final ApiService _remote;
+  final OfflineGameService _local;
+
+  HybridApiService(this._remote, this._local);
+
+  Future<bool> pingAsync() => _remote.pingAsync();
+
+  Future<GameResponseDto> getGameAsync(int gameId) async {
+    if (gameId < 0) {
+      return _local.getAsync(gameId);
+    }
+    final json = await _remote.getJsonAsync('api/games/$gameId');
+    return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<List<ValidMoveDto>> getValidMovesAsync(
+      int gameId, int row, int col) async {
+    if (gameId < 0) {
+      return _local.validMovesAsync(gameId, row, col);
+    }
+    final list = await _remote
+        .getJsonAsync('api/games/$gameId/valid-moves?row=$row&col=$col');
+    if (list is! List) return [];
+    return list
+        .map((e) => ValidMoveDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<GameResponseDto> createOfflineGameAsync() {
+    return _local.createAsync();
+  }
+
+  Future<GameResponseDto> createOnlineGameAsync() async {
+    final json = await _remote.postJsonAsync('api/games/online');
+    return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<GameResponseDto> createPveGameAsync(int gameId) async {
+    if (gameId < 0) return _local.createAsync();
+    final json = await _remote.postJsonAsync('api/games?mode=PvE');
+    return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<GameResponseDto> joinOnlineRoomAsync(String code) async {
+    final encoded = Uri.encodeComponent(code);
+    final json = await _remote.postJsonAsync('api/games/$encoded/join');
+    return JoinResponseParser.parse(json as Map<String, dynamic>);
+  }
+
+  Future<List<RoomItemDto>> getOnlineRoomsAsync() async {
+    final list = await _remote.getJsonAsync('api/games/online/rooms');
+    if (list is! List) return [];
+    return list
+        .map((e) => RoomItemDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<GameResponseDto> makeMoveAsync(
+      int gameId, MakeMoveRequestDto move) async {
+    if (gameId < 0) {
+      return _local.moveAsync(gameId, move);
+    }
+    final json =
+        await _remote.postJsonAsync('api/games/$gameId/moves', move.toJson());
+    return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<GameResponseDto> computerMoveAsync(int gameId, int difficulty) async {
+    if (gameId < 0) {
+      return _local.computerAsync(gameId, difficulty);
+    }
+    final json = await _remote.postJsonAsync(
+      'api/games/$gameId/computer-move?difficulty=$difficulty&computerColor=black',
+    );
+    return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<GameResponseDto> resignAsync(int gameId) async {
+    if (gameId < 0) {
+      return _local.resignAsync(gameId);
+    }
+    final json = await _remote.postJsonAsync('api/games/$gameId/resign');
+    return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  // 1. Xin hòa ván cờ (Draw Offer)
+  Future<dynamic> offerDrawAsync(int gameId) async {
+    if (gameId < 0) {
+      return _local.offerDrawAsync(gameId);
+    }
+    return _remote.postJsonAsync('api/games/$gameId/draw/offer');
+  }
+
+  // 2. Phản hồi đề nghị hòa (Respond Draw)
+  Future<dynamic> respondDrawAsync(int gameId, bool accepted) async {
+    if (gameId < 0) return null;
+    return _remote.postJsonAsync(
+      'api/games/$gameId/draw/respond',
+      {'accepted': accepted, 'isAccepted': accepted},
+    );
+  }
+
+  // 3. Xử thắng rụng kim / Hết giờ (Claim Timeout)
+  Future<dynamic> claimTimeoutAsync(int gameId) async {
+    if (gameId < 0) return null;
+    return _remote.postJsonAsync('api/games/$gameId/claim-timeout');
+  }
+
+  // 4. Đấu lại (Rematch)
+  Future<GameResponseDto> rematchAsync(int gameId) async {
+    if (gameId < 0) {
+      return _local.createAsync();
+    }
+    final json = await _remote.postJsonAsync('api/games/$gameId/rematch');
+    return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  // 5. Đi lại nước cờ (Undo)
+  Future<GameResponseDto> undoAsync(int gameId) async {
+    if (gameId < 0) {
+      return _local.undoAsync(gameId);
+    }
+    final json = await _remote.postJsonAsync('api/games/$gameId/undo');
+    return GameResponseDto.fromJson(json as Map<String, dynamic>);
+  }
+
+  // 6. Hủy phòng chờ (Cancel Waiting Room)
+  Future<dynamic> cancelWaitingRoomAsync(int gameId) async {
+    if (gameId < 0) return null;
+    return _remote.postJsonAsync('api/games/$gameId/cancel-wait');
+  }
+
+  // 7. Lấy danh sách trận đấu trực tiếp (Live Matches)
+  Future<List<LiveMatchDto>> getLiveMatchesAsync() async {
+    final list = await _remote.getJsonAsync('api/games/online/live');
+    if (list is! List) return [];
+    return list
+        .map((e) => LiveMatchDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  // 8. Gợi ý nước đi từ AI server (Hint)
+  Future<dynamic> getAiHintAsync(int gameId) async {
+    if (gameId < 0) return null;
+    return _remote.getJsonAsync('api/games/$gameId/hint?mode=full');
+  }
+
+  // 9. Lấy danh sách Cờ Thế từ Database (Puzzles)
+  Future<dynamic> getPuzzlesAsync() async {
+    return _remote.getJsonAsync('api/puzzles');
+  }
+}
