@@ -1266,6 +1266,144 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  String _buildFenFromCurrentBoard() {
+    try {
+      final pieces = _game?.boardPieces ?? [];
+      final board = Board.fromPieceList(
+        pieces,
+        currentTurn: _game?.currentTurn.toLowerCase() == 'black'
+            ? PieceColor.black
+            : PieceColor.red,
+      );
+      return board.toFen();
+    } catch (_) {
+      return Board.startFen;
+    }
+  }
+
+  void _showShareVictoryCardModal() {
+    HapticFeedback.selectionClick();
+    final pgn = _game?.moves.map((m) => m.notation).join(' ') ?? '';
+    final fen = _buildFenFromCurrentBoard();
+    final winner = _game?.status == 'RedWins'
+        ? 'Đỏ thắng'
+        : (_game?.status == 'BlackWins' ? 'Đen thắng' : 'Hòa ván');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1714),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFFFD54F), width: 1.5),
+        ),
+        title: Center(
+          child: Text(
+            'THIỆP CHIẾN TÍCH KỲ ĐÀI',
+            style: GoogleFonts.cinzel(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFFFE082),
+            ),
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2C1E18), Color(0xFF140F0D)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFD54F), width: 1.2),
+              ),
+              child: Column(
+                children: [
+                  const Text('👑', style: TextStyle(fontSize: 28)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'KỲ ĐẠO CHIẾN BẢO',
+                    style: GoogleFonts.cinzel(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFD54F),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${_user?.username ?? "Bạn"} vs $_opponentName',
+                    style: GoogleFonts.philosopher(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'Kết quả: $winner • ${_game?.moves.length ?? 0} Nước đi',
+                    style: GoogleFonts.philosopher(fontSize: 12, color: const Color(0xFF66BB6A)),
+                  ),
+                  const Divider(color: Color(0xFF5D4037)),
+                  Text(
+                    'Phần mềm Cờ Tướng Cổ Phong Hoàng Gia ChessCore',
+                    style: GoogleFonts.philosopher(
+                      fontSize: 10,
+                      color: const Color(0xFF8D6E63),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.copy, size: 16, color: Color(0xFFFFD54F)),
+              label: Text('Sao Chép Biên Bản PGN', style: GoogleFonts.philosopher(color: const Color(0xFFFFD54F))),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF5D4037)),
+                minimumSize: const Size(double.infinity, 38),
+              ),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: pgn.isNotEmpty ? pgn : fen));
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF2E7D32),
+                    content: Text('Đã sao chép kỳ phổ vào bộ nhớ tạm!', style: GoogleFonts.philosopher()),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.grid_4x4, size: 16, color: Color(0xFF81D4FA)),
+              label: Text('Sao Chép Chuỗi FEN', style: GoogleFonts.philosopher(color: const Color(0xFF81D4FA))),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF5D4037)),
+                minimumSize: const Size(double.infinity, 38),
+              ),
+              onPressed: () {
+                _copyFenToClipboard();
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC0392B),
+              side: const BorderSide(color: Color(0xFFFFD54F)),
+            ),
+            child: Text('Đóng', style: GoogleFonts.philosopher(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showGameMenuModal() {
     showModalBottomSheet(
       context: context,
@@ -1302,6 +1440,14 @@ class _GameScreenState extends State<GameScreen> {
               onTap: () {
                 Navigator.pop(ctx);
                 _copyFenToClipboard();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.card_membership, color: Color(0xFFFFD54F)),
+              title: Text('Thiệp chiến tích & Xuất PGN', style: GoogleFonts.philosopher(color: const Color(0xFFFFD54F))),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showShareVictoryCardModal();
               },
             ),
             if (_isPuzzleMode) ...[

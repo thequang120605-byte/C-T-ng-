@@ -16,6 +16,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isBusy = false;
   late bool _reduceMotion;
   late bool _soundEnabled;
+  late String _pieceTheme;
+  late String _boardTheme;
 
   @override
   void initState() {
@@ -24,6 +26,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _urlCtrl = TextEditingController(text: cfg.baseUrl);
     _reduceMotion = cfg.reduceMotion;
     _soundEnabled = cfg.soundEnabled;
+    _pieceTheme = cfg.pieceTheme;
+    _boardTheme = cfg.boardTheme;
   }
 
   @override
@@ -376,6 +380,99 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               },
                             ),
                           ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1714),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF3E2723), width: 1),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.palette, color: Color(0xFFFFD54F), size: 20),
+                            const SizedBox(width: 10),
+                            Text(
+                              'GIAO DIỆN BÀN CỜ & QUÂN CỜ',
+                              style: GoogleFonts.cinzel(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFE082),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Mặt quân cờ
+                        Text('Mặt Quân Cờ:', style: GoogleFonts.philosopher(color: const Color(0xFFBCAAA4), fontSize: 12)),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF140E0B),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF4A3728)),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _pieceTheme,
+                              isExpanded: true,
+                              dropdownColor: const Color(0xFF1E1714),
+                              style: GoogleFonts.philosopher(color: Colors.white, fontSize: 13),
+                              items: const [
+                                DropdownMenuItem(value: 'royal', child: Text('👑 Thư Pháp Hoàng Gia (Son chu sa viền kim)')),
+                                DropdownMenuItem(value: 'woodcut', child: Text('🪵 Mộc Bản Cổ Điển (Khắc gỗ chìm mộc mạc)')),
+                                DropdownMenuItem(value: 'pixel', child: Text('👾 Retro Pixel 16-Bit (Đồ họa cổ điển)')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _pieceTheme = val);
+                                  cfg.pieceTheme = val;
+                                  AppServices.instance.sound.playMove();
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Chất liệu bàn cờ
+                        Text('Chất Liệu Bàn Cờ:', style: GoogleFonts.philosopher(color: const Color(0xFFBCAAA4), fontSize: 12)),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF140E0B),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF4A3728)),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _boardTheme,
+                              isExpanded: true,
+                              dropdownColor: const Color(0xFF1E1714),
+                              style: GoogleFonts.philosopher(color: Colors.white, fontSize: 13),
+                              items: const [
+                                DropdownMenuItem(value: 'imperial_wood', child: Text('🪵 Gỗ Gụ Mun Hoàng Gia (Trầm ấm sang trọng)')),
+                                DropdownMenuItem(value: 'golden_oak', child: Text('✨ Gỗ Sồi Vàng Ánh Kim (Tương phản sáng rõ)')),
+                                DropdownMenuItem(value: 'ancient_scroll', child: Text('📜 Giấy Dó Cổ Phong (Thủy mặc phong vân)')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _boardTheme = val);
+                                  cfg.boardTheme = val;
+                                  AppServices.instance.sound.playMove();
+                                }
+                              },
+                            ),
+                          ),
                         ),
                       ],
                     ),

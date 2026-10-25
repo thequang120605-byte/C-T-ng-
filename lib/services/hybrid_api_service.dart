@@ -249,4 +249,50 @@ class HybridApiService {
     } catch (_) {}
     return [];
   }
+
+  // 17. Lấy danh sách kỳ phổ danh thủ từ Backend (/api/master-games)
+  Future<List<MasterGameItemDto>> getMasterGamesAsync() async {
+    try {
+      final json = await _remote.getJsonAsync('api/master-games');
+      if (json is Map<String, dynamic>) {
+        final list = json['games'] as List<dynamic>? ?? [];
+        return list.map((e) => MasterGameItemDto.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  // 18. Lấy chi tiết kỳ phổ danh thủ từ Backend (/api/master-games/{id})
+  Future<MasterGameItemDto?> getMasterGameDetailAsync(int id) async {
+    try {
+      final json = await _remote.getJsonAsync('api/master-games/$id');
+      if (json is Map<String, dynamic>) {
+        return MasterGameItemDto.fromJson(json);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 19. Lấy danh sách khóa học kỳ đạo từ Backend (/api/courses)
+  Future<List<CourseModuleDto>> getCoursesAsync() async {
+    try {
+      final json = await _remote.getJsonAsync('api/courses');
+      if (json is Map<String, dynamic>) {
+        final list = json['modules'] as List<dynamic>? ?? [];
+        return list.map((e) => CourseModuleDto.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  // 20. Lấy chi tiết bài học và câu hỏi trắc nghiệm (/api/courses/lessons/{id})
+  Future<CourseLessonDetailDto?> getCourseLessonDetailAsync(int id) async {
+    try {
+      final json = await _remote.getJsonAsync('api/courses/lessons/$id');
+      if (json is Map<String, dynamic>) {
+        return CourseLessonDetailDto.fromJson(json);
+      }
+    } catch (_) {}
+    return null;
+  }
 }

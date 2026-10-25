@@ -5,6 +5,8 @@ class ConfigService extends ChangeNotifier {
   static const String _baseUrlKey = 'app_base_url';
   static const String _reduceMotionKey = 'reduce_motion';
   static const String _soundEnabledKey = 'sound_enabled';
+  static const String _pieceThemeKey = 'piece_theme';
+  static const String _boardThemeKey = 'board_theme';
 
   final SharedPreferences _prefs;
   int _generation = 0;
@@ -39,6 +41,22 @@ class ConfigService extends ChangeNotifier {
 
   set soundEnabled(bool value) {
     _prefs.setBool(_soundEnabledKey, value);
+    notifyListeners();
+  }
+
+  // Giao diện quân cờ: 'royal' (Thư pháp Hoàng Gia), 'woodcut' (Mộc Bản Cổ Điển), 'pixel' (Retro Pixel)
+  String get pieceTheme => _prefs.getString(_pieceThemeKey) ?? 'royal';
+
+  set pieceTheme(String value) {
+    _prefs.setString(_pieceThemeKey, value);
+    notifyListeners();
+  }
+
+  // Giao diện bàn cờ: 'imperial_wood' (Gỗ Gụ Mun), 'golden_oak' (Gỗ Sồi Vàng), 'ancient_scroll' (Giấy Dó)
+  String get boardTheme => _prefs.getString(_boardThemeKey) ?? 'imperial_wood';
+
+  set boardTheme(String value) {
+    _prefs.setString(_boardThemeKey, value);
     notifyListeners();
   }
 

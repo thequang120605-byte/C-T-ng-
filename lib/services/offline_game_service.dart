@@ -47,6 +47,27 @@ class OfflineGameService {
   final Map<int, _Session> _sessions = {};
   int _nextId = 0;
 
+  static List<PieceDto> defaultStartingPieces() {
+    final b = Board();
+    final pieces = <PieceDto>[];
+    for (int row = 0; row < 10; row++) {
+      for (int col = 0; col < 9; col++) {
+        final p = b.getPieceAt(row, col);
+        if (p != null) {
+          pieces.add(
+            PieceDto(
+              row: row,
+              col: col,
+              type: p.type.label,
+              color: p.color.label,
+            ),
+          );
+        }
+      }
+    }
+    return pieces;
+  }
+
   Future<GameResponseDto> createAsync() async {
     _nextId--;
     final session = _Session(_nextId);

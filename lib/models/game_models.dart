@@ -674,3 +674,170 @@ class MatchHistoryItemDto {
     );
   }
 }
+
+class MasterGameItemDto {
+  final int id;
+  final String title;
+  final String redPlayer;
+  final String blackPlayer;
+  final String eventName;
+  final String eventDate;
+  final String result;
+  final String openingName;
+  final String initialFen;
+  final String pgnContent;
+
+  const MasterGameItemDto({
+    required this.id,
+    required this.title,
+    required this.redPlayer,
+    required this.blackPlayer,
+    required this.eventName,
+    required this.eventDate,
+    required this.result,
+    required this.openingName,
+    required this.initialFen,
+    required this.pgnContent,
+  });
+
+  factory MasterGameItemDto.fromJson(Map<String, dynamic> json) {
+    return MasterGameItemDto(
+      id: (json['id'] ?? 0) as int,
+      title: json['title']?.toString() ?? '',
+      redPlayer: json['redPlayer']?.toString() ?? '',
+      blackPlayer: json['blackPlayer']?.toString() ?? '',
+      eventName: json['eventName']?.toString() ?? '',
+      eventDate: json['eventDate']?.toString() ?? '',
+      result: json['result']?.toString() ?? '',
+      openingName: json['openingName']?.toString() ?? '',
+      initialFen: json['initialFen']?.toString() ?? '',
+      pgnContent: json['pgnContent']?.toString() ?? '',
+    );
+  }
+}
+
+class CourseModuleDto {
+  final int id;
+  final String title;
+  final String description;
+  final int displayOrder;
+  final int totalLessons;
+  final List<CourseLessonDto> lessons;
+
+  const CourseModuleDto({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.displayOrder,
+    required this.totalLessons,
+    required this.lessons,
+  });
+
+  factory CourseModuleDto.fromJson(Map<String, dynamic> json) {
+    return CourseModuleDto(
+      id: (json['id'] ?? 0) as int,
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      displayOrder: (json['displayOrder'] ?? 0) as int,
+      totalLessons: (json['totalLessons'] ?? 0) as int,
+      lessons: (json['lessons'] as List<dynamic>? ?? [])
+          .map((l) => CourseLessonDto.fromJson(l as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class CourseLessonDto {
+  final int id;
+  final int moduleId;
+  final String title;
+  final String description;
+  final String lessonType;
+  final String? boardPosition;
+  final int displayOrder;
+
+  const CourseLessonDto({
+    required this.id,
+    required this.moduleId,
+    required this.title,
+    required this.description,
+    required this.lessonType,
+    this.boardPosition,
+    required this.displayOrder,
+  });
+
+  factory CourseLessonDto.fromJson(Map<String, dynamic> json) {
+    return CourseLessonDto(
+      id: (json['id'] ?? 0) as int,
+      moduleId: (json['moduleId'] ?? 0) as int,
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      lessonType: json['lessonType']?.toString() ?? 'theory',
+      boardPosition: json['boardPosition']?.toString(),
+      displayOrder: (json['displayOrder'] ?? 0) as int,
+    );
+  }
+}
+
+class CourseLessonDetailDto {
+  final int id;
+  final int moduleId;
+  final String title;
+  final String description;
+  final String content;
+  final String lessonType;
+  final String? boardPosition;
+  final List<CourseQuizDto> questions;
+
+  const CourseLessonDetailDto({
+    required this.id,
+    required this.moduleId,
+    required this.title,
+    required this.description,
+    required this.content,
+    required this.lessonType,
+    this.boardPosition,
+    required this.questions,
+  });
+
+  factory CourseLessonDetailDto.fromJson(Map<String, dynamic> json) {
+    return CourseLessonDetailDto(
+      id: (json['id'] ?? 0) as int,
+      moduleId: (json['moduleId'] ?? 0) as int,
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      lessonType: json['lessonType']?.toString() ?? 'theory',
+      boardPosition: json['boardPosition']?.toString(),
+      questions: (json['questions'] as List<dynamic>? ?? [])
+          .map((q) => CourseQuizDto.fromJson(q as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class CourseQuizDto {
+  final int id;
+  final String question;
+  final String optionsJson;
+  final int correctAnswer;
+  final String explanation;
+
+  const CourseQuizDto({
+    required this.id,
+    required this.question,
+    required this.optionsJson,
+    required this.correctAnswer,
+    required this.explanation,
+  });
+
+  factory CourseQuizDto.fromJson(Map<String, dynamic> json) {
+    return CourseQuizDto(
+      id: (json['id'] ?? 0) as int,
+      question: json['question']?.toString() ?? '',
+      optionsJson: json['optionsJson']?.toString() ?? '[]',
+      correctAnswer: (json['correctAnswer'] ?? 0) as int,
+      explanation: json['explanation']?.toString() ?? '',
+    );
+  }
+}

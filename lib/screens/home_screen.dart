@@ -3,8 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/game_models.dart';
 import '../services/app_services.dart';
 import '../theme/app_theme.dart';
+import 'course_academy_screen.dart';
 import 'game_screen.dart';
+import 'master_games_screen.dart';
 import 'profile_screen.dart';
+import 'puzzle_rush_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -355,6 +358,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
               // 2. THẺ XEM TRẬN ĐẤU TRỰC TIẾP (Live Match Card)
               _buildLiveMatchCard(),
+              const SizedBox(height: 14),
+
+              // 2.5 THANH TIỆN ÍCH HOÀNG GIA (Thần Tốc, Kỳ Phổ Danh Thủ, Học Cờ)
+              _buildRoyalFeaturesRow(),
               const SizedBox(height: 16),
 
               // Tiêu đề khối chế độ
@@ -515,6 +522,92 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
               const SizedBox(height: 20),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Thanh Tiện Ích Hoàng Gia (Thần Tốc, Kỳ Phổ Danh Thủ, Viện Kỳ Đạo)
+  Widget _buildRoyalFeaturesRow() {
+    return Row(
+      children: [
+        _buildFeaturePill(
+          icon: Icons.bolt,
+          label: 'Thần Tốc',
+          color: const Color(0xFFFF9800),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => PuzzleRushScreen(onBack: () => Navigator.pop(context))),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        _buildFeaturePill(
+          icon: Icons.menu_book,
+          label: 'Kỳ Phổ',
+          color: const Color(0xFF00E676),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => MasterGamesScreen(onBack: () => Navigator.pop(context))),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        _buildFeaturePill(
+          icon: Icons.school,
+          label: 'Viện Kỳ Đạo',
+          color: const Color(0xFF40C4FF),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CourseAcademyScreen(onBack: () => Navigator.pop(context))),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeaturePill({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1714),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.6), width: 1.2),
+              boxShadow: const [
+                BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2)),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 16),
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: GoogleFonts.philosopher(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
