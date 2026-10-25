@@ -125,7 +125,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
   void _scrollToActiveStage() {
     if (!_scrollController.hasClients) return;
     final screenH = MediaQuery.of(context).size.height;
-    // Ải 5 ở y = 1030.0 -> cuộn để Ải 5 nằm giữa màn hình
+    // Ải 5 ở y = 1030.0 -> cuộn để Ải 5 nằm ngay giữa màn hình
     const targetY = 1030.0;
     final scrollOffset = (targetY - screenH * 0.45).clamp(
       0.0,
@@ -306,12 +306,14 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
           children: [
             const Icon(Icons.card_giftcard, color: Color(0xFFFFD54F), size: 26),
             const SizedBox(width: 10),
-            Text(
-              name,
-              style: GoogleFonts.cinzel(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.goldLight,
+            Expanded(
+              child: Text(
+                name,
+                style: GoogleFonts.cinzel(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.goldLight,
+                ),
               ),
             ),
           ],
@@ -368,9 +370,9 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // 1. THANH TÀI NGUYÊN TRÊN CÙNG
+            // 1. THANH TÀI NGUYÊN TRÊN CÙNG (An toàn chống tràn ngang)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: const BoxDecoration(
                 color: Color(0xFF221A15),
                 border: Border(
@@ -380,23 +382,32 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: AppColors.goldLight, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: const Icon(Icons.arrow_back_ios, color: AppColors.goldLight, size: 18),
                     onPressed: widget.onBackToHome,
                   ),
-                  Text(
-                    'BẢN ĐỒ VƯỢT ẢI',
-                    style: GoogleFonts.cinzel(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.goldLight,
-                      letterSpacing: 1.2,
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'BẢN ĐỒ VƯỢT ẢI',
+                        style: GoogleFonts.cinzel(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.goldLight,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 6),
                   _buildResourceBadge(Icons.favorite, '$_hearts', const Color(0xFFE53935)),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   _buildResourceBadge(Icons.lightbulb, '$_hints', const Color(0xFFFFD54F)),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   _buildResourceBadge(Icons.replay, '$_retries', const Color(0xFF42A5F5)),
                 ],
               ),
@@ -444,16 +455,19 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
                               ),
                             ),
 
-                            // Lớp 2: Khởi trại dưới chân núi
+                            // Lớp 2: Khởi trại dưới chân núi (Căn giữa hoàn toàn)
                             Positioned(
-                              left: horizontalOffset + waypoints.startCamp.dx - 80,
-                              top: waypoints.startCamp.dy - 20,
-                              child: _buildStartCamp(),
+                              top: waypoints.startCamp.dy - 12,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: _buildStartCamp(),
+                              ),
                             ),
 
                             // Lớp 3: Rương bảo vật chặng 1 & chặng 2
                             Positioned(
-                              left: horizontalOffset + waypoints.chest1.dx - 30,
+                              left: horizontalOffset + waypoints.chest1.dx - 50,
                               top: waypoints.chest1.dy - 30,
                               child: _buildTreasureChest(
                                 name: 'Rương Bạc Vượt Ải',
@@ -462,7 +476,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
                               ),
                             ),
                             Positioned(
-                              left: horizontalOffset + waypoints.chest2.dx - 30,
+                              left: horizontalOffset + waypoints.chest2.dx - 50,
                               top: waypoints.chest2.dy - 30,
                               child: _buildTreasureChest(
                                 name: 'Rương Vàng Hoàng Kim',
@@ -471,18 +485,21 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
                               ),
                             ),
 
-                            // Lớp 4: Đỉnh Cung Điện Vô Song ở trên cùng (Ải 10)
+                            // Lớp 4: Đỉnh Cung Điện Vô Song ở trên cùng (Ải 10) - Căn giữa tự động, triệt tiêu lỗi tràn ngang
                             Positioned(
-                              left: horizontalOffset + waypoints.palacePeak.dx - 90,
-                              top: waypoints.palacePeak.dy - 50,
-                              child: _buildPalacePeak(),
+                              top: waypoints.palacePeak.dy - 38,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: _buildPalacePeak(),
+                              ),
                             ),
 
                             // Lớp 5: Các trạm ải 1 đến 10 (Đặt chính xác tại tọa độ đường cong)
                             ..._stages.map((stage) {
                               final pt = waypoints.stagePoints[stage.id - 1];
                               return Positioned(
-                                left: horizontalOffset + pt.dx - 60,
+                                left: horizontalOffset + pt.dx - 65,
                                 top: pt.dy - 55,
                                 child: AnimatedBuilder(
                                   animation: _pulseCtrl,
@@ -508,7 +525,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
 
   Widget _buildResourceBadge(IconData icon, String count, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: Colors.black54,
         borderRadius: BorderRadius.circular(12),
@@ -517,12 +534,12 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 3),
           Text(
             count,
             style: GoogleFonts.cinzel(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -566,7 +583,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     return GestureDetector(
       onTap: () => _onStageSelected(stage),
       child: SizedBox(
-        width: 120,
+        width: 130,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -745,7 +762,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.philosopher(
-                  fontSize: 10.5,
+                  fontSize: 10.0,
                   fontWeight: FontWeight.bold,
                   color: isCleared
                       ? const Color(0xFFFFE082)
@@ -759,13 +776,12 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     );
   }
 
-  // Khởi trại dưới chân núi
+  // Khởi trại dưới chân núi (Tự co giãn nội dung)
   Widget _buildStartCamp() {
     return Container(
-      width: 160,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF221711).withAlpha(220),
+        color: const Color(0xFF221711).withAlpha(230),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF8D6E63), width: 1.2),
         boxShadow: const [
@@ -799,59 +815,66 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
   }) {
     return GestureDetector(
       onTap: () => _showChestDialog(name, reward, isClaimed),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isClaimed ? const Color(0xFF3E2723) : const Color(0xFF5D4037),
-              border: Border.all(
-                color: isClaimed ? const Color(0xFFFFD54F) : const Color(0xFFBCAAA4),
-                width: 1.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isClaimed
-                      ? const Color(0xFFFFB300).withAlpha(100)
-                      : Colors.black54,
-                  blurRadius: 8,
+      child: SizedBox(
+        width: 100,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isClaimed ? const Color(0xFF3E2723) : const Color(0xFF5D4037),
+                border: Border.all(
+                  color: isClaimed ? const Color(0xFFFFD54F) : const Color(0xFFBCAAA4),
+                  width: 1.8,
                 ),
-              ],
-            ),
-            child: Icon(
-              isClaimed ? Icons.lock_open : Icons.card_giftcard,
-              color: isClaimed ? const Color(0xFFFFD54F) : const Color(0xFFFFCA28),
-              size: 24,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              name,
-              style: GoogleFonts.philosopher(
-                fontSize: 9,
-                color: isClaimed ? const Color(0xFFFFD54F) : const Color(0xFFBCAAA4),
+                boxShadow: [
+                  BoxShadow(
+                    color: isClaimed
+                        ? const Color(0xFFFFB300).withAlpha(100)
+                        : Colors.black54,
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              child: Icon(
+                isClaimed ? Icons.lock_open : Icons.card_giftcard,
+                color: isClaimed ? const Color(0xFFFFD54F) : const Color(0xFFFFCA28),
+                size: 22,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 3),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.philosopher(
+                  fontSize: 9.0,
+                  color: isClaimed ? const Color(0xFFFFD54F) : const Color(0xFFBCAAA4),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // Cung điện đỉnh phong ở Ải 10
+  // Cung điện đỉnh phong ở Ải 10 (Tự động thích ứng, triệt tiêu hoàn toàn lỗi tràn ngang)
   Widget _buildPalacePeak() {
     return Container(
-      width: 180,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      constraints: const BoxConstraints(maxWidth: 220),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF3E1F11), Color(0xFF1E100A)],
@@ -870,17 +893,22 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.castle, color: Color(0xFFFFD54F), size: 20),
+              const Icon(Icons.castle, color: Color(0xFFFFD54F), size: 18),
               const SizedBox(width: 6),
-              Text(
-                'THIÊN NGOẠI CUNG',
-                style: GoogleFonts.cinzel(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFFD54F),
-                  letterSpacing: 1.0,
+              Flexible(
+                child: Text(
+                  'THIÊN NGOẠI CUNG',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.cinzel(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD54F),
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ),
             ],
@@ -889,7 +917,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
           Text(
             'Đỉnh Phong Kỳ Đạo',
             style: GoogleFonts.philosopher(
-              fontSize: 10,
+              fontSize: 9.5,
               color: const Color(0xFFD7CCC8),
             ),
           ),
