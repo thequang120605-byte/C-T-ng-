@@ -67,6 +67,85 @@ namespace ChessCore.Controllers
             return View(vm);
         }
 
+        // ==========================================
+        // REST API CHO MOBILE APP & WEB INTEGRATION
+        // ==========================================
+        [AllowAnonymous]
+        [HttpGet("/api/courses")]
+        public async Task<IActionResult> GetCoursesApi()
+        {
+            try
+            {
+                var modules = await _context.CourseModules
+                    .AsNoTracking()
+                    .Include(m => m.Lessons.OrderBy(l => l.DisplayOrder))
+                    .OrderBy(m => m.DisplayOrder)
+                    .Select(m => new
+                    {
+                        id = m.Id,
+                        title = m.Title,
+                        description = m.Description,
+                        displayOrder = m.DisplayOrder,
+                        totalLessons = m.Lessons.Count,
+                        lessons = m.Lessons.Select(l => new
+                        {
+                            id = l.Id,
+                            moduleId = l.ModuleId,
+                            title = l.Title,
+                            description = l.Description,
+                            lessonType = l.LessonType,
+                            boardPosition = l.BoardPosition,
+                            displayOrder = l.DisplayOrder
+                        }).ToList()
+                    })
+                    .ToListAsync();
+
+                return Ok(new { total = modules.Count, modules });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi nạp bài học kỳ đạo: " + ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpGet("/api/courses/lessons/{id}")]
+        public async Task<IActionResult> GetLessonDetailApi(int id)
+        {
+            try
+            {
+                var lesson = await _context.CourseLessons
+                    .AsNoTracking()
+                    .Include(l => l.QuizQuestions.OrderBy(q => q.DisplayOrder))
+                    .SingleOrDefaultAsync(l => l.Id == id);
+
+                if (lesson == null) return NotFound(new { message = "Không tìm thấy bài học." });
+
+                return Ok(new
+                {
+                    id = lesson.Id,
+                    moduleId = lesson.ModuleId,
+                    title = lesson.Title,
+                    description = lesson.Description,
+                    content = lesson.Content,
+                    lessonType = lesson.LessonType,
+                    boardPosition = lesson.BoardPosition,
+                    questions = lesson.QuizQuestions.Select(q => new
+                    {
+                        id = q.Id,
+                        question = q.Question,
+                        optionsJson = q.OptionsJson,
+                        correctAnswer = q.CorrectAnswer,
+                        explanation = q.Explanation
+                    }).ToList()
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi nạp chi tiết bài học: " + ex.Message });
+            }
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveProgress([FromBody] CourseProgressRequest request)

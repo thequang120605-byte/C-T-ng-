@@ -59,6 +59,72 @@ namespace ChessCore.Controllers
             }
         }
 
+        // ==========================================
+        // REST API CHO MOBILE APP & WEB INTEGRATION
+        // ==========================================
+        [HttpGet("/api/master-games")]
+        public async Task<IActionResult> GetMasterGamesApi()
+        {
+            try
+            {
+                await EnsureMasterGamesPopulatedAsync();
+
+                var games = await _context.MasterGames
+                    .OrderByDescending(g => g.EventDate ?? g.CreatedAt)
+                    .Select(g => new
+                    {
+                        id = g.Id,
+                        title = g.Title,
+                        redPlayer = g.RedPlayer,
+                        blackPlayer = g.BlackPlayer,
+                        eventName = g.Event,
+                        eventDate = g.EventDate.HasValue ? g.EventDate.Value.ToString("dd/MM/yyyy") : "",
+                        result = g.Result,
+                        openingName = g.OpeningName,
+                        initialFen = g.InitialFen,
+                        pgnContent = g.PgnContent,
+                        totalMoves = 10
+                    })
+                    .ToListAsync();
+
+                return Ok(new { total = games.Count, games });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi nạp danh sách kỳ phổ danh thủ: " + ex.Message });
+            }
+        }
+
+        [HttpGet("/api/master-games/{id}")]
+        public async Task<IActionResult> GetMasterGameDetailApi(int id)
+        {
+            try
+            {
+                await EnsureMasterGamesPopulatedAsync();
+
+                var g = await _context.MasterGames.FindAsync(id);
+                if (g == null) return NotFound(new { message = "Không tìm thấy ván cờ danh thủ." });
+
+                return Ok(new
+                {
+                    id = g.Id,
+                    title = g.Title,
+                    redPlayer = g.RedPlayer,
+                    blackPlayer = g.BlackPlayer,
+                    eventName = g.Event,
+                    eventDate = g.EventDate.HasValue ? g.EventDate.Value.ToString("dd/MM/yyyy") : "",
+                    result = g.Result,
+                    openingName = g.OpeningName,
+                    initialFen = g.InitialFen,
+                    pgnContent = g.PgnContent
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi nạp chi tiết kỳ phổ: " + ex.Message });
+            }
+        }
+
         private async Task EnsureMasterGamesPopulatedAsync()
         {
             // Kiểm tra xem đã có đủ danh sách các ván cờ đỉnh cao chưa (mở rộng lên 12 ván kinh điển)
