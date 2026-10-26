@@ -1,0 +1,53 @@
+@startuml So_Do_Use_Case_Nghiep_Vu_Tong_Quat
+!theme plain
+left to right direction
+skinparam shadowing false
+skinparam monochrome true
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 26
+skinparam defaultFontStyle plain
+skinparam usecaseFontSize 25
+skinparam usecaseFontStyle plain
+skinparam actorFontSize 28
+skinparam actorFontStyle bold
+skinparam arrowFontSize 22
+skinparam arrowThickness 1.8
+skinparam roundCorner 8
+skinparam nodesep 28
+skinparam ranksep 80
+
+actor "Quản trị viên" as Admin
+actor "Kỳ thủ" as Player
+actor "Khách vãng lai" as Guest
+
+Admin -[plain]|> Player
+Player -[plain]|> Guest
+
+package "Hệ thống Cờ tướng ChessCore" {
+  usecase "Quản trị Hệ thống & Đo kiểm AI" as UC_Admin
+  usecase "Tra cứu Khai cuộc & Kỳ phổ Danh thủ" as UC_Opening
+  usecase "Đào tạo Kỳ nghệ & Cấp Chứng chỉ" as UC_Course
+  usecase "Luyện giải Cờ thế Thông minh" as UC_Puzzle
+  usecase "Thẩm định & Phân tích Ván cờ" as UC_Review
+  usecase "Tổ chức & Thi đấu Cờ tướng" as UC_Match
+  usecase "Xác thực & Quản lý Tài khoản" as UC_Auth
+}
+
+UC_Admin -[hidden]right-> UC_Opening
+UC_Opening -[hidden]right-> UC_Course
+UC_Course -[hidden]right-> UC_Puzzle
+UC_Puzzle -[hidden]right-> UC_Review
+UC_Review -[hidden]right-> UC_Match
+UC_Match -[hidden]right-> UC_Auth
+
+Admin -- UC_Admin
+
+Player -- UC_Opening
+Player -- UC_Course
+Player -- UC_Puzzle
+Player -- UC_Review
+Player -- UC_Match
+
+Guest -- UC_Auth
+
+@enduml

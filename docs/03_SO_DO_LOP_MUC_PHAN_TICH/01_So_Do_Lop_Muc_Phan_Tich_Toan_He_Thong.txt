@@ -1,0 +1,154 @@
+@startuml
+!theme plain
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 28
+skinparam classFontSize 32
+skinparam classFontStyle bold
+skinparam classAttributeFontSize 25
+skinparam classAttributeFontStyle plain
+skinparam stereotypeFontSize 23
+skinparam stereotypeFontStyle plain
+skinparam monochrome true
+skinparam classAttributeIconSize 0
+skinparam roundCorner 8
+skinparam nodesep 28
+skinparam ranksep 24
+
+' ==============================================================================
+' HÀNG 1 - TRÁI: USER & AUTH
+' ==============================================================================
+class "Auth_Account_View" as V_User <<boundary>>
+class "AuthController" as C_User <<control>> {
+  + Register(user, email, pass)
+  + Login(user, pass)
+  + VerifyOtp(code)
+}
+class "User" as User <<entity>> {
+  - **id** [PK]
+  - username, email [UQ]
+  - role, elo, puzzleScore
+  - wins, losses, draws
+}
+class "UserEloHistory" as EloHist <<entity>> {
+  - **id** [PK], userId [FK]
+  - oldElo, newElo, eloChange
+}
+class "UserCertificate" as UCert <<entity>> {
+  - **id** [PK], userId [FK]
+  - certCode, issuedAt, pdfUrl
+}
+
+V_User ..> C_User
+C_User ..> User
+User *-- EloHist
+User *-- UCert
+
+' ==============================================================================
+' HÀNG 1 - PHẢI: MATCH & AI ANALYSIS
+' ==============================================================================
+class "Match_Review_View" as V_Match <<boundary>>
+class "GameController" as C_Match <<control>> {
+  + CreateGame(mode, difficulty)
+  + MakeMove(gameId, from, to)
+  + ReviewGame(gameId)
+}
+class "Game" as Game <<entity>> {
+  - **id** [PK]
+  - redPlayerId, blackPlayerId [FK]
+  - currentFen, status, result
+}
+class "Move" as Move <<entity>> {
+  - **id** [PK], gameId [FK]
+  - moveNumber, fenBefore, fenAfter
+  - quality, evalScore, winRate
+}
+class "GameAnalysis" as Anal <<entity>> {
+  - **id** [PK], gameId [FK]
+  - redAccuracy, blackAccuracy
+  - summaryReviewJson
+}
+
+V_Match ..> C_Match
+C_Match ..> Game
+Game *-- Move
+Game *-- Anal
+
+' ==============================================================================
+' HÀNG 2 - TRÁI: PUZZLE & TACTICS
+' ==============================================================================
+class "Puzzle_Solve_View" as V_Puzzle <<boundary>>
+class "PuzzleController" as C_Puzzle <<control>> {
+  + LoadPuzzle(puzzleId)
+  + SubmitMove(move)
+  + GetHint()
+}
+class "Puzzle" as Puzzle <<entity>> {
+  - **id** [PK]
+  - title, fen, difficulty
+  - solutionMoves, hint
+}
+class "UserPuzzleProgress" as PuzProg <<entity>> {
+  - **id** [PK]
+  - userId, puzzleId [FK]
+  - isSolved, attempts
+}
+
+V_Puzzle ..> C_Puzzle
+C_Puzzle ..> Puzzle
+Puzzle *-- PuzProg
+
+' ==============================================================================
+' HÀNG 2 - PHẢI: COURSE & CERTIFICATION
+' ==============================================================================
+class "Course_Cert_View" as V_Course <<boundary>>
+class "CourseController" as C_Course <<control>> {
+  + LoadLesson(lessonId)
+  + SubmitQuiz(answers)
+  + IssueCertificate()
+}
+class "CourseModule" as CMod <<entity>> {
+  - **id** [PK]
+  - title, description, orderIndex
+}
+class "CourseLesson" as CLess <<entity>> {
+  - **id** [PK], moduleId [FK]
+  - title, content, sampleFen
+}
+class "CourseQuizQuestion" as CQuiz <<entity>> {
+  - **id** [PK], lessonId [FK]
+  - question, options, answer
+}
+class "UserCourseProgress" as CProg <<entity>> {
+  - **id** [PK]
+  - userId, lessonId [FK]
+  - isCompleted, score
+}
+
+V_Course ..> C_Course
+C_Course ..> CMod
+CMod *-- CLess
+CLess *-- CQuiz
+CLess *-- CProg
+
+' ==============================================================================
+' KHÓA BỐ CỤC 2x2
+' ==============================================================================
+' Hàng 1: User ở bên trái Match
+V_User -[hidden]right-> V_Match
+User -[hidden]right-> Game
+
+' Hàng 2: Puzzle ở bên trái Course
+V_Puzzle -[hidden]right-> V_Course
+Puzzle -[hidden]right-> CMod
+
+' Cột trái: User ở trên Puzzle
+User -[hidden]down-> V_Puzzle
+EloHist -[hidden]down-> V_Puzzle
+
+' Cột phải: Match ở trên Course
+Anal -[hidden]down-> V_Course
+Move -[hidden]down-> V_Course
+
+@enduml

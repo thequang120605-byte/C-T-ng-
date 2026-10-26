@@ -1,0 +1,206 @@
+@startuml
+!theme plain
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 28
+skinparam classFontSize 32
+skinparam classFontStyle bold
+skinparam classAttributeFontSize 26
+skinparam classAttributeFontStyle plain
+skinparam monochrome true
+skinparam classAttributeIconSize 0
+skinparam roundCorner 8
+skinparam nodesep 28
+skinparam ranksep 22
+
+' ==============================================================================
+' CỘT 1: TÀI KHOẢN, LỊCH SỬ ELO & ĐÁNH GIÁ (BÊN TRÁI)
+' ==============================================================================
+entity "users" as users {
+  * **id** : INT [PK]
+  --
+  * username : VARCHAR(50) [UQ]
+  * email : VARCHAR(100) [UQ]
+  * password_hash : VARCHAR(255)
+  * player_id : VARCHAR(20) [UQ]
+  * role : VARCHAR(20)
+  * elo : INT (Default: 1200)
+  * puzzle_score : INT
+  * is_banned : TINYINT(1)
+  * created_at : DATETIME
+}
+
+entity "userelohistories" as userelohistories {
+  * **id** : INT [PK]
+  --
+  * user_id : INT [FK]
+  game_id : INT [FK, NULL]
+  * old_elo : INT
+  * new_elo : INT
+  * elo_change : INT
+  * created_at : DATETIME
+}
+
+entity "usercertificates" as usercertificates {
+  * **id** : INT [PK]
+  --
+  * user_id : INT [FK]
+  * certificate_code : VARCHAR(50) [UQ]
+  * issued_date : DATETIME
+}
+
+entity "gamereviews" as gamereviews {
+  * **id** : INT [PK]
+  --
+  * game_id : INT [FK]
+  * user_id : INT [FK]
+  notes : TEXT
+  created_at : DATETIME
+}
+
+' Khóa Cột 1 thẳng hàng
+users -[hidden]down-> userelohistories
+userelohistories -[hidden]down-> usercertificates
+usercertificates -[hidden]down-> gamereviews
+
+' ==============================================================================
+' CỘT 2: THI ĐẤU & PHÂN TÍCH VÁN CỜ (Ở GIỮA)
+' ==============================================================================
+entity "games" as games {
+  * **id** : INT [PK]
+  --
+  * room_code : VARCHAR(20) [UQ]
+  * mode : VARCHAR(20)
+  * red_player_id : INT [FK]
+  black_player_id : INT [FK, NULL]
+  * current_fen : TEXT
+  * status : VARCHAR(20)
+  result : VARCHAR(20)
+  started_at : DATETIME
+}
+
+entity "moves" as moves {
+  * **id** : INT [PK]
+  --
+  * game_id : INT [FK]
+  * move_number : INT
+  * move_notation : VARCHAR(20)
+  * fen_after : TEXT
+  eval_score : INT
+  win_rate : DOUBLE
+  quality : VARCHAR(20)
+}
+
+entity "gameanalyses" as gameanalyses {
+  * **id** : INT [PK]
+  --
+  * game_id : INT [FK, UQ]
+  * red_accuracy : DOUBLE
+  * black_accuracy : DOUBLE
+  summary_review_json : JSON
+  created_at : DATETIME
+}
+
+entity "aibenchmarks" as aibenchmarks {
+  * **id** : INT [PK]
+  --
+  * benchmark_name : VARCHAR(100)
+  * depth : INT
+  * nodes_searched : BIGINT
+  * time_elapsed_ms : INT
+  * nps : DOUBLE
+}
+
+' Khóa Cột 2 thẳng hàng
+games -[hidden]down-> moves
+moves -[hidden]down-> gameanalyses
+gameanalyses -[hidden]down-> aibenchmarks
+
+' ==============================================================================
+' CỘT 3: CỜ THẾ & ĐÀO TẠO KỲ NGHỆ (BÊN PHẢI)
+' ==============================================================================
+entity "puzzles" as puzzles {
+  * **id** : INT [PK]
+  --
+  * initial_fen : TEXT
+  * solution_moves : TEXT
+  * difficulty : VARCHAR(20)
+  * rating : INT
+}
+
+entity "userpuzzleprogresses" as userpuzzleprogresses {
+  * **id** : INT [PK]
+  --
+  * user_id : INT [FK]
+  * puzzle_id : INT [FK]
+  * is_completed : TINYINT(1)
+  * best_score : INT
+}
+
+entity "coursemodules" as coursemodules {
+  * **id** : INT [PK]
+  --
+  * title : VARCHAR(100)
+  * order_index : INT
+  * is_active : TINYINT(1)
+}
+
+entity "courselessons" as courselessons {
+  * **id** : INT [PK]
+  --
+  * module_id : INT [FK]
+  * title : VARCHAR(150)
+  fen_diagram : TEXT
+  * order_index : INT
+}
+
+entity "coursequizquestions" as coursequizquestions {
+  * **id** : INT [PK]
+  --
+  * lesson_id : INT [FK]
+  * question : TEXT
+  * correct_answer : VARCHAR(50)
+}
+
+entity "usercourseprogresses" as usercourseprogresses {
+  * **id** : INT [PK]
+  --
+  * user_id : INT [FK]
+  * lesson_id : INT [FK]
+  * is_completed : TINYINT(1)
+  * quiz_score : INT
+}
+
+' Khóa Cột 3 thẳng hàng
+puzzles -[hidden]down-> userpuzzleprogresses
+userpuzzleprogresses -[hidden]down-> coursemodules
+coursemodules -[hidden]down-> courselessons
+courselessons -[hidden]down-> coursequizquestions
+coursequizquestions -[hidden]down-> usercourseprogresses
+
+' ==============================================================================
+' CĂN HÀNG NGANG GIỮA CÁC CỘT (LAYOUT GRID)
+' ==============================================================================
+users -[hidden]right-> games
+games -[hidden]right-> puzzles
+
+' ==============================================================================
+' CÁC ĐƯỜNG QUAN HỆ KHÔNG GẮN CHỮ ĐÈ MŨI TÊN (CROW'S FOOT THUẦN TÚY)
+' ==============================================================================
+users ||--o{ userelohistories
+users ||--o{ usercertificates
+users ||--o{ games
+users ||--o{ gamereviews
+
+games ||--o{ moves
+games ||--|| gameanalyses
+games ||--o{ gamereviews
+
+puzzles ||--o{ userpuzzleprogresses
+
+coursemodules ||--o{ courselessons
+courselessons ||--o{ coursequizquestions
+courselessons ||--o{ usercourseprogresses
+
+@enduml

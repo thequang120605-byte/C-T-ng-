@@ -1,0 +1,49 @@
+@startuml Sequence_LuyenGiai_CoThe
+!theme plain
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 24
+skinparam defaultFontStyle plain
+skinparam sequenceParticipantFontSize 26
+skinparam sequenceParticipantFontStyle bold
+skinparam sequenceArrowFontSize 22
+skinparam sequenceArrowFontStyle plain
+skinparam sequenceGroupFontSize 22
+skinparam sequenceGroupFontStyle bold
+skinparam sequenceLifeLineBorderWidth 1.5
+skinparam sequenceArrowThickness 1.5
+skinparam maxMessageSize 250
+skinparam shadowing false
+skinparam monochrome true
+skinparam roundCorner 8
+autonumber "<b>[00]</b>"
+
+actor "Kỳ thủ" as Player
+boundary "Giao diện\nLuyện giải Cờ thế" as UI
+control "Xử lý Cờ thế\n& Lời giải" as Ctrl
+boundary "Động cơ AI\nPhản đòn Cờ thế" as AI
+database "Cơ sở dữ liệu\nKho Cờ thế" as DB
+
+== 1. TẢI BÀI TẬP VÀ THIẾT LẬP THẾ CỜ ==
+Player -> UI: Chọn chủ đề cờ thế và cấp độ thử thách
+UI -> Ctrl: Yêu cầu tải danh sách câu đố phù hợp
+Ctrl -> DB: Truy vấn dữ liệu thế cờ và cây lời giải
+DB --> Ctrl: Trả về thế cờ ban đầu và số nước quy định
+Ctrl --> UI: Hiển thị thế cờ lên bàn cờ tương tác
+
+== 2. GIẢI CỜ VÀ ĐỐI KHÁNG PHẢN ĐÒN ==
+Player -> UI: Kéo thả quân cờ thực hiện nước giải
+UI -> Ctrl: Gửi nước cờ giải của kỳ thủ
+Ctrl -> DB: So khớp với cây lời giải chuẩn
+alt Nước giải chính xác nhưng chưa hết bài
+    Ctrl -> AI: Yêu cầu AI đi nước cờ chống đỡ phản đòn
+    AI --> Ctrl: Trả về nước phản hồi phòng thủ
+    Ctrl --> UI: Cập nhật quân cờ phản hồi lên bàn cờ
+else Nước giải sai lầm
+    Ctrl --> UI: Thông báo nước cờ không đạt yêu cầu
+end
+
+== 3. HOÀN THÀNH VÀ CẬP NHẬT THÀNH TÍCH ==
+Ctrl -> DB: Ghi nhận giải thành công và cộng điểm thưởng
+DB --> Ctrl: Xác nhận lưu tiến độ hoàn thành
+Ctrl --> UI: Thông báo chiến thắng và gợi ý bài tập tiếp theo
+@enduml

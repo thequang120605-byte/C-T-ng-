@@ -1,0 +1,30 @@
+@startuml Activity_TraCuu_KhaiCuoc
+!theme plain
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 25
+skinparam defaultFontStyle plain
+skinparam activityFontSize 24
+skinparam activityFontStyle plain
+skinparam activityDiamondFontSize 22
+skinparam activityDiamondFontStyle plain
+skinparam shadowing false
+skinparam monochrome true
+skinparam linetype ortho
+skinparam roundCorner 8
+
+start
+
+:Kỳ thủ truy cập mô-đun Từ điển Khai cuộc & Kỳ phổ;
+:Lựa chọn tên thế trận khai cuộc hoặc nhập chuỗi nước đi;
+:Hệ thống truy vấn cây biến thể khai cuộc trong cơ sở tri thức;
+:Hiển thị các nhánh biến thể tiếp theo và thống kê tỷ lệ thắng/hòa/bại;
+
+if (Kỳ thủ muốn xem ván cờ thực tế của Danh thủ?) then (Xem ván cờ danh thủ)
+    :Tải danh sách các ván đấu đỉnh cao có áp dụng thế trận;
+    :Kỳ thủ chọn ván cờ và điều khiển phát lại (Replay) từng nước;
+else (Chỉ tra cứu lý thuyết)
+    :Xem giải thích ưu nhược điểm và ý đồ chiến thuật của biến thể;
+endif
+
+stop
+@enduml

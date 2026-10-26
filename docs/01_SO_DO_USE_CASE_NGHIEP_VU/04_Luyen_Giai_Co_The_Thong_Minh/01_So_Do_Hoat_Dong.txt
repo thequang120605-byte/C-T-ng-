@@ -1,0 +1,41 @@
+@startuml Activity_LuyenGiai_CoThe
+!theme plain
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 25
+skinparam defaultFontStyle plain
+skinparam activityFontSize 24
+skinparam activityFontStyle plain
+skinparam activityDiamondFontSize 22
+skinparam activityDiamondFontStyle plain
+skinparam shadowing false
+skinparam monochrome true
+skinparam linetype ortho
+skinparam roundCorner 8
+
+start
+
+:Kỳ thủ truy cập mục Luyện giải cờ thế;
+:Lựa chọn cấp độ khó hoặc chủ đề tàn cuộc;
+:Hệ thống khởi tạo bàn cờ với thế trận câu đố;
+
+repeat
+    :Kỳ thủ thực hiện nước đi giải thế cờ;
+    if (Nước đi khớp với lời giải chuẩn?) then (Chính xác)
+        if (Đã đạt sát cục / Hết bài tập?) then (Hoàn thành bài tập)
+            :Ghi nhận hoàn thành và cộng điểm tích lũy thành tích;
+            break
+        else (Còn nước chống đỡ)
+            :Động cơ AI tự động đi nước cờ phòng thủ tối ưu;
+        endif
+    else (Sai lầm)
+        :Thông báo nước đi chưa tối ưu và cho phép thử lại;
+        if (Yêu cầu trợ giúp?) then (Có)
+            :Hiển thị gợi ý nước cờ chuẩn xác từ hệ thống;
+        endif
+    endif
+repeat while (Người dùng tiếp tục giải?) is (Tiếp tục)
+
+:Cập nhật tiến độ giải cờ vào hồ sơ kỳ thủ;
+
+stop
+@enduml

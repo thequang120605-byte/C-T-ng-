@@ -1,0 +1,33 @@
+@startuml Communication_ThiDau_CoTuong
+!theme plain
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 25
+skinparam defaultFontStyle plain
+skinparam actorFontSize 28
+skinparam actorFontStyle bold
+skinparam boundaryFontSize 26
+skinparam boundaryFontStyle bold
+skinparam controlFontSize 26
+skinparam controlFontStyle bold
+skinparam databaseFontSize 26
+skinparam databaseFontStyle bold
+skinparam arrowFontSize 23
+skinparam arrowFontStyle plain
+skinparam arrowThickness 1.5
+skinparam shadowing false
+skinparam monochrome true
+skinparam roundCorner 8
+skinparam nodesep 28
+skinparam ranksep 32
+
+actor "Kỳ thủ" as Player
+boundary "Giao diện\nBàn cờ Thi đấu" as UI
+control "Bộ Điều phối\nTrận đấu & Phòng" as Ctrl
+boundary "Động cơ\nKiểm tra Luật cờ" as Engine
+database "Cơ sở dữ liệu\nTrận đấu & Elo" as DB
+
+Player -down- UI : 1: Tạo phòng / Chọn chế độ chơi >\n4: Thực hiện nước đi trên bàn cờ >\n9: Nhận kết quả và Elo cập nhật <
+UI -down- Ctrl : 2: Khởi tạo phòng thi đấu >\n5: Gửi nước đi kiểm tra hợp lệ >\n8: Đồng bộ trạng thái bàn cờ <
+Ctrl -right- Engine : 6: Xác thực hợp lệ & Sát cục >
+Ctrl -down- DB : 3: Tạo bản ghi trận đấu mới >\n7: Lưu nước đi & Cập nhật điểm Elo >
+@enduml

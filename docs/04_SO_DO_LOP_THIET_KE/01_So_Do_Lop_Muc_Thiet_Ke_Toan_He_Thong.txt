@@ -1,0 +1,197 @@
+@startuml
+!theme plain
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 24
+skinparam classFontSize 28
+skinparam classFontStyle bold
+skinparam classAttributeFontSize 22
+skinparam classAttributeFontStyle plain
+skinparam monochrome true
+skinparam classAttributeIconSize 0
+skinparam roundCorner 8
+skinparam nodesep 20
+skinparam ranksep 14
+
+' ==============================================================================
+' CỘT 1: PRESENTATION & CONTROLLERS (BÊN TRÁI)
+' ==============================================================================
+class "AuthController" as AuthCtrl {
+  + Login(model) : Task
+  + Register(model) : Task
+  + VerifyOtp(model) : Task
+  + Logout() : Task
+}
+
+class "GamesController" as GamesCtrl {
+  + CreateGame(mode, fen) : Task
+  + MakeMove(gameId, move) : Task
+  + Resign(gameId) : Task
+}
+
+class "GameHub" as Hub <<SignalR>> {
+  + JoinRoom(roomCode) : Task
+  + SendMove(roomCode, moveDto) : Task
+}
+
+class "ReviewController" as ReviewCtrl {
+  + AnalyzeGame(gameId) : Task
+  + GetMoveEvaluation(moveId) : Task
+}
+
+class "PuzzleRunController" as PuzCtrl {
+  + GetNextPuzzle(diff) : Task
+  + SubmitSolution(dto) : Task
+}
+
+class "CourseController" as CourseCtrl {
+  + GetModules() : Task
+  + GetLesson(id) : Task
+  + SubmitQuiz(quizDto) : Task
+}
+
+class "MasterGameController" as MasterCtrl {
+  + Index(page) : Task
+  + SearchOpenings(code) : Task
+}
+
+' Khóa Cột 1 thẳng hàng từ trên xuống dưới
+AuthCtrl -[hidden]down-> GamesCtrl
+GamesCtrl -[hidden]down-> Hub
+Hub -[hidden]down-> ReviewCtrl
+ReviewCtrl -[hidden]down-> PuzCtrl
+PuzCtrl -[hidden]down-> CourseCtrl
+CourseCtrl -[hidden]down-> MasterCtrl
+
+' ==============================================================================
+' CỘT 2: SERVICES & AI ENGINES (Ở GIỮA)
+' ==============================================================================
+interface "IChessEngine" as IEngine {
+  + FindBestMove(fen, depth)
+  + EvaluatePosition(fen) : int
+}
+
+class "MinimaxEngine" as Minimax {
+  - TranspositionTable _tt
+  + FindBestMove(fen, depth)
+  + AlphaBeta(alpha, beta, depth)
+}
+
+class "BoardEvaluator" as Evaluator {
+  + Evaluate(board) : int
+  + CalculateWinRate(score)
+}
+
+class "GameRules" as Rules {
+  + IsValidMove(board, move) : bool
+  + IsCheckmate(board) : bool
+}
+
+class "MateSolver" as Solver {
+  + SolveForcedMate(fen, mateIn)
+}
+
+class "OpeningTrieService" as Trie {
+  - TrieNode _root
+  + Search(fen) : List<OpeningMove>
+}
+
+class "AiBenchmarkService" as Bench {
+  + RunSuite(maxDepth) : BenchmarkReport
+}
+
+' Khóa Cột 2 thẳng hàng từ trên xuống dưới
+IEngine -[hidden]down-> Minimax
+Minimax -[hidden]down-> Evaluator
+Evaluator -[hidden]down-> Rules
+Rules -[hidden]down-> Solver
+Solver -[hidden]down-> Trie
+Trie -[hidden]down-> Bench
+
+' ==============================================================================
+' CỘT 3: DATA ACCESS & EF CORE ENTITIES (BÊN PHẢI)
+' ==============================================================================
+class "ChessDbContext" as DbContext {
+  + DbSet<User> Users
+  + DbSet<Game> Games
+  + DbSet<Move> Moves
+  + DbSet<Puzzle> Puzzles
+  + DbSet<CourseModule> Modules
+  + SaveChangesAsync() : Task
+}
+
+class "User" as EntUser {
+  + Id : int [PK]
+  + Username : string [UQ]
+  + Role : string, Elo : int
+  + PuzzleScore : int
+}
+
+class "Game" as EntGame {
+  + Id : int [PK], RoomCode : string
+  + RedPlayerId, BlackPlayerId : int [FK]
+  + CurrentFen, Status : string
+}
+
+class "Move" as EntMove {
+  + Id : int [PK], GameId : int [FK]
+  + MoveNotation : string
+  + EvalScore, MoveOrder : int
+  + Quality : string
+}
+
+class "GameAnalysis" as EntAnal {
+  + Id : int [PK], GameId : int [FK, UQ]
+  + AccuracyRed, AccuracyBlack : int
+  + SummaryReviewJson : string
+}
+
+class "Puzzle" as EntPuz {
+  + Id : int [PK], InitialFen : string
+  + SolutionMoves : string
+  + Difficulty : int
+}
+
+class "CourseModule" as EntCourse {
+  + Id : int [PK], Title : string
+  + OrderIndex : int
+}
+
+' Khóa Cột 3 thẳng hàng từ trên xuống dưới
+DbContext -[hidden]down-> EntUser
+EntUser -[hidden]down-> EntGame
+EntGame -[hidden]down-> EntMove
+EntMove -[hidden]down-> EntAnal
+EntAnal -[hidden]down-> EntPuz
+EntPuz -[hidden]down-> EntCourse
+
+' ==============================================================================
+' LIÊN KẾT GIỮA 3 CỘT (TỪ TRÁI QUA PHẢI)
+' ==============================================================================
+AuthCtrl -[hidden]right-> IEngine
+IEngine -[hidden]right-> DbContext
+
+GamesCtrl --> Hub
+GamesCtrl ..> Rules
+GamesCtrl ..> IEngine
+IEngine <|.. Minimax
+Minimax *-- Evaluator
+ReviewCtrl ..> IEngine
+ReviewCtrl ..> Evaluator
+PuzCtrl ..> Solver
+MasterCtrl ..> Trie
+
+GamesCtrl --> DbContext
+ReviewCtrl --> DbContext
+PuzCtrl --> DbContext
+CourseCtrl --> DbContext
+
+DbContext *-- EntUser
+DbContext *-- EntGame
+DbContext *-- EntPuz
+DbContext *-- EntCourse
+EntGame "1" *-- "0..*" EntMove
+EntGame "1" *-- "0..1" EntAnal
+
+@enduml

@@ -1,0 +1,33 @@
+@startuml Activity_ThamDinh_VanCo
+!theme plain
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 25
+skinparam defaultFontStyle plain
+skinparam activityFontSize 24
+skinparam activityFontStyle plain
+skinparam activityDiamondFontSize 22
+skinparam activityDiamondFontStyle plain
+skinparam shadowing false
+skinparam monochrome true
+skinparam linetype ortho
+skinparam roundCorner 8
+
+start
+
+:Kỳ thủ lựa chọn ván cờ đã lưu trong lịch sử đấu;
+:Hệ thống tải biên bản ván đấu và danh sách các nước đi;
+
+if (Ván cờ đã được phân tích trước đó?) then (Đã có báo cáo)
+    :Tải dữ liệu phân tích đã lưu trữ;
+else (Chưa phân tích)
+    :Kích hoạt Động cơ AI phân tích từng thế cờ;
+    :Đánh giá điểm số ưu thế thế trận (Eval Bar);
+    :Nhận diện các nước đi sai lầm, sai lầm nghiêm trọng;
+    :Lưu trữ toàn bộ báo cáo thẩm định vào cơ sở dữ liệu;
+endif
+
+:Hiển thị biểu đồ diễn biến ưu thế xuyên suốt ván cờ;
+:Kỳ thủ tương tác duyệt từng nước đi và xem gợi ý tối ưu từ AI;
+
+stop
+@enduml

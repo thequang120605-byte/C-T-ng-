@@ -1,0 +1,46 @@
+@startuml Activity_ThiDau_CoTuong
+!theme plain
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 25
+skinparam defaultFontStyle plain
+skinparam activityFontSize 24
+skinparam activityFontStyle plain
+skinparam activityDiamondFontSize 22
+skinparam activityDiamondFontStyle plain
+skinparam shadowing false
+skinparam monochrome true
+skinparam linetype ortho
+skinparam roundCorner 8
+
+start
+
+:Kỳ thủ truy cập sảnh chờ\nvà lựa chọn chế độ thi đấu;
+
+if (Chế độ thi đấu?) then (Đấu với người chơi PvP)
+    :Tạo phòng đấu hoặc ghép cặp\ntự động qua mã phòng;
+    :Thiết lập đồng hồ đếm ngược\nvà kiểm soát lượt đi;
+else (Đấu luyện với máy PvE)
+    :Lựa chọn cấp độ khó\nvà màu quân xuất phát;
+    :Khởi tạo ván đấu đối kháng\nvới Động cơ AI;
+endif
+
+repeat
+    repeat
+        :Kỳ thủ thực hiện nước đi trên bàn cờ;
+        :Hệ thống kiểm tra tính hợp lệ theo luật cờ tướng;
+    backward:Cảnh báo nước cờ phạm luật và yêu cầu đi lại;
+    repeat while (Nước đi hợp lệ?) is (Không hợp lệ)
+    -> Hợp lệ;
+
+    :Ghi nhận nước đi vào biên bản và chuyển lượt;
+    if (Chế độ đấu máy?) then (Có)
+        :Động cơ AI tính toán và phản hồi nước cờ;
+    endif
+repeat while (Ván cờ tiếp diễn?) is (Tiếp tục)
+-> (Kết thúc ván);
+
+:Xác định kết quả chung cuộc (Thắng / Hòa / Thua);
+:Cập nhật biên bản ván đấu và tính toán biến động điểm Elo;
+
+stop
+@enduml

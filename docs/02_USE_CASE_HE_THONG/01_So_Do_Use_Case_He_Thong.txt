@@ -1,0 +1,117 @@
+@startuml So_Do_Use_Case_He_Thong
+!theme plain
+left to right direction
+skinparam shadowing false
+skinparam monochrome true
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 24
+skinparam defaultFontStyle plain
+skinparam usecaseFontSize 22
+skinparam usecaseFontStyle plain
+skinparam actorFontSize 26
+skinparam actorFontStyle bold
+skinparam arrowFontSize 20
+skinparam arrowFontStyle italic
+skinparam arrowThickness 1.8
+skinparam roundCorner 8
+skinparam nodesep 24
+skinparam ranksep 60
+
+actor "Quản trị viên" as Admin
+actor "Kỳ thủ" as Player
+actor "Khách vãng lai" as Guest
+
+Admin -[plain]|> Player
+Player -[plain]|> Guest
+
+package "Hệ thống Cờ tướng ChessCore" {
+
+  ' ============================================================================
+  ' CỘT 1 (BÊN TRÁI): CÁC USE CASE CHÍNH KẾT NỐI VỚI DIỄN VIÊN
+  ' ============================================================================
+  usecase "Quản trị người dùng" as UC_AdminUsers
+  usecase "Đo kiểm Benchmark AI" as UC_Benchmark
+
+  usecase "Thẩm định ván cờ AI" as UC_Review
+  usecase "Đấu tập với Máy (PvE)" as UC_PvE
+  usecase "Thi đấu trực tuyến (PvP)" as UC_PvP
+  usecase "Quản lý hồ sơ & Elo" as UC_Profile
+  usecase "Tra cứu cây Khai cuộc" as UC_Opening
+  usecase "Học bài giảng chuyên đề" as UC_Lesson
+  usecase "Nhận Chứng chỉ CERT-CT" as UC_Cert
+  usecase "Luyện giải cờ thế" as UC_Puzzle
+
+  usecase "Đăng nhập hệ thống" as UC_Login
+  usecase "Đăng ký tài khoản" as UC_Reg
+
+  ' ============================================================================
+  ' CỘT 2 (BÊN PHẢI): CÁC USE CASE PHỤ THUỘC (INCLUDE / EXTEND)
+  ' ============================================================================
+  usecase "Xem gợi ý nước tối ưu" as UC_Hint
+  usecase "Kiểm tra luật nước cờ" as UC_Validate
+  usecase "Làm bài kiểm tra Quiz" as UC_Quiz
+  usecase "Xác thực OTP qua Email" as UC_Otp
+
+  ' ----------------------------------------------------------------------------
+  ' Khóa thứ tự dọc Cột 1 (từ trên xuống dưới dùng -[hidden]right->)
+  ' ----------------------------------------------------------------------------
+  UC_AdminUsers -[hidden]right-> UC_Benchmark
+  UC_Benchmark -[hidden]right-> UC_Review
+  UC_Review -[hidden]right-> UC_PvE
+  UC_PvE -[hidden]right-> UC_PvP
+  UC_PvP -[hidden]right-> UC_Profile
+  UC_Profile -[hidden]right-> UC_Opening
+  UC_Opening -[hidden]right-> UC_Lesson
+  UC_Lesson -[hidden]right-> UC_Cert
+  UC_Cert -[hidden]right-> UC_Puzzle
+  UC_Puzzle -[hidden]right-> UC_Login
+  UC_Login -[hidden]right-> UC_Reg
+
+  ' ----------------------------------------------------------------------------
+  ' Khóa thứ tự dọc Cột 2 (từ trên xuống dưới dùng -[hidden]right->)
+  ' ----------------------------------------------------------------------------
+  UC_Hint -[hidden]right-> UC_Validate
+  UC_Validate -[hidden]right-> UC_Quiz
+  UC_Quiz -[hidden]right-> UC_Otp
+
+  ' ----------------------------------------------------------------------------
+  ' Khóa ngang sang phải: Cột 2 nằm bên phải Cột 1 dùng -[hidden]down->
+  ' ----------------------------------------------------------------------------
+  UC_Review -[hidden]down-> UC_Hint
+  UC_PvP -[hidden]down-> UC_Validate
+  UC_Lesson -[hidden]down-> UC_Quiz
+  UC_Reg -[hidden]down-> UC_Otp
+
+  ' ----------------------------------------------------------------------------
+  ' Quan hệ include / extend sang phải (.down.>)
+  ' ----------------------------------------------------------------------------
+  UC_Review <.down. UC_Hint : <<extend>>
+
+  UC_PvE .down.> UC_Validate : <<include>>
+  UC_PvP .down.> UC_Validate : <<include>>
+
+  UC_Lesson .down.> UC_Quiz : <<include>>
+  UC_Cert .down.> UC_Quiz : <<include>>
+
+  UC_Reg .down.> UC_Otp : <<include>>
+}
+
+' ==============================================================================
+' KẾT NỐI TÁC NHÂN VỚI CỘT 1 (MŨI TÊN TRỰC TIẾP, KHÔNG CHỒNG CHÉO)
+' ==============================================================================
+Admin -- UC_AdminUsers
+Admin -- UC_Benchmark
+
+Player -- UC_Review
+Player -- UC_PvE
+Player -- UC_PvP
+Player -- UC_Profile
+Player -- UC_Opening
+Player -- UC_Lesson
+Player -- UC_Cert
+Player -- UC_Puzzle
+
+Guest -- UC_Login
+Guest -- UC_Reg
+
+@enduml
