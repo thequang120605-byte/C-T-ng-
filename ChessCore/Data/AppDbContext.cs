@@ -118,7 +118,7 @@ namespace ChessCore.Data
 
                 entity.Property(e => e.GameMode)
                     .HasMaxLength(20)
-                    .HasDefaultValue("Legacy");
+                    .HasDefaultValue("PvP");
                 entity.HasIndex(e => new { e.GameMode, e.Status });
                 entity.HasOne(g => g.Opening)
                     .WithMany()

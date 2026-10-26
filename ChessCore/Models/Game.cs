@@ -26,7 +26,7 @@ namespace ChessCore.Models
 
         public bool IsRated { get; set; }
         public DateTime? ResultsProcessedAt { get; set; }
-        public string GameMode { get; set; } = "Legacy"; // PvP, PvE, Online
+        public string GameMode { get; set; } = "PvP"; // PvP, PvE, Online, AiVsAi
         public int? AiDepth { get; set; }             // AI search depth (1..4) for PvE matches
         public int? OpeningId { get; set; }           // Linked opening book
 

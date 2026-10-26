@@ -403,7 +403,7 @@ document.addEventListener("DOMContentLoaded", function () {
       selectedDifficultyText.textContent = `${info.name} - Depth ${info.depth}`;
     }
 
-    if (selectedDifficultyContainer) {
+    if (selectedDifficultyContainer && VS_COMPUTER) {
       selectedDifficultyContainer.style.display = "block"; selectedDifficultyContainer.classList.remove("hidden");
     }
 
@@ -745,11 +745,8 @@ document.addEventListener("DOMContentLoaded", function () {
       gameContent.classList.add("hidden");
     }
 
-    // Mặc định chọn Người vs Người để nút BẮT ĐẦU VÁN CỜ luôn sẵn sàng
-    selectGameMode(false);
-
-    // Mặc định Độ khó Dễ (Depth 1)
-    selectDifficulty(1);
+    // Để người chơi chủ động chọn 1 trong 4 chế độ chơi
+    resetGameModeSelection();
 
     console.log("Khởi tạo trang chơi cờ thành công. Sẵn sàng tạo ván cờ.");
   }
@@ -758,7 +755,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // CREATE GAME
   // =====================================================
 
-  async function createGame() {
+  async function createGame(initialFen = null, modeParam = null) {
     if (isCreatingGame) {
       return;
     }
@@ -766,9 +763,21 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       isCreatingGame = true;
 
-      console.log("Đang gửi yêu cầu tạo ván cờ mới tới API:", API_BASE_URL);
+      let targetMode = modeParam;
+      if (!targetMode) {
+        if (IS_AI_VS_AI) targetMode = "AiVsAi";
+        else if (VS_COMPUTER) targetMode = "PvE";
+        else targetMode = "PvP";
+      }
 
-      const response = await fetch(API_BASE_URL, {
+      let url = `${API_BASE_URL}?gameMode=${encodeURIComponent(targetMode)}`;
+      if (initialFen) {
+        url += `&initialFen=${encodeURIComponent(initialFen)}`;
+      }
+
+      console.log("Đang gửi yêu cầu tạo ván cờ mới tới API:", url);
+
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2974,7 +2983,10 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       try {
-        const res = await fetch(`${API_BASE_URL}?initialFen=${encodeURIComponent(fenVal)}`, {
+        let targetMode = "PvP";
+        if (IS_AI_VS_AI) targetMode = "AiVsAi";
+        else if (VS_COMPUTER) targetMode = "PvE";
+        const res = await fetch(`${API_BASE_URL}?initialFen=${encodeURIComponent(fenVal)}&gameMode=${encodeURIComponent(targetMode)}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" }
         });

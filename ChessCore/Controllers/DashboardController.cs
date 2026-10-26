@@ -160,7 +160,7 @@ namespace ChessCore.Controllers
             {
                 bool isRed = g.RedPlayerId == userId;
                 var opponent = isRed ? g.BlackPlayer : g.RedPlayer;
-                string opponentName = g.GameMode == GameModes.Online
+                string opponentName = (g.GameMode == GameModes.Online || g.GameMode.StartsWith("Online"))
                     ? opponent?.Username ?? "Người chơi khác"
                     : g.GameMode == GameModes.PvE ? "Máy (AI)" : GameModes.Label(g.GameMode);
                 int? opponentElo = null; // Historical opponent rating was not stored.
@@ -211,12 +211,39 @@ namespace ChessCore.Controllers
             var eloHistories = await _context.UserEloHistories.AsNoTracking()
                 .Where(h => h.UserId == userId).OrderByDescending(h => h.RecordedAt)
                 .ThenByDescending(h => h.Id).Take(30).ToListAsync();
-            foreach (var h in eloHistories.OrderBy(h => h.RecordedAt).ThenBy(h => h.Id))
-                vm.EloHistory.Add(new EloPointDto { DateLabel = h.RecordedAt.ToString("dd/MM HH:mm"),
-                    Elo = h.NewElo, Change = h.EloChange, Reason = h.Reason ?? "Lịch sử cũ" });
-            if (vm.EloHistory.Count == 0)
-                vm.EloHistory.Add(new EloPointDto { DateLabel = "Hiện tại", Elo = currentUser.Elo,
-                    Change = 0, Reason = "Chưa có lịch sử biến động được ghi nhận" });
+
+            if (eloHistories.Count > 0)
+            {
+                var sorted = eloHistories.OrderBy(h => h.RecordedAt).ThenBy(h => h.Id).ToList();
+                vm.EloHistory.Add(new EloPointDto
+                {
+                    DateLabel = "Khởi đầu",
+                    Elo = sorted.First().OldElo,
+                    Change = 0,
+                    Reason = "Mốc Elo khởi đầu"
+                });
+
+                foreach (var h in sorted)
+                {
+                    vm.EloHistory.Add(new EloPointDto
+                    {
+                        DateLabel = h.RecordedAt.ToString("dd/MM HH:mm"),
+                        Elo = h.NewElo,
+                        Change = h.EloChange,
+                        Reason = h.Reason ?? "Ván đấu Online"
+                    });
+                }
+            }
+            else
+            {
+                vm.EloHistory.Add(new EloPointDto
+                {
+                    DateLabel = "Hiện tại",
+                    Elo = currentUser.Elo,
+                    Change = 0,
+                    Reason = "Chưa có lịch sử biến động được ghi nhận"
+                });
+            }
 
             return View(vm);
         }

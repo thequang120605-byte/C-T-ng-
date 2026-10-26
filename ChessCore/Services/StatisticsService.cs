@@ -37,25 +37,54 @@ public sealed class StatisticsService(AppDbContext db)
     {
         var query = db.Games.AsNoTracking();
         if (userId.HasValue) query = query.Where(g => g.RedPlayerId == userId || g.BlackPlayerId == userId);
-        var rows = await query.GroupBy(g => g.GameMode).Select(group => new ModeStatistics {
-            Mode = group.Key, Created = group.Count(),
-            Finished = group.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw),
-            Waiting = group.Count(g => g.Status == GameStatus.WaitingForPlayers),
-            InProgress = group.Count(g => g.Status == GameStatus.InProgress),
-            Draws = group.Count(g => g.Status == GameStatus.Draw),
-            RedWins = group.Count(g => g.Status == GameStatus.RedWins),
-            BlackWins = group.Count(g => g.Status == GameStatus.BlackWins),
-            Wins = group.Count(g => (g.RedPlayerId == userId && g.Status == GameStatus.RedWins)
-                || (g.BlackPlayerId == userId && g.Status == GameStatus.BlackWins)),
-            Losses = group.Count(g => (g.RedPlayerId == userId && g.Status == GameStatus.BlackWins)
-                || (g.BlackPlayerId == userId && g.Status == GameStatus.RedWins)),
-            RatedFinished = group.Count(g => g.GameMode == GameModes.Online && g.InitialFen == null && g.IsRated && (g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw))
+
+        var rawGames = await query.Select(g => new {
+            g.GameMode,
+            g.Status,
+            g.RedPlayerId,
+            g.BlackPlayerId,
+            g.IsRated,
+            g.InitialFen
         }).ToListAsync(ct);
-        // Null userId means administrative totals, no personal win rate.
-        if (userId == null) foreach (var row in rows) { row.Wins = 0; row.Losses = 0; }
-        foreach (var mode in new[] { GameModes.Online, GameModes.PvE, GameModes.Local, GameModes.AiVsAi, GameModes.Legacy })
-            if (!rows.Any(r => r.Mode == mode)) rows.Add(new ModeStatistics { Mode = mode });
-        return rows.OrderBy(r => r.Mode).ToList();
+
+        var grouped = rawGames
+            .GroupBy(g => GameModes.Normalize(g.GameMode, g.RedPlayerId, g.BlackPlayerId))
+            .ToDictionary(
+                grp => grp.Key,
+                grp => new ModeStatistics
+                {
+                    Mode = grp.Key,
+                    Created = grp.Count(),
+                    Finished = grp.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw),
+                    Waiting = grp.Count(g => g.Status == GameStatus.WaitingForPlayers),
+                    InProgress = grp.Count(g => g.Status == GameStatus.InProgress),
+                    Draws = grp.Count(g => g.Status == GameStatus.Draw),
+                    RedWins = grp.Count(g => g.Status == GameStatus.RedWins),
+                    BlackWins = grp.Count(g => g.Status == GameStatus.BlackWins),
+                    Wins = userId == null ? 0 : grp.Count(g => (g.RedPlayerId == userId && g.Status == GameStatus.RedWins)
+                        || (g.BlackPlayerId == userId && g.Status == GameStatus.BlackWins)),
+                    Losses = userId == null ? 0 : grp.Count(g => (g.RedPlayerId == userId && g.Status == GameStatus.BlackWins)
+                        || (g.BlackPlayerId == userId && g.Status == GameStatus.RedWins)),
+                    RatedFinished = grp.Count(g => GameModes.Normalize(g.GameMode) == GameModes.Online 
+                        && g.InitialFen == null && g.IsRated 
+                        && (g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw))
+                }
+            );
+
+        var rows = new List<ModeStatistics>();
+        foreach (var mode in GameModes.StandardModes)
+        {
+            if (grouped.TryGetValue(mode, out var stat))
+            {
+                rows.Add(stat);
+            }
+            else
+            {
+                rows.Add(new ModeStatistics { Mode = mode });
+            }
+        }
+
+        return rows;
     }
     public async Task<LearningStatistics> LearningAsync(int? userId = null, CancellationToken ct = default)
     {
@@ -78,7 +107,7 @@ public sealed class StatisticsService(AppDbContext db)
     {
         var ids = users.Select(u => u.Id).ToArray();
         var games = db.Games.AsNoTracking().Where(g =>
-            (g.GameMode == GameModes.Online || g.GameMode == GameModes.PvE) &&
+            (g.GameMode.StartsWith("Online") || g.GameMode == GameModes.PvE) &&
             (g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw));
         var red = await games.Where(g => g.RedPlayerId.HasValue && ids.Contains(g.RedPlayerId.Value))
             .GroupBy(g => g.RedPlayerId!.Value).Select(g => new { Id = g.Key, Played = g.Count(),

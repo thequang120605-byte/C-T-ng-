@@ -535,16 +535,18 @@ namespace ChessCore.Controllers
         // =====================================================
 
         [HttpPost]
-        public async Task<ActionResult<GameResponseDto>> CreateGame([FromQuery] string initialFen = null)
+        public async Task<ActionResult<GameResponseDto>> CreateGame([FromQuery] string initialFen = null, [FromQuery] string gameMode = "PvP")
         {
             var game =
                 await _gameService.CreateGameAsync(initialFen);
 
+            game.GameMode = GameModes.Normalize(gameMode);
+
             if (TryGetCurrentUserId(out int userId))
             {
                 game.RedPlayerId = userId;
-                await _dbContext.SaveChangesAsync();
             }
+            await _dbContext.SaveChangesAsync();
 
             var board = GameRules.RebuildBoard(game.InitialFen, null, game.CurrentTurn);
 
@@ -1725,26 +1727,57 @@ namespace ChessCore.Controllers
         {
             if (status == GameStatus.InProgress || status == GameStatus.WaitingForPlayers) return;
 
+            bool isOnlineMatch = GameModes.Normalize(game.GameMode) == GameModes.Online;
+
             if (game.RedPlayerId.HasValue)
             {
                 var redUser = await _dbContext.Users.FindAsync(game.RedPlayerId.Value);
                 if (redUser != null)
                 {
+                    int oldElo = redUser.Elo;
+                    int eloChange = 0;
                     redUser.GamesPlayed++;
                     if (status == GameStatus.RedWins)
                     {
                         redUser.Wins++;
-                        redUser.Elo += 15;
+                        if (isOnlineMatch)
+                        {
+                            eloChange = 15;
+                            redUser.Elo += eloChange;
+                        }
                     }
                     else if (status == GameStatus.BlackWins)
                     {
                         redUser.Losses++;
-                        redUser.Elo = Math.Max(400, redUser.Elo - 10);
+                        if (isOnlineMatch)
+                        {
+                            eloChange = -10;
+                            redUser.Elo = Math.Max(400, redUser.Elo + eloChange);
+                            eloChange = redUser.Elo - oldElo;
+                        }
                     }
                     else if (status == GameStatus.Draw)
                     {
                         redUser.Draws++;
-                        redUser.Elo += 2;
+                        if (isOnlineMatch)
+                        {
+                            eloChange = 2;
+                            redUser.Elo += eloChange;
+                        }
+                    }
+
+                    if (isOnlineMatch && eloChange != 0)
+                    {
+                        _dbContext.UserEloHistories.Add(new UserEloHistory
+                        {
+                            UserId = redUser.Id,
+                            GameId = game.Id,
+                            OldElo = oldElo,
+                            NewElo = redUser.Elo,
+                            EloChange = eloChange,
+                            Reason = status == GameStatus.RedWins ? "Thắng trận PvP Online" : status == GameStatus.BlackWins ? "Thua trận PvP Online" : "Hòa trận PvP Online",
+                            RecordedAt = DateTime.UtcNow
+                        });
                     }
                 }
             }
@@ -1754,21 +1787,50 @@ namespace ChessCore.Controllers
                 var blackUser = await _dbContext.Users.FindAsync(game.BlackPlayerId.Value);
                 if (blackUser != null)
                 {
+                    int oldElo = blackUser.Elo;
+                    int eloChange = 0;
                     blackUser.GamesPlayed++;
                     if (status == GameStatus.BlackWins)
                     {
                         blackUser.Wins++;
-                        blackUser.Elo += 15;
+                        if (isOnlineMatch)
+                        {
+                            eloChange = 15;
+                            blackUser.Elo += eloChange;
+                        }
                     }
                     else if (status == GameStatus.RedWins)
                     {
                         blackUser.Losses++;
-                        blackUser.Elo = Math.Max(400, blackUser.Elo - 10);
+                        if (isOnlineMatch)
+                        {
+                            eloChange = -10;
+                            blackUser.Elo = Math.Max(400, blackUser.Elo + eloChange);
+                            eloChange = blackUser.Elo - oldElo;
+                        }
                     }
                     else if (status == GameStatus.Draw)
                     {
                         blackUser.Draws++;
-                        blackUser.Elo += 2;
+                        if (isOnlineMatch)
+                        {
+                            eloChange = 2;
+                            blackUser.Elo += eloChange;
+                        }
+                    }
+
+                    if (isOnlineMatch && eloChange != 0)
+                    {
+                        _dbContext.UserEloHistories.Add(new UserEloHistory
+                        {
+                            UserId = blackUser.Id,
+                            GameId = game.Id,
+                            OldElo = oldElo,
+                            NewElo = blackUser.Elo,
+                            EloChange = eloChange,
+                            Reason = status == GameStatus.BlackWins ? "Thắng trận PvP Online" : status == GameStatus.RedWins ? "Thua trận PvP Online" : "Hòa trận PvP Online",
+                            RecordedAt = DateTime.UtcNow
+                        });
                     }
                 }
             }

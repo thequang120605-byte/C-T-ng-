@@ -90,7 +90,7 @@
                                     else if (r.Mode == "PvE") { <i class="fa-solid fa-robot" style="color: #10b981; margin-right: 8px;" title="Chơi với máy"></i> }
                                     else if (r.Mode == "PvP" || r.Mode == "Local") { <i class="fa-solid fa-user-group" style="color: #8b5cf6; margin-right: 8px;" title="Hai người cùng máy"></i> }
                                     else if (r.Mode == "AiVsAi") { <i class="fa-solid fa-microchip" style="color: #ec4899; margin-right: 8px;" title="Máy với máy"></i> }
-                                    else { <i class="fa-solid fa-box-archive" style="color: #f59e0b; margin-right: 8px;" title="Dữ liệu cũ / chưa xác định"></i> }
+                                    else { <i class="fa-solid fa-chess" style="color: var(--accent-gold); margin-right: 8px;"></i> }
                                     @r.Label
                                 </td>
                                 <td style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.Created</td>
@@ -787,7 +787,7 @@
                     var modeStatsRaw = modeStatsList;
                     if (!modeStatsRaw || modeStatsRaw.length === 0) return;
 
-                    // Hiển thị đầy đủ cả 5 chế độ khớp 100% với bảng thống kê bên trên
+                    // Hiển thị đầy đủ cả 4 chế độ khớp 100% với bảng thống kê bên trên
                     var labels = modeStatsRaw.map(function(m) { return m.Label || m.Mode; });
                     var finishedData = modeStatsRaw.map(function(m) { return m.Finished; });
                     var winsData = modeStatsRaw.map(function(m) { return m.Wins; });

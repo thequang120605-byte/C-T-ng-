@@ -96,21 +96,48 @@ namespace ChessCore.Services
         {
             if (status != GameStatus.RedWins && status != GameStatus.BlackWins) return;
 
+            bool isOnlineMatch = GameModes.Normalize(game.GameMode) == GameModes.Online;
+
             if (game.RedPlayerId.HasValue)
             {
                 var redUser = await dbContext.Users.FindAsync(game.RedPlayerId.Value);
                 if (redUser != null)
                 {
+                    int oldElo = redUser.Elo;
+                    int eloChange = 0;
                     redUser.GamesPlayed++;
                     if (status == GameStatus.RedWins)
                     {
                         redUser.Wins++;
-                        redUser.Elo += 15;
+                        if (isOnlineMatch)
+                        {
+                            eloChange = 15;
+                            redUser.Elo += eloChange;
+                        }
                     }
                     else if (status == GameStatus.BlackWins)
                     {
                         redUser.Losses++;
-                        redUser.Elo = Math.Max(400, redUser.Elo - 10);
+                        if (isOnlineMatch)
+                        {
+                            eloChange = -10;
+                            redUser.Elo = Math.Max(400, redUser.Elo + eloChange);
+                            eloChange = redUser.Elo - oldElo;
+                        }
+                    }
+
+                    if (isOnlineMatch && eloChange != 0)
+                    {
+                        dbContext.UserEloHistories.Add(new Models.UserEloHistory
+                        {
+                            UserId = redUser.Id,
+                            GameId = game.Id,
+                            OldElo = oldElo,
+                            NewElo = redUser.Elo,
+                            EloChange = eloChange,
+                            Reason = status == GameStatus.RedWins ? "Thắng do đối thủ hết giờ (Timeout)" : "Thua do hết giờ (Timeout)",
+                            RecordedAt = DateTime.UtcNow
+                        });
                     }
                 }
             }
@@ -120,16 +147,41 @@ namespace ChessCore.Services
                 var blackUser = await dbContext.Users.FindAsync(game.BlackPlayerId.Value);
                 if (blackUser != null)
                 {
+                    int oldElo = blackUser.Elo;
+                    int eloChange = 0;
                     blackUser.GamesPlayed++;
                     if (status == GameStatus.BlackWins)
                     {
                         blackUser.Wins++;
-                        blackUser.Elo += 15;
+                        if (isOnlineMatch)
+                        {
+                            eloChange = 15;
+                            blackUser.Elo += eloChange;
+                        }
                     }
                     else if (status == GameStatus.RedWins)
                     {
                         blackUser.Losses++;
-                        blackUser.Elo = Math.Max(400, blackUser.Elo - 10);
+                        if (isOnlineMatch)
+                        {
+                            eloChange = -10;
+                            blackUser.Elo = Math.Max(400, blackUser.Elo + eloChange);
+                            eloChange = blackUser.Elo - oldElo;
+                        }
+                    }
+
+                    if (isOnlineMatch && eloChange != 0)
+                    {
+                        dbContext.UserEloHistories.Add(new Models.UserEloHistory
+                        {
+                            UserId = blackUser.Id,
+                            GameId = game.Id,
+                            OldElo = oldElo,
+                            NewElo = blackUser.Elo,
+                            EloChange = eloChange,
+                            Reason = status == GameStatus.BlackWins ? "Thắng do đối thủ hết giờ (Timeout)" : "Thua do hết giờ (Timeout)",
+                            RecordedAt = DateTime.UtcNow
+                        });
                     }
                 }
             }
