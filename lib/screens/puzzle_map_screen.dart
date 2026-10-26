@@ -27,7 +27,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
       key: 'basic:23',
       title: 'Khởi Mã Phá Trận',
       difficulty: 'Dễ',
-      stars: 3,
+      stars: 0,
       isUnlocked: true,
       description: 'Mã nhập cung phá vỡ hàng rào sĩ tượng đối phương.',
     ),
@@ -36,8 +36,8 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
       key: 'endgame:234',
       title: 'Đơn Xa Bạt Trại',
       difficulty: 'Dễ',
-      stars: 3,
-      isUnlocked: true,
+      stars: 0,
+      isUnlocked: false,
       description: 'Một Xe tung hoành giữa trùng điệp phòng tuyến.',
     ),
     _PuzzleStage(
@@ -45,8 +45,8 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
       key: 'endgame:243',
       title: 'Pháo Giác Chiếu Bí',
       difficulty: 'Trung bình',
-      stars: 3,
-      isUnlocked: true,
+      stars: 0,
+      isUnlocked: false,
       description: 'Uy lực Pháo góc kết hợp Mã ngoạ tào.',
     ),
     _PuzzleStage(
@@ -54,8 +54,8 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
       key: 'endgame:308',
       title: 'Thất Tinh Tụ Hội',
       difficulty: 'Cao thủ',
-      stars: 2,
-      isUnlocked: true,
+      stars: 0,
+      isUnlocked: false,
       description: 'Thế cờ giang hồ danh bất hư truyền ngàn năm.',
     ),
     _PuzzleStage(
@@ -64,7 +64,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
       title: 'Dã Mã Thao Điền',
       difficulty: 'Cao thủ',
       stars: 0,
-      isUnlocked: true, // Ải đang chơi
+      isUnlocked: false,
       description: 'Ngựa hoang giày xéo ruộng đồng, biến ảo khôn lường.',
     ),
     _PuzzleStage(
@@ -201,12 +201,46 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
     } catch (_) {}
   }
 
+  int _getConqueredTargetNodeIndex() {
+    int lastConqueredStageId = 0;
+    for (final s in _stages) {
+      if (s.stars > 0) {
+        lastConqueredStageId = math.max(lastConqueredStageId, s.id);
+      }
+    }
+
+    if (lastConqueredStageId <= 0) {
+      return 0; // Chưa vượt qua ải nào -> Không vẽ vạch hoàng kim
+    }
+
+    if (lastConqueredStageId == 1) return 1;
+    if (lastConqueredStageId == 2) return 2;
+    if (lastConqueredStageId == 3) return 3;
+    if (lastConqueredStageId == 4) return 5;
+    if (lastConqueredStageId == 5) return 6;
+    if (lastConqueredStageId == 6) return 7;
+    if (lastConqueredStageId == 7) return 9;
+    if (lastConqueredStageId == 8) return 10;
+    if (lastConqueredStageId == 9) return 11;
+    if (lastConqueredStageId >= 10) return 13;
+    return 0;
+  }
+
   void _scrollToActiveStage() {
     if (!_scrollController.hasClients) return;
     final screenH = MediaQuery.of(context).size.height;
-    // Ải 5 ở y = 1030.0 -> cuộn để Ải 5 nằm ngay giữa màn hình
-    const targetY = 1030.0;
-    final scrollOffset = (targetY - screenH * 0.45).clamp(
+    
+    // Tìm ải đang khiêu chiến (unlocked nhưng chưa có sao), hoặc ải mở khóa đầu tiên
+    final activeStage = _stages.firstWhere(
+      (s) => s.isUnlocked && s.stars == 0,
+      orElse: () => _stages.firstWhere((s) => s.isUnlocked, orElse: () => _stages.first),
+    );
+
+    final stageIdx = (activeStage.id - 1).clamp(0, 9);
+    final waypoints = _computeWaypoints(MediaQuery.of(context).size.width);
+    final targetY = waypoints.stagePoints[stageIdx].dy;
+
+    final scrollOffset = (targetY - screenH * 0.5).clamp(
       0.0,
       _scrollController.position.maxScrollExtent,
     );
@@ -534,6 +568,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
                                     painter: _CurvedSagaPathPainter(
                                       waypoints: waypoints,
                                       pulseValue: _pulseCtrl.value,
+                                      targetConqueredNodeIdx: _getConqueredTargetNodeIndex(),
                                     ),
                                   );
                                 },
@@ -557,7 +592,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
                               child: _buildTreasureChest(
                                 name: 'Rương Bạc Vượt Ải',
                                 reward: '+3 Tim ❤️, +2 Gợi ý 💡',
-                                isClaimed: true,
+                                isClaimed: _stages.length >= 4 && _stages[3].stars > 0,
                               ),
                             ),
                             Positioned(
@@ -566,7 +601,7 @@ class _PuzzleMapScreenState extends State<PuzzleMapScreen>
                               child: _buildTreasureChest(
                                 name: 'Rương Vàng Hoàng Kim',
                                 reward: '+500 Elo, +5 Đi lại ↩️',
-                                isClaimed: false,
+                                isClaimed: _stages.length >= 7 && _stages[6].stars > 0,
                               ),
                             ),
 
@@ -1053,10 +1088,12 @@ class _MapWaypoints {
 class _CurvedSagaPathPainter extends CustomPainter {
   final _MapWaypoints waypoints;
   final double pulseValue;
+  final int targetConqueredNodeIdx;
 
   _CurvedSagaPathPainter({
     required this.waypoints,
     required this.pulseValue,
+    required this.targetConqueredNodeIdx,
   });
 
   @override
@@ -1130,8 +1167,10 @@ class _CurvedSagaPathPainter extends CustomPainter {
     _paintSteppingStones(canvas, fullPath);
 
     // 5. ĐƯỜNG HOÀNG KIM NỐI CÁC ẢI ĐÃ VƯỢT (Conquered Golden Trail)
-    // Từ Ải 1 đến Ải 5 (Ải hiện tại)
-    _paintConqueredTrail(canvas, allNodes);
+    // CHỈ VẼ khi đã vượt qua ít nhất 1 ải (targetConqueredNodeIdx > 0)
+    if (targetConqueredNodeIdx > 0) {
+      _paintConqueredTrail(canvas, allNodes);
+    }
 
     // 6. SƯƠNG MÙ CHE PHỦ ĐOẠN ẢI CHƯA MỞ KHÓA (Ải 6 - Ải 10)
     _paintFogOfWar(canvas, size);
@@ -1205,13 +1244,13 @@ class _CurvedSagaPathPainter extends CustomPainter {
   }
 
   void _paintConqueredTrail(Canvas canvas, List<Offset> nodes) {
-    // Ải 1 -> Ải 5 (nodes 1 đến 6 trong allNodes)
+    if (targetConqueredNodeIdx <= 0 || nodes.isEmpty) return;
+
     final conqueredPath = Path();
     conqueredPath.moveTo(nodes[0].dx, nodes[0].dy);
 
-    // Điểm đến là Ải 5 (index 6 trong allNodes)
-    const targetIdx = 6;
-    for (int i = 0; i < targetIdx && i < nodes.length - 1; i++) {
+    final limit = math.min(targetConqueredNodeIdx, nodes.length - 1);
+    for (int i = 0; i < limit; i++) {
       final p1 = nodes[i];
       final p2 = nodes[i + 1];
       final dy = p2.dy - p1.dy;
@@ -1233,7 +1272,7 @@ class _CurvedSagaPathPainter extends CustomPainter {
     final corePaint = Paint()
       ..shader = const LinearGradient(
         colors: [Color(0xFFFFD54F), Color(0xFFFFA000), Color(0xFFFFD54F)],
-      ).createShader(const Rect.fromLTWH(0, 900, 400, 1000))
+      ).createShader(const Rect.fromLTWH(0, 0, 400, 2000))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5
       ..strokeCap = StrokeCap.round;
@@ -1254,6 +1293,7 @@ class _CurvedSagaPathPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CurvedSagaPathPainter oldDelegate) {
-    return oldDelegate.pulseValue != pulseValue;
+    return oldDelegate.pulseValue != pulseValue ||
+        oldDelegate.targetConqueredNodeIdx != targetConqueredNodeIdx;
   }
 }
