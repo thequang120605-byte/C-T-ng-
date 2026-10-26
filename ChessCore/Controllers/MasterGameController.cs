@@ -31,7 +31,7 @@ namespace ChessCore.Controllers
 
                 return View(games);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Fallback nếu database vừa khởi động hoặc đang cập nhật bảng
                 return View(new List<MasterGame>());
