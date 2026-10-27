@@ -84,6 +84,8 @@ C-T-ng-/
 
 ## 🧪 4. HỆ THỐNG KIỂM THỬ TOÀN DIỆN (TESTING SUITE)
 
+> 📖 **Xem tài liệu phân tích chi tiết cơ chế hoạt động của 4 folder tại:** [HUONG_DAN_HOAT_DONG_4_FOLDER_TESTING.md](Testing/HUONG_DAN_HOAT_DONG_4_FOLDER_TESTING.md)
+
 Hệ thống kiểm thử được thiết kế theo mô hình Kim tự tháp kiểm thử phần mềm (Testing Pyramid) và phân chia rõ ràng giữa **MÃ NGUỒN KIỂM THỬ** và **KẾT QUẢ ĐẦU RA**:
 
 ### 4.1. Mã nguồn thực thi kiểm thử (Folders 1, 2, 3)

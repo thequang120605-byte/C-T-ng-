@@ -7,6 +7,8 @@ Thư mục này gom toàn bộ mã nguồn, kịch bản, dữ liệu và tài l
 
 ## CẤU TRÚC THƯ MỤC KIỂM THỬ
 
+> 📖 **Xem giải thích chi tiết cơ chế hoạt động của 4 folder tại:** [HUONG_DAN_HOAT_DONG_4_FOLDER_TESTING.md](HUONG_DAN_HOAT_DONG_4_FOLDER_TESTING.md)
+
 ```
 Testing/
 ├── 01_Ban1_UnitTests_xUnit/              <-- BẠN 1: KIỂM THỬ ENGINE, LUẬT CỜ & AI (C#)
