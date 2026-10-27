@@ -46,18 +46,117 @@ Testing/
 
 ---
 
-## 🔍 PHẦN 3: CẨM NANG TỰ TAY KIỂM THỬ, PHÂN TÍCH CƠ CHẾ HOẠT ĐỘNG & HƯỚNG DẪN FIX 17 DEFECTS
+## 🔍 PHẦN 3: CẨM NANG TỰ TAY KIỂM THỬ, PHÂN LOẠI ĐIỀU KIỆN KÍCH HOẠT & HƯỚNG DẪN FIX 17 DEFECTS
 
-> **Yêu cầu môi trường**: Bật Web Server Kestrel bằng lệnh: `dotnet run --project ChessCore` (server chạy tại `http://localhost:5000`).
+> **BẢNG CHỈ DẪN KÍCH HOẠT NHANH 17 DEFECTS:**
+> * 📡 **Cái nào TẮT WIFI mới hiện lỗi**: `BUG_008` (Mất mạng làm fail SMTP -> kích hoạt khối code lộ mã OTP ra web).
+> * 🖱️ **Cái nào THAO TÁC TRỰC TIẾP TRÊN GIAO DIỆN (UI) là thấy ngay**: `BUG_004`, `BUG_005`, `BUG_007`, `BUG_009`, `BUG_012`, `BUG_014`, `BUG_015`.
+> * 💻 **Cái nào CHẠY SCRIPT / F12 CONSOLE / POSTMAN mới hiện lỗi**: `BUG_001`, `BUG_002`, `BUG_003`, `BUG_006`, `BUG_010`, `BUG_011`, `BUG_013`, `BUG_016`, `BUG_017`.
 
 ---
 
-### 🔴 NHÓM 1: LỖI BẢO MẬT & XÁC THỰC TÀI KHOẢN (AUTH & PROFILE)
+### 📡 PHÂN NHÓM A: LỖI KÍCH HOẠT KHI TẮT WIFI / MẤT MẠNG INTERNET (NETWORK / SMTP OUTAGE)
 
-#### 1. BUG_001 (`TC_AUTH_004`): Đăng ký mật khẩu yếu dưới 6 ký tự qua API
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Trên giao diện Web MVC (`/Auth/Register`), thẻ input có thuộc tính HTML5 `minlength="6"` nên người dùng thông thường bị chặn. Lỗi **CHỈ XUẤT HIỆN khi người dùng hoặc kẻ tấn công cố tình Bypass giao diện** (mở F12 Console, dùng Postman, cURL, hoặc script tự động) gọi trực tiếp vào endpoint REST API `POST /api/auth/register`.
-* **Cơ chế hoạt động ngầm (How it works)**: Controller `AuthController.ApiRegister` chỉ kiểm tra `string.IsNullOrWhiteSpace(request.Password)`. Khi nhận chuỗi `"123"`, backend không kiểm tra độ dài tối thiểu, thực hiện băm mật khẩu qua `HashPassword("123")`, ghi bản ghi vào bảng `Users`, cấp `PlayerId` và Bearer Token thành công với `HTTP 200 OK`.
-* **Cách test tay**: Mở F12 Console tại `http://localhost:5000`, dán script:
+#### 1. BUG_008 (`TC_AUTH_011`): Rò rỉ mã OTP bí mật trực tiếp lên giao diện khi lỗi SMTP (Critical Security)
+* 🎯 **Điều kiện kích hoạt 100%**: **TẮT WIFI HOẶC BẬT CHẾ ĐỘ MÁY BAY (AIRPLANE MODE)** trên máy tính!
+  *(Giải thích: Khi máy có mạng, tài khoản Gmail của dev gửi mail thành công nên hiện chữ xanh; nhưng khi bạn tắt Wifi, việc gửi mail bị fail, hệ thống kích hoạt khối `else` làm lộ mã OTP ngay lập tức!)*
+* 🖱️ **Thao tác chi tiết**:
+  1. Ngắt kết nối Wifi / Mạng Internet trên máy tính.
+  2. Vào trang web: `http://localhost:5000/Auth/ForgotPassword`
+  3. Nhập email: `testB_idor@test.com` (hoặc email bất kỳ).
+  4. Bấm nút **"Gửi mã OTP"**.
+  5. 💥 **Lập tức màn hình chuyển sang trang ResetPassword và hiện KHUNG MÀU VÀNG VIỀN NÉT ĐỨT**:  
+     👉 **`[DEV MODE] Mã OTP của bạn là: XXXXXX`** (Mã OTP 6 số ngẫu nhiên hiển thị to rõ trên web!).
+* **Vị trí code & Hướng dẫn Fix cho Dev**:
+  * **File**: `ChessCore/Controllers/AuthController.cs`, dòng 315-319 trong hàm `ForgotPassword`.
+  * **Cách Fix**: Xóa bỏ hoàn toàn việc gán `TempData["DevOtp"] = otp;`. Khi email gửi thất bại chỉ thông báo an toàn: *"Không thể gửi email lúc này, vui lòng thử lại sau"*.
+* **Ảnh chứng cứ**: [TC_AUTH_011.png](E2E_SCREENSHOTS/TC_AUTH_011.png)
+
+---
+
+### 🖱️ PHÂN NHÓM B: CÁC LỖI THAO TÁC TRỰC TIẾP TRÊN GIAO DIỆN WEB (UI DEFECTS)
+
+#### 2. BUG_004 (`TC_ONL_015`): Người chơi bấm "Xin hàng" nhưng ván cờ không chịu kết thúc (Blocker)
+* 🎯 **Điều kiện kích hoạt 100%**: Thao tác trực tiếp trên giao diện thi đấu cờ Online (PvP)!
+* 🖱️ **Thao tác chi tiết**:
+  1. Vào ván cờ trực tuyến giữa 2 người chơi.
+  2. Bên người chơi Đỏ bấm nút **"Xin hàng"** ở thanh điều khiển bên phải bàn cờ.
+  3. Bấm **"Đồng ý"** trên modal xác nhận.
+  4. 💥 **Lỗi hiện ra**: Modal đóng lại nhưng bàn cờ **vẫn tiếp tục cho phép kéo thả quân đi cờ bình thường**, không chịu xử thua và không cộng/trừ điểm Elo! *(Do file `game.js` dòng 2173 quên gửi header Token nên server từ chối 401)*.
+* **Vị trí code & Hướng dẫn Fix cho Dev**:
+  * **File**: `ChessCore/wwwroot/js/game.js`, dòng 2173: Thêm `'Authorization': 'Bearer ' + token` vào request fetch đầu hàng.
+* **Ảnh chứng cứ**: [TC_ONL_015.png](E2E_SCREENSHOTS/TC_ONL_015.png)
+
+#### 3. BUG_012 (`TC_ONL_016`): Bấm nút "Tái đấu" ép thẳng đối thủ vào ván mới mà không cần hỏi
+* 🎯 **Điều kiện kích hoạt 100%**: Thao tác trực tiếp trên giao diện khi vừa kết thúc 1 ván cờ Online!
+* 🖱️ **Thao tác chi tiết**:
+  1. Hai người vừa đánh xong một ván cờ trên 2 tab trình duyệt.
+  2. Người chơi A bấm nút **"Tái đấu"**.
+  3. 💥 **Lỗi hiện ra**: Bàn cờ của Người chơi B **tự động bị xóa sạch và reset vào ván mới ngay lập tức**, không hề có bất kỳ popup hay lời mời hỏi xem Người B có đồng ý chơi tiếp hay không!
+* **Vị trí code & Hướng dẫn Fix cho Dev**:
+  * **File**: `ChessCore/Controllers/GamesController.cs`, dòng 441-480.
+  * **Cách Fix**: Tách làm 2 pha: Gửi lời mời `OfferRematch` trước, chỉ tạo ván mới khi đối phương bấm `AcceptRematch`.
+* **Ảnh chứng cứ**: [TC_ONL_016.png](E2E_SCREENSHOTS/TC_ONL_016.png)
+
+#### 4. BUG_014 (`TC_ADM_005`): Trang Admin CMS hoàn toàn không có nút "Khóa tài khoản"
+* 🎯 **Điều kiện kích hoạt 100%**: Xem trực tiếp trên màn hình Quản trị Admin!
+* 🖱️ **Thao tác chi tiết**:
+  1. Đăng nhập tài khoản Admin (`admin` / `Admin@123`).
+  2. Vào menu **Quản trị người dùng** (`http://localhost:5000/Admin/Users`).
+  3. 💥 **Lỗi hiện ra**: Tài liệu phân tích yêu cầu Admin có quyền khóa tài khoản vi phạm, nhưng trên giao diện **chỉ có 2 nút: "Đổi quyền Admin" và "Xóa"**, hoàn toàn KHÔNG CÓ nút Khóa tài khoản vì tính năng chưa được lập trình!
+* **Vị trí code & Hướng dẫn Fix cho Dev**:
+  * **File**: `ChessCore/Models/User.cs` & `AdminController.cs`: Thêm cột `IsLocked` vào CSDL và tạo action `ToggleLockUser`.
+* **Ảnh chứng cứ**: [TC_ADM_005.png](E2E_SCREENSHOTS/TC_ADM_005.png)
+
+#### 5. BUG_015 (`TC_ADM_008`): Form Admin CMS cho phép lưu bài cờ thế với chuỗi FEN rác
+* 🎯 **Điều kiện kích hoạt 100%**: Thao tác trực tiếp trên form thêm cờ thế của Admin!
+* 🖱️ **Thao tác chi tiết**:
+  1. Vào menu **Quản trị cờ thế** (`http://localhost:5000/Admin/Puzzles`).
+  2. Nhập Tiêu đề: *"Thế cờ rác"*, ô FEN nhập chuỗi rác: `"chuoi_fen_rac_123"`.
+  3. Bấm nút **"Thêm thế cờ"**.
+  4. 💥 **Lỗi hiện ra**: Giao diện báo xanh: *"Đã thêm thế cờ thành công!"*. Sau đó người dùng vào chơi thế cờ này thì bàn cờ bị crash trắng trang!
+* **Vị trí code & Hướng dẫn Fix cho Dev**:
+  * **File**: `ChessCore/Controllers/AdminController.cs`, dòng 75-88: Bổ sung gọi `Board.TryParseFen` để validate cú pháp trước khi lưu vào CSDL.
+* **Ảnh chứng cứ**: [TC_ADM_008.png](E2E_SCREENSHOTS/TC_ADM_008.png)
+
+#### 6. BUG_005 (`TC_COU_009`): Chuyển hướng âm thầm (Silent Redirect) nuốt mất thông báo cảnh báo chứng chỉ
+* 🎯 **Điều kiện kích hoạt 100%**: Gõ trực tiếp URL `/Course/Certificate` khi chưa đủ điều kiện!
+* 🖱️ **Thao tác chi tiết**:
+  1. Đăng nhập tài khoản mới (0% tiến độ học).
+  2. Gõ trực tiếp: `http://localhost:5000/Course/Certificate` rồi bấm Enter.
+  3. 💥 **Lỗi hiện ra**: Trang web **đột ngột bị đá văng về `/Course` trong im lặng**, hoàn toàn không hiện thông báo lỗi `TempData["CertificateLockMessage"]` vì giao diện `Views/Course/Index.cshtml` quên code thẻ hiển thị thông báo!
+* **Vị trí code & Hướng dẫn Fix cho Dev**:
+  * **File**: `ChessCore/Views/Course/Index.cshtml`: Bổ sung `@if (TempData["CertificateLockMessage"] != null)` để hiện banner cảnh báo màu vàng giải thích lý do cho người dùng.
+* **Ảnh chứng cứ**: [TC_COU_009.png](E2E_SCREENSHOTS/TC_COU_009.png)
+
+#### 7. BUG_007 (`TC_ADM_009`): Xóa bài cờ thế ở 2 tab không có thông báo lỗi 404
+* 🎯 **Điều kiện kích hoạt 100%**: Mở 2 tab quản trị `/Admin/Puzzles` cùng lúc!
+* 🖱️ **Thao tác chi tiết**:
+  1. Mở 2 tab trình duyệt cùng xem trang `/Admin/Puzzles`.
+  2. Ở Tab 1: Bấm nút "Xóa" một bài cờ thế bất kỳ.
+  3. Sang Tab 2 (chưa F5): Bấm nút "Xóa" tiếp vào chính bài cờ vừa bị xóa.
+  4. 💥 **Lỗi hiện ra**: Hệ thống không báo lỗi "Bài cờ thế không tồn tại (404)" mà tải lại trang bình thường như thể vừa xóa thành công lần 2.
+* **Vị trí code & Hướng dẫn Fix cho Dev**:
+  * **File**: `ChessCore/Controllers/AdminController.cs`, dòng 121-133: Thêm kiểm tra `if (puzzle == null) return NotFound();`.
+* **Ảnh chứng cứ**: [TC_ADM_009.png](E2E_SCREENSHOTS/TC_ADM_009.png)
+
+#### 8. BUG_009 (`TC_AUTH_016`): Click chuột liên tục vào nút "Nhận thưởng" được cộng điểm nhiều lần
+* 🎯 **Điều kiện kích hoạt 100%**: Click chuột lia lịa (spam click) trên giao diện!
+* 🖱️ **Thao tác chi tiết**:
+  1. Vào trang Nhiệm vụ hàng ngày.
+  2. Dùng chuột **click liên tục thật nhanh** vào nút **"Nhận thưởng"**.
+  3. 💥 **Lỗi hiện ra**: Mỗi lần click là một lần popup báo thành công hiện ra và điểm thưởng góc màn hình cứ thế nhảy số tăng lên không giới hạn!
+* **Vị trí code & Hướng dẫn Fix cho Dev**:
+  * **File**: `ChessCore/Controllers/QuestsController.cs`: Kiểm tra cờ `!IsClaimed` và khóa Transaction trong CSDL.
+* **Ảnh chứng cứ**: [TC_AUTH_016.png](E2E_SCREENSHOTS/TC_AUTH_016.png)
+
+---
+
+### 💻 PHÂN NHÓM C: CÁC LỖI PHẢI DÙNG SCRIPT / F12 CONSOLE / POSTMAN MỚI HIỆN LỖI (CLIENT-SIDE BYPASS)
+*(Giao diện web dùng form HTML5 có chặn sơ bộ bề nổi, nhưng khi kẻ xấu/tester dùng F12 Console hoặc Postman gọi thẳng vào API Backend thì máy chủ bị hổng)*
+
+#### 9. BUG_001 (`TC_AUTH_004`): Đăng ký mật khẩu < 6 ký tự ("123")
+* 🎯 **Điều kiện kích hoạt 100%**: Mở F12 Console tại `http://localhost:5000`, dán script:
   ```javascript
   fetch('/api/auth/register', {
     method: 'POST',
@@ -65,24 +164,12 @@ Testing/
     body: JSON.stringify({username: 'u_p3_' + Date.now(), password: '123', email: 'p3_' + Date.now() + '@test.com'})
   }).then(r => r.json()).then(console.log);
   ```
-* **Kết quả thực tế**: `HTTP 200 OK`, tài khoản được tạo với mật khẩu 3 ký tự.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/AuthController.cs`, dòng 697-700 trong hàm `ApiRegister`.
-  * **Đoạn code cần sửa**:
-    ```csharp
-    if (request.Password.Length < 6)
-    {
-        return BadRequest(new { message = "Mật khẩu phải có độ dài tối thiểu 6 ký tự." });
-    }
-    ```
+* 💥 **Kết quả**: `HTTP 200 OK`, tạo tài khoản thành công với mật khẩu 3 ký tự (vượt qua HTML5 minlength của giao diện web).
+* **Vị trí code & Hướng dẫn Fix**: `AuthController.cs` dòng 697-700: Thêm `if (request.Password.Length < 6) return BadRequest();`.
 * **Ảnh chứng cứ**: [TC_AUTH_004.png](E2E_SCREENSHOTS/TC_AUTH_004.png)
 
----
-
-#### 2. BUG_002 (`TC_AUTH_001`): Thiếu Regex kiểm tra định dạng Email khi đăng ký (Email rác)
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Trên giao diện web, thẻ `<input type="email">` của trình duyệt chặn các chuỗi không có `@`. Lỗi **XUẤT HIỆN khi client bypass giao diện** qua script/Postman, gửi email không có dấu `@` hoặc không có domain (ví dụ `"not_an_email_format"`).
-* **Cơ chế hoạt động ngầm (How it works)**: Backend `AuthController.ApiRegister` chỉ kiểm tra `!string.IsNullOrEmpty(email)` và truy vấn `_context.Users.AnyAsync(u => u.Email == email)` để chống trùng. Hoàn toàn thiếu bộ lọc Regex. Email rác được ghi vĩnh viễn vào CSDL MySQL. Khi hệ thống gửi email OTP lấy lại mật khẩu sau này, dịch vụ SMTP sẽ bị crash hoặc fail.
-* **Cách test tay**: Mở F12 Console, dán:
+#### 10. BUG_002 (`TC_AUTH_001`): Đăng ký Email rác không có domain
+* 🎯 **Điều kiện kích hoạt 100%**: Mở F12 Console dán script gửi email không có `@` và domain:
   ```javascript
   fetch('/api/auth/register', {
     method: 'POST',
@@ -90,200 +177,12 @@ Testing/
     body: JSON.stringify({username: 'u_bad_' + Date.now(), password: 'Password123!', email: 'chuoi_nay_khong_phai_email'})
   }).then(r => r.json()).then(console.log);
   ```
-* **Kết quả thực tế**: `HTTP 200 OK`, lưu trực tiếp email rác vào CSDL.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/AuthController.cs`, dòng 703-713 trong hàm `ApiRegister`.
-  * **Đoạn code cần sửa**:
-    ```csharp
-    var emailRegex = new System.Text.RegularExpressions.Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-    if (!string.IsNullOrEmpty(email) && !emailRegex.IsMatch(email))
-    {
-        return BadRequest(new { message = "Địa chỉ email không đúng định dạng." });
-    }
-    ```
+* 💥 **Kết quả**: `HTTP 200 OK`, lưu email rác vào CSDL (vượt qua input `type="email"` của giao diện web).
+* **Vị trí code & Hướng dẫn Fix**: `AuthController.cs` dòng 703-713: Bổ sung Regex xác thực định dạng email.
 * **Ảnh chứng cứ**: [TC_AUTH_001.png](E2E_SCREENSHOTS/TC_AUTH_001.png)
 
----
-
-#### 3. BUG_008 (`TC_AUTH_011`): Rò rỉ mã OTP đặt lại mật khẩu trực tiếp lên giao diện (Critical Security)
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện **trực tiếp trên giao diện Web người dùng thật** tại trang `/Auth/ForgotPassword` khi yêu cầu khôi phục mật khẩu mà máy chủ gặp sự cố không gửi được email (chưa cấu hình Gmail App Password hoặc mạng chặn cổng SMTP 587).
-* **Cơ chế hoạt động ngầm (How it works)**: Trong `AuthController.cs` dòng 315-319, khi hàm `SendOtpEmailAsync` trả về `false`, lập trình viên đã dùng biến gỡ lỗi:
-  `TempData["DevOtp"] = otp;` và `TempData["OtpMessage"] = $"Lỗi khi gửi email qua Gmail. MÃ OTP CỦA BẠN LÀ: {otp}";`
-  Controller redirect sang `/Auth/ResetPassword`, và mã OTP 6 số hiển thị to rõ trên màn hình web. Bất kỳ ai chỉ cần biết email của đối phương là có thể lấy OTP và đổi mật khẩu mà không cần quyền truy cập hộp thư.
-* **Cách test tay**:
-  1. Vào trình duyệt, truy cập: `http://localhost:5000/Auth/ForgotPassword`
-  2. Nhập email của tài khoản bất kỳ (ví dụ: `admin@cotuong.pro` hoặc email đã đăng ký)
-  3. Bấm nút **Gửi mã OTP**.
-* **Kết quả thực tế**: Màn hình hiển thị: *"Lỗi khi gửi email qua Gmail. MÃ OTP CỦA BẠN LÀ: 123456"*.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/AuthController.cs`, dòng 315-319 trong hàm `ForgotPassword`.
-  * **Đoạn code cần sửa**: Xóa bỏ hoàn toàn 2 dòng gán OTP vào TempData. Khi email thất bại chỉ báo thông báo an toàn:
-    ```csharp
-    TempData["ErrorMessage"] = "Không thể gửi email xác thực lúc này. Vui lòng liên hệ quản trị viên hoặc thử lại sau.";
-    ```
-* **Ảnh chứng cứ**: [TC_AUTH_011.png](E2E_SCREENSHOTS/TC_AUTH_011.png)
-
----
-
-#### 4. BUG_009 (`TC_AUTH_016`): Nhận thưởng nhiệm vụ không kiểm tra điều kiện & Cho phép spam
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện khi người chơi bấm liên tục (spam click) vào nút "Nhận thưởng" nhiệm vụ hàng ngày trên giao diện, hoặc gọi API `POST /api/quests/{id}/claim` bằng tool tự động.
-* **Cơ chế hoạt động ngầm (How it works)**: Endpoint `POST /api/quests/{id}/claim` không kiểm tra tiến độ người chơi (ví dụ: đã thắng ván AI nào trong ngày chưa) và không có cờ `IsClaimed = true` khóa bản ghi trong ngày. Cứ gửi request là backend trả `HTTP 200 OK` và cộng dồn điểm thưởng `PuzzleScore` vô hạn.
-* **Cách test tay**: Mở F12 Console, chạy lệnh spam:
-  ```javascript
-  for(let i = 0; i < 5; i++) {
-    fetch('/api/quests/ai/claim', {method: 'POST'}).then(r => r.json()).then(res => console.log('Lần ' + (i+1) + ':', res));
-  }
-  ```
-* **Kết quả thực tế**: Cả 5 lần đều trả về `HTTP 200 OK: {"success":true,"message":"Nhận thưởng thành công!"}` và cộng dồn điểm liên tục.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/QuestsController.cs` (hoặc action claim trong AuthController).
-  * **Đoạn code cần sửa**: Kiểm tra trong bảng `UserDailyQuestProgress`: 1. Điều kiện hoàn thành `CurrentProgress >= TargetCount`; 2. Điều kiện chưa nhận `!IsClaimed`. Khi phát thưởng phải set `IsClaimed = true` trong một Database Transaction duy nhất.
-* **Ảnh chứng cứ**: [TC_AUTH_016.png](E2E_SCREENSHOTS/TC_AUTH_016.png)
-
----
-
-#### 5. BUG_010 (`TC_AUTH_010`): Thiếu Rate Limiting và khóa tài khoản chống Brute-force
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện khi kẻ tấn công dùng công cụ tự động (Hydra, Burp Suite, script Python) gửi hàng loạt request đoán mật khẩu vào `POST /api/auth/login`.
-* **Cơ chế hoạt động ngầm (How it works)**: Backend xử lý mỗi request login sai chỉ mất 0.01 - 0.02 giây và trả `HTTP 401 Unauthorized`. Không có middleware đếm số lần thất bại, không có khóa tạm thời (Lockout), không có CAPTCHA. Kẻ tấn công có thể thử hàng triệu mật khẩu trong thời gian ngắn mà không bị ngắt kết nối.
-* **Cách test tay**: Mở F12 Console, chạy script gửi 5 request sai liên tiếp:
-  ```javascript
-  for(let i = 0; i < 5; i++) {
-    fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({username: 'admin', password: 'WrongPassword' + i})
-    }).then(r => console.log('Lần ' + (i+1) + ' Status:', r.status));
-  }
-  ```
-* **Kết quả thực tế**: Cả 5 request đều phản hồi `HTTP 401` tức thì mà không hề bị làm chậm hay khóa IP.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/AuthController.cs`, dòng 626-660 & `Program.cs`.
-  * **Đoạn code cần sửa**: Tích hợp thư viện `AspNetCoreRateLimit` trong `Program.cs` giới hạn 5 request/phút/IP. Thêm thuộc tính `AccessFailedCount` và `LockoutEnd` vào model `User` để khóa tài khoản tạm thời 15 phút nếu sai quá 5 lần.
-* **Ảnh chứng cứ**: [TC_AUTH_010.png](E2E_SCREENSHOTS/TC_AUTH_010.png)
-
----
-
-#### 6. BUG_016 (`TC_AUTH_002`): Cho phép đăng ký Username chứa mã độc XSS `<script>` (Stored XSS)
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện khi người dùng cố tình nhập chuỗi mã độc `<script>alert('XSS')</script>` vào ô Username khi đăng ký tài khoản (qua form web hoặc qua API REST).
-* **Cơ chế hoạt động ngầm (How it works)**: `AuthController.ApiRegister` chỉ gọi `.Trim()` chuỗi username, hoàn toàn không gọi `HttpUtility.HtmlEncode()` và không dùng Regex kiểm tra ký tự an toàn. Chuỗi mã độc được ghi nguyên bản vào database MySQL. Khi tên người dùng này được hiển thị trên Bảng xếp hạng, danh sách kỳ thủ hoặc CMS Admin qua `@Html.Raw()` hoặc `innerHTML`, mã script độc hại sẽ tự động thực thi trên máy người xem.
-* **Cách test tay**: Mở F12 Console, dán:
-  ```javascript
-  fetch('/api/auth/register', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({username: "<script>alert('XSS_ATTACK')</script>", password: 'Password123!', email: 'xss_' + Date.now() + '@test.com'})
-  }).then(r => r.json()).then(console.log);
-  ```
-* **Kết quả thực tế**: `HTTP 200 OK`, tài khoản được tạo và lưu nguyên văn `<script>` vào CSDL!
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/AuthController.cs`, dòng 702-705 trong hàm `ApiRegister`.
-  * **Đoạn code cần sửa**: Áp dụng Regex chỉ cho phép chữ cái và số (alphanumeric):
-    ```csharp
-    var usernameRegex = new System.Text.RegularExpressions.Regex(@"^[a-zA-Z0-9_\.]{3,20}$");
-    if (!usernameRegex.IsMatch(username))
-    {
-        return BadRequest(new { message = "Tên người dùng chỉ được chứa chữ cái, số, dấu gạch dưới và dấu chấm (3-20 ký tự)." });
-    }
-    ```
-* **Ảnh chứng cứ**: [TC_AUTH_002.png](E2E_SCREENSHOTS/TC_AUTH_002.png)
-
----
-
-### 🔴 NHÓM 2: LỖI VẬN HÀNH TRẬN ĐẤU & ONLINE SIGNALR
-
-#### 7. BUG_004 (`TC_ONL_015`): Vẫn nhận nước cờ sau khi người chơi đã Đầu hàng (Blocker)
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện **trực tiếp trên giao diện thi đấu Online (PvP)** khi 2 người chơi thật đang thi đấu, một bên bấm nút "Xin hàng" và bấm "Đồng ý" trên modal xác nhận.
-* **Cơ chế hoạt động ngầm (How it works)**:
-  1. Trong file [`wwwroot/js/game.js` dòng 2170-2175](file:///c:/Users/ADMIN/Desktop/C-T-ng-/ChessCore/wwwroot/js/game.js#L2170-L2175), hàm `resignGame()` thực hiện `fetch('/api/games/' + gameId + '/resign')` nhưng **quên đính kèm Header Authorization Bearer Token**.
-  2. Backend [`GamesController.cs` dòng 1220](file:///c:/Users/ADMIN/Desktop/C-T-ng-/ChessCore/Controllers/GamesController.cs#L1220) kiểm tra `if (!TryGetCurrentUserId(out var resigningPlayerId)) return Unauthorized();`. Do thiếu token, server trả về `HTTP 401 Unauthorized`.
-  3. Giao diện báo lỗi nhưng **không thay đổi trạng thái ván cờ trên server**. Trạng thái ván cờ trên database vẫn giữ nguyên `InProgress`. Người chơi vẫn tiếp tục kéo thả quân và gửi nước đi `POST /api/games/{id}/moves` thành công với `HTTP 200 OK`.
-* **Cách test tay**: Tạo bàn cờ, gọi đầu hàng thiếu token rồi gửi nước đi hợp lệ:
-  ```powershell
-  # Kiểm tra qua API runner:
-  python -c "import requests; r=requests.post('http://localhost:5000/api/games'); gid=r.json()['id']; r_surr=requests.post(f'http://localhost:5000/api/games/{gid}/surrender'); r_move=requests.post(f'http://localhost:5000/api/games/{gid}/moves', json={'fromX':7,'fromY':1,'toX':7,'toY':4}); print('Move Status:', r_move.status_code)"
-  ```
-* **Kết quả thực tế**: `Move Status: 200 OK`, ván cờ không bị khóa sau khi xin hàng!
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File 1**: `ChessCore/wwwroot/js/game.js`, dòng 2173: Bổ sung header xác thực `headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }`.
-  * **File 2**: `ChessCore/Controllers/GamesController.cs`, dòng 1220: Hỗ trợ fallback nhận dạng danh tính người chơi qua Cookie Claims của phiên web nếu request thiếu Bearer Token.
-* **Ảnh chứng cứ**: [TC_ONL_015.png](E2E_SCREENSHOTS/TC_ONL_015.png)
-
----
-
-#### 8. BUG_011 (`TC_GAME_013`): Nhập FEN hỏng nuốt lỗi và tự gán thế cờ mặc định
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện khi client hoặc API ngoài gọi `POST /api/games` truyền chuỗi `initialFen` sai cú pháp cờ tướng (thiếu quân, sai ký tự phân cách, số hàng không đủ 10).
-* **Cơ chế hoạt động ngầm (How it works)**: Trong `GamesController.CreateGame`, khi gọi `GameRules.RebuildBoard` hoặc `Board.TryParseFen` thất bại, backend bắt ngoại lệ nhưng âm thầm nuốt lỗi và gán `initialFen = null`. Server trả về mã **`HTTP 201 Created`** và tự động dựng ra bàn cờ mặc định ban đầu thay vì báo lỗi `400 Bad Request`.
-* **Cách test tay**: Mở F12 Console, gửi chuỗi FEN rác:
-  ```javascript
-  fetch('/api/games?initialFen=fen_hong_sai_cu_phap_123', {method: 'POST'}).then(r => r.json()).then(console.log);
-  ```
-* **Kết quả thực tế**: `HTTP 201 Created`, response trả về bàn cờ mặc định với `initialFen: null`.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/GamesController.cs`, dòng 538-549 trong hàm `CreateGame`.
-  * **Đoạn code cần sửa**:
-    ```csharp
-    if (!string.IsNullOrWhiteSpace(initialFen) && !Board.TryParseFen(initialFen, out _, out string fenError))
-    {
-        return BadRequest(new { message = $"Chuỗi FEN khởi tạo không hợp lệ: {fenError}" });
-    }
-    ```
-* **Ảnh chứng cứ**: [TC_GAME_013.png](E2E_SCREENSHOTS/TC_GAME_013.png)
-
----
-
-#### 9. BUG_012 (`TC_ONL_016`): Tái đấu (Rematch) ép đối thủ vào ván mới không cần đồng ý
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện ở chế độ Đấu trực tuyến (PvP Online): Khi ván cờ kết thúc, một bên người chơi bấm nút "Tái đấu" hoặc gọi `POST /api/games/{id}/rematch`.
-* **Cơ chế hoạt động ngầm (How it works)**: Trong `GamesController.CreateRematch` (dòng 441-475), khi nhận request rematch từ 1 phía, backend lập tức gọi `_gameService.CreateGameAsync(status: GameStatus.InProgress)`. Server đảo màu quân và phát tín hiệu SignalR `RematchStarted` ép cả 2 client tải bàn cờ mới ngay lập tức mà không có pha trung gian chờ đối thủ bấm Đồng ý / Từ chối.
-* **Cách test tay**: Gọi `POST /api/games/1/rematch` qua Console hoặc Postman.
-* **Kết quả thực tế**: `HTTP 200 OK`, bàn cờ mới được sinh ra ngay tức thì.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/GamesController.cs`, dòng 441-480.
-  * **Đoạn code cần sửa**: Tách quy trình làm 2 bước: Bước 1 `OfferRematch` chỉ phát tín hiệu SignalR `RematchOffered` đến đối phương; Bước 2 `AcceptRematch` chỉ khi đối phương xác nhận đồng ý thì mới khởi tạo ván đấu mới.
-* **Ảnh chứng cứ**: [TC_ONL_016.png](E2E_SCREENSHOTS/TC_ONL_016.png)
-
----
-
-#### 10. BUG_017 (`TC_GAME_001`): API tạo ván cờ chấp nhận thời gian thi đấu âm (timeControl: -999)
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Trên giao diện web, modal chọn thời gian chỉ cho chọn giá trị dương (5, 10, 15 phút). Lỗi **CHỈ XUẤT HIỆN khi client bypass giao diện** qua Postman hoặc script gửi `POST /api/games` kèm `{"gameMode": "Custom", "timeControl": -999}`.
-* **Cơ chế hoạt động ngầm (How it works)**: Hàm `CreateGame` không ràng buộc DTO có validation cho `timeControl`. Server chấp nhận request, trả về **`HTTP 201 Created`** và gán thời gian ván cờ là số âm. Khi đồng hồ đếm ngược kích hoạt, hàm tính thời gian `TimeSpan` bị lỗi toán học làm đồng hồ nhảy loạn hoặc xử thua ngay tức thì.
-* **Cách test tay**: Mở F12 Console, chạy:
-  ```javascript
-  fetch('/api/games', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({gameMode: 'Custom', timeControl: -999})
-  }).then(r => r.json()).then(console.log);
-  ```
-* **Kết quả thực tế**: `HTTP 201 Created`, ván cờ được tạo thành công với thời gian -999 phút!
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/GamesController.cs`, dòng 538-549 và DTO tạo game.
-  * **Đoạn code cần sửa**: Tạo DTO có DataAnnotation giới hạn biên:
-    ```csharp
-    [Range(1, 180, ErrorMessage = "Thời gian thi đấu phải từ 1 đến 180 phút.")]
-    public int TimeControl { get; set; } = 10;
-    ```
-* **Ảnh chứng cứ**: [TC_GAME_001.png](E2E_SCREENSHOTS/TC_GAME_001.png)
-
----
-
-### 🔴 NHÓM 3: LỖI HỌC VIỆN KHÓA HỌC & CẤP CHỨNG CHỈ (COURSE)
-
-#### 11. BUG_005 (`TC_COU_009`): Cấp Chứng chỉ tốt nghiệp cho người chưa học bài nào (0% tiến độ)
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện khi người dùng mới tạo tài khoản (0% tiến độ học, chưa hoàn thành bài nào) gõ trực tiếp URL `/Course/Certificate` hoặc `/Course/Certificate?courseId=1` trên thanh địa chỉ trình duyệt.
-* **Cơ chế hoạt động ngầm (How it works)**: Ban đầu tính năng E-Certificate kết xuất trực tiếp View mà không khóa chặt chẽ. Hệ thống vẫn kết xuất template chứng chỉ CERT-CT hoàn chỉnh kèm họ tên và mã số chứng nhận dù database `UserCourseProgresses` có 0 bản ghi hoàn thành.
-* **Cách test tay**: Tạo tài khoản mới, sau đó truy cập: `http://localhost:5000/Course/Certificate`.
-* **Kết quả thực tế**: Giao diện chứng chỉ tốt nghiệp điện tử CERT-CT hiển thị trang trọng với họ tên người học.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/CourseController.cs`, dòng 229-239 & `Views/Course/Certificate.cshtml`.
-  * **Đoạn code cần sửa**: Khi `!isEligible`, Controller phải trả về `Forbid()` hoặc View thông báo từ chối cấp chứng chỉ (kèm tiến độ hiện tại), tuyệt đối không render layout chứng chỉ hoàn thành.
-* **Ảnh chứng cứ**: [TC_COU_009.png](E2E_SCREENSHOTS/TC_COU_009.png)
-
----
-
-#### 12. BUG_006 (`TC_COU_008`): Chấp nhận điểm trắc nghiệm Quiz vượt ngưỡng 100% (999999 điểm)
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Trên web, bài trắc nghiệm chỉ có 4 đáp án và tự tính điểm tối đa 100 điểm. Lỗi **XUẤT HIỆN khi học viên cố tình dùng F12 Console hoặc Postman** gọi API `POST /api/courses/progress` để gian lận điểm số.
-* **Cơ chế hoạt động ngầm (How it works)**: Controller `CourseController.ExecuteSaveProgress` nhận DTO `CourseProgressRequest request`. DTO lấy trực tiếp `request.QuizScore` (số nguyên) gán thẳng vào `progress.BestQuizScore = request.QuizScore` mà không kiểm tra cận trên [0, 100]. Giá trị 999999 được lưu vĩnh viễn vào CSDL và trả về `HTTP 200 OK`.
-* **Cách test tay**: Mở F12 Console, dán:
+#### 11. BUG_006 (`TC_COU_008`): Gian lận điểm trắc nghiệm Quiz 999999%
+* 🎯 **Điều kiện kích hoạt 100%**: Mở F12 Console dán script hack điểm:
   ```javascript
   fetch('/api/courses/progress', {
     method: 'POST',
@@ -291,24 +190,36 @@ Testing/
     body: JSON.stringify({lessonId: 1, quizScore: 999999, quizAttempts: 1, lastPosition: 100})
   }).then(r => r.json()).then(console.log);
   ```
-* **Kết quả thực tế**: `HTTP 200 OK`, response trả về `bestQuizScore: 999999`.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/CourseController.cs`, dòng 165-175 trong hàm `SaveProgress`.
-  * **Đoạn code cần sửa**:
-    ```csharp
-    if (request.QuizScore < 0 || request.QuizScore > 100)
-    {
-        return BadRequest(new { message = "Điểm trắc nghiệm Quiz phải nằm trong khoảng từ 0 đến 100." });
-    }
-    ```
+* 💥 **Kết quả**: `HTTP 200 OK`, server lưu điểm 999999% vào học bạ (giao diện web chỉ tự chấm max 100%).
+* **Vị trí code & Hướng dẫn Fix**: `CourseController.cs` dòng 165-175: Thêm kiểm tra `Math.Clamp(quizScore, 0, 100)`.
 * **Ảnh chứng cứ**: [TC_COU_008.png](E2E_SCREENSHOTS/TC_COU_008.png)
 
----
+#### 12. BUG_010 (`TC_AUTH_010`): Tấn công Brute-Force mật khẩu không bị chặn
+* 🎯 **Điều kiện kích hoạt 100%**: Mở F12 Console chạy script bắn 5 request sai liên tiếp trong 0.02s:
+  ```javascript
+  for(let i=0; i<5; i++) {
+    fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: 'admin', password: 'WrongPass' + i})
+    }).then(r => console.log('Lần ' + (i+1) + ' Status:', r.status));
+  }
+  ```
+* 💥 **Kết quả**: Cả 5 request đều trả về `HTTP 401` tức thì mà không bị delay, không có CAPTCHA, không khóa IP.
+* **Vị trí code & Hướng dẫn Fix**: `Program.cs` & `AuthController.cs`: Tích hợp `AspNetCoreRateLimit` giới hạn 5 lần/phút/IP.
+* **Ảnh chứng cứ**: [TC_AUTH_010.png](E2E_SCREENSHOTS/TC_AUTH_010.png)
 
-#### 13. BUG_013 (`TC_COU_006`): API tiến độ của Khách trả về 200 cho Lesson ID không tồn tại
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện khi người dùng chưa đăng nhập (Khách vãng lai) học bài hoặc gọi API `POST /api/courses/progress` với `lessonId = 999999` (ID rác không có trong CSDL).
-* **Cơ chế hoạt động ngầm (How it works)**: Trong `CourseController.ExecuteSaveProgress`, khi `userId is null` (khách chưa đăng nhập), code rơi vào nhánh xử lý cho Guest. Backend không truy vấn CSDL để kiểm tra bài học có tồn tại hay không mà lập tức trả về `Ok(new { progress = ..., isGuest = true })` với mã `HTTP 200 OK`.
-* **Cách test tay**: Mở F12 Console, gửi request với lessonId rác:
+#### 13. BUG_011 (`TC_GAME_013`): Tạo ván cờ với FEN rác nuốt lỗi
+* 🎯 **Điều kiện kích hoạt 100%**: Mở F12 Console dán script:
+  ```javascript
+  fetch('/api/games?initialFen=fen_hong_sai_cu_phap_123', {method: 'POST'}).then(r => r.json()).then(console.log);
+  ```
+* 💥 **Kết quả**: `HTTP 201 Created`, backend nuốt lỗi và tự động gán bàn cờ mặc định ban đầu thay vì báo lỗi 400.
+* **Vị trí code & Hướng dẫn Fix**: `GamesController.cs` dòng 538-549: Bổ sung `Board.TryParseFen` bắt lỗi cú pháp FEN.
+* **Ảnh chứng cứ**: [TC_GAME_013.png](E2E_SCREENSHOTS/TC_GAME_013.png)
+
+#### 14. BUG_013 (`TC_COU_006`): Khách vãng lai gửi LessonId rác 999999
+* 🎯 **Điều kiện kích hoạt 100%**: Mở F12 Console dán script:
   ```javascript
   fetch('/api/courses/progress', {
     method: 'POST',
@@ -316,84 +227,41 @@ Testing/
     body: JSON.stringify({lessonId: 999999, quizScore: 80, isCompleted: true})
   }).then(r => r.json()).then(console.log);
   ```
-* **Kết quả thực tế**: `HTTP 200 OK: {"progress":{"isCompleted":true,"bestQuizScore":80},"isGuest":true}`.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/CourseController.cs`, dòng 155-165 trong `ExecuteSaveProgress`.
-  * **Đoạn code cần sửa**:
-    ```csharp
-    if (!await _context.CourseLessons.AnyAsync(l => l.Id == request.LessonId))
-    {
-        return NotFound(new { message = $"Bài học ID #{request.LessonId} không tồn tại trong hệ thống." });
-    }
-    ```
+* 💥 **Kết quả**: `HTTP 200 OK`, server giả lập lưu tiến độ thành công cho bài học không hề tồn tại.
+* **Vị trí code & Hướng dẫn Fix**: `CourseController.cs` dòng 155-165: Thêm kiểm tra `_context.CourseLessons.AnyAsync(...)`.
 * **Ảnh chứng cứ**: [TC_COU_006.png](E2E_SCREENSHOTS/TC_COU_006.png)
 
----
-
-### 🔴 NHÓM 4: LỖI PHÂN HỆ QUẢN TRỊ VIÊN (ADMIN SYSTEM)
-
-#### 14. BUG_003 (`TC_ADM_002`): Truy cập /Admin khi chưa đăng nhập trả về 302 thay vì 403 Forbidden
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện khi client chưa đăng nhập hoặc tài khoản chỉ có role `Player` (hoặc bot crawler) truy cập trực tiếp đường dẫn `/Admin` trên trình duyệt hoặc gửi request HTTP GET.
-* **Cơ chế hoạt động ngầm (How it works)**: `AdminController` có attribute `[Authorize]`. Mặc định của ASP.NET Core Cookie Authentication khi gặp request chưa xác thực sẽ tự động chuyển hướng `HTTP 302 Found` sang `/Auth/Login?ReturnUrl=%2FAdmin`. Theo chuẩn RESTful và OWASP, route quản trị nhạy cảm không được redirect ngầm mà phải trả mã lỗi `HTTP 403 Forbidden` hoặc `401 Unauthorized`.
-* **Cách test tay**: Gửi request HTTP GET không kèm cookie phiên:
-  ```powershell
-  python -c "import requests; r=requests.get('http://localhost:5000/Admin', allow_redirects=False); print('Status:', r.status_code, 'Location:', r.headers.get('Location'))"
+#### 15. BUG_016 (`TC_AUTH_002`): Đăng ký Username chứa mã độc XSS `<script>`
+* 🎯 **Điều kiện kích hoạt 100%**: Mở F12 Console dán script:
+  ```javascript
+  fetch('/api/auth/register', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username: "<script>alert('XSS_ATTACK')</script>", password: 'Password123!', email: 'xss_' + Date.now() + '@test.com'})
+  }).then(r => r.json()).then(console.log);
   ```
-* **Kết quả thực tế**: `HTTP 302 Found`, redirect sang `/Auth/Login?ReturnUrl=%2FAdmin` thay vì trả `403 Forbidden`.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Program.cs` cấu hình Cookie Authentication.
-  * **Đoạn code cần sửa**: Trong cấu hình `AddCookie` bổ sung xử lý `OnRedirectToAccessDenied` để trả về StatusCode 403 Forbidden.
+* 💥 **Kết quả**: `HTTP 200 OK`, tài khoản được tạo và lưu nguyên văn thẻ `<script>` vào database MySQL.
+* **Vị trí code & Hướng dẫn Fix**: `AuthController.cs` dòng 702-705: Thêm Regex chỉ cho phép ký tự chữ và số.
+* **Ảnh chứng cứ**: [TC_AUTH_002.png](E2E_SCREENSHOTS/TC_AUTH_002.png)
+
+#### 16. BUG_017 (`TC_GAME_001`): Tạo ván cờ thời gian thi đấu âm (`timeControl: -999`)
+* 🎯 **Điều kiện kích hoạt 100%**: Mở F12 Console dán script:
+  ```javascript
+  fetch('/api/games', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({gameMode: 'Custom', timeControl: -999})
+  }).then(r => r.json()).then(console.log);
+  ```
+* 💥 **Kết quả**: `HTTP 201 Created`, ván cờ được tạo thành công với thời gian âm làm lỗi đồng hồ đếm ngược.
+* **Vị trí code & Hướng dẫn Fix**: `GamesController.cs` dòng 538-549: Ràng buộc DTO `[Range(1, 180)]`.
+* **Ảnh chứng cứ**: [TC_GAME_001.png](E2E_SCREENSHOTS/TC_GAME_001.png)
+
+#### 17. BUG_003 (`TC_ADM_002`): Gửi request HTTP GET thẳng vào `/Admin`
+* 🎯 **Điều kiện kích hoạt 100%**: Dùng Postman hoặc script gửi `GET http://localhost:5000/Admin` không kèm cookie.
+* 💥 **Kết quả**: Server trả về `HTTP 302 Found` redirect ngầm thay vì chặn `HTTP 403 Forbidden` chuẩn RESTful.
+* **Vị trí code & Hướng dẫn Fix**: `Program.cs`: Bổ sung xử lý `OnRedirectToAccessDenied` trả về đúng 403.
 * **Ảnh chứng cứ**: [TC_ADM_002.png](E2E_SCREENSHOTS/TC_ADM_002.png)
-
----
-
-#### 15. BUG_007 (`TC_ADM_009`): Xóa bài cờ thế với ID không tồn tại trả về HTTP 200/302
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện khi Admin thực hiện xóa bài cờ thế mà bài đó đã bị xóa trước đó ở tab khác, hoặc Admin/kẻ tấn công gửi `POST /Admin/DeletePuzzle` với ID không tồn tại (`id = 999999`).
-* **Cơ chế hoạt động ngầm (How it works)**: Hàm `AdminController.DeletePuzzle(int id)` tìm kiếm bài cờ theo id. Khi trả về `null`, hàm bỏ qua việc xóa nhưng không quăng lỗi 404 mà vẫn chuyển hướng `HTTP 302 Found` về trang danh sách, khiến client hiểu nhầm là thao tác thành công.
-* **Cách test tay**: Gửi request xóa bài cờ thế ID 999999:
-  ```powershell
-  python -c "import requests; r=requests.post('http://localhost:5000/Admin/DeletePuzzle', data={'id': 999999}, allow_redirects=False); print('Status:', r.status_code)"
-  ```
-* **Kết quả thực tế**: `HTTP 302 Found` thay vì trả về `HTTP 404 Not Found`.
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/AdminController.cs`, dòng 121-133 trong hàm `DeletePuzzle`.
-  * **Đoạn code cần sửa**:
-    ```csharp
-    var puzzle = await _context.Puzzles.FindAsync(id);
-    if (puzzle == null)
-    {
-        return NotFound(new { message = $"Không tìm thấy thế cờ ID #{id} để xóa." });
-    }
-    ```
-* **Ảnh chứng cứ**: [TC_ADM_009.png](E2E_SCREENSHOTS/TC_ADM_009.png)
-
----
-
-#### 16. BUG_014 (`TC_ADM_005`): Tính năng Khóa / Mở khóa tài khoản hoàn toàn chưa được code
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện **trực tiếp trên giao diện Admin CMS** tại trang Quản trị người dùng (`/Admin/Users`). Trong tài liệu đặc tả nghiệp vụ có yêu cầu Admin có quyền khóa tài khoản vi phạm.
-* **Cơ chế hoạt động ngầm (How it works)**: Model [`User.cs`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/ChessCore/Models/User.cs) hoàn toàn thiếu trường `IsLocked` hoặc `IsActive`. Controller [`AdminController.cs`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/ChessCore/Controllers/AdminController.cs) chỉ có 2 action là `ToggleAdminRole` và `DeleteUser`. Tính năng khóa người dùng hoàn toàn chưa được lập trình (Missing Feature).
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File 1**: `ChessCore/Models/User.cs`: Thêm thuộc tính `public bool IsLocked { get; set; } = false;` và chạy `dotnet ef migrations add AddIsLockedToUser`.
-  * **File 2**: `ChessCore/Controllers/AdminController.cs`: Viết thêm Action `ToggleLockUser(int userId)`.
-  * **File 3**: `ChessCore/Controllers/AuthController.cs`: Kiểm tra `if (user.IsLocked) return BadRequest("Tài khoản đã bị khóa do vi phạm quy chế.");` khi đăng nhập.
-* **Ảnh chứng cứ**: [TC_ADM_005.png](E2E_SCREENSHOTS/TC_ADM_005.png)
-
----
-
-#### 17. BUG_015 (`TC_ADM_008`): Admin CMS cho phép thêm bài cờ thế với FEN rác vào CSDL
-* **Ngữ cảnh xuất hiện (Trigger Context)**: Xuất hiện **trực tiếp trên giao diện Admin CMS** tại `/Admin/Puzzles` khi quản trị viên tạo bài cờ thế mới và nhập chuỗi FEN rác hoặc sai cú pháp cờ tướng (ví dụ `"fen_rac_123"`) rồi bấm "Lưu bài cờ thế".
-* **Cơ chế hoạt động ngầm (How it works)**: Trong `AdminController.CreatePuzzle` dòng 75-88, hệ thống chỉ kiểm tra `string.IsNullOrWhiteSpace(puzzle.Fen)`. Hoàn toàn không gọi hàm `Board.TryParseFen(puzzle.Fen, out _, out _)`. Chuỗi FEN rác được lưu thẳng vào CSDL. Khi người chơi vào mục Cờ Thế mở bài học này, bàn cờ sẽ bị văng lỗi (Crash Exception / White screen).
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/AdminController.cs`, dòng 75-88 trong `CreatePuzzle`.
-  * **Đoạn code cần sửa**:
-    ```csharp
-    if (!Board.TryParseFen(puzzle.Fen.Trim(), out _, out string fenError))
-    {
-        TempData["ErrorMessage"] = $"Chuỗi FEN không hợp lệ theo luật cờ tướng: {fenError}";
-        return RedirectToAction(nameof(Puzzles));
-    }
-    ```
-* **Ảnh chứng cứ**: [TC_ADM_008.png](E2E_SCREENSHOTS/TC_ADM_008.png)
 
 ---
 ## 🛠️ PHẦN 4: HƯỚNG DẪN THỰC THI CÁC CÔNG CỤ ĐỒ ÁN TỐT NGHIỆP
