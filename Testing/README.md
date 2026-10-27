@@ -20,7 +20,8 @@ Testing/
 │   └── ChessCore_Local.postman_environment.json (Biến môi trường: baseUrl, jwt_token, game_id)
 │
 ├── 03_Ban3_E2ETests_Scripts/             <-- BẠN 3: KIỂM THỬ ĐẦU-CUỐI TOÀN TRÌNH (E2E)
-│   ├── run_master_test_matrix.cjs       (Chạy tự động toàn bộ 50 Test Cases khớp 1-1 với file Excel)
+│   ├── run_suite_137.py                 (Công cụ chạy tự động toàn bộ 137 Test Cases, tự sync origin/main & ghi Excel)
+│   ├── run_master_test_matrix.cjs       (Chạy tự động toàn bộ 50 Test Cases ma trận)
 │   ├── run_e2e_full_test.cjs            (Chạy 9 kịch bản E2E toàn diện trên web thật)
 │   ├── test_e2e_full_system.cjs         (Kịch bản 20 ca kiểm thử UI & SignalR)
 │   ├── test_chess_rules.cjs             (Kịch bản kiểm tra nước đi cờ tướng)
@@ -29,7 +30,8 @@ Testing/
 │   └── load_test.cjs                    (Kịch bản đo tải & độ trễ: 25 người dùng đồng thời)
 │
 ├── 04_TaiLieu_Va_BaoCao_KiemThu/         <-- TÀI LIỆU VÀ MINH CHỨNG NGHIỆM THU
-│   ├── BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx  (File Excel 2 Sheet: 50 Test Cases + Defect Bug Log)
+│   ├── BANG_KE_HOACH_VA_KICH_BAN_KIEM_THU_137_TC.xlsx (Bảng kế hoạch & 137 Test Cases 12 Sheet đầy đủ)
+│   ├── BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx  (File Excel tổng hợp 50 Test Cases)
 │   ├── KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx (Bản Word chuẩn HUIT có 19 ảnh chụp màn hình)
 │   ├── KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.md   (Đặc tả kịch bản định dạng Markdown)
 │   └── E2E_SCREENSHOTS/                         (Thư mục chứa 19 ảnh chụp màn hình độ phân giải cao)
@@ -68,14 +70,15 @@ dotnet test Testing\01_Ban1_UnitTests_xUnit\ChessCore.Tests.csproj
 
 ### 3. Dành cho BẠN 3 (Chạy E2E Web & Xuất Báo cáo)
 1. Đảm bảo Web Server đang chạy tại `http://localhost:5000` (`dotnet run --project ChessCore`).
-2. Chạy kịch bản Master Matrix (50 Test Cases khớp 1-1 với file Excel):
+2. **Chạy bộ kiểm thử tự động 137 Test Cases (Tự động Sync Git main & xuất Excel 12 Sheet):**
+```powershell
+python Testing/03_Ban3_E2ETests_Scripts/run_suite_137.py
+# Hoặc click đúp file: CHAY_KIEM_THU_137_TC.bat
+```
+3. Chạy kịch bản Master Matrix (50 Test Cases):
 ```powershell
 node Testing/03_Ban3_E2ETests_Scripts/run_master_test_matrix.cjs
 ```
 * **Kết quả mong đợi:** `50 / 50 PASSED (100%)`.
-3. Hoặc chạy bộ kiểm thử luồng tổng quan 9 kịch bản:
-```powershell
-node Testing/03_Ban3_E2ETests_Scripts/run_e2e_full_test.cjs
-```
-4. Mở file [BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx](04_TaiLieu_Va_BaoCao_KiemThu/BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx) để nộp bảng ma trận 50 ca kiểm thử và 6 lỗi đã khắc phục.
+4. Mở file [BANG_KE_HOACH_VA_KICH_BAN_KIEM_THU_137_TC.xlsx](04_TaiLieu_Va_BaoCao_KiemThu/BANG_KE_HOACH_VA_KICH_BAN_KIEM_THU_137_TC.xlsx) để nộp bảng ma trận 137 ca kiểm thử, thông tin đồng bộ Cloud Git và bảng theo dõi lỗi Defect Log.
 5. Mở file [KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx](04_TaiLieu_Va_BaoCao_KiemThu/KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx) để in báo cáo nộp hội đồng.
