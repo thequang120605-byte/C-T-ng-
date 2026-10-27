@@ -49,17 +49,17 @@ Testing/
 ## 🔍 PHẦN 3: CẨM NANG TỰ TAY KIỂM THỬ, PHÂN LOẠI ĐIỀU KIỆN KÍCH HOẠT & HƯỚNG DẪN FIX 17 DEFECTS
 
 > **BẢNG CHỈ DẪN KÍCH HOẠT NHANH 17 DEFECTS:**
-> * 📡 **Cái nào TẮT WIFI mới hiện lỗi**: `BUG_008` (Mất mạng làm fail SMTP -> kích hoạt khối code lộ mã OTP ra web).
-> * 🖱️ **Cái nào THAO TÁC TRỰC TIẾP TRÊN GIAO DIỆN (UI) là thấy ngay**: `BUG_004`, `BUG_005`, `BUG_007`, `BUG_009`, `BUG_012`, `BUG_014`, `BUG_015`.
-> * 💻 **Cái nào CHẠY SCRIPT / F12 CONSOLE / POSTMAN mới hiện lỗi**: `BUG_001`, `BUG_002`, `BUG_003`, `BUG_006`, `BUG_010`, `BUG_011`, `BUG_013`, `BUG_016`, `BUG_017`.
+> * 📡 **Cái nào TẮT WIFI mới hiện lỗi (1 lỗi)**: `BUG_008` (Mất mạng làm fail gửi mail SMTP -> kích hoạt khối code lộ mã OTP ra web).
+> * 🖱️ **Cái nào THAO TÁC TRỰC TIẾP TRÊN GIAO DIỆN (UI) là thấy ngay (6 lỗi)**: `BUG_004`, `BUG_005`, `BUG_007`, `BUG_012`, `BUG_014`, `BUG_015`.
+> * 💻 **Cái nào CHẠY SCRIPT / F12 CONSOLE / GỌI API mới hiện lỗi (10 lỗi)**: `BUG_001`, `BUG_002`, `BUG_003`, `BUG_006`, `BUG_009`, `BUG_010`, `BUG_011`, `BUG_013`, `BUG_016`, `BUG_017`.
 
 ---
 
-### 📡 PHÂN NHÓM A: LỖI KÍCH HOẠT KHI TẮT WIFI / MẤT MẠNG INTERNET (NETWORK / SMTP OUTAGE)
+### 📡 PHÂN NHÓM A: LỖI KÍCH HOẠT KHI TẮT WIFI / MẤT MẠNG INTERNET (1 LỖI)
 
 #### 1. BUG_008 (`TC_AUTH_011`): Rò rỉ mã OTP bí mật trực tiếp lên giao diện khi lỗi SMTP (Critical Security)
 * 🎯 **Điều kiện kích hoạt 100%**: **TẮT WIFI HOẶC BẬT CHẾ ĐỘ MÁY BAY (AIRPLANE MODE)** trên máy tính!
-  *(Giải thích: Khi máy có mạng, tài khoản Gmail của dev gửi mail thành công nên hiện chữ xanh; nhưng khi bạn tắt Wifi, việc gửi mail bị fail, hệ thống kích hoạt khối `else` làm lộ mã OTP ngay lập tức!)*
+  *(Giải thích: Khi máy có mạng, tài khoản Gmail của dev gửi mail thành công nên hiện chữ xanh; chỉ khi bạn tắt Wifi, việc gửi mail bị fail, hệ thống mới kích hoạt khối code `else` làm lộ mã OTP ngay lập tức!)*
 * 🖱️ **Thao tác chi tiết**:
   1. Ngắt kết nối Wifi / Mạng Internet trên máy tính.
   2. Vào trang web: `http://localhost:5000/Auth/ForgotPassword`
@@ -74,7 +74,7 @@ Testing/
 
 ---
 
-### 🖱️ PHÂN NHÓM B: CÁC LỖI THAO TÁC TRỰC TIẾP TRÊN GIAO DIỆN WEB (UI DEFECTS)
+### 🖱️ PHÂN NHÓM B: CÁC LỖI THAO TÁC TRỰC TIẾP TRÊN GIAO DIỆN WEB (6 LỖI)
 
 #### 2. BUG_004 (`TC_ONL_015`): Người chơi bấm "Xin hàng" nhưng ván cờ không chịu kết thúc (Blocker)
 * 🎯 **Điều kiện kích hoạt 100%**: Thao tác trực tiếp trên giao diện thi đấu cờ Online (PvP)!
@@ -140,20 +140,23 @@ Testing/
   * **File**: `ChessCore/Controllers/AdminController.cs`, dòng 121-133: Thêm kiểm tra `if (puzzle == null) return NotFound();`.
 * **Ảnh chứng cứ**: [TC_ADM_009.png](E2E_SCREENSHOTS/TC_ADM_009.png)
 
-#### 8. BUG_009 (`TC_AUTH_016`): Click chuột liên tục vào nút "Nhận thưởng" được cộng điểm nhiều lần
-* 🎯 **Điều kiện kích hoạt 100%**: Click chuột lia lịa (spam click) trên giao diện!
-* 🖱️ **Thao tác chi tiết**:
-  1. Vào trang Nhiệm vụ hàng ngày.
-  2. Dùng chuột **click liên tục thật nhanh** vào nút **"Nhận thưởng"**.
-  3. 💥 **Lỗi hiện ra**: Mỗi lần click là một lần popup báo thành công hiện ra và điểm thưởng góc màn hình cứ thế nhảy số tăng lên không giới hạn!
-* **Vị trí code & Hướng dẫn Fix cho Dev**:
-  * **File**: `ChessCore/Controllers/QuestsController.cs`: Kiểm tra cờ `!IsClaimed` và khóa Transaction trong CSDL.
-* **Ảnh chứng cứ**: [TC_AUTH_016.png](E2E_SCREENSHOTS/TC_AUTH_016.png)
-
 ---
 
-### 💻 PHÂN NHÓM C: CÁC LỖI PHẢI DÙNG SCRIPT / F12 CONSOLE / POSTMAN MỚI HIỆN LỖI (CLIENT-SIDE BYPASS)
-*(Giao diện web dùng form HTML5 có chặn sơ bộ bề nổi, nhưng khi kẻ xấu/tester dùng F12 Console hoặc Postman gọi thẳng vào API Backend thì máy chủ bị hổng)*
+### 💻 PHÂN NHÓM C: CÁC LỖI PHẢI DÙNG SCRIPT / F12 CONSOLE / GỌI API MỚI HIỆN LỖI (10 LỖI)
+
+#### 8. BUG_009 (`TC_AUTH_016`): Nhận thưởng nhiệm vụ không kiểm tra điều kiện & Cho phép spam (Tính năng Backend API)
+* 🎯 **Điều kiện kích hoạt 100%**: Tính năng "Nhiệm vụ ngày" hiện mới chỉ được lập trình ở tầng REST API Backend (`/api/quests/daily` và `/api/quests/{id}/claim`) phục vụ Mobile App chứ **chưa gắn nút bấm lên giao diện Website**. Do đó lỗi này được kích hoạt qua F12 Console hoặc Postman!
+* 💻 **Cách test**: Mở F12 Console trên bất kỳ trang web nào, dán lệnh:
+  ```javascript
+  fetch('/api/quests/ai/claim', {method: 'POST'})
+    .then(r => r.json())
+    .then(console.log);
+  ```
+* 💥 **Kết quả**: Server trả về `HTTP 200 OK: {"success":true,"questId":"ai","message":"Nhận thưởng thành công!"}` dù bạn chưa hề thắng trận AI nào (`current = 0`)! Và nếu dán gọi liên tục nhiều lần thì server vẫn trả 200 OK và cộng dồn điểm thưởng liên tục.
+* **Vị trí code & Hướng dẫn Fix cho Dev**:
+  * **File**: `ChessCore/Controllers/QuestController.cs`, dòng 117-146 trong hàm `ClaimQuest`.
+  * **Cách Fix**: Kiểm tra điều kiện nhiệm vụ trước khi cho nhận: Phải đạt `current >= target` và kiểm tra cờ `!isClaimed`. Khi nhận thưởng phải cập nhật trạng thái đã nhận trong một Transaction duy nhất.
+* **Ảnh chứng cứ**: [TC_AUTH_016.png](E2E_SCREENSHOTS/TC_AUTH_016.png)
 
 #### 9. BUG_001 (`TC_AUTH_004`): Đăng ký mật khẩu < 6 ký tự ("123")
 * 🎯 **Điều kiện kích hoạt 100%**: Mở F12 Console tại `http://localhost:5000`, dán script:
@@ -257,7 +260,7 @@ Testing/
 * **Vị trí code & Hướng dẫn Fix**: `GamesController.cs` dòng 538-549: Ràng buộc DTO `[Range(1, 180)]`.
 * **Ảnh chứng cứ**: [TC_GAME_001.png](E2E_SCREENSHOTS/TC_GAME_001.png)
 
-#### 17. BUG_003 (`TC_ADM_002`): Gửi request HTTP GET thẳng vào `/Admin`
+#### 17. BUG_003 (`TC_ADM_002`): Gửi request HTTP GET thẳng vào route quản trị `/Admin`
 * 🎯 **Điều kiện kích hoạt 100%**: Dùng Postman hoặc script gửi `GET http://localhost:5000/Admin` không kèm cookie.
 * 💥 **Kết quả**: Server trả về `HTTP 302 Found` redirect ngầm thay vì chặn `HTTP 403 Forbidden` chuẩn RESTful.
 * **Vị trí code & Hướng dẫn Fix**: `Program.cs`: Bổ sung xử lý `OnRedirectToAccessDenied` trả về đúng 403.
