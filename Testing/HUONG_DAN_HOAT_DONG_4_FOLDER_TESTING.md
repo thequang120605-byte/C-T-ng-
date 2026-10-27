@@ -1,6 +1,6 @@
 # BÁO CÁO REVIEW CƠ CHẾ HOẠT ĐỘNG CỦA 4 FOLDER KIỂM THỬ (TESTING SUITE)
 ## HỆ THỐNG WEBSITE CỜ TƯỚNG TRỰC TUYẾN CHESSCORE - ĐỒ ÁN TỐT NGHIỆP HUIT
-### BỘ DỮ LIỆU ĐỒNG BỘ 137 TEST CASES & 15 LỖI THỰC TẾ (DEFECT LOG)
+### BỘ DỮ LIỆU ĐỒNG BỘ 137 TEST CASES & 17 LỖI THỰC TẾ (DEFECT LOG)
 
 ---
 
@@ -21,13 +21,13 @@ flowchart TD
     end
 
     subgraph TestResults["KẾT QUẢ ĐẦU RA & MINH CHỨNG NGHIỆM THU"]
-        F4["📁 04_TaiLieu_Va_BaoCao_KiemThu<br/>(Cẩm nang kiểm thử MD + 27 Ảnh chụp minh chứng)"]
-        FExcel["📊 TestCases_KLCN_CoTuong (1).xlsx<br/>(Bảng 137 Test Cases + Sheet 12_Defect_Log 15 Bugs)"]
+        F4["📁 04_TaiLieu_Va_BaoCao_KiemThu<br/>(Cẩm nang kiểm thử MD + 36 Ảnh chụp minh chứng)"]
+        FExcel["📊 TestCases_KLCN_CoTuong (1).xlsx<br/>(Bảng 137 Test Cases + Sheet 12_Defect_Log 17 Bugs)"]
     end
 
     F1 -->|"Chạy kết quả: 12/12 Passed + Đo % Code Coverage"| F4
     F2 -->|"Chạy kết quả: API Collection Assertions"| F4
-    F3 -->|"Chạy kết quả: 122 Pass, 15 Fail (89.1%)"| FExcel
+    F3 -->|"Chạy kết quả: 120 Pass, 17 Fail (87.6%)"| FExcel
     FExcel --> F4
 ```
 
@@ -101,13 +101,13 @@ flowchart TD
 
 ---
 
-### 🟣 FOLDER 4: `04_TaiLieu_Va_BaoCao_KiemThu` (Nơi Lưu Trữ Kết Quả & Nghiệm Thu)
+### 🟣 FOLDER 4: `04_TaiLieu_Va_BaoCao_KiemThu` (Nơi Lưu Trữ Kết QuẢ & Nghiệm Thu)
 * **Bản chất**: Nơi lưu trữ toàn bộ hồ sơ nghiệm thu, cẩm nang hướng dẫn kiểm thử và bằng chứng hình ảnh.
 * **Các thành phần cụ thể**:
-  1. [`HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_15_BUGS.md`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/04_TaiLieu_Va_BaoCao_KiemThu/HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_15_BUGS.md):
-     - Cẩm nang chi tiết hướng dẫn tự tay kiểm thử và tái hiện 15 lỗi thực tế kèm mã script copy-paste ngay trên trình duyệt hoặc PowerShell.
+  1. [`HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_17_BUGS.md`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/04_TaiLieu_Va_BaoCao_KiemThu/HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_17_BUGS.md):
+     - Cẩm nang chi tiết hướng dẫn tự tay kiểm thử và tái hiện 17 lỗi thực tế kèm mã script copy-paste ngay trên trình duyệt hoặc PowerShell.
   2. [`E2E_SCREENSHOTS/`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/04_TaiLieu_Va_BaoCao_KiemThu/E2E_SCREENSHOTS/):
-     - **27 ảnh chụp màn hình độ phân giải cao**: Gồm 19 ảnh chụp giao diện thành công (Pass) và 8 thẻ ảnh chụp chứng cứ lỗi (Defect Evidence Cards) đối chiếu trực tiếp với Sheet `12_Defect_Log`.
+     - **36 ảnh chụp màn hình độ phân giải cao**: Gồm 19 ảnh chụp giao diện thành công (Pass) và 17 thẻ ảnh chụp chứng cứ lỗi (Defect Evidence Cards) đối chiếu trực tiếp tỷ lệ 1:1 với Sheet `12_Defect_Log`.
 
 ---
 
@@ -120,7 +120,7 @@ flowchart TD
 | **Công nghệ** | C# (.NET xUnit + Coverlet) | Postman Collection / Newman | Python 3.11 Automation | Markdown Guide, PNG Screenshots |
 | **Cần bật Web?** | ❌ Không cần |  Cần chạy Kestrel (5000) |  Cần chạy Kestrel (5000) | ❌ Không cần |
 | **Lệnh thực thi** | `dotnet test` | `npx newman run ...` | `python .../run_suite_137.py` | Mở xem / Nộp Hội đồng |
-| **Số lượng ca** | 12 Unit Tests | Toàn bộ API Endpoints | 137 Test Cases | **Tổng hợp 137 TC + 15 Bugs** |
+| **Số lượng ca** | 12 Unit Tests | Toàn bộ API Endpoints | 137 Test Cases | **Tổng hợp 137 TC + 17 Bugs** |
 
 ---
 

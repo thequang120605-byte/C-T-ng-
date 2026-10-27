@@ -22,8 +22,8 @@ Testing/
 │   └── run_suite_137.py                 (Công cụ chạy 137 TC, tự động pull Git Cloud và ghi Excel)
 │
 ├── 04_TaiLieu_Va_BaoCao_KiemThu/         <-- KẾT QUẢ ĐẦU RA, BÁO CÁO NGHIỆM THU & BẰNG CHỨNG
-│   ├── HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_15_BUGS.md (Tài liệu này)
-│   └── E2E_SCREENSHOTS/                 (29 ảnh chụp minh chứng: 19 ca Pass + 10 ca Defect)
+│   ├── HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_17_BUGS.md (Tài liệu này)
+│   └── E2E_SCREENSHOTS/                 (36 ảnh chụp minh chứng: 19 ca Pass + 17 ca Defect)
 │
 └── TestCases_KLCN_CoTuong (1).xlsx       <-- BẢNG KẾ HOẠCH & DEFECT LOG 137 TEST CASES CHÍNH THỨC
 ```
@@ -189,3 +189,50 @@ npx newman run Testing/02_Ban2_ApiTests_Postman/ChessCore_APIs.postman_collectio
 # 3. Bộ Master Test Matrix 137 Test Cases đồng bộ Cloud Git (Folder 3)
 python Testing/03_Ban3_E2ETests_Scripts/run_suite_137.py
 ```
+
+---
+
+## 📁 PHẦN 5: DANH MỤC 36 ẢNH CHỨNG CỨ TRONG THƯ MỤC `E2E_SCREENSHOTS/`
+
+Thư mục [Testing/04_TaiLieu_Va_BaoCao_KiemThu/E2E_SCREENSHOTS](E2E_SCREENSHOTS) chứa **chính xác 36 ảnh chụp minh chứng**, khớp tỷ lệ 1:1 tuyệt đối giữa kịch bản kiểm thử và nhật ký lỗi:
+
+### 1. Danh sách 19 ảnh chụp kịch bản Thành công (Pass Screenshots)
+1. `01_TrangChu_ChuaDangNhap.png` - Giao diện Trang chủ khi chưa đăng nhập
+2. `02_DangKy_TaiKhoan.png` - Form đăng ký tài khoản mới
+3. `03_XacThuc_OTP_Email.png` - Giao diện nhập mã OTP xác thực email
+4. `04_DangNhap_HeThong.png` - Form đăng nhập hệ thống
+5. `05_TrangChu_DaDangNhap.png` - Giao diện Trang chủ sau khi đăng nhập thành công
+6. `06_BangXepHang_Dashboard.png` - Bảng xếp hạng kỳ thủ Elo toàn hệ thống
+7. `07_SanhDau_CheDo_PvP_PvE.png` - Sảnh chờ lựa chọn chế độ chơi
+8. `08_BanCo_ThiDau_PvE.png` - Bàn cờ thi đấu với AI tích hợp Eval bar
+9. `09_KhaiCuoc_Explorer_Modal.png` - Modal tra cứu biến thể khai cuộc ECCO
+10. `09_SaBan_ChienDich_CoThe.png` - Sa bàn bản đồ chiến dịch cờ thế
+11. `10_KhoaHoc_GiaoTrinh_LyThuyet.png` - Giao trình học viện 4 Module lý thuyết
+12. `11_ChungChi_DienTu_CERT_CT.png` - Mẫu chứng chỉ cờ tướng điện tử CERT-CT
+13. `12_TuDien_KyPho_DanhThu.png` - Từ điển tra cứu kỳ phổ các danh thủ giang hồ
+14. `13_Replay_VanCo_DanhThu.png` - Trình phát lại ván cờ danh thủ với cây nước đi PGN
+15. `14_BangDieuKhien_Admin.png` - Bảng điều khiển quản trị tổng quan CMS
+16. `15_QuanTri_NguoiDung.png` - CMS Quản trị danh sách người dùng và phân quyền
+17. `16_QuanTri_KhoBaiTap_CoThe.png` - CMS Quản lý kho bài cờ thế và FEN
+18. `17_QuanTri_KhoaHoc.png` - CMS Quản trị module bài học lý thuyết
+19. `18_DoKiem_AI_Benchmark.png` - Công cụ đo kiểm hiệu năng AI Depth 1-5
+
+### 2. Danh sách 17 ảnh chụp chứng cứ lỗi tương ứng 17 Bugs (Defect Cards)
+1. `TC_AUTH_004.png` $\rightarrow$ `BUG_001`: Đăng ký mật khẩu yếu 3 ký tự ("123")
+2. `TC_AUTH_001.png` $\rightarrow$ `BUG_002`: Đăng ký email không có domain
+3. `TC_ADM_002.png` $\rightarrow$ `BUG_003`: Truy cập /Admin trả về 302 thay vì 403
+4. `TC_ONL_015.png` $\rightarrow$ `BUG_004`: Nhận nước cờ sau khi người chơi đã đầu hàng
+5. `TC_COU_009.png` $\rightarrow$ `BUG_005`: Cấp chứng chỉ cho user 0% tiến độ học
+6. `TC_COU_008.png` $\rightarrow$ `BUG_006`: Chấp nhận điểm trắc nghiệm Quiz 999999%
+7. `TC_ADM_009.png` $\rightarrow$ `BUG_007`: Xóa cờ thế với ID rác trả về HTTP 200/302
+8. `TC_AUTH_011.png` $\rightarrow$ `BUG_008`: Rò rỉ mã OTP quên mật khẩu trên màn hình
+9. `TC_AUTH_016.png` $\rightarrow$ `BUG_009`: Nhận thưởng nhiệm vụ không check điều kiện & spam claim
+10. `TC_AUTH_010.png` $\rightarrow$ `BUG_010`: Thiếu Rate Limiting / Lockout chống Brute-force
+11. `TC_GAME_013.png` $\rightarrow$ `BUG_011`: Nhập FEN hỏng nuốt lỗi và tự gán thế mặc định
+12. `TC_ONL_016.png` $\rightarrow$ `BUG_012`: Tái đấu ép đối thủ vào trận không cần đồng ý
+13. `TC_COU_006.png` $\rightarrow$ `BUG_013`: Khách gửi Lesson ID rác 999999 vẫn trả về HTTP 200
+14. `TC_ADM_005.png` $\rightarrow$ `BUG_014`: Tính năng Khóa / Mở khóa user chưa được code
+15. `TC_ADM_008.png` $\rightarrow$ `BUG_015`: Admin CMS cho phép lưu FEN rác vào database
+16. `TC_AUTH_002.png` $\rightarrow$ `BUG_016`: Đăng ký Username chứa mã độc XSS `<script>`
+17. `TC_GAME_001.png` $\rightarrow$ `BUG_017`: API tạo ván cờ chấp nhận thời gian thi đấu âm (-999)
+
