@@ -1,5 +1,6 @@
 # BÁO CÁO REVIEW CƠ CHẾ HOẠT ĐỘNG CỦA 4 FOLDER KIỂM THỬ (TESTING SUITE)
 ## HỆ THỐNG WEBSITE CỜ TƯỚNG TRỰC TUYẾN CHESSCORE - ĐỒ ÁN TỐT NGHIỆP HUIT
+### BỘ DỮ LIỆU ĐỒNG BỘ 137 TEST CASES & 15 LỖI THỰC TẾ (DEFECT LOG)
 
 ---
 
@@ -14,25 +15,27 @@ Hệ thống thư mục `Testing/` được phân tách khoa học theo chuẩn 
 ```mermaid
 flowchart TD
     subgraph TestCode["3 TẦNG CODE & KỊCH BẢN THỰC THI TEST"]
-        F1["📁 01_Ban1_UnitTests_xUnit<br/>(Kiểm thử đơn vị C# - Thuật toán cờ & AI)"]
-        F2["📁 02_Ban2_ApiTests_Postman<br/>(Kiểm thử giao tiếp API RESTful)"]
-        F3["📁 03_Ban3_E2ETests_Scripts<br/>(Kịch bản tự động hóa Master Matrix 50 ca)"]
+        F1["📁 01_Ban1_UnitTests_xUnit<br/>(Kiểm thử đơn vị C# + Coverlet Code Coverage)"]
+        F2["📁 02_Ban2_ApiTests_Postman<br/>(Kiểm thử tự động API bằng Postman & Newman)"]
+        F3["📁 03_Ban3_E2ETests_Scripts<br/>(Kịch bản Master Suite 137 TC đồng bộ Cloud Git)"]
     end
 
     subgraph TestResults["KẾT QUẢ ĐẦU RA & MINH CHỨNG NGHIỆM THU"]
-        F4["📁 04_TaiLieu_Va_BaoCao_KiemThu<br/>(Bảng Excel 50 Test Cases + File Word HUIT + 18 Ảnh minh chứng)"]
+        F4["📁 04_TaiLieu_Va_BaoCao_KiemThu<br/>(Cẩm nang kiểm thử MD + 27 Ảnh chụp minh chứng)"]
+        FExcel["📊 TestCases_KLCN_CoTuong (1).xlsx<br/>(Bảng 137 Test Cases + Sheet 12_Defect_Log 15 Bugs)"]
     end
 
-    F1 -->|"Chạy kết quả: 12/12 Passed"| F4
-    F2 -->|"Chạy kết quả: 11 Luồng API Passed"| F4
-    F3 -->|"Chạy kết quả: 50/50 Passed (100%)"| F4
+    F1 -->|"Chạy kết quả: 12/12 Passed + Đo % Code Coverage"| F4
+    F2 -->|"Chạy kết quả: API Collection Assertions"| F4
+    F3 -->|"Chạy kết quả: 122 Pass, 15 Fail (89.1%)"| FExcel
+    FExcel --> F4
 ```
 
 ---
 
 ## 🔍 2. REVIEW CHI TIẾT CÁCH HOẠT ĐỘNG CỦA TỪNG FOLDER
 
-### 🟢 FOLDER 1: `01_Ban1_UnitTests_xUnit` (Kiểm thử Đơn vị tầng Sâu)
+### 🟢 FOLDER 1: `01_Ban1_UnitTests_xUnit` (Kiểm thử Đơn vị & Đo Code Coverage)
 * **Người phụ trách**: Bạn 1 (Phụ trách Engine cờ & Thuật toán AI).
 * **Mã nguồn chính**: `ChessRulesAndAiTests.cs` (nằm trong project `ChessCore.Tests.csproj`).
 * **Cơ chế hoạt động**:
@@ -42,13 +45,14 @@ flowchart TD
      - Kích hoạt bộ tạo nước đi (`MoveGenerator`).
      - Dùng các khẳng định logic (`Assert.True`, `Assert.Equal`, `Assert.Contains`) để chứng minh quân cờ đi đúng luật: Mã bị cản chân không được nhảy, Tượng không qua sông, Tướng không được đối mặt trực diện, Xe/Pháo ăn quân chính xác.
   3. **Kiểm tra thuật toán AI Minimax & Alpha-Beta**:
-     - Đo độ sâu duyệt cờ (Depth 2, 3).
+     - Đo độ sâu duyệt cờ (Depth 1, 2, 3).
      - Kiểm tra hàm lượng giá thế trận Heuristic (`H1: Quân lực`, `H2: Vị trí PST`, `H3: Độ cơ động`, `H4: An toàn Tướng`).
+  4. **Tích hợp Coverlet Code Coverage**:
+     - Tự động đo lường độ bao phủ dòng lệnh (Line Coverage) và nhánh rẽ (Branch Coverage) của Engine luật cờ và AI.
 * **Lệnh kích hoạt**: 
   ```powershell
-  dotnet test
+  dotnet test Testing/01_Ban1_UnitTests_xUnit/ChessCore.Tests.csproj --collect:"XPlat Code Coverage"
   ```
-  *(Kết quả: 12/12 Test Cases ĐẠT 100%)*.
 
 ---
 
@@ -57,59 +61,53 @@ flowchart TD
 * **Tài nguyên**: 
   - `ChessCore_APIs.postman_collection.json` (Bộ sưu tập các request API).
   - `ChessCore_Local.postman_environment.json` (Biến môi trường: `baseUrl`, `jwt_token`, `game_id`).
-* **Cơ chế hoạt động (Truyền biến tự động - Request Chaining)**:
+* **Cơ chế hoạt động**:
   1. **Yêu cầu môi trường**: Web Server Kestrel phải đang chạy tại `http://localhost:5000`.
-  2. **Quy trình móc nối dữ liệu tự động giữa các API**:
-     - **Bước 1 (Đăng nhập)**: Gửi request `POST /api/auth/login`. Script Postman tự động đọc chuỗi Token trong JSON trả về và lưu vào biến `{{jwt_token}}`.
-     - **Bước 2 (Tạo phòng cờ)**: Gửi request `POST /api/games` đính kèm Token trong header `Authorization: Bearer {{jwt_token}}`. Script tự động trích xuất mã ván đấu vừa tạo và lưu vào biến `{{game_id}}`.
-     - **Bước 3 (Thao tác trên ván cờ)**: Các request kế tiếp (`/valid-moves`, `/moves`, `/surrender`) tự động sử dụng `{{game_id}}` để kiểm tra logic mà người dùng không cần sao chép ID bằng tay.
-  3. **Cơ chế kiểm thử (Postman Test Scripts)**:
-     - Kiểm tra mã trạng thái HTTP (`pm.response.to.have.status(200)`).
-     - Kiểm tra cấu trúc JSON phản hồi không bị null, đúng kiểu dữ liệu.
-* **Cách sử dụng**: Mở ứng dụng Postman $\rightarrow$ Import 2 file $\rightarrow$ Chọn Environment $\rightarrow$ Bấm **Run Collection**.
+  2. **Tự động hóa luồng API (Request Chaining)**:
+     - Gửi `POST /api/auth/login` trích xuất JWT Token lưu vào `{{jwt_token}}`.
+     - Gửi `POST /api/games` đính kèm Token tạo phòng cờ, lưu mã ván vào `{{game_id}}`.
+     - Tự động kiểm tra các thao tác đi cờ, gợi ý, cờ thế, khóa học.
+  3. **Tự động hóa qua Newman CLI**:
+     - Chạy dòng lệnh không cần mở giao diện Postman, kiểm tra tự động các Assertions HTTP status và dữ liệu trả về.
+* **Lệnh kích hoạt**: 
+  ```powershell
+  npx newman run Testing/02_Ban2_ApiTests_Postman/ChessCore_APIs.postman_collection.json -e Testing/02_Ban2_ApiTests_Postman/ChessCore_Local.postman_environment.json
+  ```
 
 ---
 
-### 🔵 FOLDER 3: `03_Ban3_E2ETests_Scripts` (Kiểm thử Toàn trình & Tự động hóa)
+### 🔵 FOLDER 3: `03_Ban3_E2ETests_Scripts` (Tự động hóa Toàn trình 137 Test Cases)
 * **Người phụ trách**: Bạn 3 (Phụ trách Đảm bảo chất lượng QA / E2E Automation).
-* **Mã nguồn trọng tâm**: [`run_master_test_matrix.cjs`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/03_Ban3_E2ETests_Scripts/run_master_test_matrix.cjs).
-* **Cơ chế hoạt động ("Người dùng ảo" tự động)**:
-  1. **Tự động hóa luồng nghiệp vụ từ A đến Z**:
-     - Script viết bằng Node.js, đóng vai trò như một client gửi request liên tục đến Web Server đang chạy thật.
-     - Giả lập trọn vẹn: Tạo user mới $\rightarrow$ Nhận và nhập mã OTP $\rightarrow$ Đăng nhập $\rightarrow$ Đấu với máy (AI) $\rightarrow$ Đi nước cờ $\rightarrow$ Giải cờ thế $\rightarrow$ Hoàn thành bài thi trắc nghiệm lý thuyết để được cấp Chứng chỉ cờ tướng điện tử.
-  2. **Cơ chế khớp 1-1 với Ma trận 50 Test Cases**:
-     - Script duyệt lần lượt qua đúng 50 kịch bản kiểm thử:
-       + `RULE-01` $\rightarrow$ `RULE-10`: 10 ca kiểm tra luật di chuyển quân cờ.
-       + `AUTH-01` $\rightarrow$ `AUTH-05`: 5 ca bảo mật, đăng ký, đăng nhập, OTP email.
-       + `GAME-01` $\rightarrow$ `GAME-10`: 10 ca vận hành trận đấu PvP, PvE, đếm thời gian, kết thúc ván.
-       + `PUZ-01` $\rightarrow$ `PUZ-05`: 5 ca luyện giải cờ thế và gợi ý AI.
-       + `CERT-01` $\rightarrow$ `CERT-05`: 5 ca học lý thuyết khai cuộc và thi cấp chứng chỉ.
-       + `BOOK-01` $\rightarrow$ `BOOK-05`: 5 ca tra cứu kỳ phổ danh thủ cổ điển & hiện đại.
-       + `ADM-01` $\rightarrow$ `ADM-05`: 5 ca quản trị viên quản lý người dùng, kho bài tập, đo kiểm AI.
-       + `QUEST-01` $\rightarrow$ `QUEST-05`: 5 ca nhiệm vụ hàng ngày và tích điểm vinh danh.
-  3. **Bộ đo hiệu năng & tải (`load_test.cjs`)**:
-     - Giả lập 25 kết nối người dùng đồng thời, đo thời gian phản hồi (Latency) đảm bảo hệ thống đạt độ trễ $< 200\text{ ms}$.
+* **Mã nguồn trọng tâm**: [`run_suite_137.py`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/03_Ban3_E2ETests_Scripts/run_suite_137.py).
+* **Cơ chế hoạt động**:
+  1. **Tự động đồng bộ mã nguồn Git Cloud**:
+     - Tự động kiểm tra và pull mã nguồn mới nhất từ nhánh `origin/main` trên GitHub.
+     - Trích xuất Commit Hash, Tác giả (Author), Ngày giờ pull và ghi trực tiếp vào trang bìa `01_Cover_Info` của file Excel.
+  2. **Tự động thực thi toàn bộ 137 Test Cases trên 8 phân hệ**:
+     - Xác thực & Tài khoản (`04_TC_Auth_Profile` - 17 TCs)
+     - Bộ luật cờ tướng (`05_TC_Chess_Rules` - 26 TCs)
+     - Chế độ chơi & AI (`06_TC_Game_Play` - 18 TCs)
+     - Đấu online SignalR (`07_TC_Online_SignalR` - 20 TCs)
+     - Cờ thế & Timerush (`08_TC_Puzzle_Cothe` - 16 TCs)
+     - Khóa học & Kỳ phổ (`09_TC_Course_Master` - 16 TCs)
+     - Quản trị viên Admin (`10_TC_Admin_System` - 12 TCs)
+     - Đặc thù Di động (`11_TC_Mobile_Specific` - 12 TCs)
+  3. **Ghi nhận Defect Bug Log tự động**:
+     - Khi phát hiện ca kiểm thử thất bại (Fail), script không tự ý sửa code lập trình viên mà tự động ghi nhận vào Sheet `12_Defect_Log`.
 * **Lệnh kích hoạt**: 
   ```powershell
-  node Testing/03_Ban3_E2ETests_Scripts/run_master_test_matrix.cjs
+  python Testing/03_Ban3_E2ETests_Scripts/run_suite_137.py
   ```
-  *(Kết quả in ra Terminal: 50 / 50 PASSED - 100%)*.
 
 ---
 
 ### 🟣 FOLDER 4: `04_TaiLieu_Va_BaoCao_KiemThu` (Nơi Lưu Trữ Kết Quả & Nghiệm Thu)
-* **Bản chất**: **Đây chính là nơi lưu toàn bộ KẾT QUẢ ĐẦU RA và TÀI LIỆU HỌC THUẬT** được sinh ra từ quá trình chạy 3 folder trên.
+* **Bản chất**: Nơi lưu trữ toàn bộ hồ sơ nghiệm thu, cẩm nang hướng dẫn kiểm thử và bằng chứng hình ảnh.
 * **Các thành phần cụ thể**:
-  1. [`BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/04_TaiLieu_Va_BaoCao_KiemThu/BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx):
-     - **Sheet 1 (Test_Cases_Matrix)**: Bảng ma trận 50 Test Cases chuẩn quốc tế. Cung cấp thông tin: Mã Test Case, Tên tính năng, Dữ liệu đầu vào, Kết quả mong đợi, Kết quả thực tế, và Trạng thái kiểm thử qua 2 chu kỳ:
-       + *Cycle 1 (Kiểm thử lần đầu)*: Ghi nhận 44 Pass, **6 Fail** (tương ứng 6 lỗi phát hiện trong thực tế).
-       + *Cycle 2 (Sau khi lập trình viên vá lỗi)*: Ghi nhận **50 Pass (100%)**.
-     - **Sheet 2 (Defect_Bug_Log)**: Nhật ký phân loại 6 bug tìm thấy (Mức độ nghiêm trọng, nguyên nhân lỗi, mô tả cách sửa và ngày đóng bug).
-  2. [`KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/04_TaiLieu_Va_BaoCao_KiemThu/KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx):
-     - Văn bản thuyết minh báo cáo đồ án hoàn chỉnh theo quy chuẩn văn bản HUIT (căn lề 2-2-3-2 cm, font Times New Roman, dãn dòng 1.5).
-     - Mô tả chi tiết từng bước kiểm thử và nhúng 18 ảnh chụp màn hình minh chứng.
-  3. [`E2E_SCREENSHOTS/`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/04_TaiLieu_Va_BaoCao_KiemThu/E2E_SCREENSHOTS/):
-     - 18 ảnh chụp màn hình độ phân giải cao ghi lại toàn bộ bằng chứng khi chạy thực tế (Ảnh xác thực OTP, ảnh bàn cờ di chuyển, ảnh giấy chứng chỉ hoàn thành khóa học, ảnh Dashboard Admin,...).
+  1. [`HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_15_BUGS.md`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/04_TaiLieu_Va_BaoCao_KiemThu/HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_15_BUGS.md):
+     - Cẩm nang chi tiết hướng dẫn tự tay kiểm thử và tái hiện 15 lỗi thực tế kèm mã script copy-paste ngay trên trình duyệt hoặc PowerShell.
+  2. [`E2E_SCREENSHOTS/`](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/04_TaiLieu_Va_BaoCao_KiemThu/E2E_SCREENSHOTS/):
+     - **27 ảnh chụp màn hình độ phân giải cao**: Gồm 19 ảnh chụp giao diện thành công (Pass) và 8 thẻ ảnh chụp chứng cứ lỗi (Defect Evidence Cards) đối chiếu trực tiếp với Sheet `12_Defect_Log`.
 
 ---
 
@@ -117,18 +115,19 @@ flowchart TD
 
 | Tiêu chí | Folder 1 (`UnitTests_xUnit`) | Folder 2 (`ApiTests_Postman`) | Folder 3 (`E2ETests_Scripts`) | Folder 4 (`TaiLieu_Va_BaoCao`) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Bản chất** | **Mã nguồn test (Code)** | **Kịch bản test (JSON)** | **Kịch bản tự động (Code)** | **KẾT QUẢ & BÁO CÁO** |
+| **Bản chất** | **Mã nguồn test (C#)** | **Kịch bản test (JSON)** | **Kịch bản tự động (Python)** | **KẾT QUẢ & BẰNG CHỨNG** |
 | **Tầng kiểm thử** | Unit Test (Tầng sâu logic) | API Test (Tầng giao tiếp) | E2E Test (Tầng toàn trình) | Nghiệm thu & Chấm điểm |
-| **Công nghệ** | C# (.NET xUnit) | Postman Collection | Node.js JavaScript | Excel, Word, PNG Screenshots |
+| **Công nghệ** | C# (.NET xUnit + Coverlet) | Postman Collection / Newman | Python 3.11 Automation | Markdown Guide, PNG Screenshots |
 | **Cần bật Web?** | ❌ Không cần |  Cần chạy Kestrel (5000) |  Cần chạy Kestrel (5000) | ❌ Không cần |
-| **Lệnh thực thi** | `dotnet test` | Run Collection trên Postman | `node .../run_master_test_matrix.cjs` | Mở xem / In nộp Hội đồng |
-| **Số lượng ca** | 12 Test Cases | 11 Luồng API | 50 Test Cases | **Tổng hợp đầy đủ 50 ca** |
+| **Lệnh thực thi** | `dotnet test` | `npx newman run ...` | `python .../run_suite_137.py` | Mở xem / Nộp Hội đồng |
+| **Số lượng ca** | 12 Unit Tests | Toàn bộ API Endpoints | 137 Test Cases | **Tổng hợp 137 TC + 15 Bugs** |
 
 ---
 
 > [!TIP]
 > **KHI ĐI BẢO VỆ ĐỒ ÁN:**
-> 1. Khi Hội đồng muốn xem **Báo cáo và kết quả nghiệm thu**: Bạn mở **Folder 4** (`BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx` và `KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx`).
+> 1. Khi Hội đồng muốn xem **Báo cáo và kết quả nghiệm thu**: Bạn mở file Excel [TestCases_KLCN_CoTuong (1).xlsx](file:///c:/Users/ADMIN/Desktop/C-T-ng-/Testing/TestCases_KLCN_CoTuong%20(1).xlsx) (Sheet `03_Test_Summary` và Sheet `12_Defect_Log`).
 > 2. Khi Hội đồng yêu cầu **"Em hãy chứng minh đây là số liệu test thật bằng cách chạy trực tiếp trước mặt thầy/cô"**:
->    - Bạn mở Terminal và gõ: `dotnet test` $\rightarrow$ Thể hiện 12 Unit Test (**Folder 1**).
->    - Bạn gõ: `node Testing/03_Ban3_E2ETests_Scripts/run_master_test_matrix.cjs` $\rightarrow$ Thể hiện 50 Test Cases chạy vèo vèo ra 50 PASS trước mắt Hội đồng (**Folder 3**).
+>    - Chạy Unit Test: `dotnet test Testing/01_Ban1_UnitTests_xUnit/ChessCore.Tests.csproj`
+>    - Chạy API Test tự động: `npx newman run Testing/02_Ban2_ApiTests_Postman/ChessCore_APIs.postman_collection.json -e Testing/02_Ban2_ApiTests_Postman/ChessCore_Local.postman_environment.json`
+>    - Chạy Bộ Master Matrix 137 ca: `python Testing/03_Ban3_E2ETests_Scripts/run_suite_137.py`

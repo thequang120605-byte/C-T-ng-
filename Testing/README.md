@@ -1,84 +1,69 @@
 # HỆ THỐNG KIỂM THỬ TOÀN DIỆN (CHESSCORE TESTING SUITE)
 ## ĐỒ ÁN TỐT NGHIỆP: WEBSITE CỜ TƯỚNG TRỰC TUYẾN TÍCH HỢP TRÍ TUỆ NHÂN TẠO
+### BỘ DỮ LIỆU ĐỒNG BỘ 137 TEST CASES & 15 LỖI THỰC TẾ (DEFECT LOG)
 
 Thư mục này gom toàn bộ mã nguồn, kịch bản, dữ liệu và tài liệu báo cáo kiểm thử của cả nhóm 3 người vào một nơi duy nhất theo đúng chuẩn Công nghệ Phần mềm.
 
 ---
 
-## CẤU TRÚC THƯ MỤC KIỂM THỬ
+## 🧭 CẤU TRÚC THƯ MỤC KIỂM THỬ (TESTING SUITE)
 
-> 📖 **Xem giải thích chi tiết cơ chế hoạt động của 4 folder tại:** [HUONG_DAN_HOAT_DONG_4_FOLDER_TESTING.md](HUONG_DAN_HOAT_DONG_4_FOLDER_TESTING.md)
+> 📖 **Xem giải thích chi tiết cơ chế hoạt động của 4 folder tại:** [HUONG_DAN_HOAT_DONG_4_FOLDER_TESTING.md](HUONG_DAN_HOAT_DONG_4_FOLDER_TESTING.md)  
+> 🔍 **Xem cẩm nang kiểm thử & tái hiện 15 lỗi tại:** [04_TaiLieu_Va_BaoCao_KiemThu/HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_15_BUGS.md](04_TaiLieu_Va_BaoCao_KiemThu/HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_15_BUGS.md)
 
 ```
 Testing/
 ├── 01_Ban1_UnitTests_xUnit/              <-- BẠN 1: KIỂM THỬ ENGINE, LUẬT CỜ & AI (C#)
 │   ├── ChessRulesAndAiTests.cs          (12 test cases kiểm tra MoveGenerator, FEN, Minimax, H1..H4)
-│   └── ChessCore.Tests.csproj           (Project xUnit tích hợp trong ChessCore.sln)
+│   └── ChessCore.Tests.csproj           (Project xUnit tích hợp Coverlet Code Coverage)
 │
 ├── 02_Ban2_ApiTests_Postman/             <-- BẠN 2: KIỂM THỬ TỰ ĐỘNG HÓA API REST
-│   ├── ChessCore_APIs.postman_collection.json (11 luồng API: Auth JWT, Game, Quests, Leaderboard)
+│   ├── ChessCore_APIs.postman_collection.json (Collection API: Auth JWT, Game, Quests, Leaderboard)
 │   └── ChessCore_Local.postman_environment.json (Biến môi trường: baseUrl, jwt_token, game_id)
 │
 ├── 03_Ban3_E2ETests_Scripts/             <-- BẠN 3: KIỂM THỬ ĐẦU-CUỐI TOÀN TRÌNH (E2E)
-│   ├── run_suite_137.py                 (Công cụ chạy tự động toàn bộ 137 Test Cases, tự sync origin/main & ghi Excel)
-│   ├── run_master_test_matrix.cjs       (Chạy tự động toàn bộ 50 Test Cases ma trận)
-│   ├── run_e2e_full_test.cjs            (Chạy 9 kịch bản E2E toàn diện trên web thật)
-│   ├── test_e2e_full_system.cjs         (Kịch bản 20 ca kiểm thử UI & SignalR)
-│   ├── test_chess_rules.cjs             (Kịch bản kiểm tra nước đi cờ tướng)
-│   ├── test_endpoints.cjs               (Kịch bản kiểm tra mã phản hồi HTTP 200/400/401)
-│   ├── test_e2e_features.cjs            (Kịch bản kiểm thử tính năng cờ thế, khóa học)
-│   └── load_test.cjs                    (Kịch bản đo tải & độ trễ: 25 người dùng đồng thời)
+│   └── run_suite_137.py                 (Công cụ chạy tự động toàn bộ 137 Test Cases, tự sync origin/main & ghi Excel)
 │
 ├── 04_TaiLieu_Va_BaoCao_KiemThu/         <-- TÀI LIỆU VÀ MINH CHỨNG NGHIỆM THU
-│   ├── BANG_KE_HOACH_VA_KICH_BAN_KIEM_THU_137_TC.xlsx (Bảng kế hoạch & 137 Test Cases 12 Sheet đầy đủ)
-│   ├── BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx  (File Excel tổng hợp 50 Test Cases)
-│   ├── KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx (Bản Word chuẩn HUIT có 19 ảnh chụp màn hình)
-│   ├── KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.md   (Đặc tả kịch bản định dạng Markdown)
-│   └── E2E_SCREENSHOTS/                         (Thư mục chứa 19 ảnh chụp màn hình độ phân giải cao)
+│   ├── HUONG_DAN_KIEM_THU_TOAN_DIEN_137_TC_VA_15_BUGS.md (Cẩm nang kiểm thử & tái hiện 15 bugs chi tiết)
+│   └── E2E_SCREENSHOTS/                 (27 ảnh chụp màn hình minh chứng: 19 ca Pass + 8 ca Defect)
 │
-└── README.md                             (File hướng dẫn này)
+├── TestCases_KLCN_CoTuong (1).xlsx       <-- FILE EXCEL GỐC ĐỒNG BỘ 137 TEST CASES & 12_DEFECT_LOG
+└── README.md                             (File hướng dẫn tổng quan này)
 ```
 
 ---
 
-## HƯỚNG DẪN THỰC THI KIỂM THỬ
+## 🚀 HƯỚNG DẪN THỰC THI KIỂM THỬ THEO VAI TRÒ
 
-### 1. Dành cho BẠN 1 (Chạy Unit Test xUnit C#)
+### 1. Dành cho BẠN 1 (Chạy Unit Test xUnit & Đo Code Coverage C#)
 Mở PowerShell tại thư mục gốc của dự án và chạy:
 ```powershell
-dotnet test
+# Chạy 12 Unit Tests kiểm tra thuật toán
+dotnet test Testing/01_Ban1_UnitTests_xUnit/ChessCore.Tests.csproj
+
+# Đo độ bao phủ mã nguồn (Code Coverage) qua Coverlet
+dotnet test Testing/01_Ban1_UnitTests_xUnit/ChessCore.Tests.csproj --collect:"XPlat Code Coverage"
 ```
-*Hoặc chỉ định rõ project:*
+
+### 2. Dành cho BẠN 2 (Chạy kiểm thử tự động API Postman & Newman)
+Yêu cầu bật Web Server trước: `dotnet run --project ChessCore` (mở tại `http://localhost:5000`).
 ```powershell
-dotnet test Testing\01_Ban1_UnitTests_xUnit\ChessCore.Tests.csproj
+# Chạy tự động toàn bộ collection API và kiểm tra Assertions
+npx newman run Testing/02_Ban2_ApiTests_Postman/ChessCore_APIs.postman_collection.json -e Testing/02_Ban2_ApiTests_Postman/ChessCore_Local.postman_environment.json
 ```
-* **Kết quả mong đợi:** `Passed! - Failed: 0, Passed: 12, Total: 12 (100% Pass)`.
 
----
-
-### 2. Dành cho BẠN 2 (Chạy API Postman)
-1. Mở ứng dụng **Postman** (hoặc **Katalon Studio**).
-2. Bấm nút **Import** ở góc trên bên trái.
-3. Chọn 2 file trong thư mục `Testing/02_Ban2_ApiTests_Postman/`:
-   * `ChessCore_APIs.postman_collection.json`
-   * `ChessCore_Local.postman_environment.json`
-4. Chọn môi trường `ChessCore Local Environment`.
-5. Bấm vào thư mục Collection $\rightarrow$ bấm **Run Collection** $\rightarrow$ bấm **Run ChessCore - E2E API Test Suite**.
-* **Kết quả mong đợi:** 11 request đều trả về mã HTTP 200 OK, tự động trích xuất JWT Token và Game ID.
-
----
-
-### 3. Dành cho BẠN 3 (Chạy E2E Web & Xuất Báo cáo)
-1. Đảm bảo Web Server đang chạy tại `http://localhost:5000` (`dotnet run --project ChessCore`).
-2. **Chạy bộ kiểm thử tự động 137 Test Cases (Tự động Sync Git main & xuất Excel 12 Sheet):**
+### 3. Dành cho BẠN 3 (Chạy Bộ Master Automation Matrix 137 Test Cases)
 ```powershell
+# Tự động fetch code mới nhất từ GitHub origin/main, kiểm thử và ghi kết quả vào Excel
 python Testing/03_Ban3_E2ETests_Scripts/run_suite_137.py
-# Hoặc click đúp file: CHAY_KIEM_THU_137_TC.bat
 ```
-3. Chạy kịch bản Master Matrix (50 Test Cases):
-```powershell
-node Testing/03_Ban3_E2ETests_Scripts/run_master_test_matrix.cjs
-```
-* **Kết quả mong đợi:** `50 / 50 PASSED (100%)`.
-4. Mở file [BANG_KE_HOACH_VA_KICH_BAN_KIEM_THU_137_TC.xlsx](04_TaiLieu_Va_BaoCao_KiemThu/BANG_KE_HOACH_VA_KICH_BAN_KIEM_THU_137_TC.xlsx) để nộp bảng ma trận 137 ca kiểm thử, thông tin đồng bộ Cloud Git và bảng theo dõi lỗi Defect Log.
-5. Mở file [KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx](04_TaiLieu_Va_BaoCao_KiemThu/KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx) để in báo cáo nộp hội đồng.
+
+---
+
+## 📊 KẾT QUẢ NGHIỆM THU TỔNG QUAN
+
+* **Tổng số ca kiểm thử**: 137 Test Cases
+* **Đạt (Pass)**: **122 Test Cases (89.1%)**
+* **Lỗi phát hiện (Fail)**: **15 Test Cases (10.9%)**
+* **Defect Log**: Ghi nhận chi tiết từ `BUG_001` đến `BUG_015` tại Sheet `12_Defect_Log` của file [TestCases_KLCN_CoTuong (1).xlsx](TestCases_KLCN_CoTuong%20(1).xlsx).
