@@ -18,6 +18,7 @@ Testing/
 │   └── ChessCore_Local.postman_environment.json (Biến môi trường: baseUrl, jwt_token, game_id)
 │
 ├── 03_Ban3_E2ETests_Scripts/             <-- BẠN 3: KIỂM THỬ ĐẦU-CUỐI TOÀN TRÌNH (E2E)
+│   ├── run_master_test_matrix.cjs       (Chạy tự động toàn bộ 50 Test Cases khớp 1-1 với file Excel)
 │   ├── run_e2e_full_test.cjs            (Chạy 9 kịch bản E2E toàn diện trên web thật)
 │   ├── test_e2e_full_system.cjs         (Kịch bản 20 ca kiểm thử UI & SignalR)
 │   ├── test_chess_rules.cjs             (Kịch bản kiểm tra nước đi cờ tướng)
@@ -65,10 +66,14 @@ dotnet test Testing\01_Ban1_UnitTests_xUnit\ChessCore.Tests.csproj
 
 ### 3. Dành cho BẠN 3 (Chạy E2E Web & Xuất Báo cáo)
 1. Đảm bảo Web Server đang chạy tại `http://localhost:5000` (`dotnet run --project ChessCore`).
-2. Chạy bộ kiểm thử E2E toàn diện:
+2. Chạy kịch bản Master Matrix (50 Test Cases khớp 1-1 với file Excel):
+```powershell
+node Testing/03_Ban3_E2ETests_Scripts/run_master_test_matrix.cjs
+```
+* **Kết quả mong đợi:** `50 / 50 PASSED (100%)`.
+3. Hoặc chạy bộ kiểm thử luồng tổng quan 9 kịch bản:
 ```powershell
 node Testing/03_Ban3_E2ETests_Scripts/run_e2e_full_test.cjs
 ```
-* **Kết quả mong đợi:** `9/9 Kịch bản ĐẠT (32 Assertions Passed 100%)`.
-3. Mở file [BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx](04_TaiLieu_Va_BaoCao_KiemThu/BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx) để nộp bảng ma trận 50 ca kiểm thử và 6 lỗi đã khắc phục.
-4. Mở file [KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx](04_TaiLieu_Va_BaoCao_KiemThu/KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx) để in báo cáo nộp hội đồng.
+4. Mở file [BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx](04_TaiLieu_Va_BaoCao_KiemThu/BANG_TONG_HOP_TEST_CASES_CHESSCORE.xlsx) để nộp bảng ma trận 50 ca kiểm thử và 6 lỗi đã khắc phục.
+5. Mở file [KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx](04_TaiLieu_Va_BaoCao_KiemThu/KICH_BAN_KIEM_THU_END_TO_END_CHESSCORE.docx) để in báo cáo nộp hội đồng.
