@@ -18,6 +18,7 @@
     gap: 16px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 20px;
+    width: 100%;
 }
 
 .admin-header h1 {
@@ -36,15 +37,15 @@
 }
 
 .admin-tabs {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
     width: 100%;
 }
 
 .admin-tab-btn {
-    padding: 8px 16px;
-    border-radius: 8px;
+    padding: 12px 14px;
+    border-radius: 10px;
     background: var(--bg-navy-panel);
     color: var(--text-muted);
     text-decoration: none;
@@ -53,19 +54,37 @@
     border: 1px solid var(--border-color);
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
     gap: 8px;
     transition: all 0.2s ease;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .admin-tab-btn:hover {
     background: var(--bg-navy-light);
     color: var(--text-main);
+    transform: translateY(-1px);
 }
 
 .admin-tab-btn.active {
     background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dark));
     color: #ffffff;
     border-color: var(--accent-gold);
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+}
+
+@media (max-width: 1080px) {
+    .admin-tabs {
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+}
+
+@media (max-width: 580px) {
+    .admin-tabs {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Stat Cards */
@@ -217,6 +236,16 @@
 }
 .btn-admin-primary:hover {
     background: var(--border-color);
+    color: var(--text-main);
+}
+
+.btn-admin-secondary {
+    background: var(--bg-navy-light);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+}
+.btn-admin-secondary:hover {
+    background: #cbd5e1;
     color: var(--text-main);
 }
 

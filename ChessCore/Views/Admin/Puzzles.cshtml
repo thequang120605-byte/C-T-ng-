@@ -18,27 +18,29 @@
             margin-bottom: 20px;
         }
         .puzzle-stat-card {
-            background: var(--bg-navy-panel, #1e293b);
-            border: 1px solid var(--border-color, #334155);
-            border-radius: 10px;
-            padding: 12px 16px;
+            background: var(--bg-navy-panel, #ffffff);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 12px;
+            padding: 14px 18px;
             display: flex;
             align-items: center;
             gap: 12px;
             transition: transform 0.15s ease, border-color 0.15s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
         }
         .puzzle-stat-card:hover {
             transform: translateY(-2px);
-            border-color: var(--accent-gold, #facc15);
+            border-color: var(--accent-gold, #d97706);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         .puzzle-stat-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 18px;
             flex-shrink: 0;
         }
         .puzzle-stat-info {
@@ -47,14 +49,14 @@
             min-width: 0;
         }
         .puzzle-stat-val {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 800;
-            color: var(--text-main, #f8fafc);
+            color: var(--text-main, #0f172a);
             line-height: 1.2;
         }
         .puzzle-stat-lbl {
-            font-size: 11px;
-            color: var(--text-muted, #94a3b8);
+            font-size: 12px;
+            color: var(--text-muted, #64748b);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -63,12 +65,13 @@
         .puzzle-toolbar {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 14px;
             align-items: center;
             justify-content: space-between;
-            padding: 16px;
-            background: rgba(15, 23, 42, 0.4);
-            border-bottom: 1px solid var(--border-color, #334155);
+            margin-bottom: 20px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border-color, #e2e8f0);
+            background: transparent;
         }
         .puzzle-filters {
             display: flex;
@@ -82,25 +85,33 @@
             flex: 1;
             min-width: 220px;
             max-width: 360px;
-            padding: 8px 14px;
-            background: var(--bg-navy-dark, #0f172a);
-            border: 1px solid var(--border-color, #334155);
+            padding: 9px 14px;
+            background: var(--bg-navy-dark, #f1f5f9);
+            border: 1px solid var(--border-color, #e2e8f0);
             border-radius: 8px;
-            color: var(--text-main, #f8fafc);
+            color: var(--text-main, #0f172a);
             font-size: 13px;
+            transition: all 0.2s ease;
         }
         .puzzle-search-input:focus {
-            outline: none;
-            border-color: var(--accent-gold, #facc15);
+            outline: 2px solid rgba(217, 119, 6, 0.2);
+            border-color: var(--accent-gold, #d97706);
+            background: #ffffff;
         }
         .puzzle-select {
-            padding: 8px 12px;
-            background: var(--bg-navy-dark, #0f172a);
-            border: 1px solid var(--border-color, #334155);
+            padding: 9px 12px;
+            background: var(--bg-navy-dark, #f1f5f9);
+            border: 1px solid var(--border-color, #e2e8f0);
             border-radius: 8px;
-            color: var(--text-main, #f8fafc);
+            color: var(--text-main, #0f172a);
             font-size: 13px;
             cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .puzzle-select:focus {
+            outline: 2px solid rgba(217, 119, 6, 0.2);
+            border-color: var(--accent-gold, #d97706);
+            background: #ffffff;
         }
         .puzzle-actions-group {
             display: flex;
@@ -110,25 +121,26 @@
         }
         .level-badge {
             display: inline-block;
-            padding: 2px 7px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-right: 4px;
+            margin-right: 6px;
         }
         .btn-copy-fen {
             background: transparent;
             border: none;
-            color: #94a3b8;
+            color: var(--text-muted, #64748b);
             cursor: pointer;
-            padding: 2px 6px;
+            padding: 4px 6px;
             border-radius: 4px;
-            transition: color 0.15s;
+            transition: color 0.15s, background 0.15s;
         }
         .btn-copy-fen:hover {
-            color: var(--accent-gold, #facc15);
+            color: var(--accent-gold, #d97706);
+            background: var(--bg-navy-light, #e2e8f0);
         }
     </style>
 }
@@ -250,7 +262,7 @@
                 <form asp-controller="Admin" asp-action="SyncCampaignPuzzles" method="post" style="display: inline;" 
                       onsubmit="event.preventDefault(); const form = this; if(window.AppDialog){AppDialog.confirm('Bạn có muốn đồng bộ lại toàn bộ 500 bài cờ thế chuẩn chiến dịch từ dataset không? Các bài tùy biến cũ sẽ được làm mới.', 'Xác nhận đồng bộ kho cờ thế', {confirmText: 'Đồng bộ ngay', cancelText: 'Hủy'}).then(ok => { if(ok) form.submit(); });} else if(confirm('Xác nhận đồng bộ lại 500 bài cờ thế chiến dịch?')) { form.submit(); }">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn-admin" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4);" title="Đồng bộ tự động 500 bài sát pháp chiến dịch">
+                    <button type="submit" class="btn-admin" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.25); font-weight: 600;" title="Đồng bộ tự động 500 bài sát pháp chiến dịch">
                         <i class="fa-solid fa-arrows-rotate"></i> Đồng bộ kho 500 bài
                     </button>
                 </form>
@@ -280,28 +292,28 @@
                     @foreach (var p in Model)
                     {
                         var tier = p.Level <= 100 ? 1 : (p.Level <= 200 ? 2 : (p.Level <= 300 ? 3 : (p.Level <= 400 ? 4 : 5)));
-                        var tierBg = tier == 1 ? "rgba(16, 185, 129, 0.2)" : (tier == 2 ? "rgba(59, 130, 246, 0.2)" : (tier == 3 ? "rgba(234, 179, 8, 0.2)" : (tier == 4 ? "rgba(249, 115, 22, 0.2)" : "rgba(239, 68, 68, 0.2)")));
+                        var tierBg = tier == 1 ? "rgba(16, 185, 129, 0.15)" : (tier == 2 ? "rgba(59, 130, 246, 0.15)" : (tier == 3 ? "rgba(234, 179, 8, 0.15)" : (tier == 4 ? "rgba(249, 115, 22, 0.15)" : "rgba(239, 68, 68, 0.15)")));
                         var tierColor = tier == 1 ? "#10b981" : (tier == 2 ? "#3b82f6" : (tier == 3 ? "#eab308" : (tier == 4 ? "#f97316" : "#ef4444")));
 
                         <tr class="puzzle-row" data-index="@pzIdx" data-tier="@tier" data-diff="@p.Difficulty" data-title="@p.Title.ToLower()" data-fen="@p.Fen.ToLower()">
                             <td>
                                 <span class="level-badge" style="background: @tierBg; color: @tierColor;">C@tier</span>
-                                <strong style="color: var(--accent-gold, #facc15);">#@p.Level</strong>
+                                <strong style="color: var(--accent-gold, #d97706);">#@p.Level</strong>
                             </td>
                             <td>
-                                <strong style="color: var(--text-main, #f8fafc);">@p.Title</strong>
-                                <div style="font-size: 11px; color: var(--text-muted, #94a3b8); max-width: 320px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@p.Description">
+                                <strong style="color: var(--text-main, #0f172a);">@p.Title</strong>
+                                <div style="font-size: 11px; color: var(--text-muted, #64748b); max-width: 320px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@p.Description">
                                     @p.Description
                                 </div>
                             </td>
                             <td>
-                                <span style="font-size: 12px; font-weight: 700; color: @(p.Difficulty == 1 ? "#10b981" : (p.Difficulty == 2 ? "#eab308" : "#ef4444"));">
+                                <span style="font-size: 12px; font-weight: 700; color: @(p.Difficulty == 1 ? "#10b981" : (p.Difficulty == 2 ? "#d97706" : "#ef4444"));">
                                     @(p.Difficulty == 1 ? "Dễ" : (p.Difficulty == 2 ? "Trung bình" : "Khó"))
                                 </span>
                             </td>
                             <td>
-                                <span style="color: var(--text-main, #f8fafc); font-weight: 600;">
-                                    <i class="fa-solid fa-bolt" style="color: #facc15; font-size: 11px;"></i> @p.MateIn nước
+                                <span style="color: var(--text-main, #0f172a); font-weight: 600;">
+                                    <i class="fa-solid fa-bolt" style="color: var(--accent-gold, #d97706); font-size: 11px;"></i> @p.MateIn nước
                                 </span>
                             </td>
                             <td>
@@ -317,7 +329,7 @@
                             <td style="text-align: center;">
                                 <div style="display: flex; gap: 6px; justify-content: center;">
                                     <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" 
-                                            onclick='openEditPuzzleModal(@p.Id, "@p.Level", "@Html.Raw(Html.Encode(p.Title))", "@Html.Raw(Html.Encode(p.Description))", "@p.Fen", @p.MateIn, @p.Difficulty);' title="Chỉnh sửa">
+                                             onclick='openEditPuzzleModal(@p.Id, "@p.Level", "@Html.Raw(Html.Encode(p.Title))", "@Html.Raw(Html.Encode(p.Description))", "@p.Fen", @p.MateIn, @p.Difficulty);' title="Chỉnh sửa">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                     <form asp-controller="Admin" asp-action="DeletePuzzle" method="post" style="display: inline;" onsubmit="event.preventDefault(); const form = this; if(window.AppDialog){AppDialog.confirm('Bạn có chắc chắn muốn xóa thế cờ này không?', 'Xác nhận xóa', {confirmText: 'Xóa ngay', cancelText: 'Hủy', isDanger: true}).then(ok => { if(ok) form.submit(); });} else if(confirm('Xác nhận xóa thế cờ này?')) { form.submit(); }">
@@ -336,7 +348,7 @@
             </table>
         </div>
 
-        <div class="pagination-wrapper" id="admin-puzzles-pagination" style="padding: 16px; border-top: 1px solid var(--border-color, #334155);">
+        <div class="pagination-wrapper" id="admin-puzzles-pagination" style="padding: 16px 0 0 0; border-top: 1px solid var(--border-color, #e2e8f0);">
             <div class="pagination-info" id="admin-puzzles-info">
                 Đang hiển thị 1 - 15 / tổng số @Model.Count thế cờ
             </div>
@@ -349,8 +361,8 @@
 <div class="admin-modal" id="puzzle-modal">
     <div class="admin-modal-dialog">
         <div class="admin-modal-header">
-            <h3 id="puzzle-modal-title"><i class="fa-solid fa-puzzle-piece" style="color: #facc15;"></i> Thêm thế cờ mới</h3>
-            <button type="button" onclick="closePuzzleModal();" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">
+            <h3 id="puzzle-modal-title"><i class="fa-solid fa-puzzle-piece" style="color: var(--accent-gold, #d97706);"></i> Thêm thế cờ mới</h3>
+            <button type="button" onclick="closePuzzleModal();" style="background: none; border: none; color: var(--text-muted, #64748b); font-size: 20px; cursor: pointer;">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -372,7 +384,7 @@
             <div class="admin-form-group">
                 <label>Chuỗi FEN (Trạng thái bàn cờ) *</label>
                 <input type="text" id="puzzle-fen" name="Fen" class="admin-input" required placeholder="Ví dụ: 3k5/4a4/9/9/9/9/9/9/4A4/4K4 w - - 0 1" />
-                <small style="color: #64748b; font-size: 11px;">Bên đi trước (w: Đỏ, b: Đen) phải là bên thực hiện sát pháp.</small>
+                <small style="color: var(--text-muted, #64748b); font-size: 11px;">Bên đi trước (w: Đỏ, b: Đen) phải là bên thực hiện sát pháp.</small>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -400,7 +412,7 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
-                <button type="button" class="btn-admin" style="background: #334155; color: white;" onclick="closePuzzleModal();">Hủy bỏ</button>
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closePuzzleModal();">Hủy bỏ</button>
                 <button type="submit" class="btn-admin btn-admin-gold"><i class="fa-solid fa-check"></i> Lưu thế cờ</button>
             </div>
         </form>
