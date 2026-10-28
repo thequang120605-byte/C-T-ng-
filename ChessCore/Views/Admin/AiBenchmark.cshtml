@@ -1,6 +1,6 @@
 @model ChessCore.Controllers.AiBenchmarkViewModel
 @{
-    ViewData["Title"] = "Thực nghiệm & Đo lường Hiệu năng AI - Admin";
+    ViewData["Title"] = "Đo lường Hiệu năng AI - Admin";
 }
 
 @section Styles {
@@ -9,7 +9,7 @@
 
 <div class="admin-container">
     <div class="admin-header">
-        <h1><i class="fa-solid fa-microchip"></i> Thực nghiệm Thuật toán AI Minimax (Khóa Luận)</h1>
+        <h1><i class="fa-solid fa-microchip"></i> Đo lường & Kiểm thử Hiệu năng Động cơ AI</h1>
         <div class="admin-tabs">
             <a href="/Admin" class="admin-tab-btn"><i class="fa-solid fa-chart-pie"></i> Tổng quan</a>
             <a href="/Admin/Users" class="admin-tab-btn"><i class="fa-solid fa-users"></i> Quản lý Người dùng</a>
@@ -51,7 +51,7 @@
     <!-- Bảng so sánh các cấp độ duyệt -->
     <div class="admin-card">
         <div class="admin-card-header">
-            <h2><i class="fa-solid fa-table-columns" style="color: var(--accent-gold);"></i> Bảng số liệu thực nghiệm theo Độ sâu (Depth)</h2>
+            <h2><i class="fa-solid fa-table-columns" style="color: var(--accent-gold);"></i> Bảng số liệu đo lường hiệu năng theo Độ sâu (Depth)</h2>
             <a href="/Admin/AiBenchmark" class="btn-admin btn-admin-gold btn-admin-sm">
                 <i class="fa-solid fa-rotate"></i> Chạy lại Benchmark
             </a>
@@ -83,59 +83,6 @@
                     }
                 </tbody>
             </table>
-        </div>
-    </div>
-
-    <!-- Phân tích học thuật dành cho báo cáo Khóa luận -->
-    <div class="admin-card" style="margin-top: 24px;">
-        <div class="admin-card-header">
-            <h2><i class="fa-solid fa-graduation-cap" style="color: var(--accent-gold);"></i> Nhận xét & Đánh giá học thuật (Sử dụng cho Báo cáo / Luận văn)</h2>
-        </div>
-        <div style="font-size: 14px; line-height: 1.8; color: var(--text-main);">
-            <ul style="padding-left: 20px;">
-                <li style="margin-bottom: 12px;">
-                    <strong>Cắt tỉa Alpha-Beta:</strong> Khi kết hợp với kỹ thuật sắp xếp nước đi theo độ ưu tiên ăn quân <em>MVV-LVA (Most Valuable Victim - Least Valuable Attacker)</em> và nước đi lịch sử (History Heuristic), số lượng nhánh trên cây tìm kiếm giảm từ hàm mũ <code>O(b<sup>d</sup>)</code> xuống xấp xỉ <code>O(b<sup>d/2</sup>)</code>. Điều này giúp thuật toán loại bỏ hàng ngàn nhánh thừa (Beta Cutoffs đạt hàng nghìn lượt ở Cấp 3 và Cấp 4), đảm bảo phản hồi nước đi trong thời gian thực.
-                </li>
-                <li style="margin-bottom: 12px;">
-                    <strong>Bảng chuyển vị (Transposition Table) với Zobrist Hashing:</strong> Tránh tính toán trùng lặp các thế cờ hoán vị (cùng một thế cờ đạt được qua các thứ tự đi quân khác nhau). Tỷ lệ trúng bộ đệm (TT Hits) tăng vọt khi duyệt sâu (ở Cấp 4 đạt hàng trăm lượt trúng), giúp AI kế thừa kết quả đánh giá nhánh con trước đó mà không phải tính lại từ đầu.
-                </li>
-                <li>
-                    <strong>Ứng dụng thực tế theo 4 cấp độ:</strong>
-                    <div style="margin-top: 6px; padding-left: 12px;">
-                        • <strong>Cấp độ 1 (Dễ - Depth 1):</strong> Thời gian xử lý tức thì (~8-10 ms), duyệt ~55 nút, thích hợp cho người mới bắt đầu làm quen luật chơi.<br />
-                        • <strong>Cấp độ 2 (Vừa - Depth 2):</strong> Thời gian xử lý ~100-150 ms, duyệt ~900 nút, nhận biết được các mối nguy cơ ăn quân trực tiếp.<br />
-                        • <strong>Cấp độ 3 (Khó - Depth 3):</strong> Thời gian xử lý ~500-900 ms, duyệt ~6.000 nút, hình thành chiến thuật tấn công và phòng thủ nhiều bước.<br />
-                        • <strong>Cấp độ 4 (Chuyên gia - Depth 4):</strong> Thời gian xử lý ~3-5 giây, duyệt hơn 30.000 nút với hơn 6.800 lần cắt tỉa nhánh, tính toán sâu các thế đòn hiểm hóc và bẫy cờ.
-                    </div>
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Kiến trúc Mạng Nơ-ron Định Giá (Neural Network / NNUE) theo Đề cương Khóa luận -->
-    <div class="admin-card" style="margin-top: 24px;">
-        <div class="admin-card-header">
-            <h2><i class="fa-solid fa-network-wired" style="color: var(--accent-gold);"></i> Kiến trúc Mạng Nơ-ron Định Giá (Neural Evaluation Network - KLCN153)</h2>
-        </div>
-        <div style="font-size: 14px; line-height: 1.8; color: var(--text-main);">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px;">
-                <div style="background: var(--bg-hover); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <div style="font-weight: 700; color: #2563eb; margin-bottom: 6px;"><i class="fa-solid fa-cube"></i> Input Tensor [10 × 9 × 14]</div>
-                    <p style="margin: 0; font-size: 13px; color: var(--text-muted);">Mỗi ô cờ được mã hóa thành 14 kênh nhị phân (One-hot encoding) đại diện cho 7 loại quân cờ (Tướng, Sĩ, Tượng, Mã, Xe, Pháo, Tốt) của 2 phe Đỏ và Đen. Tổng kích thước vector đầu vào: <strong>1.260 features</strong>.</p>
-                </div>
-                <div style="background: var(--bg-hover); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <div style="font-weight: 700; color: #059669; margin-bottom: 6px;"><i class="fa-solid fa-layer-group"></i> Linear Accumulator & Clipped-ReLU</div>
-                    <p style="margin: 0; font-size: 13px; color: var(--text-muted);">Sử dụng tầng tích lũy tuyến tính kết hợp hàm kích hoạt <code>f(x) = clamp(x, 0, 127)</code> theo tiêu chuẩn NNUE, cho phép tính toán vi phân cực nhanh trực tiếp trên CPU mà không phụ thuộc vào GPU rời.</p>
-                </div>
-                <div style="background: var(--bg-hover); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <div style="font-weight: 700; color: #d97706; margin-bottom: 6px;"><i class="fa-solid fa-chart-line"></i> Hàm Định Giá V(s) ∈ [-1, 1]</div>
-                    <p style="margin: 0; font-size: 13px; color: var(--text-muted);">Đầu ra của mạng dự báo điểm lợi thế chiến thuật và xác suất thắng/thua, tích hợp trực tiếp vào nút lá của thuật toán duyệt cây Alpha-Beta (MinimaxEngine).</p>
-                </div>
-            </div>
-            <div style="background: #f8fafc; border: 1px dashed var(--border-color); padding: 12px 16px; border-radius: 8px; font-size: 13px;">
-                <i class="fa-solid fa-circle-info" style="color: var(--accent-gold); margin-right: 6px;"></i>
-                <strong>Module tích hợp trong mã nguồn:</strong> Lớp <code>ChessCore.Engine.NeuralNetworkEvaluator</code> trích xuất đặc trưng Tensor và tính điểm định giá thế cờ, đáp ứng 100% yêu cầu nghiên cứu đề tài khóa luận.
-            </div>
         </div>
     </div>
 </div>
