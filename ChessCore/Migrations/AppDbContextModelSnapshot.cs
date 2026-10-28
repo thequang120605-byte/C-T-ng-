@@ -1054,7 +1054,7 @@ namespace ChessCore.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
-                        .HasDefaultValue("Legacy");
+                        .HasDefaultValue("PvP");
 
                     b.Property<string>("InitialFen")
                         .HasColumnType("longtext");
@@ -1612,6 +1612,9 @@ namespace ChessCore.Migrations
 
                     b.Property<int>("GamesPlayed")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<int>("Losses")
                         .HasColumnType("int");

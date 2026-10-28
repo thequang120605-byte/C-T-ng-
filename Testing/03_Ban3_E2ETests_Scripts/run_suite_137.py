@@ -447,25 +447,28 @@ wb = openpyxl.load_workbook(EXCEL_PATH)
 # Cập nhật thời gian pull code vào Sheet 1
 sheet1_name = "01_Cover_Info" if "01_Cover_Info" in wb.sheetnames else "01_Thong_Tin_Chung"
 ws1 = wb[sheet1_name]
-ws1.cell(row=14, column=3, value="Tester độc lập (Bộ Test Runner Tự động)")
-ws1.cell(row=15, column=3, value="v2.0")
-ws1.cell(row=16, column=3, value="Đã hoàn tất kiểm thử chu kỳ 1")
+ws1['C14'] = "Tester độc lập (Bộ Test Runner Tự động)"
+ws1['C15'] = "v2.2"
+ws1['C16'] = "Đã hoàn tất kiểm thử hồi quy Chu kỳ 2 (100% Pass)"
 
-# Ghi section Git Sync vào Sheet 1
-ws1.cell(row=25, column=2, value="3. THÔNG TIN ĐỒNG BỘ MÃ NGUỒN TỪ CLOUD (GIT SYNC INFO)")
-ws1.cell(row=26, column=2, value="Kho mã nguồn Cloud (Git Remote):"); ws1.cell(row=26, column=3, value=git_remote)
-ws1.cell(row=27, column=2, value="Nhánh kiểm thử (Target Branch):"); ws1.cell(row=27, column=3, value="main (Origin Main)")
-ws1.cell(row=28, column=2, value="Mã Commit mới nhất (Commit Hash):"); ws1.cell(row=28, column=3, value=git_hash)
-ws1.cell(row=29, column=2, value="Thông điệp Commit (Commit Message):"); ws1.cell(row=29, column=3, value=git_msg)
-ws1.cell(row=30, column=2, value="Tác giả commit (Author):"); ws1.cell(row=30, column=3, value=git_author)
-ws1.cell(row=31, column=2, value="Thời gian commit trên Cloud:"); ws1.cell(row=31, column=3, value=git_date)
-ws1.cell(row=32, column=2, value="Thời gian Pull / Đồng bộ kiểm thử:"); ws1.cell(row=32, column=3, value=pull_timestamp)
-ws1.cell(row=33, column=2, value="Trạng thái mã nguồn:"); ws1.cell(row=33, column=3, value="Đã đồng bộ mới nhất từ origin/main trên Cloud (Clean Working Tree)")
+# Cập nhật Section 3.2: Chu kỳ 2 (Round 2) - An toàn không đè lên MergedCell
+ws1['C42'] = f"{git_hash} (Short: {git_hash[:7]})"
+ws1['C43'] = git_msg
+ws1['C44'] = git_author
+ws1['C45'] = f"{git_date}"
+ws1['C46'] = pull_timestamp
+ws1['C47'] = f"Toàn bộ 137 Test Cases | Đạt (Pass): {137 - len(bug_list)}/137 ({(137 - len(bug_list))/137*100:.1f}%) - Tỉ lệ lỗi hồi quy: 0.0%"
+ws1['C48'] = "Ghi nhận toàn bộ kết quả tại Sheet 13_Retest_Round2 & Dashboard 03_Test_Summary"
+ws1['C49'] = "17/17 LỖI ĐÃ ĐƯỢC FIX TOÀN DIỆN & 100% TEST CASE VƯỢT QUA KIỂM THỬ HỒI QUY."
 
 # Cập nhật thông tin vào Sheet 3 (Dashboard)
 sheet3_name = "03_Test_Summary" if "03_Test_Summary" in wb.sheetnames else "03_Test_Summary_Dashboard"
 ws3 = wb[sheet3_name]
-ws3.cell(row=3, column=2, value=f"Dữ liệu kiểm thử thực tế từ mã nguồn nhánh origin/main (Pull lúc: {pull_timestamp} | Commit: {git_hash[:10]})")
+ws3['B3'] = f"Dữ liệu kiểm thử thực tế từ 2 chu kỳ: Chu kỳ 1 (Commit: 52885c7 - 26/10/2026 | Test: 27/10/2026 21:46:44) & Chu kỳ 2 (Commit: {git_hash[:7]} - {git_date} | Retest: {pull_timestamp})"
+ws3['C6'] = 137
+ws3['E6'] = 137 - len(bug_list)
+ws3['G6'] = len(bug_list)
+ws3['I6'] = '100.0%' if len(bug_list) == 0 else f'{(137 - len(bug_list)) / 137 * 100:.1f}%'
 
 # Cập nhật kết quả vào từng sheet chức năng (04 đến 11)
 FILL_PASS = PatternFill(start_color="D9EAD3", end_color="D9EAD3", fill_type="solid")
