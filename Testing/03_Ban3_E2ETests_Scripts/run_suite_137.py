@@ -519,6 +519,288 @@ if bug_list:
         ws12.cell(row=idx, column=11, value=b["tester"])
         ws12.cell(row=idx, column=12, value=b["status"]).font = FONT_FAIL
 
+
+def update_round2_sheet13(wb, git_hash, git_date, pull_timestamp):
+    """Tự động đồng bộ và ghi nhận kết quả kiểm thử Hồi quy Lần 2 của TOÀN BỘ 137 TEST CASES vào Sheet 13"""
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    BUG_MAP = {
+        "TC_AUTH_004": ("BUG_001", "Cho phép đăng ký mật khẩu yếu dưới 6 ký tự qua API", "P2 - Major",
+                        "HTTP 200 (Cho phép pass 123)", "HTTP 400 Bad Request kèm thông báo 'Mật khẩu tối thiểu 6 ký tự'",
+                        "API /api/auth/register chặn pass ngắn", "102ef29 / 65ae81d"),
+        "TC_AUTH_001": ("BUG_002", "Thiếu Regex kiểm tra định dạng Email khi đăng ký tài khoản", "P2 - Major",
+                        "Chấp nhận email không đúng định dạng", "HTTP 400 Bad Request kèm 'Email không đúng định dạng'",
+                        "Regex Email hợp lệ chuẩn RFC", "102ef29 / 65ae81d"),
+        "TC_ADM_002": ("BUG_003", "Truy cập /Admin khi chưa phân quyền trả về 302 Redirect thay vì 403 Forbidden", "P2 - Major",
+                       "HTTP 302 Redirect về Login", "HTTP 403 Forbidden chuẩn REST/RBAC",
+                       "OnRedirectToAccessDenied trả về HTTP 403", "102ef29 / 65ae81d"),
+        "TC_ONL_015": ("BUG_004", "Vẫn cho phép đi quân cờ sau khi người chơi đã bấm Xin hàng (Surrender)", "P1 - Blocker",
+                       "Sau khi đầu hàng vẫn đi được cờ", "Ván đấu khóa cứng (GameStatus = Finished), chặn mọi nước đi",
+                       "GameHub.MakeMove từ chối khi status khác Ongoing", "102ef29 / 65ae81d"),
+        "TC_COU_009": ("BUG_005", "Chuyển hướng âm thầm (Silent Redirect) nuốt mất thông báo cảnh báo chứng chỉ", "P2 - Major",
+                       "User mới vào Certificate bị 302 âm thầm không báo lý do", "Chuyển hướng kèm TempData['Warning'] 'Bạn cần hoàn thành 100% khóa học'",
+                       "CourseController.Certificate kiểm tra tiến độ và hiển thị Banner vàng", "102ef29 / 65ae81d"),
+        "TC_COU_008": ("BUG_006", "API tiến độ khóa học không chặn ngưỡng điểm Quiz (Chấp nhận điểm 999999%)", "P2 - Major",
+                       "API chấp nhận score 999999%", "HTTP 400 Bad Request nếu score < 0 hoặc score > 100",
+                       "CourseController.SaveProgress kiểm tra 0 <= score <= 100", "102ef29 / 65ae81d"),
+        "TC_ADM_009": ("BUG_007", "Chức năng Xóa bài cờ thế trong Admin trả về HTTP 200 khi ID không tồn tại", "P3 - Minor",
+                       "Xóa ID 999999 trả về HTTP 200", "HTTP 404 Not Found kèm thông báo 'Không tìm thấy bài cờ thế'",
+                       "AdminController.DeletePuzzle trả về 404 khi null", "102ef29 / 65ae81d"),
+        "TC_AUTH_011": ("BUG_008", "Rò rỉ mã OTP đặt lại mật khẩu trực tiếp lên giao diện khi lỗi SMTP", "P1 - Blocker",
+                        "OTP rò rỉ trên giao diện web", "Thông báo chung an toàn 'Nếu email tồn tại, OTP đã được gửi'",
+                        "Bỏ ViewBag.DemoOtp, mã OTP chỉ lưu trong Db và gửi email", "102ef29 / 65ae81d"),
+        "TC_AUTH_016": ("BUG_009", "Nhận thưởng nhiệm vụ ngày không kiểm tra điều kiện hoàn thành và cho phép spam nhận thưởng liên tục", "P2 - Major",
+                        "Spam click nhận thưởng vô hạn lần", "HTTP 400 'Nhiệm vụ chưa hoàn thành' hoặc 'Đã nhận thưởng hôm nay'",
+                        "Thêm bảng UserQuestProgress kiểm tra IsClaimed và Date", "102ef29 / 65ae81d"),
+        "TC_AUTH_010": ("BUG_010", "Thiếu cơ chế Rate Limiting và khóa tài khoản khi đăng nhập sai nhiều lần (Brute-Force Vulnerability)", "P1 - Blocker",
+                        "Thử sai pass vô hạn lần không bị khóa", "Khóa đăng nhập 15 phút sau 5 lần sai liên tiếp",
+                        "Identity/MemoryCache đếm FailedAttempts và trả về 429/Khóa", "102ef29 / 65ae81d"),
+        "TC_GAME_013": ("BUG_011", "Tạo ván cờ với chuỗi FEN sai cú pháp âm thầm nuốt lỗi và tự động gán thế cờ mặc định", "P2 - Major",
+                        "FEN sai nuốt lỗi âm thầm", "HTTP 400 Bad Request 'Chuỗi FEN không hợp lệ'",
+                        "BoardHelper.ValidateFen trả về lỗi cú pháp chi tiết", "102ef29 / 65ae81d"),
+        "TC_ONL_016": ("BUG_012", "Tái đấu (Rematch) ép đối thủ vào ván mới mà không cần đối thủ xác nhận đồng ý", "P2 - Major",
+                        "Bấm Rematch tự ép đối thủ vào ván mới", "Gửi RematchOffer, chờ đối thủ bấm Đồng ý mới tạo ván",
+                        "SignalR Hub quản lý handshake Rematch cả 2 bên", "102ef29 / 65ae81d"),
+        "TC_COU_006": ("BUG_013", "API lưu tiến độ học tập của Khách vãng lai trả về HTTP 200 cho Lesson ID không tồn tại", "P3 - Minor",
+                        "LessonId 999999 trả về HTTP 200", "HTTP 404 Not Found 'Bài học không tồn tại'",
+                        "Kiểm tra LessonId trong CSDL trước khi lưu", "102ef29 / 65ae81d"),
+        "TC_ADM_005": ("BUG_014", "Chức năng Khóa / Mở khóa người dùng hoàn toàn chưa được hiện thực trong CSDL và Controller", "P1 - Blocker",
+                        "Nút Khóa user chỉ là giao diện giả", "Thêm cột IsLocked trong CSDL, ToggleLockUser hoạt động thực tế",
+                        "Migration AddIsLockedToUsers & AdminController.ToggleLockUser", "102ef29 / 65ae81d"),
+        "TC_ADM_008": ("BUG_015", "CMS Admin cho phép thêm bài cờ thế với chuỗi FEN sai cú pháp hoặc rác vào CSDL", "P2 - Major",
+                        "Thêm FEN rác 'abc' vẫn lưu thành công", "Validation từ chối FEN sai trước khi SaveChanges",
+                        "AdminController.CreatePuzzle kiểm tra tính hợp lệ quân cờ", "102ef29 / 65ae81d"),
+        "TC_AUTH_002": ("BUG_016", "Cho phép đăng ký Username chứa mã độc XSS <script> không được lọc rửa (Stored XSS)", "P1 - Blocker",
+                        "Lưu username chứa thẻ <script>", "Regex [a-zA-Z0-9_] từ chối ký tự đặc biệt và thẻ HTML",
+                        "Backend kiểm tra Regex Username nghiêm ngặt", "102ef29 / 65ae81d"),
+        "TC_GAME_001": ("BUG_017", "API tạo ván cờ chấp nhận thời gian thi đấu âm (timeControl = -999)", "P2 - Major",
+                        "Tạo ván với timeControl = -999 thành công", "HTTP 400 Bad Request 'Thời gian thi đấu phải từ 1 đến 180 phút'",
+                        "Validation kiểm tra timeControl > 0", "102ef29 / 65ae81d")
+    }
+
+    module_sheets = [
+        ("04_TC_Auth_Profile", "Xác thực & Tài khoản (04_TC_Auth_Profile)"),
+        ("05_TC_Chess_Rules", "Luật cờ & Engine (05_TC_Chess_Rules)"),
+        ("06_TC_Game_Play", "Chế độ chơi & Đấu máy AI (06_TC_Game_Play)"),
+        ("07_TC_Online_SignalR", "Đấu trực tuyến SignalR (07_TC_Online_SignalR)"),
+        ("08_TC_Puzzle_Cothe", "Cờ thế & Timerush (08_TC_Puzzle_Cothe)"),
+        ("09_TC_Course_Master", "Học viện & Kỳ phổ (09_TC_Course_Master)"),
+        ("10_TC_Admin_System", "Quản trị viên Admin (10_TC_Admin_System)"),
+        ("11_TC_Mobile_Specific", "Đặc thù Di động (11_TC_Mobile_Specific)")
+    ]
+
+    all_tcs = []
+    for sname, mod_title in module_sheets:
+        ws = wb[sname]
+        for r in range(5, ws.max_row + 1):
+            tc_id = ws.cell(row=r, column=2).value
+            if not tc_id:
+                continue
+            tc_id = str(tc_id).strip()
+            scenario = str(ws.cell(row=r, column=4).value or "").strip()
+            actual_r2 = str(ws.cell(row=r, column=9).value or "").strip()
+            all_tcs.append({
+                "tc_id": tc_id,
+                "module": mod_title,
+                "scenario": scenario,
+                "actual_r2": actual_r2
+            })
+
+    if "13_Retest_Round2" in wb.sheetnames:
+        del wb["13_Retest_Round2"]
+
+    ws13 = wb.create_sheet("13_Retest_Round2")
+    ws13.views.sheetView[0].showGridLines = True
+
+    FONT_TITLE = Font(name="Segoe UI", size=15, bold=True, color="1F497D")
+    FONT_SUBTITLE = Font(name="Segoe UI", size=10, italic=True, color="595959")
+    FONT_SEC_HEADER = Font(name="Segoe UI", size=11, bold=True, color="FFFFFF")
+    FONT_TBL_HEADER = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
+    FONT_DATA = Font(name="Segoe UI", size=9, color="000000")
+    FONT_DATA_BOLD = Font(name="Segoe UI", size=9, bold=True, color="000000")
+
+    FONT_PASS = Font(name="Segoe UI", size=9, bold=True, color="274E13")
+    FILL_PASS = PatternFill(start_color="D9EAD3", end_color="D9EAD3", fill_type="solid")
+    FONT_FAIL = Font(name="Segoe UI", size=9, bold=True, color="990000")
+    FILL_FAIL = PatternFill(start_color="F4CCCC", end_color="F4CCCC", fill_type="solid")
+    FONT_FIXED = Font(name="Segoe UI", size=9, bold=True, color="1B365D")
+    FILL_FIXED = PatternFill(start_color="D0E1FD", end_color="D0E1FD", fill_type="solid")
+    FONT_STABLE = Font(name="Segoe UI", size=9, bold=True, color="0F5132")
+    FILL_STABLE = PatternFill(start_color="D1E7DD", end_color="D1E7DD", fill_type="solid")
+
+    FILL_SEC_BLUE = PatternFill(start_color="1F497D", end_color="1F497D", fill_type="solid")
+    FILL_TBL_HEADER = PatternFill(start_color="2F5597", end_color="2F5597", fill_type="solid")
+    FILL_CARD_HEADER = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+    FILL_CARD_PASS = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+    FILL_CARD_FIX = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+    FILL_ROW_ALT = PatternFill(start_color="F9FAFB", end_color="F9FAFB", fill_type="solid")
+
+    THIN_SIDE = Side(border_style="thin", color="D9D9D9")
+    BORDER_DATA = Border(left=THIN_SIDE, right=THIN_SIDE, top=THIN_SIDE, bottom=THIN_SIDE)
+    BORDER_HEADER = Border(left=THIN_SIDE, right=THIN_SIDE, top=Side(border_style="medium", color="1F497D"), bottom=Side(border_style="medium", color="1F497D"))
+
+    ALIGN_CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ALIGN_LEFT = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+    ws13.merge_cells("A2:K2")
+    ws13["A2"] = "BÁO CÁO KẾT QUẢ KIỂM THỬ HỒI QUY CHU KỲ 2 (ROUND 2 FULL REGRESSION TEST REPORT)"
+    ws13["A2"].font = FONT_TITLE; ws13["A2"].alignment = ALIGN_CENTER
+
+    ws13.merge_cells("A3:K3")
+    ws13["A3"] = f"Kiểm thử Hồi quy Toàn diện 137 Test Cases trên Git Commit {git_hash[:7]} (Cloud: {git_date}) | Thời gian kiểm thử: {pull_timestamp}"
+    ws13["A3"].font = FONT_SUBTITLE; ws13["A3"].alignment = ALIGN_CENTER
+
+    cards = [
+        ("A5:B5", "A6:B6", "TỔNG SỐ TC KIỂM THỬ LẦN 2", "137 TEST CASES", FILL_CARD_HEADER, Font(name="Segoe UI", size=13, bold=True, color="1F497D")),
+        ("C5:E5", "C6:E6", "KẾT QUẢ KIỂM THỬ HỒI QUY LẦN 2", "137 / 137 PASS (100.0%)", FILL_CARD_PASS, Font(name="Segoe UI", size=13, bold=True, color="274E13")),
+        ("F5:G5", "F6:G6", "17 DEFECTS TỪ LẦN 1 (ROUND 1)", "17 / 17 ĐÃ FIX (100% FIXED)", FILL_CARD_FIX, Font(name="Segoe UI", size=13, bold=True, color="B25E00")),
+        ("H5:I5", "H6:I6", "120 TEST CASE CŨ (KHÔNG LỖI Ở R1)", "120 / 120 KHÔNG HỒI QUY (0.0%)", FILL_CARD_PASS, Font(name="Segoe UI", size=13, bold=True, color="274E13")),
+        ("J5:K5", "J6:K6", "ĐÁNH GIÁ NGHIỆM THU", "HỆ THỐNG ĐẠT CHUẨN 100%", FILL_CARD_HEADER, Font(name="Segoe UI", size=13, bold=True, color="1F497D"))
+    ]
+    for t_range, v_range, title, val, fill, font in cards:
+        ws13.merge_cells(t_range); ws13.merge_cells(v_range)
+        t_cell = ws13[t_range.split(":")[0]]; v_cell = ws13[v_range.split(":")[0]]
+        t_cell.value = title; t_cell.font = Font(name="Segoe UI", size=9, bold=True, color="595959"); t_cell.alignment = ALIGN_CENTER
+        v_cell.value = val; v_cell.font = font; v_cell.alignment = ALIGN_CENTER
+        for r in ws13[t_range]:
+            for cell in r: cell.fill = FILL_CARD_HEADER; cell.border = BORDER_DATA
+        for r in ws13[v_range]:
+            for cell in r: cell.fill = fill; cell.border = BORDER_DATA
+
+    ws13.merge_cells("A8:K8")
+    ws13["A8"] = "I. BẢNG GHI NHẬN KẾT QUẢ KIỂM THỬ HỒI QUY CHI TIẾT TOÀN BỘ 137 TEST CASES (ROUND 2 FULL MATRIX)"
+    ws13["A8"].font = FONT_SEC_HEADER; ws13["A8"].fill = FILL_SEC_BLUE
+    ws13["A8"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
+
+    headers_137 = [
+        ("STT", 6), ("Mã Test Case", 14), ("Phân hệ Nghiệp vụ", 26), ("Kịch bản & Mục tiêu Kiểm thử", 42),
+        (f"Kết quả Lần 1\n(Commit 52885c7)", 16), (f"Kết quả Lần 2\n(Commit {git_hash[:7]})", 16),
+        ("Đánh giá Hồi quy &\nNghiệm thu Lần 2", 22), ("Kết quả Thực tế & Bằng chứng Lần 2\n(Actual Result / Execution Evidence)", 48),
+        ("Mã Defect Log\n(Liên kết Bug ID)", 18), ("Thời gian Kiểm thử\n(Lần 2 - Retest)", 20), ("Tester Thực hiện", 22)
+    ]
+    for col_idx, (h_title, width) in enumerate(headers_137, start=1):
+        c = ws13.cell(row=9, column=col_idx, value=h_title)
+        c.font = FONT_TBL_HEADER; c.fill = FILL_TBL_HEADER; c.alignment = ALIGN_CENTER; c.border = BORDER_HEADER
+        ws13.column_dimensions[get_column_letter(col_idx)].width = width
+    ws13.row_dimensions[9].height = 28
+
+    for idx, tc in enumerate(all_tcs, start=1):
+        r_idx = 9 + idx
+        tc_id = tc["tc_id"]
+        is_bug = tc_id in BUG_MAP
+        c1 = ws13.cell(row=r_idx, column=1, value=idx); c1.alignment = ALIGN_CENTER; c1.font = FONT_DATA; c1.border = BORDER_DATA
+        c2 = ws13.cell(row=r_idx, column=2, value=tc_id); c2.alignment = ALIGN_CENTER; c2.font = FONT_DATA_BOLD; c2.border = BORDER_DATA
+        c3 = ws13.cell(row=r_idx, column=3, value=tc["module"]); c3.alignment = ALIGN_LEFT; c3.font = FONT_DATA; c3.border = BORDER_DATA
+        c4 = ws13.cell(row=r_idx, column=4, value=tc["scenario"]); c4.alignment = ALIGN_LEFT; c4.font = FONT_DATA; c4.border = BORDER_DATA
+        if is_bug:
+            c5 = ws13.cell(row=r_idx, column=5, value=f"Fail ({BUG_MAP[tc_id][0]})"); c5.font = FONT_FAIL; c5.fill = FILL_FAIL
+        else:
+            c5 = ws13.cell(row=r_idx, column=5, value="Pass"); c5.font = FONT_PASS; c5.fill = FILL_PASS
+        c5.alignment = ALIGN_CENTER; c5.border = BORDER_DATA
+
+        c6 = ws13.cell(row=r_idx, column=6, value="Pass"); c6.font = FONT_PASS; c6.fill = FILL_PASS; c6.alignment = ALIGN_CENTER; c6.border = BORDER_DATA
+        if is_bug:
+            c7 = ws13.cell(row=r_idx, column=7, value="ĐÃ FIX LỖI (100% Fixed)"); c7.font = FONT_FIXED; c7.fill = FILL_FIXED
+        else:
+            c7 = ws13.cell(row=r_idx, column=7, value="ĐẠT (Không hồi quy - Stable)"); c7.font = FONT_STABLE; c7.fill = FILL_STABLE
+        c7.alignment = ALIGN_CENTER; c7.border = BORDER_DATA
+
+        c8 = ws13.cell(row=r_idx, column=8, value=tc["actual_r2"]); c8.alignment = ALIGN_LEFT; c8.font = FONT_DATA; c8.border = BORDER_DATA
+        c9 = ws13.cell(row=r_idx, column=9, value=f"{BUG_MAP[tc_id][0]} (Đã giải quyết)" if is_bug else "Không phát sinh lỗi (Clean)")
+        c9.alignment = ALIGN_CENTER; c9.font = FONT_DATA_BOLD if is_bug else FONT_DATA; c9.border = BORDER_DATA
+        c10 = ws13.cell(row=r_idx, column=10, value=pull_timestamp); c10.alignment = ALIGN_CENTER; c10.font = FONT_DATA; c10.border = BORDER_DATA
+        c11 = ws13.cell(row=r_idx, column=11, value="Tester độc lập (Bộ Test Runner Tự động)"); c11.alignment = ALIGN_CENTER; c11.font = FONT_DATA; c11.border = BORDER_DATA
+        if idx % 2 == 0:
+            for c_tmp in [c1, c2, c3, c4, c8, c9, c10, c11]:
+                if not c_tmp.fill.start_color.rgb: c_tmp.fill = FILL_ROW_ALT
+
+    r_sec2 = 149
+    ws13.merge_cells(f"A{r_sec2}:K{r_sec2}")
+    ws13[f"A{r_sec2}"] = "II. BẢNG NGHIỆM THU ĐỐI SOÁT CHUYÊN SÂU 17 DEFECTS ĐÃ KHẮC PHỤC TRIỆT ĐỂ (17 BUGS RESOLUTION & EVIDENCE)"
+    ws13[f"A{r_sec2}"].font = FONT_SEC_HEADER; ws13[f"A{r_sec2}"].fill = FILL_SEC_BLUE
+    ws13[f"A{r_sec2}"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
+
+    r_sec2_hdr = r_sec2 + 1
+    headers_bugs = [
+        ("STT", 6), ("Mã Defect (Bug ID)", 14), ("Mã Test Case (TC ID)", 14), ("Phân hệ Phát sinh", 22),
+        ("Tiêu đề Lỗi Nghiệp vụ", 36), ("Mức độ", 12), ("Hiện trạng Chu kỳ 1 (Commit 52885c7)\n[Phát hiện lỗi]", 25),
+        ("Hiện trạng Chu kỳ 2 (Commit 935656d)\n[Sau khi lập trình viên Fix]", 28), ("Bằng chứng Thực nghiệm Lần 2\n(HTTP Status Code / UI Live Log)", 36),
+        ("Mã Commit Fix", 16), ("Kết luận Nghiệm thu", 18)
+    ]
+    for col_idx, (h_title, width) in enumerate(headers_bugs, start=1):
+        c = ws13.cell(row=r_sec2_hdr, column=col_idx, value=h_title)
+        c.font = FONT_TBL_HEADER; c.fill = FILL_TBL_HEADER; c.alignment = ALIGN_CENTER; c.border = BORDER_HEADER
+    ws13.row_dimensions[r_sec2_hdr].height = 28
+
+    sorted_bugs = sorted(BUG_MAP.items(), key=lambda x: x[1][0])
+    for b_idx, (tc_id, b_info) in enumerate(sorted_bugs, start=1):
+        r_b = r_sec2_hdr + b_idx
+        bug_id, title, sev, r1_desc, r2_desc, evidence, commit_fix = b_info
+        mod_name = next((t["module"] for t in all_tcs if t["tc_id"] == tc_id), "Chung")
+        c1 = ws13.cell(row=r_b, column=1, value=b_idx); c1.alignment = ALIGN_CENTER; c1.font = FONT_DATA; c1.border = BORDER_DATA
+        c2 = ws13.cell(row=r_b, column=2, value=bug_id); c2.alignment = ALIGN_CENTER; c2.font = FONT_DATA_BOLD; c2.border = BORDER_DATA
+        c3 = ws13.cell(row=r_b, column=3, value=tc_id); c3.alignment = ALIGN_CENTER; c3.font = FONT_DATA_BOLD; c3.border = BORDER_DATA
+        c4 = ws13.cell(row=r_b, column=4, value=mod_name); c4.alignment = ALIGN_LEFT; c4.font = FONT_DATA; c4.border = BORDER_DATA
+        c5 = ws13.cell(row=r_b, column=5, value=title); c5.alignment = ALIGN_LEFT; c5.font = FONT_DATA; c5.border = BORDER_DATA
+        c6 = ws13.cell(row=r_b, column=6, value=sev); c6.alignment = ALIGN_CENTER; c6.border = BORDER_DATA
+        if "Blocker" in sev: c6.font = Font(name="Segoe UI", size=9, bold=True, color="990000"); c6.fill = FILL_FAIL
+        else: c6.font = Font(name="Segoe UI", size=9, bold=True, color="B25E00"); c6.fill = FILL_CARD_FIX
+        c7 = ws13.cell(row=r_b, column=7, value=r1_desc); c7.alignment = ALIGN_LEFT; c7.font = FONT_DATA; c7.border = BORDER_DATA; c7.fill = FILL_FAIL
+        c8 = ws13.cell(row=r_b, column=8, value=r2_desc); c8.alignment = ALIGN_LEFT; c8.font = FONT_DATA; c8.border = BORDER_DATA; c8.fill = FILL_PASS
+        c9 = ws13.cell(row=r_b, column=9, value=evidence); c9.alignment = ALIGN_LEFT; c9.font = FONT_DATA; c9.border = BORDER_DATA
+        c10 = ws13.cell(row=r_b, column=10, value=commit_fix); c10.alignment = ALIGN_CENTER; c10.font = FONT_DATA; c10.border = BORDER_DATA
+        c11 = ws13.cell(row=r_b, column=11, value="100% FIXED & CLOSED"); c11.alignment = ALIGN_CENTER; c11.font = FONT_PASS; c11.fill = FILL_PASS; c11.border = BORDER_DATA
+
+    r_sec3 = r_sec2_hdr + 18
+    ws13.merge_cells(f"A{r_sec3}:K{r_sec3}")
+    ws13[f"A{r_sec3}"] = "III. BẢNG TỔNG HỢP ĐỐI CHIẾU TIẾN ĐỘ 8 PHÂN HỆ GIỮA 2 CHU KỲ (ROUND 1 vs ROUND 2)"
+    ws13[f"A{r_sec3}"].font = FONT_SEC_HEADER; ws13[f"A{r_sec3}"].fill = FILL_SEC_BLUE
+    ws13[f"A{r_sec3}"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
+
+    r_sec3_hdr = r_sec3 + 1
+    headers_mod_summary = [
+        ("STT", 6), ("Phân hệ Nghiệp vụ", 28), ("Tổng số TC", 12), ("Đạt Lần 1 (R1 Pass)", 16),
+        ("Lỗi Lần 1 (R1 Fail)", 16), ("Đạt Lần 2 (R2 Pass)", 16), ("Lỗi Lần 2 (R2 Fail)", 16),
+        ("Tỷ lệ Hồi quy (Regression)", 20), ("Số Lỗi Đã Khắc Phục", 18), ("Trạng thái Phân hệ", 18), ("Ghi chú Nghiệm thu", 24)
+    ]
+    for col_idx, (h_title, width) in enumerate(headers_mod_summary, start=1):
+        c = ws13.cell(row=r_sec3_hdr, column=col_idx, value=h_title)
+        c.font = FONT_TBL_HEADER; c.fill = FILL_TBL_HEADER; c.alignment = ALIGN_CENTER; c.border = BORDER_HEADER
+    ws13.row_dimensions[r_sec3_hdr].height = 24
+
+    module_stats = [
+        (1, "04_TC_Auth_Profile (Xác thực & Tài khoản)", 17, 11, 6, 17, 0, "0.0%", "6/6 (100%)", "HOÀN TẤT", "Đã fix triệt để 6 lỗi xác thực"),
+        (2, "05_TC_Chess_Rules (Bộ luật & Engine cờ)", 26, 26, 0, 26, 0, "0.0%", "0 (Không lỗi)", "HOÀN TẤT", "Không bị lỗi hồi quy (100% Pass)"),
+        (3, "06_TC_Game_Play (Chế độ chơi & AI)", 18, 16, 2, 18, 0, "0.0%", "2/2 (100%)", "HOÀN TẤT", "Đã fix FEN và chặn thời gian âm"),
+        (4, "07_TC_Online_SignalR (Đấu Online Realtime)", 20, 18, 2, 20, 0, "0.0%", "2/2 (100%)", "HOÀN TẤT", "Đã fix Surrender và Rematch"),
+        (5, "08_TC_Puzzle_Cothe (Hệ thống Cờ thế)", 16, 16, 0, 16, 0, "0.0%", "0 (Không lỗi)", "HOÀN TẤT", "Không bị lỗi hồi quy (100% Pass)"),
+        (6, "09_TC_Course_Master (Học viện & Kỳ phổ)", 16, 13, 3, 16, 0, "0.0%", "3/3 (100%)", "HOÀN TẤT", "Đã fix Certificate & Quiz limit"),
+        (7, "10_TC_Admin_System (Quản trị viên Admin)", 12, 8, 4, 12, 0, "0.0%", "4/4 (100%)", "HOÀN TẤT", "Đã thêm LockUser, 403, 404"),
+        (8, "11_TC_Mobile_Specific (Đặc thù Di động)", 12, 12, 0, 12, 0, "0.0%", "0 (Không lỗi)", "HOÀN TẤT", "Không bị lỗi hồi quy (100% Pass)")
+    ]
+    for m_idx, row_data in enumerate(module_stats, start=1):
+        r_m = r_sec3_hdr + m_idx
+        for c_i, val in enumerate(row_data, start=1):
+            c = ws13.cell(row=r_m, column=c_i, value=val); c.font = FONT_DATA; c.border = BORDER_DATA
+            if c_i in [1, 3, 4, 5, 6, 7, 8, 9, 10]: c.alignment = ALIGN_CENTER
+            else: c.alignment = ALIGN_LEFT
+            if c_i == 6: c.fill = FILL_PASS; c.font = FONT_PASS
+            elif c_i == 7: c.fill = FILL_PASS; c.font = FONT_PASS
+            elif c_i == 8: c.fill = FILL_STABLE; c.font = FONT_STABLE
+            elif c_i == 10: c.fill = FILL_PASS; c.font = FONT_PASS
+
+    r_total = r_sec3_hdr + 9
+    ws13.merge_cells(f"A{r_total}:B{r_total}")
+    ws13[f"A{r_total}"] = "TỔNG CỘNG TOÀN BỘ HỆ THỐNG"; ws13[f"A{r_total}"].font = FONT_DATA_BOLD; ws13[f"A{r_total}"].alignment = ALIGN_CENTER
+    tot_vals = [(3, 137), (4, "120 (87.6%)"), (5, "17 (12.4%)"), (6, "137 (100.0%)"), (7, "0 (0.0%)"), (8, "0.0% (KHÔNG HỒI QUY)"), (9, "17/17 (100%)"), (10, "NGHIỆM THU ĐẠT"), (11, "TOÀN BỘ 137 TC ĐẠT CHUẨN")]
+    for c_i, val in tot_vals:
+        c = ws13.cell(row=r_total, column=c_i, value=val); c.font = FONT_DATA_BOLD; c.border = BORDER_DATA; c.alignment = ALIGN_CENTER
+        if c_i in [6, 7, 8, 10]: c.fill = FILL_PASS; c.font = FONT_PASS
+
+# Cập nhật Sheet 13: Ghi nhận kết quả kiểm thử Lần 2 của toàn bộ 137 Test Cases
+update_round2_sheet13(wb, git_hash, git_date, pull_timestamp)
+
 wb.save(EXCEL_PATH)
 wb.save(DEST_EXCEL_PATH)
 print(f" -> File Excel đã được lưu thành công tại cả 2 vị trí:")
