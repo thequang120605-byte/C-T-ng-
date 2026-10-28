@@ -215,6 +215,69 @@
     border: 1px solid var(--border-color);
 }
 
+/* Rank Medals */
+.rank-medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 13px;
+}
+.rank-medal.gold { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+.rank-medal.silver { background: linear-gradient(135deg, #94a3b8, #64748b); color: #fff; }
+.rank-medal.bronze { background: linear-gradient(135deg, #b45309, #78350f); color: #fff; }
+.rank-medal.normal { background: var(--bg-navy-light, #e2e8f0); color: var(--text-muted, #64748b); }
+
+/* Tier Badges */
+.tier-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    width: fit-content;
+}
+.tier-grandmaster { background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); }
+.tier-master { background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
+.tier-expert { background: rgba(59, 130, 246, 0.12); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.3); }
+.tier-amateur { background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); }
+.tier-novice { background: rgba(100, 116, 139, 0.12); color: #475569; border: 1px solid rgba(100, 116, 139, 0.3); }
+
+/* Win Rate Bars */
+.winrate-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 110px;
+}
+.winrate-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-navy-light, #e2e8f0);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.winrate-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+/* W-D-L Pill */
+.stat-wdl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.wdl-w { color: #10b981; }
+.wdl-d { color: #d97706; }
+.wdl-l { color: #ef4444; }
+
 .btn-admin {
     padding: 8px 16px;
     border-radius: 8px;
@@ -264,6 +327,26 @@
 }
 .btn-admin-danger:hover {
     background: #ef4444;
+    color: #ffffff;
+}
+
+.btn-admin-warning {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.btn-admin-warning:hover {
+    background: #d97706;
+    color: #ffffff;
+}
+
+.btn-admin-success {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.btn-admin-success:hover {
+    background: #059669;
     color: #ffffff;
 }
 

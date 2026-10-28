@@ -90,6 +90,8 @@ namespace ChessCore.Controllers
                     PlayerId = u.PlayerId,
                     Elo = u.Elo,
                     Role = u.Role ?? "Player",
+                    IsLocked = u.IsLocked,
+                    CreatedAt = u.CreatedAt,
                     GamesPlayed = u.GamesPlayed,
                     Wins = u.Wins,
                     Losses = u.Losses,
@@ -480,8 +482,57 @@ namespace ChessCore.Controllers
         {
             if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
-            var users = await _context.Users.OrderByDescending(u => u.Id).ToListAsync();
-            return View(users);
+            var users = await _context.Users.OrderByDescending(u => u.Elo).ToListAsync();
+
+            // Thống kê số lượng bài cờ thế đã giải thành công
+            var puzzleSolvedCounts = await _context.PuzzleProgresses
+                .GroupBy(p => p.UserId)
+                .Select(g => new { UserId = g.Key, Solved = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Solved);
+
+            // Thống kê số bài học đã hoàn thành
+            var lessonCompletedCounts = await _context.UserCourseProgresses
+                .Where(c => c.IsCompleted)
+                .GroupBy(c => c.UserId)
+                .Select(g => new { UserId = g.Key, Completed = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Completed);
+
+            var allUserDtos = users.Select(u =>
+            {
+                double winRate = u.GamesPlayed > 0 ? Math.Round((double)u.Wins * 100.0 / u.GamesPlayed, 1) : 0;
+                string rankTitle = u.Elo switch
+                {
+                    >= 1500 => "Đặc cấp Đại sư",
+                    >= 1400 => "Kiện tướng",
+                    >= 1250 => "Kỳ thủ Giỏi",
+                    >= 1150 => "Kỳ thủ Nghiệp dư",
+                    >= 1050 => "Người mới chơi",
+                    _ => "Tập sự"
+                };
+
+                return new AdminUserOverviewDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    PlayerId = u.PlayerId,
+                    Elo = u.Elo,
+                    Role = u.Role ?? "Player",
+                    IsLocked = u.IsLocked,
+                    CreatedAt = u.CreatedAt,
+                    GamesPlayed = u.GamesPlayed,
+                    Wins = u.Wins,
+                    Losses = u.Losses,
+                    Draws = u.Draws,
+                    WinRate = winRate,
+                    PuzzleScore = u.PuzzleScore,
+                    PuzzlesSolved = puzzleSolvedCounts.TryGetValue(u.Id, out int pCount) ? pCount : 0,
+                    LessonsCompleted = lessonCompletedCounts.TryGetValue(u.Id, out int lCount) ? lCount : 0,
+                    Title = rankTitle
+                };
+            }).ToList();
+
+            return View(allUserDtos);
         }
 
         // FIX BUG_014: Tính năng Khóa / Mở khóa tài khoản người dùng
@@ -654,6 +705,8 @@ namespace ChessCore.Controllers
         public string PlayerId { get; set; } = string.Empty;
         public int Elo { get; set; }
         public string Role { get; set; } = "Player";
+        public bool IsLocked { get; set; }
+        public DateTime CreatedAt { get; set; }
         public int GamesPlayed { get; set; }
         public int Wins { get; set; }
         public int Losses { get; set; }
