@@ -229,12 +229,44 @@
                         int rank = 1;
                         foreach (var player in Model.TopPlayers)
                         {
-                            <li class="leader-item">
-                                <span class="leader-rank top-@rank">@rank</span>
-                                <div class="leader-user">
-                                    <div style="font-weight: 700;">@player.Username</div>
+                            var initial = !string.IsNullOrEmpty(player.Username) ? player.Username.Substring(0, 1).ToUpper() : "U";
+                            var medalIcon = rank == 1 ? "🥇" : (rank == 2 ? "🥈" : (rank == 3 ? "🥉" : ""));
+                            var tierName = player.Elo >= 1500 ? "Đại Sư" : (player.Elo >= 1400 ? "Kiện Tướng" : (player.Elo >= 1300 ? "Tinh Anh" : "Kỳ Thủ"));
+                            var tierClass = player.Elo >= 1500 ? "tier-gm" : (player.Elo >= 1400 ? "tier-master" : (player.Elo >= 1300 ? "tier-expert" : "tier-player"));
+                            var tierIcon = player.Elo >= 1500 ? "fa-crown" : (player.Elo >= 1400 ? "fa-award" : (player.Elo >= 1300 ? "fa-shield-halved" : "fa-user"));
+
+                            <li class="leader-item @(rank <= 3 ? $"top-{rank}-row" : "")">
+                                <div class="leader-rank-badge top-@rank">
+                                    @if (!string.IsNullOrEmpty(medalIcon))
+                                    {
+                                        <span class="rank-medal" title="Hạng @rank">@medalIcon</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="rank-num">@rank</span>
+                                    }
                                 </div>
-                                <span class="leader-elo">@player.Elo</span>
+                                <div class="leader-avatar-wrap">
+                                    <div class="leader-avatar">@initial</div>
+                                    <span class="leader-online-dot"></span>
+                                </div>
+                                <div class="leader-user">
+                                    <div class="leader-name-row">
+                                        <strong class="leader-username">@player.Username</strong>
+                                        <span class="player-tier-badge @tierClass">
+                                            <i class="fa-solid @tierIcon"></i> @tierName
+                                        </span>
+                                    </div>
+                                    <div class="leader-sub-info">
+                                        <span><i class="fa-solid fa-chess-board"></i> @player.GamesPlayed ván</span>
+                                        <span>•</span>
+                                        <span style="color: #10b981;"><i class="fa-solid fa-check"></i> @player.Wins thắng</span>
+                                    </div>
+                                </div>
+                                <div class="leader-elo-pill">
+                                    <i class="fa-solid fa-star"></i>
+                                    <span>@player.Elo</span>
+                                </div>
                             </li>
                             rank++;
                         }

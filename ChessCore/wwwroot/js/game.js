@@ -1410,6 +1410,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     gameResultModal.classList.remove("hidden");
+    if (window.AppConfetti && (title.includes("thắng") || title.includes("Thắng") || winner.includes("Bạn") || winner.includes("thắng") || winner.includes("Thắng"))) {
+      window.AppConfetti.fire({ particleCount: 100, duration: 3500 });
+    }
   }
 
   // =====================================================

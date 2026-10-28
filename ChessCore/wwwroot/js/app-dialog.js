@@ -75,3 +75,90 @@ window.AppDialog = (function () {
     }
   };
 })();
+
+/**
+ * App Confetti Celebration Engine
+ * Hiệu ứng pháo hoa giấy rực rỡ, nhẹ nhàng khi người chơi chiến thắng ván cờ hoặc giải đúng cờ thế
+ */
+window.AppConfetti = (function () {
+  let activeCanvas = null;
+  let animId = null;
+
+  const COLORS = ["#f59e0b", "#d97706", "#ef4444", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#fcd34d"];
+
+  function fire({ particleCount = 85, duration = 3200 } = {}) {
+    if (activeCanvas) {
+      cancelAnimationFrame(animId);
+      if (activeCanvas.parentNode) activeCanvas.parentNode.removeChild(activeCanvas);
+      activeCanvas = null;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.style.position = "fixed";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
+    canvas.style.width = "100vw";
+    canvas.style.height = "100vh";
+    canvas.style.pointerEvents = "none";
+    canvas.style.zIndex = "999999";
+    document.body.appendChild(canvas);
+    activeCanvas = canvas;
+
+    const ctx = canvas.getContext("2d");
+    const width = (canvas.width = window.innerWidth);
+    const height = (canvas.height = window.innerHeight);
+
+    const particles = [];
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: width * (0.2 + 0.6 * Math.random()),
+        y: height * 0.4 + (Math.random() * 60 - 30),
+        vx: (Math.random() - 0.5) * 16,
+        vy: -Math.random() * 15 - 5,
+        size: Math.random() * 9 + 6,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 12,
+        opacity: 1
+      });
+    }
+
+    const startTime = Date.now();
+
+    function render() {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > duration) {
+        if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+        activeCanvas = null;
+        return;
+      }
+
+      ctx.clearRect(0, 0, width, height);
+
+      const fadeStart = duration * 0.65;
+      const globalAlpha = elapsed > fadeStart ? Math.max(0, 1 - (elapsed - fadeStart) / (duration - fadeStart)) : 1;
+
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.42; // Gravity
+        p.vx *= 0.985; // Air resistance
+        p.rotation += p.rotationSpeed;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, globalAlpha * p.opacity);
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+        ctx.restore();
+      });
+
+      animId = requestAnimationFrame(render);
+    }
+
+    animId = requestAnimationFrame(render);
+  }
+
+  return { fire };
+})();

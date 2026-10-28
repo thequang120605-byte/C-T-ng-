@@ -872,6 +872,9 @@
     checkedColor = data.state.checkedColor;
     phase = "solved";
     SoundFX.playWin();
+    if (window.AppConfetti) {
+      window.AppConfetti.fire({ particleCount: 80, duration: 3000 });
+    }
     markCompleted(puzzle.key);
     renderBoard();
 
