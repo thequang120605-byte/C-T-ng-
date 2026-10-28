@@ -17,6 +17,7 @@ let testPvPGameId = 0;
 let testAiVsAiGameId = 0;
 let testOnlineGameId = 0;
 
+let currentUserElo = 0;
 let passedAssertions = 0;
 let totalScenarios = 0;
 let passedScenarios = 0;
@@ -120,6 +121,7 @@ async function main() {
         assert.ok(meRes.data.isAuthenticated, "Xác nhận người dùng đã đăng nhập hợp lệ");
         assert.strictEqual(meRes.data.username, 'admin', "Tên người dùng phải là admin");
         currentUserId = meRes.data.id;
+        currentUserElo = meRes.data.elo;
         pass(`Xác thực Profile thành công: ID = ${currentUserId}, Tên = ${meRes.data.username}, Elo = ${meRes.data.elo}`);
     });
 
@@ -323,8 +325,8 @@ async function main() {
         // 3. Kiểm tra Biểu đồ phong độ Elo
         assert.ok(dashHtml.includes("Biểu đồ phong độ Elo"), "Dashboard phải có Biểu đồ phong độ Elo");
         assert.ok(dashHtml.includes("eloRatingChart"), "Canvas biểu đồ eloRatingChart phải được render");
-        assert.ok(dashHtml.includes("1221"), "Điểm Elo hiện tại (1221) phải hiển thị trên biểu đồ");
-        pass("Biểu đồ phong độ Elo: Hiển thị đầy đủ mốc khởi đầu, lịch sử biến động và mức Elo 1221");
+        assert.ok(dashHtml.includes(currentUserElo.toString()), `Điểm Elo hiện tại (${currentUserElo}) phải hiển thị trên biểu đồ`);
+        pass(`Biểu đồ phong độ Elo: Hiển thị đầy đủ mốc khởi đầu, lịch sử biến động và mức Elo ${currentUserElo}`);
     });
 
     console.log("\n================================================================================");
