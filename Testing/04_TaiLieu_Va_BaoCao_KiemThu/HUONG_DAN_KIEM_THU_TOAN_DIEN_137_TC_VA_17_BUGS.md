@@ -326,3 +326,38 @@ Thư mục [Testing/04_TaiLieu_Va_BaoCao_KiemThu/E2E_SCREENSHOTS](E2E_SCREENSHOT
 16. `TC_AUTH_002.png` $\rightarrow$ `BUG_016`: Đăng ký Username chứa mã độc XSS `<script>`
 17. `TC_GAME_001.png` $\rightarrow$ `BUG_017`: API tạo ván cờ chấp nhận thời gian thi đấu âm (-999)
 
+---
+
+## 🏆 KẾT QUẢ TÁI KIỂM THỬ CHU KỲ 2 (DEFECT RE-TESTING ROUND 2)
+
+> 📌 **Thông tin đồng bộ mã nguồn kiểm thử Chu kỳ 2**:
+> * **Commit Hash**: `65ae81dd6baed2dc85923a3d7f4644fd8006b0e3` (Short: `65ae81d`)
+> * **Thời gian Commit trên Cloud**: `28/10/2026 22:24:20 +07:00`
+> * **Tác giả commit**: `nguyentrongnguyen3004-eng <nguyentrongnguyen3004@gmail.com>`
+> * **Thời gian Re-testing thực nghiệm**: `28/10/2026 23:35 (UTC+7)`
+> * **Sheet chi tiết trong Excel**: [`13_Retest_Round2`](../TestCases_KLCN_CoTuong%20(1).xlsx)
+
+### Bảng tổng hợp kết quả Tái kiểm thử 17 Defects (Round 2)
+
+| STT | Bug ID | TC ID | Phân hệ phát sinh | Tiêu đề lỗi tóm tắt | Trạng thái Lần 1 | Trạng thái Lần 2 | Kết luận nghiệm thu |
+| :---: | :---: | :---: | :--- | :--- | :---: | :---: | :---: |
+| 1 | `BUG_001` | `TC_AUTH_004` | Xác thực & Tài khoản | Chặn mật khẩu yếu < 6 ký tự | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 2 | `BUG_002` | `TC_AUTH_001` | Xác thực & Tài khoản | Kiểm tra Regex định dạng Email | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 3 | `BUG_003` | `TC_ADM_002` | Phân hệ Quản trị viên | Truy cập /Admin trái phép trả về 403 | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 4 | `BUG_004` | `TC_ONL_015` | Đấu trực tuyến SignalR | Xin hàng kết thúc ván & chặn đi quân | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 5 | `BUG_005` | `TC_COU_009` | Học viện & Kỳ phổ | Chặn chứng chỉ 0% & hiện Banner cảnh báo | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 6 | `BUG_006` | `TC_COU_008` | Học viện & Kỳ phổ | Giới hạn trần điểm Quiz tối đa 100% | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 7 | `BUG_007` | `TC_ADM_009` | Phân hệ Quản trị viên | Xóa cờ thế ID rác trả về HTTP 404 | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 8 | `BUG_008` | `TC_AUTH_011` | Xác thực & Tài khoản | Tuyệt đối không rò rỉ mã OTP bí mật | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 9 | `BUG_009` | `TC_AUTH_016` | Xác thực & Tài khoản | Kiểm tra điều kiện & chống spam nhận thưởng | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 10 | `BUG_010` | `TC_AUTH_010` | Xác thực & Tài khoản | Rate Limiting & Lockout chống Brute-force | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 11 | `BUG_011` | `TC_GAME_013` | Vận hành ván cờ & AI | Bắt lỗi chuỗi FEN rác khi tạo ván cờ | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 12 | `BUG_012` | `TC_ONL_016` | Đấu trực tuyến SignalR | Quy trình Tái đấu 2 pha có sự xác nhận | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 13 | `BUG_013` | `TC_COU_006` | Học viện & Kỳ phổ | Khách gửi Lesson ID rác trả về HTTP 404 | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 14 | `BUG_014` | `TC_ADM_005` | Phân hệ Quản trị viên | Tính năng Khóa / Mở khóa tài khoản (3 tầng) | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 15 | `BUG_015` | `TC_ADM_008` | Phân hệ Quản trị viên | Admin CMS kiểm tra FEN trước khi lưu | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 16 | `BUG_016` | `TC_AUTH_002` | Xác thực & Tài khoản | Chặn Username chứa mã độc XSS `<script>` | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+| 17 | `BUG_017` | `TC_GAME_001` | Chế độ chơi & AI | Chặn thời gian thi đấu âm khi tạo game | Failed (Open) | 🟢 **FIXED** | Đóng lỗi |
+
+> 🎯 **KẾT LUẬN NGHIỆM THU CHU KỲ 2**: **17/17 LỖI (100.0%) ĐÃ ĐƯỢC KHẮC PHỤC TOÀN DIỆN**. Toàn bộ hệ thống kiểm thử từ Unit Test, API Test đến E2E Automation đều đạt kết quả xuất sắc, hệ thống đạt độ ổn định và an toàn thông tin tối đa, sẵn sàng bảo vệ Khóa luận Tốt nghiệp.
+

@@ -66,4 +66,6 @@ python Testing/03_Ban3_E2ETests_Scripts/run_suite_137.py
 * **Tổng số ca kiểm thử**: 137 Test Cases
 * **Đạt (Pass)**: **120 Test Cases (87.6%)**
 * **Lỗi phát hiện (Fail)**: **17 Test Cases (12.4%)**
-* **Defect Log**: Ghi nhận chi tiết từ `BUG_001` đến `BUG_017` tại Sheet `12_Defect_Log` của file [TestCases_KLCN_CoTuong (1).xlsx](TestCases_KLCN_CoTuong%20(1).xlsx).
+* **Defect Log Chu kỳ 1**: Ghi nhận chi tiết từ `BUG_001` đến `BUG_017` tại Sheet `12_Defect_Log`.
+* **Kết quả Tái kiểm thử Chu kỳ 2 (Retest Round 2)**: Ghi nhận tại Sheet `13_Retest_Round2` sau khi tích hợp commit `65ae81d` (28/10/2026 22:24:20). Toàn bộ **17/17 lỗi (100.0%) đã được khắc phục triệt để và nghiệm thu đóng lỗi (Pass)**.
+* **File Excel báo cáo**: [TestCases_KLCN_CoTuong (1).xlsx](TestCases_KLCN_CoTuong%20(1).xlsx) (13 Sheet hoàn chỉnh).
