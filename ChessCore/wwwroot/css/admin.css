@@ -12,10 +12,9 @@
 
 .admin-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     margin-bottom: 24px;
-    flex-wrap: wrap;
     gap: 16px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 20px;
@@ -29,6 +28,7 @@
     align-items: center;
     gap: 12px;
     margin: 0;
+    width: 100%;
 }
 
 .admin-header h1 i {
@@ -39,6 +39,7 @@
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    width: 100%;
 }
 
 .admin-tab-btn {
