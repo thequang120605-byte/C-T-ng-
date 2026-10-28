@@ -101,9 +101,6 @@ document.addEventListener("DOMContentLoaded", function () {
           if (typeof loadOpenRooms === "function") {
               loadOpenRooms();
           }
-          if (typeof loadLiveMatches === "function") {
-              loadLiveMatches();
-          }
       });
 
       connection.on("RoomCancelled", function (data) {
@@ -2622,7 +2619,6 @@ document.addEventListener("DOMContentLoaded", function () {
       if (onlineSelection) { onlineSelection.style.display = "block"; onlineSelection.classList.remove("hidden"); }
       if (startGameButton) { startGameButton.style.display = "none"; startGameButton.classList.add("hidden"); }
       loadOpenRooms();
-      loadLiveMatches();
     });
   }
 
@@ -4027,7 +4023,6 @@ document.addEventListener("DOMContentLoaded", function () {
     refreshRoomsBtn.addEventListener("click", function(e) {
       e.stopPropagation();
       loadOpenRooms();
-      loadLiveMatches();
     });
   }
 
