@@ -1,3 +1,4 @@
+using ChessCore.Engine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,7 +61,7 @@ namespace ChessCore.Controllers
         [HttpGet]
         public async Task<IActionResult> Puzzles()
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var puzzles = await _context.Puzzles.OrderBy(p => p.Level).ThenBy(p => p.Id).ToListAsync();
             return View(puzzles);
@@ -70,11 +71,18 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreatePuzzle(Puzzle puzzle)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             if (string.IsNullOrWhiteSpace(puzzle.Title) || string.IsNullOrWhiteSpace(puzzle.Fen))
             {
                 TempData["ErrorMessage"] = "Tiêu đề và chuỗi FEN không được để trống!";
+                return RedirectToAction(nameof(Puzzles));
+            }
+
+            // FIX BUG_015: Kiểm tra tính hợp lệ của chuỗi FEN trước khi thêm cờ thế
+            if (!Board.TryParseFen(puzzle.Fen.Trim(), out _, out string fenError))
+            {
+                TempData["ErrorMessage"] = $"Chuỗi FEN không hợp lệ: {fenError}";
                 return RedirectToAction(nameof(Puzzles));
             }
 
@@ -95,7 +103,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditPuzzle(Puzzle puzzle)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var existing = await _context.Puzzles.FindAsync(puzzle.Id);
             if (existing == null)
@@ -103,6 +111,17 @@ namespace ChessCore.Controllers
                 TempData["ErrorMessage"] = "Không tìm thấy thế cờ cần chỉnh sửa.";
                 return RedirectToAction(nameof(Puzzles));
             }
+
+            // FIX BUG_015: Kiểm tra tính hợp lệ của chuỗi FEN khi chỉnh sửa cờ thế
+            if (!Board.TryParseFen(puzzle.Fen.Trim(), out _, out string editFenError))
+            {
+                TempData["ErrorMessage"] = $"Chuỗi FEN không hợp lệ: {editFenError}";
+                return RedirectToAction(nameof(Puzzles));
+            }
+
+            
+
+            
 
             existing.Title = puzzle.Title;
             existing.Description = puzzle.Description ?? "";
@@ -120,15 +139,19 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeletePuzzle(int id)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var puzzle = await _context.Puzzles.FindAsync(id);
-            if (puzzle != null)
+            if (puzzle == null)
             {
-                _context.Puzzles.Remove(puzzle);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Đã xóa thế cờ #{id} thành công!";
+                // FIX BUG_007: Trả về thông báo lỗi 404 khi ID bài cờ thế không tồn tại
+                TempData["ErrorMessage"] = $"Không tìm thấy thế cờ #{id} để xóa (404 Not Found).";
+                return NotFound(new { message = $"Không tìm thấy thế cờ #{id} để xóa." });
             }
+
+            _context.Puzzles.Remove(puzzle);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = $"Đã xóa thế cờ #{id} thành công!";
             return RedirectToAction(nameof(Puzzles));
         }
 
@@ -138,7 +161,7 @@ namespace ChessCore.Controllers
         [HttpGet]
         public async Task<IActionResult> Courses()
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var modules = await _context.CourseModules
                 .Include(m => m.Lessons)
@@ -152,7 +175,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateLesson(CourseLesson lesson)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             if (string.IsNullOrWhiteSpace(lesson.Title) || lesson.ModuleId <= 0)
             {
@@ -179,7 +202,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditLesson(CourseLesson lesson)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var existing = await _context.CourseLessons.FindAsync(lesson.Id);
             if (existing == null)
@@ -204,7 +227,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteLesson(int id)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var lesson = await _context.CourseLessons.FindAsync(id);
             if (lesson != null)
@@ -222,17 +245,51 @@ namespace ChessCore.Controllers
         [HttpGet]
         public async Task<IActionResult> Users()
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var users = await _context.Users.OrderByDescending(u => u.Id).ToListAsync();
             return View(users);
+        }
+
+        // FIX BUG_014: Tính năng Khóa / Mở khóa tài khoản người dùng
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleLockUser(int userId)
+        {
+            if (!await IsAdminUserAsync())
+            {
+                Response.StatusCode = 403;
+                return View("AccessDenied");
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin/Users");
+            }
+
+            if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Không thể khóa tài khoản có quyền Quản trị viên (Admin).";
+                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin/Users");
+            }
+
+            user.IsLocked = !user.IsLocked;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = user.IsLocked 
+                ? $"Đã khóa tài khoản {user.Username} ({user.PlayerId}) thành công!" 
+                : $"Đã mở khóa tài khoản {user.Username} ({user.PlayerId}) thành công!";
+
+            return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin/Users");
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleAdminRole(int userId)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var user = await _context.Users.FindAsync(userId);
             if (user != null)
@@ -248,7 +305,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteUser(int userId)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var currentUsername = User.Identity?.Name;
             var user = await _context.Users.FindAsync(userId);
@@ -276,7 +333,7 @@ namespace ChessCore.Controllers
         [HttpGet]
         public async Task<IActionResult> AiBenchmark()
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             // Chạy kiểm thử mẫu trên thế cờ chuẩn với các độ sâu 1, 2, 3
             var sampleBoard = new ChessCore.Engine.Board();

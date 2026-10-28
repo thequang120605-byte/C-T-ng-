@@ -114,6 +114,7 @@ namespace ChessCore.Controllers
             });
         }
 
+        // FIX BUG_009: Kiểm tra điều kiện hoàn thành nhiệm vụ & Chống spam claim
         [HttpPost("/api/quests/{id}/claim")]
         public async Task<IActionResult> ClaimQuest(string id)
         {
@@ -123,17 +124,54 @@ namespace ChessCore.Controllers
 
             lock (claimedSet)
             {
-                claimedSet.Add(id);
+                if (claimedSet.Contains(id.ToLower()))
+                {
+                    return BadRequest(new { success = false, message = "Nhiệm vụ này đã nhận thưởng rồi, không thể nhận lại." });
+                }
             }
 
+            User? user = null;
             if (userId > 0)
             {
-                var user = await _context.Users.FindAsync(userId);
-                if (user != null)
-                {
-                    user.PuzzleScore += 100;
-                    await _context.SaveChangesAsync();
-                }
+                user = await _context.Users.FindAsync(userId);
+            }
+
+            bool isCompleted = false;
+            switch (id.ToLower())
+            {
+                case "ai":
+                    isCompleted = (user != null && user.Wins >= 1);
+                    break;
+                case "pvp":
+                    isCompleted = (user != null && user.GamesPlayed >= 1);
+                    break;
+                case "rush":
+                    isCompleted = (user != null && user.PuzzleScore >= 300);
+                    break;
+                case "academy":
+                case "master":
+                case "chat":
+                    isCompleted = (user != null);
+                    break;
+                default:
+                    isCompleted = false;
+                    break;
+            }
+
+            if (!isCompleted)
+            {
+                return BadRequest(new { success = false, message = "Bạn chưa hoàn thành mục tiêu của nhiệm vụ này để nhận thưởng." });
+            }
+
+            lock (claimedSet)
+            {
+                claimedSet.Add(id.ToLower());
+            }
+
+            if (user != null)
+            {
+                user.PuzzleScore += 100;
+                await _context.SaveChangesAsync();
             }
 
             return Ok(new

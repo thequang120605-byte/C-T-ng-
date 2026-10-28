@@ -54,6 +54,23 @@ var authBuilder = builder.Services.AddAuthentication(options =>
     options.AccessDeniedPath = "/Auth/AccessDenied";
     options.Cookie.HttpOnly = true;
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
+
+    // FIX BUG_003: Trả về HTTP 403 Forbidden thay vì 302 Redirect khi truy cập /Admin hoặc /api trái phép
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/Admin") || context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        }
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
 });
 
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];

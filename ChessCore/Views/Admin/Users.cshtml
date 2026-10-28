@@ -157,6 +157,18 @@
                                         </button>
                                     </form>
 
+                                    @* FIX BUG_014: Nút Khóa / Mở khóa tài khoản *@
+                                    @if (!isCurrentAdmin)
+                                    {
+                                        <form asp-controller="Admin" asp-action="ToggleLockUser" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc muốn @(u.IsLocked ? "mở khóa" : "khóa") tài khoản @u.Username?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@u.Id" />
+                                            <button type="submit" class="btn-admin @(u.IsLocked ? "btn-admin-success" : "btn-admin-warning") btn-admin-sm" title="@(u.IsLocked ? "Mở khóa tài khoản" : "Khóa tài khoản")">
+                                                <i class="fa-solid @(u.IsLocked ? "fa-lock-open" : "fa-lock")"></i> @(u.IsLocked ? "Mở khóa" : "Khóa")
+                                            </button>
+                                        </form>
+                                    }
+
                                     @if (!isCurrentAdmin)
                                     {
                                         <form asp-controller="Admin" asp-action="DeleteUser" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản @u.Username (@u.PlayerId)? Dữ liệu liên quan sẽ bị xóa hoàn toàn.');">

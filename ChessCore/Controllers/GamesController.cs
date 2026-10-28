@@ -26,6 +26,8 @@ namespace ChessCore.Controllers
     [Route("api/[controller]")]
     public class GamesController : ControllerBase
     {
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> _rematchOffers = new();
+
         private readonly IGameService _gameService;
         private readonly IMoveService _moveService;
         private readonly Microsoft.AspNetCore.SignalR.IHubContext<Hubs.GameHub> _hubContext;
@@ -459,26 +461,52 @@ namespace ChessCore.Controllers
                 newBlack = (userId == game.RedPlayerId ? game.BlackPlayerId : game.RedPlayerId) ?? userId;
             }
 
-            var newGame = await _gameService.CreateGameAsync(status: GameStatus.InProgress);
-            newGame.RedPlayerId = newRed;
-            newGame.BlackPlayerId = newBlack;
-            newGame.GameMode = game.GameMode;
-            newGame.LastMoveAt = DateTime.UtcNow;
-            await _dbContext.SaveChangesAsync();
+            int opponentId = (game.RedPlayerId == userId) ? (game.BlackPlayerId ?? 0) : (game.RedPlayerId ?? 0);
 
-            var board = GameRules.RebuildBoard(newGame.InitialFen, null, newGame.CurrentTurn);
-            var response = BuildGameResponse(newGame, board);
-
-            // Báo cho cả 2 người chơi chuyển sang ván cờ mới
-            await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("RematchStarted", new
+            // FIX BUG_012: Hai pha Tái đấu - Người đầu tiên gửi lời mời, đối phương đồng ý mới tạo ván mới
+            if (_rematchOffers.TryGetValue(id, out int offeringUserId) && offeringUserId == opponentId)
             {
-                oldGameId = game.Id,
-                newGameId = newGame.Id,
-                newRoomCode = newGame.RoomCode,
-                game = response
-            });
+                _rematchOffers.TryRemove(id, out _);
 
-            return Ok(response);
+                var newGame = await _gameService.CreateGameAsync(status: GameStatus.InProgress);
+                newGame.RedPlayerId = newRed;
+                newGame.BlackPlayerId = newBlack;
+                newGame.GameMode = game.GameMode;
+                newGame.LastMoveAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                var board = GameRules.RebuildBoard(newGame.InitialFen, null, newGame.CurrentTurn);
+                var response = BuildGameResponse(newGame, board);
+
+                await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("RematchStarted", new
+                {
+                    oldGameId = game.Id,
+                    newGameId = newGame.Id,
+                    newRoomCode = newGame.RoomCode,
+                    game = response
+                });
+
+                return Ok(response);
+            }
+            else
+            {
+                _rematchOffers[id] = userId;
+
+                await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("RematchOffered", new
+                {
+                    gameId = game.Id,
+                    offeredByUserId = userId,
+                    message = "Đối thủ gửi lời mời tái đấu. Bạn có đồng ý không?"
+                });
+
+                return Ok(new
+                {
+                    success = true,
+                    isOffer = true,
+                    message = "Đã gửi lời mời tái đấu tới đối thủ. Đang chờ xác nhận...",
+                    gameId = game.Id
+                });
+            }
         }
         [Authorize]
         [HttpPost("{id}/invite")]
@@ -534,11 +562,41 @@ namespace ChessCore.Controllers
         // TẠO VÁN CỜ MỚI
         // =====================================================
 
-        [HttpPost]
-        public async Task<ActionResult<GameResponseDto>> CreateGame([FromQuery] string initialFen = null, [FromQuery] string gameMode = "PvP")
+        public class CreateGameBodyRequest
         {
+            public string? InitialFen { get; set; }
+            public string? GameMode { get; set; }
+            public int? TimeControl { get; set; }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<GameResponseDto>> CreateGame(
+            [FromQuery] string? initialFen = null, 
+            [FromQuery] string? gameMode = null, 
+            [FromQuery] int? timeControl = null, 
+            [FromBody] CreateGameBodyRequest? body = null)
+        {
+            var targetFen = !string.IsNullOrWhiteSpace(initialFen) ? initialFen : body?.InitialFen;
+            var targetMode = !string.IsNullOrWhiteSpace(gameMode) ? gameMode : (body?.GameMode ?? "PvP");
+            var targetTime = timeControl ?? body?.TimeControl;
+
+            // FIX BUG_017: Từ chối thời gian thi đấu âm hoặc không hợp lệ
+            if (targetTime.HasValue && (targetTime.Value <= 0 || targetTime.Value > 180))
+            {
+                return BadRequest(new { message = "Thời gian thi đấu không hợp lệ. Phải từ 1 đến 180 phút." });
+            }
+
+            // FIX BUG_011: Kiểm tra tính hợp lệ của chuỗi FEN ban đầu, không nuốt lỗi
+            if (!string.IsNullOrWhiteSpace(targetFen))
+            {
+                if (!Board.TryParseFen(targetFen.Trim(), out _, out string fenError))
+                {
+                    return BadRequest(new { message = $"Chuỗi FEN không hợp lệ: {fenError}" });
+                }
+            }
+
             var game =
-                await _gameService.CreateGameAsync(initialFen);
+                await _gameService.CreateGameAsync(targetFen);
 
             game.GameMode = GameModes.Normalize(gameMode);
 
