@@ -1,3 +1,4 @@
+using ChessCore.Services;
 using ChessCore.Engine;
 using System;
 using System.Collections.Generic;
@@ -15,10 +16,12 @@ namespace ChessCore.Controllers
     public class AdminController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly PuzzleCampaignService _campaign;
 
-        public AdminController(AppDbContext context)
+        public AdminController(AppDbContext context, PuzzleCampaignService campaign)
         {
             _context = context;
+            _campaign = campaign;
         }
 
         private async Task<bool> IsAdminUserAsync()
@@ -39,6 +42,15 @@ namespace ChessCore.Controllers
             if (!await IsAdminUserAsync())
             {
                 return View("AccessDenied");
+            }
+
+            if (_campaign != null && _campaign.Ready && _campaign.Playable.Count > 0)
+            {
+                int pCount = await _context.Puzzles.CountAsync();
+                if (pCount < 500)
+                {
+                    await SyncCampaignPuzzlesInternalAsync();
+                }
             }
 
             var vm = new AdminDashboardViewModel
@@ -63,8 +75,66 @@ namespace ChessCore.Controllers
         {
             if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
+            if (_campaign != null && _campaign.Ready && _campaign.Playable.Count > 0)
+            {
+                int pCount = await _context.Puzzles.CountAsync();
+                if (pCount < 500)
+                {
+                    await SyncCampaignPuzzlesInternalAsync();
+                }
+            }
+
             var puzzles = await _context.Puzzles.OrderBy(p => p.Level).ThenBy(p => p.Id).ToListAsync();
             return View(puzzles);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SyncCampaignPuzzles()
+        {
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
+
+            if (_campaign == null || !_campaign.Ready || _campaign.Playable.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Kho Cờ Thế Chiến Dịch chưa sẵn sàng hoặc đang nạp dữ liệu. Vui lòng thử lại sau giây lát!";
+                return RedirectToAction(nameof(Puzzles));
+            }
+
+            int syncedCount = await SyncCampaignPuzzlesInternalAsync();
+            TempData["SuccessMessage"] = $"Đã đồng bộ thành công toàn bộ {syncedCount} thế cờ sát pháp chiến dịch vào hệ thống quản lý!";
+            return RedirectToAction(nameof(Puzzles));
+        }
+
+        private async Task<int> SyncCampaignPuzzlesInternalAsync()
+        {
+            if (_campaign == null || !_campaign.Ready || _campaign.Playable.Count == 0) return 0;
+
+            var existingPuzzles = await _context.Puzzles.ToListAsync();
+            if (existingPuzzles.Any())
+            {
+                _context.Puzzles.RemoveRange(existingPuzzles);
+                await _context.SaveChangesAsync();
+            }
+
+            var list = new List<Puzzle>();
+            int globalLevel = 1;
+            foreach (var p in _campaign.Playable)
+            {
+                int difficulty = p.Level <= 2 ? 1 : (p.Level <= 4 ? 2 : 3);
+                list.Add(new Puzzle
+                {
+                    Level = globalLevel++,
+                    Title = !string.IsNullOrWhiteSpace(p.Title) ? p.Title : $"Thế cờ sát cục #{p.Number}",
+                    Description = $"{p.Category} - {p.Pieces} quân ({p.Key})",
+                    Fen = p.Fen,
+                    MateIn = p.MateIn > 0 ? p.MateIn : 1,
+                    Difficulty = difficulty
+                });
+            }
+
+            await _context.Puzzles.AddRangeAsync(list);
+            await _context.SaveChangesAsync();
+            return list.Count;
         }
 
         [HttpPost]
