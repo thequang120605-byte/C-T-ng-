@@ -101,9 +101,6 @@ document.addEventListener("DOMContentLoaded", function () {
           if (typeof loadOpenRooms === "function") {
               loadOpenRooms();
           }
-          if (typeof loadLiveMatches === "function") {
-              loadLiveMatches();
-          }
       });
 
       connection.on("RoomCancelled", function (data) {
@@ -1413,6 +1410,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     gameResultModal.classList.remove("hidden");
+    if (window.AppConfetti && (title.includes("thắng") || title.includes("Thắng") || winner.includes("Bạn") || winner.includes("thắng") || winner.includes("Thắng"))) {
+      window.AppConfetti.fire({ particleCount: 100, duration: 3500 });
+    }
   }
 
   // =====================================================
@@ -2622,7 +2622,6 @@ document.addEventListener("DOMContentLoaded", function () {
       if (onlineSelection) { onlineSelection.style.display = "block"; onlineSelection.classList.remove("hidden"); }
       if (startGameButton) { startGameButton.style.display = "none"; startGameButton.classList.add("hidden"); }
       loadOpenRooms();
-      loadLiveMatches();
     });
   }
 
@@ -4027,7 +4026,6 @@ document.addEventListener("DOMContentLoaded", function () {
     refreshRoomsBtn.addEventListener("click", function(e) {
       e.stopPropagation();
       loadOpenRooms();
-      loadLiveMatches();
     });
   }
 

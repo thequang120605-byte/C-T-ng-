@@ -175,24 +175,256 @@
                 <i class="fa-solid fa-lock"></i>
                 <h3>Đổi Mật Khẩu</h3>
             </div>
-            <form asp-controller="Account" asp-action="ChangePassword" method="post">
+            <form asp-controller="Account" asp-action="ChangePassword" method="post" id="form-change-password">
                 @Html.AntiForgeryToken()
                 <div class="form-group-acc">
-                    <label>Mật khẩu hiện tại</label>
-                    <input type="password" name="CurrentPassword" class="form-control-acc" placeholder="Nhập mật khẩu hiện tại" required />
+                    <label for="current-pwd">Mật khẩu hiện tại</label>
+                    <div class="acc-input-icon-wrap">
+                        <i class="fa-solid fa-lock acc-input-icon"></i>
+                        <input type="password" id="current-pwd" name="CurrentPassword" class="form-control-acc" placeholder="Nhập mật khẩu hiện tại" required autocomplete="current-password" />
+                        <i class="fa-solid fa-eye toggle-pwd-btn" onclick="toggleAccPassword('current-pwd', this)" title="Ẩn/Hiện mật khẩu"></i>
+                    </div>
                 </div>
+
                 <div class="form-group-acc">
-                    <label>Mật khẩu mới</label>
-                    <input type="password" name="NewPassword" class="form-control-acc" placeholder="Tối thiểu 6 ký tự" required minlength="6" />
+                    <label for="acc-new-pwd">Mật khẩu mới</label>
+                    <div class="acc-input-icon-wrap">
+                        <i class="fa-solid fa-key acc-input-icon"></i>
+                        <input type="password" id="acc-new-pwd" name="NewPassword" class="form-control-acc" placeholder="Tối thiểu 6 ký tự" required minlength="6" autocomplete="new-password" />
+                        <i class="fa-solid fa-eye toggle-pwd-btn" onclick="toggleAccPassword('acc-new-pwd', this)" title="Ẩn/Hiện mật khẩu"></i>
+                    </div>
                 </div>
+
+                <!-- CARD KIỂM TRA ĐỘ MẠNH & TIÊU CHÍ MẬT KHẨU CHUYÊN NGHIỆP -->
+                <div class="pwd-validation-card" id="pwd-validation-box">
+                    <div class="pwd-strength-header">
+                        <span class="pwd-strength-title"><i class="fa-solid fa-shield-halved"></i> Độ an toàn mật khẩu:</span>
+                        <span class="pwd-strength-badge" id="pwd-strength-text">Chưa nhập</span>
+                    </div>
+                    <div class="pwd-strength-meter">
+                        <div class="strength-segment" id="seg-1"></div>
+                        <div class="strength-segment" id="seg-2"></div>
+                        <div class="strength-segment" id="seg-3"></div>
+                        <div class="strength-segment" id="seg-4"></div>
+                    </div>
+
+                    <div class="pwd-criteria-grid" id="pwd-reqs">
+                        <div class="pwd-criterion" id="req-len">
+                            <span class="crit-icon"><i class="fa-solid fa-circle-xmark"></i></span>
+                            <span class="crit-label">Ít nhất 6 ký tự</span>
+                        </div>
+                        <div class="pwd-criterion" id="req-case">
+                            <span class="crit-icon"><i class="fa-solid fa-circle-xmark"></i></span>
+                            <span class="crit-label">Chữ hoa và chữ thường</span>
+                        </div>
+                        <div class="pwd-criterion" id="req-num">
+                            <span class="crit-icon"><i class="fa-solid fa-circle-xmark"></i></span>
+                            <span class="crit-label">Bao gồm chữ số</span>
+                        </div>
+                        <div class="pwd-criterion" id="req-spec">
+                            <span class="crit-icon"><i class="fa-solid fa-circle-xmark"></i></span>
+                            <span class="crit-label">Ký tự đặc biệt (!@@#$...)</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group-acc">
-                    <label>Xác nhận mật khẩu mới</label>
-                    <input type="password" name="ConfirmNewPassword" class="form-control-acc" placeholder="Nhập lại mật khẩu mới" required minlength="6" />
+                    <label for="acc-confirm-pwd">Xác nhận mật khẩu mới</label>
+                    <div class="acc-input-icon-wrap">
+                        <i class="fa-solid fa-shield-halved acc-input-icon"></i>
+                        <input type="password" id="acc-confirm-pwd" name="ConfirmNewPassword" class="form-control-acc" placeholder="Nhập lại mật khẩu mới" required minlength="6" autocomplete="new-password" />
+                        <i class="fa-solid fa-eye toggle-pwd-btn" onclick="toggleAccPassword('acc-confirm-pwd', this)" title="Ẩn/Hiện mật khẩu"></i>
+                    </div>
+                    <div id="pwd-match-hint" class="pwd-match-hint"></div>
                 </div>
-                <button type="submit" class="btn-acc-primary">
+
+                <button type="submit" id="btn-submit-pwd" class="btn-acc-primary">
                     <i class="fa-solid fa-key"></i> Đổi mật khẩu
                 </button>
             </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function toggleAccPassword(inputId, iconElement) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            if (input.type === "password") {
+                input.type = "text";
+                iconElement.classList.remove("fa-eye");
+                iconElement.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                iconElement.classList.remove("fa-eye-slash");
+                iconElement.classList.add("fa-eye");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const pwdInput = document.getElementById('acc-new-pwd');
+            const confirmPwdInput = document.getElementById('acc-confirm-pwd');
+            const strengthBadge = document.getElementById('pwd-strength-text');
+            const matchHint = document.getElementById('pwd-match-hint');
+            const segments = [
+                document.getElementById('seg-1'),
+                document.getElementById('seg-2'),
+                document.getElementById('seg-3'),
+                document.getElementById('seg-4')
+            ];
+
+            function setReqState(id, isValid) {
+                const req = document.getElementById(id);
+                if (!req) return;
+                const icon = req.querySelector('.crit-icon i') || req.querySelector('i');
+                if (isValid) {
+                    req.classList.add('valid');
+                    if (icon) icon.className = 'fa-solid fa-circle-check';
+                } else {
+                    req.classList.remove('valid');
+                    if (icon) icon.className = 'fa-solid fa-circle-xmark';
+                }
+            }
+
+            function updateStrength(val) {
+                if (!val || val.length === 0) {
+                    if (strengthBadge) {
+                        strengthBadge.textContent = 'Chưa nhập';
+                        strengthBadge.className = 'pwd-strength-badge';
+                    }
+                    segments.forEach(seg => {
+                        if (seg) seg.className = 'strength-segment';
+                    });
+                    setReqState('req-len', false);
+                    setReqState('req-case', false);
+                    setReqState('req-num', false);
+                    setReqState('req-spec', false);
+                    return 0;
+                }
+
+                const hasLen = val.length >= 6;
+                const hasCase = /[a-z]/.test(val) && /[A-Z]/.test(val);
+                const hasNum = /\d/.test(val);
+                const hasSpec = /[^a-zA-Z0-9]/.test(val);
+
+                setReqState('req-len', hasLen);
+                setReqState('req-case', hasCase);
+                setReqState('req-num', hasNum);
+                setReqState('req-spec', hasSpec);
+
+                let score = 0;
+                if (hasLen) score++;
+                if (hasCase) score++;
+                if (hasNum) score++;
+                if (hasSpec) score++;
+
+                segments.forEach(seg => {
+                    if (seg) seg.className = 'strength-segment';
+                });
+
+                if (score <= 1) {
+                    if (strengthBadge) {
+                        strengthBadge.textContent = 'Yếu';
+                        strengthBadge.className = 'pwd-strength-badge weak';
+                    }
+                    if (segments[0]) segments[0].classList.add('active-weak');
+                } else if (score === 2) {
+                    if (strengthBadge) {
+                        strengthBadge.textContent = 'Trung bình';
+                        strengthBadge.className = 'pwd-strength-badge medium';
+                    }
+                    if (segments[0]) segments[0].classList.add('active-medium');
+                    if (segments[1]) segments[1].classList.add('active-medium');
+                } else if (score === 3) {
+                    if (strengthBadge) {
+                        strengthBadge.textContent = 'Khá an toàn';
+                        strengthBadge.className = 'pwd-strength-badge good';
+                    }
+                    if (segments[0]) segments[0].classList.add('active-good');
+                    if (segments[1]) segments[1].classList.add('active-good');
+                    if (segments[2]) segments[2].classList.add('active-good');
+                } else {
+                    if (strengthBadge) {
+                        strengthBadge.textContent = 'Rất an toàn';
+                        strengthBadge.className = 'pwd-strength-badge strong';
+                    }
+                    segments.forEach(seg => {
+                        if (seg) seg.classList.add('active-strong');
+                    });
+                }
+
+                return score;
+            }
+
+            function checkMatch() {
+                if (!pwdInput || !confirmPwdInput) return;
+                const val1 = pwdInput.value;
+                const val2 = confirmPwdInput.value;
+                const wrapper = confirmPwdInput.closest('.acc-input-icon-wrap');
+                const icon = wrapper ? wrapper.querySelector('.acc-input-icon') : null;
+                
+                if (val2.length > 0 && val1 === val2) {
+                    if (wrapper) {
+                        wrapper.style.borderColor = '#10b981';
+                        wrapper.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.15)';
+                    }
+                    if (icon) icon.style.color = '#10b981';
+                    if (matchHint) {
+                        matchHint.innerHTML = '<i class="fa-solid fa-circle-check"></i> Mật khẩu xác nhận trùng khớp hoàn toàn';
+                        matchHint.className = 'pwd-match-hint show-success';
+                    }
+                } else if (val2.length > 0) {
+                    if (wrapper) {
+                        wrapper.style.borderColor = '#ef4444';
+                        wrapper.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.15)';
+                    }
+                    if (icon) icon.style.color = '#ef4444';
+                    if (matchHint) {
+                        matchHint.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Mật khẩu xác nhận chưa trùng khớp';
+                        matchHint.className = 'pwd-match-hint show-error';
+                    }
+                } else {
+                    if (wrapper) {
+                        wrapper.style.borderColor = '';
+                        wrapper.style.boxShadow = '';
+                    }
+                    if (icon) icon.style.color = '';
+                    if (matchHint) {
+                        matchHint.innerHTML = '';
+                        matchHint.className = 'pwd-match-hint';
+                    }
+                }
+            }
+
+            if (pwdInput) {
+                pwdInput.addEventListener('input', function() {
+                    updateStrength(this.value);
+                    if (confirmPwdInput && confirmPwdInput.value.length > 0) {
+                        checkMatch();
+                    }
+                });
+            }
+
+            if (confirmPwdInput) {
+                confirmPwdInput.addEventListener('input', checkMatch);
+            }
+
+            const changePwdForm = document.getElementById('form-change-password');
+            if (changePwdForm) {
+                changePwdForm.addEventListener('submit', function(e) {
+                    const val1 = pwdInput ? pwdInput.value : '';
+                    const val2 = confirmPwdInput ? confirmPwdInput.value : '';
+                    if (val1 !== val2) {
+                        e.preventDefault();
+                        if (window.AppDialog) {
+                            AppDialog.alert('Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại!', 'Lỗi xác nhận', 'warning');
+                        } else {
+                            alert('Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại!');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}
