@@ -3,6 +3,7 @@
     ViewData["Title"] = "Quản trị hệ thống - Tổng quan";
     var usersJson = System.Text.Json.JsonSerializer.Serialize(Model.AllUsers);
     var modeStatsJson = System.Text.Json.JsonSerializer.Serialize(Model.ModeStats);
+    var avgWinRateJson = System.Text.Json.JsonSerializer.Serialize(Model.AverageSystemWinRate);
     var topUser = Model.AllUsers.OrderByDescending(u => u.Elo).FirstOrDefault();
 }
 
@@ -205,7 +206,7 @@
                 <i class="fa-solid fa-chart-line"></i>
             </div>
             <div class="admin-kpi-info">
-                <span class="admin-kpi-val">@Model.AverageSystemWinRate%</span>
+                <span class="admin-kpi-val">@Model.AverageSystemWinRate.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)%</span>
                 <span class="admin-kpi-lbl">Tỉ lệ Thắng TB Kỳ thủ</span>
             </div>
         </div>
@@ -517,7 +518,7 @@
             const systemTotalWins = @Model.TotalWins;
             const systemTotalDraws = @Model.TotalDraws;
             const systemTotalLosses = @Model.TotalLosses;
-            const systemAvgWinRate = @Model.AverageSystemWinRate;
+            const systemAvgWinRate = @Html.Raw(avgWinRateJson);
 
             let outcomeChartInstance = null;
 
