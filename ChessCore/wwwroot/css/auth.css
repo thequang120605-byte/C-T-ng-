@@ -226,25 +226,197 @@
     font-size: 14px;
 }
 
-/* Password strength */
-.pwd-strength {
+/* =========================================================
+   PASSWORD VALIDATION & STRENGTH WIDGET (PROFESSIONAL UI)
+========================================================= */
+.pwd-validation-card {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: -6px 0 20px 0;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+    transition: all 0.25s ease;
+}
+
+.pwd-strength-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+
+.pwd-strength-title {
+    color: var(--text-muted);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pwd-strength-title i {
+    font-size: 13px;
+    color: var(--accent-gold);
+}
+
+.pwd-strength-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 12px;
+    background: #e2e8f0;
+    color: #64748b;
+    transition: all 0.25s ease;
+    letter-spacing: 0.3px;
+}
+
+.pwd-strength-badge.weak {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.pwd-strength-badge.medium {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.pwd-strength-badge.good {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.pwd-strength-badge.strong {
+    background: #d1fae5;
+    color: #059669;
+}
+
+/* 4-segment meter bar */
+.pwd-strength-meter {
     display: flex;
     gap: 5px;
-    margin-top: 8px;
+    height: 5px;
+    margin-bottom: 12px;
 }
 
-.strength-bar {
-    height: 4px;
+.strength-segment {
     flex: 1;
-    background: var(--bg-navy-dark);
-    border-radius: 2px;
-    transition: 0.3s;
+    height: 100%;
+    border-radius: 4px;
+    background: #e2e8f0;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.strength-text {
+.strength-segment.active-weak {
+    background: #ef4444;
+}
+
+.strength-segment.active-medium {
+    background: #f59e0b;
+}
+
+.strength-segment.active-good {
+    background: #3b82f6;
+}
+
+.strength-segment.active-strong {
+    background: #10b981;
+}
+
+/* Criteria Grid / List */
+.pwd-criteria-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.pwd-criterion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 12px;
-    margin-top: 5px;
-    display: block;
+    color: #64748b;
+    transition: color 0.25s ease, transform 0.2s ease;
+    user-select: none;
+    list-style: none !important;
+}
+
+.pwd-criterion .crit-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    font-size: 13px;
+    color: #94a3b8;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+}
+
+.pwd-criterion .crit-label {
+    line-height: 1.3;
+}
+
+.pwd-criterion.valid {
+    color: #047857;
+    font-weight: 600;
+}
+
+.pwd-criterion.valid .crit-icon {
+    color: #10b981;
+    animation: popCheck 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popCheck {
+    0% { transform: scale(0.6); opacity: 0.5; }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Reset any legacy ul.pwd-requirements styling to prevent raw bullet dots */
+ul.pwd-requirements,
+.pwd-requirements {
+    list-style: none !important;
+    list-style-type: none !important;
+    padding: 0 !important;
+    margin: -6px 0 20px 0 !important;
+}
+
+ul.pwd-requirements li,
+.pwd-requirements li {
+    list-style: none !important;
+    list-style-type: none !important;
+}
+
+/* Match Indicator message below confirm password */
+.pwd-match-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.pwd-match-hint.show-success {
+    display: flex;
+    color: #059669;
+}
+
+.pwd-match-hint.show-error {
+    display: flex;
+    color: #dc2626;
+}
+
+@media (max-width: 480px) {
+    .pwd-criteria-grid {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
 }
 
 @media (max-width: 768px) {

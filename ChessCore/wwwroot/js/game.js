@@ -2167,12 +2167,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     try {
+      // FIX BUG_004: Gửi kèm Authorization Bearer Token & credentials: 'include' khi Xin hàng
+      const jwtToken = localStorage.getItem("token") || localStorage.getItem("jwt_token") || "";
+      const resignHeaders = {
+        "Content-Type": "application/json",
+      };
+      if (jwtToken) {
+        resignHeaders["Authorization"] = "Bearer " + jwtToken;
+      }
+
       const response = await fetch(`${API_BASE_URL}/${gameId}/resign`, {
         method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
+        credentials: "include",
+        headers: resignHeaders,
       });
 
       if (!response.ok) {

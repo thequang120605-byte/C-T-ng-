@@ -1,10 +1,148 @@
 @model List<ChessCore.Models.Puzzle>
 @{
     ViewData["Title"] = "Quản lý Cờ thế - Admin";
+    var c1Count = Model.Count(p => p.Level <= 100);
+    var c2Count = Model.Count(p => p.Level > 100 && p.Level <= 200);
+    var c3Count = Model.Count(p => p.Level > 200 && p.Level <= 300);
+    var c4Count = Model.Count(p => p.Level > 300 && p.Level <= 400);
+    var c5Count = Model.Count(p => p.Level > 400);
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    <style>
+        .puzzle-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .puzzle-stat-card {
+            background: var(--bg-navy-panel, #ffffff);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        }
+        .puzzle-stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-gold, #d97706);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .puzzle-stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .puzzle-stat-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .puzzle-stat-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main, #0f172a);
+            line-height: 1.2;
+        }
+        .puzzle-stat-lbl {
+            font-size: 12px;
+            color: var(--text-muted, #64748b);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .puzzle-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border-color, #e2e8f0);
+            background: transparent;
+        }
+        .puzzle-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            flex: 1;
+            min-width: 280px;
+        }
+        .puzzle-search-input {
+            flex: 1;
+            min-width: 220px;
+            max-width: 360px;
+            padding: 9px 14px;
+            background: var(--bg-navy-dark, #f1f5f9);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 8px;
+            color: var(--text-main, #0f172a);
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .puzzle-search-input:focus {
+            outline: 2px solid rgba(217, 119, 6, 0.2);
+            border-color: var(--accent-gold, #d97706);
+            background: #ffffff;
+        }
+        .puzzle-select {
+            padding: 9px 12px;
+            background: var(--bg-navy-dark, #f1f5f9);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 8px;
+            color: var(--text-main, #0f172a);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .puzzle-select:focus {
+            outline: 2px solid rgba(217, 119, 6, 0.2);
+            border-color: var(--accent-gold, #d97706);
+            background: #ffffff;
+        }
+        .puzzle-actions-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .level-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 6px;
+        }
+        .btn-copy-fen {
+            background: transparent;
+            border: none;
+            color: var(--text-muted, #64748b);
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 4px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .btn-copy-fen:hover {
+            color: var(--accent-gold, #d97706);
+            background: var(--bg-navy-light, #e2e8f0);
+        }
+    </style>
 }
 
 <div class="admin-container">
@@ -32,24 +170,119 @@
         </div>
     }
 
+    <!-- THẺ TỔNG QUAN PHÂN BỔ 500 BÀI CỜ THẾ -->
+    <div class="puzzle-stat-grid">
+        <div class="puzzle-stat-card">
+            <div class="puzzle-stat-icon" style="background: rgba(250, 204, 21, 0.15); color: #facc15;">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div class="puzzle-stat-info">
+                <span class="puzzle-stat-val">@Model.Count</span>
+                <span class="puzzle-stat-lbl">Tổng số thế cờ</span>
+            </div>
+        </div>
+        <div class="puzzle-stat-card">
+            <div class="puzzle-stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                <i class="fa-solid fa-seedling"></i>
+            </div>
+            <div class="puzzle-stat-info">
+                <span class="puzzle-stat-val">@c1Count</span>
+                <span class="puzzle-stat-lbl">Cấp 1: Làm quen (1 nước)</span>
+            </div>
+        </div>
+        <div class="puzzle-stat-card">
+            <div class="puzzle-stat-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+                <i class="fa-solid fa-chess-knight"></i>
+            </div>
+            <div class="puzzle-stat-info">
+                <span class="puzzle-stat-val">@c2Count</span>
+                <span class="puzzle-stat-lbl">Cấp 2: Cơ bản (1-2 nước)</span>
+            </div>
+        </div>
+        <div class="puzzle-stat-card">
+            <div class="puzzle-stat-icon" style="background: rgba(234, 179, 8, 0.15); color: #eab308;">
+                <i class="fa-solid fa-chess-rook"></i>
+            </div>
+            <div class="puzzle-stat-info">
+                <span class="puzzle-stat-val">@c3Count</span>
+                <span class="puzzle-stat-lbl">Cấp 3: Trung cấp (2 nước)</span>
+            </div>
+        </div>
+        <div class="puzzle-stat-card">
+            <div class="puzzle-stat-icon" style="background: rgba(249, 115, 22, 0.15); color: #f97316;">
+                <i class="fa-solid fa-fire"></i>
+            </div>
+            <div class="puzzle-stat-info">
+                <span class="puzzle-stat-val">@c4Count</span>
+                <span class="puzzle-stat-lbl">Cấp 4: Nâng cao (2-3 nước)</span>
+            </div>
+        </div>
+        <div class="puzzle-stat-card">
+            <div class="puzzle-stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                <i class="fa-solid fa-crown"></i>
+            </div>
+            <div class="puzzle-stat-info">
+                <span class="puzzle-stat-val">@c5Count</span>
+                <span class="puzzle-stat-lbl">Cấp 5: Chuyên sâu (3 nước)</span>
+            </div>
+        </div>
+    </div>
+
     <div class="admin-card">
-        <div class="admin-card-header">
-            <h2><i class="fa-solid fa-list-check" style="color: #facc15;"></i> Danh sách Cờ thế hiện có (@Model.Count thế cờ)</h2>
-            <button type="button" class="btn-admin btn-admin-gold" onclick="openAddPuzzleModal();">
-                <i class="fa-solid fa-plus"></i> Thêm thế cờ mới
-            </button>
+        <!-- TOOLBAR: BỘ LỌC, TÌM KIẾM & NÚT TÁC VỤ -->
+        <div class="puzzle-toolbar">
+            <div class="puzzle-filters">
+                <input type="text" id="puzzle-search" class="puzzle-search-input" placeholder="🔍 Tìm theo tên thế cờ hoặc FEN..." oninput="onFilterChanged();" />
+                
+                <select id="level-filter" class="puzzle-select" onchange="onFilterChanged();">
+                    <option value="all">Tất cả các Cấp độ (@Model.Count bài)</option>
+                    <option value="1">Cấp 1: Làm quen (#1 - #100)</option>
+                    <option value="2">Cấp 2: Cơ bản (#101 - #200)</option>
+                    <option value="3">Cấp 3: Trung cấp (#201 - #300)</option>
+                    <option value="4">Cấp 4: Nâng cao (#301 - #400)</option>
+                    <option value="5">Cấp 5: Chuyên sâu (#401 - #500)</option>
+                </select>
+
+                <select id="difficulty-filter" class="puzzle-select" onchange="onFilterChanged();">
+                    <option value="all">Mọi độ khó</option>
+                    <option value="1">Dễ</option>
+                    <option value="2">Trung bình</option>
+                    <option value="3">Khó</option>
+                </select>
+
+                <select id="page-size-select" class="puzzle-select" onchange="onPageSizeChanged();">
+                    <option value="15" selected>15 bài / trang</option>
+                    <option value="25">25 bài / trang</option>
+                    <option value="50">50 bài / trang</option>
+                    <option value="100">100 bài / trang</option>
+                </select>
+            </div>
+
+            <div class="puzzle-actions-group">
+                <form asp-controller="Admin" asp-action="SyncCampaignPuzzles" method="post" style="display: inline;" 
+                      onsubmit="event.preventDefault(); const form = this; if(window.AppDialog){AppDialog.confirm('Bạn có muốn đồng bộ lại toàn bộ 500 bài cờ thế chuẩn chiến dịch từ dataset không? Các bài tùy biến cũ sẽ được làm mới.', 'Xác nhận đồng bộ kho cờ thế', {confirmText: 'Đồng bộ ngay', cancelText: 'Hủy'}).then(ok => { if(ok) form.submit(); });} else if(confirm('Xác nhận đồng bộ lại 500 bài cờ thế chiến dịch?')) { form.submit(); }">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-admin" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.25); font-weight: 600;" title="Đồng bộ tự động 500 bài sát pháp chiến dịch">
+                        <i class="fa-solid fa-arrows-rotate"></i> Đồng bộ kho 500 bài
+                    </button>
+                </form>
+
+                <button type="button" class="btn-admin btn-admin-gold" onclick="openAddPuzzleModal();">
+                    <i class="fa-solid fa-plus"></i> Thêm thế cờ mới
+                </button>
+            </div>
         </div>
 
         <div class="admin-table-wrapper">
-            <table class="admin-table">
+            <table class="admin-table" id="puzzles-table">
                 <thead>
                     <tr>
-                        <th style="width: 70px;">Màn</th>
+                        <th style="width: 100px;">Màn</th>
                         <th>Tên thế cờ</th>
-                        <th>Độ khó</th>
-                        <th>Sát pháp</th>
+                        <th style="width: 110px;">Độ khó</th>
+                        <th style="width: 110px;">Sát pháp</th>
                         <th>Chuỗi FEN</th>
-                        <th style="width: 140px; text-align: center;">Thao tác</th>
+                        <th style="width: 120px; text-align: center;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,32 +291,48 @@
                     }
                     @foreach (var p in Model)
                     {
-                        <tr class="puzzle-row" data-index="@pzIdx">
-                            <td><strong style="color: var(--accent-gold-dark);">#@p.Level</strong></td>
+                        var tier = p.Level <= 100 ? 1 : (p.Level <= 200 ? 2 : (p.Level <= 300 ? 3 : (p.Level <= 400 ? 4 : 5)));
+                        var tierBg = tier == 1 ? "rgba(16, 185, 129, 0.15)" : (tier == 2 ? "rgba(59, 130, 246, 0.15)" : (tier == 3 ? "rgba(234, 179, 8, 0.15)" : (tier == 4 ? "rgba(249, 115, 22, 0.15)" : "rgba(239, 68, 68, 0.15)")));
+                        var tierColor = tier == 1 ? "#10b981" : (tier == 2 ? "#3b82f6" : (tier == 3 ? "#eab308" : (tier == 4 ? "#f97316" : "#ef4444")));
+
+                        <tr class="puzzle-row" data-index="@pzIdx" data-tier="@tier" data-diff="@p.Difficulty" data-title="@p.Title.ToLower()" data-fen="@p.Fen.ToLower()">
                             <td>
-                                <strong>@p.Title</strong>
-                                <div style="font-size: 11px; color: var(--text-muted); max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                <span class="level-badge" style="background: @tierBg; color: @tierColor;">C@tier</span>
+                                <strong style="color: var(--accent-gold, #d97706);">#@p.Level</strong>
+                            </td>
+                            <td>
+                                <strong style="color: var(--text-main, #0f172a);">@p.Title</strong>
+                                <div style="font-size: 11px; color: var(--text-muted, #64748b); max-width: 320px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@p.Description">
                                     @p.Description
                                 </div>
                             </td>
                             <td>
-                                <span style="font-size: 12px; font-weight: 600; color: @(p.Difficulty == 1 ? "#059669" : (p.Difficulty == 2 ? "#d97706" : "#dc2626"));">
+                                <span style="font-size: 12px; font-weight: 700; color: @(p.Difficulty == 1 ? "#10b981" : (p.Difficulty == 2 ? "#d97706" : "#ef4444"));">
                                     @(p.Difficulty == 1 ? "Dễ" : (p.Difficulty == 2 ? "Trung bình" : "Khó"))
                                 </span>
                             </td>
-                            <td><span style="color: var(--text-main);">@p.MateIn nước</span></td>
                             <td>
-                                <code class="admin-code-fen" title="@p.Fen">
-                                    @p.Fen
-                                </code>
+                                <span style="color: var(--text-main, #0f172a); font-weight: 600;">
+                                    <i class="fa-solid fa-bolt" style="color: var(--accent-gold, #d97706); font-size: 11px;"></i> @p.MateIn nước
+                                </span>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <code class="admin-code-fen" title="@p.Fen" style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block;">
+                                        @p.Fen
+                                    </code>
+                                    <button type="button" class="btn-copy-fen" onclick="copyFenText('@p.Fen', this);" title="Sao chép chuỗi FEN">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
                             </td>
                             <td style="text-align: center;">
                                 <div style="display: flex; gap: 6px; justify-content: center;">
                                     <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" 
-                                            onclick='openEditPuzzleModal(@p.Id, "@p.Level", "@Html.Raw(Html.Encode(p.Title))", "@Html.Raw(Html.Encode(p.Description))", "@p.Fen", @p.MateIn, @p.Difficulty);' title="Chỉnh sửa">
+                                             onclick='openEditPuzzleModal(@p.Id, "@p.Level", "@Html.Raw(Html.Encode(p.Title))", "@Html.Raw(Html.Encode(p.Description))", "@p.Fen", @p.MateIn, @p.Difficulty);' title="Chỉnh sửa">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <form asp-controller="Admin" asp-action="DeletePuzzle" method="post" style="display: inline;" onsubmit="event.preventDefault(); const form = this; if(window.AppDialog){AppDialog.confirm('Bạn có chắc chắn muốn xóa thế cờ này không?', 'Xác nhận xóa', {confirmText: 'Xóa ngay', cancelText: 'Hủy', isDanger: true}).then(ok => { if(ok) form.submit(); });} else { form.submit(); }">
+                                    <form asp-controller="Admin" asp-action="DeletePuzzle" method="post" style="display: inline;" onsubmit="event.preventDefault(); const form = this; if(window.AppDialog){AppDialog.confirm('Bạn có chắc chắn muốn xóa thế cờ này không?', 'Xác nhận xóa', {confirmText: 'Xóa ngay', cancelText: 'Hủy', isDanger: true}).then(ok => { if(ok) form.submit(); });} else if(confirm('Xác nhận xóa thế cờ này?')) { form.submit(); }">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@p.Id" />
                                         <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" title="Xóa thế cờ">
@@ -99,15 +348,12 @@
             </table>
         </div>
 
-        @if (Model.Any())
-        {
-            <div class="pagination-wrapper" id="admin-puzzles-pagination" style="padding: 16px 12px 6px;">
-                <div class="pagination-info" id="admin-puzzles-info">
-                    Đang hiển thị 1 - 10 / tổng số @Model.Count thế cờ
-                </div>
-                <div class="pagination-controls" id="admin-puzzles-controls"></div>
+        <div class="pagination-wrapper" id="admin-puzzles-pagination" style="padding: 16px 0 0 0; border-top: 1px solid var(--border-color, #e2e8f0);">
+            <div class="pagination-info" id="admin-puzzles-info">
+                Đang hiển thị 1 - 15 / tổng số @Model.Count thế cờ
             </div>
-        }
+            <div class="pagination-controls" id="admin-puzzles-controls"></div>
+        </div>
     </div>
 </div>
 
@@ -115,8 +361,8 @@
 <div class="admin-modal" id="puzzle-modal">
     <div class="admin-modal-dialog">
         <div class="admin-modal-header">
-            <h3 id="puzzle-modal-title"><i class="fa-solid fa-puzzle-piece" style="color: #facc15;"></i> Thêm thế cờ mới</h3>
-            <button type="button" onclick="closePuzzleModal();" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">
+            <h3 id="puzzle-modal-title"><i class="fa-solid fa-puzzle-piece" style="color: var(--accent-gold, #d97706);"></i> Thêm thế cờ mới</h3>
+            <button type="button" onclick="closePuzzleModal();" style="background: none; border: none; color: var(--text-muted, #64748b); font-size: 20px; cursor: pointer;">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -138,7 +384,7 @@
             <div class="admin-form-group">
                 <label>Chuỗi FEN (Trạng thái bàn cờ) *</label>
                 <input type="text" id="puzzle-fen" name="Fen" class="admin-input" required placeholder="Ví dụ: 3k5/4a4/9/9/9/9/9/9/4A4/4K4 w - - 0 1" />
-                <small style="color: #64748b; font-size: 11px;">Bên đi trước (w: Đỏ, b: Đen) phải là bên thực hiện sát pháp.</small>
+                <small style="color: var(--text-muted, #64748b); font-size: 11px;">Bên đi trước (w: Đỏ, b: Đen) phải là bên thực hiện sát pháp.</small>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -166,7 +412,7 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
-                <button type="button" class="btn-admin" style="background: #334155; color: white;" onclick="closePuzzleModal();">Hủy bỏ</button>
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closePuzzleModal();">Hủy bỏ</button>
                 <button type="submit" class="btn-admin btn-admin-gold"><i class="fa-solid fa-check"></i> Lưu thế cờ</button>
             </div>
         </form>
@@ -205,69 +451,181 @@
             document.getElementById('puzzle-modal').classList.remove('show');
         }
 
-        // ==========================================
-        // PHÂN TRANG DANH SÁCH THẾ CỜ (ADMIN)
-        // ==========================================
-        (function () {
-            const rows = document.querySelectorAll('.puzzle-row');
-            const totalItems = rows.length;
-            if (totalItems <= 10) return;
-
-            const pageSize = 10;
-            const totalPages = Math.ceil(totalItems / pageSize);
-            let currentPage = 1;
-
-            const infoEl = document.getElementById('admin-puzzles-info');
-            const controlsEl = document.getElementById('admin-puzzles-controls');
-
-            function renderPage(page) {
-                currentPage = Math.max(1, Math.min(page, totalPages));
-                const start = (currentPage - 1) * pageSize;
-                const end = Math.min(start + pageSize, totalItems);
-
-                rows.forEach(row => {
-                    const idx = parseInt(row.dataset.index, 10);
-                    row.style.display = (idx >= start && idx < end) ? '' : 'none';
+        function copyFenText(fen, btn) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(fen).then(() => {
+                    const orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-check" style="color: #10b981;"></i>';
+                    setTimeout(() => btn.innerHTML = orig, 1200);
                 });
+            }
+        }
 
-                if (infoEl) {
+        // ==========================================
+        // BỘ LỌC, TÌM KIẾM & PHÂN TRANG THÔNG MINH
+        // ==========================================
+        let allRows = [];
+        let filteredRows = [];
+        let pageSize = 15;
+        let currentPage = 1;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            allRows = Array.from(document.querySelectorAll('.puzzle-row'));
+            filteredRows = allRows.slice();
+            applyPagination();
+        });
+
+        function onFilterChanged() {
+            const searchVal = (document.getElementById('puzzle-search').value || '').trim().toLowerCase();
+            const tierVal = document.getElementById('level-filter').value;
+            const diffVal = document.getElementById('difficulty-filter').value;
+
+            filteredRows = allRows.filter(row => {
+                const title = row.getAttribute('data-title') || '';
+                const fen = row.getAttribute('data-fen') || '';
+                const tier = row.getAttribute('data-tier') || '';
+                const diff = row.getAttribute('data-diff') || '';
+
+                if (searchVal && !title.includes(searchVal) && !fen.includes(searchVal)) {
+                    return false;
+                }
+                if (tierVal !== 'all' && tier !== tierVal) {
+                    return false;
+                }
+                if (diffVal !== 'all' && diff !== diffVal) {
+                    return false;
+                }
+                return true;
+            });
+
+            currentPage = 1;
+            applyPagination();
+        }
+
+        function onPageSizeChanged() {
+            const select = document.getElementById('page-size-select');
+            pageSize = parseInt(select.value, 10) || 15;
+            currentPage = 1;
+            applyPagination();
+        }
+
+        function applyPagination() {
+            const totalItems = filteredRows.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+            currentPage = Math.max(1, Math.min(currentPage, totalPages));
+
+            const start = totalItems === 0 ? 0 : (currentPage - 1) * pageSize;
+            const end = Math.min(start + pageSize, totalItems);
+
+            // Ẩn tất cả các dòng
+            allRows.forEach(r => r.style.display = 'none');
+
+            // Chỉ hiển thị các dòng thỏa mãn trong trang hiện tại
+            for (let i = start; i < end; i++) {
+                filteredRows[i].style.display = '';
+            }
+
+            // Cập nhật text thông tin
+            const infoEl = document.getElementById('admin-puzzles-info');
+            if (infoEl) {
+                if (totalItems === 0) {
+                    infoEl.textContent = 'Không tìm thấy thế cờ nào phù hợp với bộ lọc.';
+                } else {
                     infoEl.textContent = `Đang hiển thị ${start + 1} - ${end} / tổng số ${totalItems} thế cờ`;
                 }
-
-                renderControls();
             }
 
-            function renderControls() {
-                if (!controlsEl) return;
-                controlsEl.innerHTML = '';
+            renderPaginationControls(totalPages);
+        }
 
-                const prevBtn = document.createElement('button');
-                prevBtn.type = 'button';
-                prevBtn.className = 'page-btn';
-                prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
-                prevBtn.disabled = currentPage === 1;
-                prevBtn.onclick = () => renderPage(currentPage - 1);
-                controlsEl.appendChild(prevBtn);
+        function renderPaginationControls(totalPages) {
+            const controlsEl = document.getElementById('admin-puzzles-controls');
+            if (!controlsEl) return;
+            controlsEl.innerHTML = '';
 
-                for (let i = 1; i <= totalPages; i++) {
+            if (totalPages <= 1) return;
+
+            // Nút Đầu «
+            const firstBtn = document.createElement('button');
+            firstBtn.type = 'button';
+            firstBtn.className = 'page-btn';
+            firstBtn.innerHTML = '<i class="fa-solid fa-angles-left"></i>';
+            firstBtn.title = 'Trang đầu';
+            firstBtn.disabled = currentPage === 1;
+            firstBtn.onclick = () => { currentPage = 1; applyPagination(); };
+            controlsEl.appendChild(firstBtn);
+
+            // Nút Trước ‹
+            const prevBtn = document.createElement('button');
+            prevBtn.type = 'button';
+            prevBtn.className = 'page-btn';
+            prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+            prevBtn.title = 'Trang trước';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => { currentPage--; applyPagination(); };
+            controlsEl.appendChild(prevBtn);
+
+            // Các trang lân cận (Ví dụ: 1 ... 4, 5, 6 ... 34)
+            const pagesToShow = [];
+            pagesToShow.push(1);
+
+            let rangeStart = Math.max(2, currentPage - 2);
+            let rangeEnd = Math.min(totalPages - 1, currentPage + 2);
+
+            if (rangeStart > 2) {
+                pagesToShow.push('...');
+            }
+
+            for (let i = rangeStart; i <= rangeEnd; i++) {
+                pagesToShow.push(i);
+            }
+
+            if (rangeEnd < totalPages - 1) {
+                pagesToShow.push('...');
+            }
+
+            if (totalPages > 1) {
+                pagesToShow.push(totalPages);
+            }
+
+            pagesToShow.forEach(item => {
+                if (item === '...') {
+                    const span = document.createElement('span');
+                    span.style.padding = '0 6px';
+                    span.style.color = '#64748b';
+                    span.style.display = 'inline-flex';
+                    span.style.alignItems = 'center';
+                    span.textContent = '...';
+                    controlsEl.appendChild(span);
+                } else {
                     const pBtn = document.createElement('button');
                     pBtn.type = 'button';
-                    pBtn.className = 'page-btn' + (i === currentPage ? ' active' : '');
-                    pBtn.textContent = i;
-                    pBtn.onclick = () => renderPage(i);
+                    pBtn.className = 'page-btn' + (item === currentPage ? ' active' : '');
+                    pBtn.textContent = item;
+                    pBtn.onclick = () => { currentPage = item; applyPagination(); };
                     controlsEl.appendChild(pBtn);
                 }
+            });
 
-                const nextBtn = document.createElement('button');
-                nextBtn.type = 'button';
-                nextBtn.className = 'page-btn';
-                nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
-                nextBtn.disabled = currentPage === totalPages;
-                nextBtn.onclick = () => renderPage(currentPage + 1);
-                controlsEl.appendChild(nextBtn);
-            }
+            // Nút Sau ›
+            const nextBtn = document.createElement('button');
+            nextBtn.type = 'button';
+            nextBtn.className = 'page-btn';
+            nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+            nextBtn.title = 'Trang sau';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => { currentPage++; applyPagination(); };
+            controlsEl.appendChild(nextBtn);
 
-            renderPage(1);
-        })();
+            // Nút Cuối »
+            const lastBtn = document.createElement('button');
+            lastBtn.type = 'button';
+            lastBtn.className = 'page-btn';
+            lastBtn.innerHTML = '<i class="fa-solid fa-angles-right"></i>';
+            lastBtn.title = 'Trang cuối';
+            lastBtn.disabled = currentPage === totalPages;
+            lastBtn.onclick = () => { currentPage = totalPages; applyPagination(); };
+            controlsEl.appendChild(lastBtn);
+        }
     </script>
 }

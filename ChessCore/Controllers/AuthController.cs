@@ -77,6 +77,54 @@ namespace ChessCore.Controllers
                     await _context.SaveChangesAsync();
                 }
 
+                if (user != null && user.IsLocked)
+                {
+                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
+                    return View(model);
+                }
+
+                if (user != null && user.IsLocked)
+                {
+                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
+                    return View(model);
+                }
+
+                if (user != null && user.IsLocked)
+                {
+                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
+                    return View(model);
+                }
+
+                if (user != null && user.IsLocked)
+                {
+                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
+                    return View(model);
+                }
+
+                if (user != null && user.IsLocked)
+                {
+                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
+                    return View(model);
+                }
+
+                if (user != null && user.IsLocked)
+                {
+                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
+                    return View(model);
+                }
+
+                if (user != null && user.IsLocked)
+                {
+                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
+                    return View(model);
+                }
+
+                if (user != null && user.IsLocked)
+                {
+                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
+                    return View(model);
+                }
+
                 if (user != null && VerifyPassword(model.Password, user.PasswordHash))
                 {
                     if (string.IsNullOrEmpty(user.PlayerId))
@@ -314,8 +362,8 @@ namespace ChessCore.Controllers
                 }
                 else
                 {
-                    TempData["OtpMessage"] = $"Lỗi khi gửi email qua Gmail. MÃ OTP CỦA BẠN LÀ: {otp}";
-                    TempData["DevOtp"] = otp;
+                    TempData["OtpMessage"] = "Không thể gửi email OTP lúc này. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.";
+                    // FIX BUG_008: Bảo mật an toàn - Tuyệt đối không làm lộ mã OTP bí mật ra giao diện web
                 }
 
                 return RedirectToAction("ResetPassword", new { email = model.Email });
@@ -649,10 +697,44 @@ namespace ChessCore.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            // FIX BUG_010: Rate Limiting & Lockout chống tấn công Brute-force mật khẩu
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var failKey = $"LOGIN_FAIL_{clientIp}_{inputUser}";
+            var lockKey = $"LOGIN_LOCK_{clientIp}_{inputUser}";
+
+            if (_cache.TryGetValue(lockKey, out _))
+            {
+                return StatusCode(429, new { message = "Bạn đã thử đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 1 phút." });
+            }
+
             if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
             {
-                return Unauthorized(new { message = "Tài khoản hoặc mật khẩu không chính xác." });
+                int fails = _cache.GetOrCreate(failKey, entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                    return 0;
+                });
+                fails++;
+                _cache.Set(failKey, fails, TimeSpan.FromMinutes(5));
+
+                if (fails >= 5)
+                {
+                    _cache.Set(lockKey, true, TimeSpan.FromMinutes(1));
+                    return StatusCode(429, new { message = "Bạn đã nhập sai mật khẩu 5 lần liên tiếp. Tài khoản tạm thời bị khóa trong 1 phút để bảo mật." });
+                }
+
+                return Unauthorized(new { message = $"Tài khoản hoặc mật khẩu không chính xác. Bạn còn {5 - fails} lần thử." });
             }
+
+            // FIX BUG_014: Kiểm tra trạng thái khóa tài khoản
+            if (user.IsLocked)
+            {
+                return Unauthorized(new { message = "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định." });
+            }
+
+            // Xóa bộ đếm lỗi khi đăng nhập thành công
+            _cache.Remove(failKey);
+            _cache.Remove(lockKey);
 
             if (string.IsNullOrEmpty(user.PlayerId))
             {
@@ -701,6 +783,29 @@ namespace ChessCore.Controllers
 
             var username = request.Username.Trim();
             var email = (request.Email ?? "").Trim();
+
+            // FIX BUG_016: Chống Stored XSS trong Username
+            var usernameRegex = new System.Text.RegularExpressions.Regex(@"^[a-zA-Z0-9_-]{3,30}$");
+            if (!usernameRegex.IsMatch(username))
+            {
+                return BadRequest(new { message = "Tên đăng nhập không hợp lệ. Chỉ chấp nhận chữ cái, số, gạch dưới (_) hoặc gạch ngang (-) từ 3 đến 30 ký tự, không chứa ký tự đặc biệt hoặc mã script." });
+            }
+
+            // FIX BUG_001: Ràng buộc độ dài mật khẩu tối thiểu 6 ký tự
+            if (request.Password.Length < 6)
+            {
+                return BadRequest(new { message = "Mật khẩu phải có ít nhất 6 ký tự." });
+            }
+
+            // FIX BUG_002: Kiểm tra định dạng Email hợp lệ
+            if (!string.IsNullOrEmpty(email))
+            {
+                var emailRegex = new System.Text.RegularExpressions.Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+                if (!emailRegex.IsMatch(email))
+                {
+                    return BadRequest(new { message = "Địa chỉ email không đúng định dạng hợp lệ." });
+                }
+            }
 
             if (await _context.Users.AnyAsync(u => u.Username == username))
             {

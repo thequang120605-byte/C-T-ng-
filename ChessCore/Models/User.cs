@@ -25,6 +25,9 @@ namespace ChessCore.Models
         // Điểm tích lũy Cờ Thế (dùng để tăng cấp độ và mua gợi ý)
         public int PuzzleScore { get; set; } = 500;
 
+        // Trạng thái khóa tài khoản (BUG_014)
+        public bool IsLocked { get; set; } = false;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation properties

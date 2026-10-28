@@ -162,16 +162,21 @@ namespace ChessCore.Controllers
 
         private async Task<IActionResult> ExecuteSaveProgress(CourseProgressRequest request)
         {
+            if (request == null || request.LessonId <= 0) return BadRequest(new { message = "Bài học không hợp lệ." });
+
+            // FIX BUG_013: Kiểm tra bài học có tồn tại trong CSDL không (kể cả với khách vãng lai)
+            var lessonExists = await _context.CourseLessons.AnyAsync(l => l.Id == request.LessonId);
+            if (!lessonExists) return NotFound(new { message = "Không tìm thấy bài học trong hệ thống." });
+
+            // FIX BUG_006: Giới hạn điểm trắc nghiệm Quiz trong khoảng [0, 100] cho cả khách vãng lai
+            int clampedQuizScore = Math.Clamp(request.QuizScore, 0, 100);
+
             var userId = GetUserId();
             if (userId is null)
             {
-                // Khách chưa đăng nhập: Trả về trạng thái hoàn thành phiên học tạm thời, không lưu DB
-                return Ok(new { progress = new { isCompleted = request.IsCompleted, bestQuizScore = request.QuizScore }, isGuest = true });
+                // Khách chưa đăng nhập: Trả về trạng thái hoàn thành phiên học tạm thời với điểm số hợp lệ, không lưu DB
+                return Ok(new { progress = new { isCompleted = request.IsCompleted, bestQuizScore = clampedQuizScore }, isGuest = true });
             }
-            if (request.LessonId <= 0) return BadRequest("Bài học không hợp lệ.");
-
-            var lessonExists = await _context.CourseLessons.AnyAsync(l => l.Id == request.LessonId);
-            if (!lessonExists) return NotFound("Không tìm thấy bài học.");
 
             var progress = await _context.UserCourseProgresses
                 .SingleOrDefaultAsync(p => p.UserId == userId.Value && p.LessonId == request.LessonId);

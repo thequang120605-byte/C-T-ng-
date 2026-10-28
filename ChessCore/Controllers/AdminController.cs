@@ -1,3 +1,5 @@
+using ChessCore.Services;
+using ChessCore.Engine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ChessCore.Data;
 using ChessCore.Models;
+using ChessCore.Enums;
 
 namespace ChessCore.Controllers
 {
@@ -14,10 +17,12 @@ namespace ChessCore.Controllers
     public class AdminController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly PuzzleCampaignService _campaign;
 
-        public AdminController(AppDbContext context)
+        public AdminController(AppDbContext context, PuzzleCampaignService campaign)
         {
             _context = context;
+            _campaign = campaign;
         }
 
         private async Task<bool> IsAdminUserAsync()
@@ -40,14 +45,187 @@ namespace ChessCore.Controllers
                 return View("AccessDenied");
             }
 
+            if (_campaign != null && _campaign.Ready && _campaign.Playable.Count > 0)
+            {
+                int pCount = await _context.Puzzles.CountAsync();
+                if (pCount < 500)
+                {
+                    await SyncCampaignPuzzlesInternalAsync();
+                }
+            }
+
+            var users = await _context.Users.OrderByDescending(u => u.Elo).ToListAsync();
+
+            // Thống kê số lượng bài cờ thế đã giải thành công
+            var puzzleSolvedCounts = await _context.PuzzleProgresses
+                .GroupBy(p => p.UserId)
+                .Select(g => new { UserId = g.Key, Solved = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Solved);
+
+            // Thống kê số bài học đã hoàn thành
+            var lessonCompletedCounts = await _context.UserCourseProgresses
+                .Where(c => c.IsCompleted)
+                .GroupBy(c => c.UserId)
+                .Select(g => new { UserId = g.Key, Completed = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Completed);
+
+            var allUserDtos = users.Select(u =>
+            {
+                double winRate = u.GamesPlayed > 0 ? Math.Round((double)u.Wins * 100.0 / u.GamesPlayed, 1) : 0;
+                string rankTitle = u.Elo switch
+                {
+                    >= 1500 => "Đặc cấp Đại sư",
+                    >= 1400 => "Kiện tướng",
+                    >= 1250 => "Kỳ thủ Giỏi",
+                    >= 1150 => "Kỳ thủ Nghiệp dư",
+                    >= 1050 => "Người mới chơi",
+                    _ => "Tập sự"
+                };
+
+                return new AdminUserOverviewDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    PlayerId = u.PlayerId,
+                    Elo = u.Elo,
+                    Role = u.Role ?? "Player",
+                    IsLocked = u.IsLocked,
+                    CreatedAt = u.CreatedAt,
+                    GamesPlayed = u.GamesPlayed,
+                    Wins = u.Wins,
+                    Losses = u.Losses,
+                    Draws = u.Draws,
+                    WinRate = winRate,
+                    PuzzleScore = u.PuzzleScore,
+                    PuzzlesSolved = puzzleSolvedCounts.TryGetValue(u.Id, out int pCount) ? pCount : 0,
+                    LessonsCompleted = lessonCompletedCounts.TryGetValue(u.Id, out int lCount) ? lCount : 0,
+                    Title = rankTitle
+                };
+            }).ToList();
+
+            // 4 chế độ chơi chuẩn chính quy & thống kê chi tiết theo format Dashboard
+            var allGames = await _context.Games.Select(g => new {
+                g.GameMode,
+                g.Status,
+                g.RedPlayerId,
+                g.BlackPlayerId
+            }).ToListAsync();
+
+            var modeStats = new List<AdminModeStatDto>();
+
+            // 1. Online
+            var onlineGames = allGames.Where(g => g.GameMode == "Online" || g.GameMode == "OnlinePublic").ToList();
+            int onlineFinished = onlineGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
+            int onlineWins = onlineGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Resigned);
+            int onlineDraws = onlineGames.Count(g => g.Status == GameStatus.Draw);
+            int onlineLosses = onlineWins; // Ván đấu có người thắng sẽ có người thua đối ứng
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "Online",
+                Label = "Chơi qua mạng (Online)",
+                Created = onlineGames.Count,
+                InProgress = onlineGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = onlineGames.Count(g => g.Status == GameStatus.WaitingForPlayers),
+                Finished = onlineFinished,
+                Wins = onlineWins,
+                Losses = onlineLosses,
+                Draws = onlineDraws,
+                WinRate = onlineFinished > 0 ? Math.Round((double)onlineWins * 100.0 / onlineFinished, 1) : 0
+            });
+
+            // 2. PvE (Chơi với máy)
+            var pveGames = allGames.Where(g => g.GameMode == "PvE").ToList();
+            int pveFinished = pveGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
+            int pveWins = pveGames.Count(g => g.Status == GameStatus.RedWins);
+            int pveLosses = pveGames.Count(g => g.Status == GameStatus.BlackWins);
+            int pveDraws = pveGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "PvE",
+                Label = "Chơi với máy (PvE)",
+                Created = pveGames.Count,
+                InProgress = pveGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = 0,
+                Finished = pveFinished,
+                Wins = pveWins,
+                Losses = pveLosses,
+                Draws = pveDraws,
+                WinRate = pveFinished > 0 ? Math.Round((double)pveWins * 100.0 / pveFinished, 1) : 0
+            });
+
+            // 3. PvP (Hai người cùng máy)
+            var pvpGames = allGames.Where(g => g.GameMode == "PvP" || g.GameMode == "Local").ToList();
+            int pvpFinished = pvpGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
+            int pvpWins = pvpGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins);
+            int pvpLosses = pvpWins;
+            int pvpDraws = pvpGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "PvP",
+                Label = "Hai người cùng máy (PvP)",
+                Created = pvpGames.Count,
+                InProgress = pvpGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = 0,
+                Finished = pvpFinished,
+                Wins = pvpWins,
+                Losses = pvpLosses,
+                Draws = pvpDraws,
+                WinRate = pvpFinished > 0 ? Math.Round((double)pvpWins * 100.0 / pvpFinished, 1) : 0
+            });
+
+            // 4. AiVsAi (Máy với máy)
+            var aivsaiGames = allGames.Where(g => g.GameMode == "AiVsAi").ToList();
+            int aivsaiFinished = aivsaiGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
+            int aivsaiWins = aivsaiGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins);
+            int aivsaiLosses = aivsaiWins;
+            int aivsaiDraws = aivsaiGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "AiVsAi",
+                Label = "Máy với máy (AiVsAi)",
+                Created = aivsaiGames.Count,
+                InProgress = aivsaiGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = 0,
+                Finished = aivsaiFinished,
+                Wins = aivsaiWins,
+                Losses = aivsaiLosses,
+                Draws = aivsaiDraws,
+                WinRate = aivsaiFinished > 0 ? Math.Round((double)aivsaiWins * 100.0 / aivsaiFinished, 1) : 0
+            });
+
+            var modeDist = new Dictionary<string, int>
+            {
+                ["Online"] = onlineGames.Count,
+                ["PvE"] = pveGames.Count,
+                ["PvP"] = pvpGames.Count,
+                ["AiVsAi"] = aivsaiGames.Count
+            };
+
+            int totalMoves = await _context.Moves.CountAsync();
+            int totalWins = users.Sum(u => u.Wins);
+            int totalDraws = users.Sum(u => u.Draws);
+            int totalLosses = users.Sum(u => u.Losses);
+            double avgWinRate = (totalWins + totalDraws + totalLosses > 0)
+                ? Math.Round((double)totalWins * 100.0 / (totalWins + totalDraws + totalLosses), 1)
+                : (allUserDtos.Count > 0 ? Math.Round(allUserDtos.Average(u => u.WinRate), 1) : 0);
+
             var vm = new AdminDashboardViewModel
             {
-                TotalUsers = await _context.Users.CountAsync(),
+                TotalUsers = users.Count,
                 TotalGames = await _context.Games.CountAsync(),
                 TotalPuzzles = await _context.Puzzles.CountAsync(),
                 TotalModules = await _context.CourseModules.CountAsync(),
                 TotalLessons = await _context.CourseLessons.CountAsync(),
-                RecentUsers = await _context.Users.OrderByDescending(u => u.Id).Take(5).ToListAsync(),
+                TotalMoves = totalMoves,
+                TotalWins = totalWins,
+                TotalDraws = totalDraws,
+                TotalLosses = totalLosses,
+                AverageSystemWinRate = avgWinRate,
+                GameModesDistribution = modeDist,
+                ModeStats = modeStats,
+                AllUsers = allUserDtos,
+                RecentUsers = users.Take(5).ToList(),
                 RecentPuzzles = await _context.Puzzles.OrderByDescending(p => p.Id).Take(5).ToListAsync()
             };
 
@@ -60,7 +238,16 @@ namespace ChessCore.Controllers
         [HttpGet]
         public async Task<IActionResult> Puzzles()
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
+
+            if (_campaign != null && _campaign.Ready && _campaign.Playable.Count > 0)
+            {
+                int pCount = await _context.Puzzles.CountAsync();
+                if (pCount < 500)
+                {
+                    await SyncCampaignPuzzlesInternalAsync();
+                }
+            }
 
             var puzzles = await _context.Puzzles.OrderBy(p => p.Level).ThenBy(p => p.Id).ToListAsync();
             return View(puzzles);
@@ -68,13 +255,69 @@ namespace ChessCore.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SyncCampaignPuzzles()
+        {
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
+
+            if (_campaign == null || !_campaign.Ready || _campaign.Playable.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Kho Cờ Thế Chiến Dịch chưa sẵn sàng hoặc đang nạp dữ liệu. Vui lòng thử lại sau giây lát!";
+                return RedirectToAction(nameof(Puzzles));
+            }
+
+            int syncedCount = await SyncCampaignPuzzlesInternalAsync();
+            TempData["SuccessMessage"] = $"Đã đồng bộ thành công toàn bộ {syncedCount} thế cờ sát pháp chiến dịch vào hệ thống quản lý!";
+            return RedirectToAction(nameof(Puzzles));
+        }
+
+        private async Task<int> SyncCampaignPuzzlesInternalAsync()
+        {
+            if (_campaign == null || !_campaign.Ready || _campaign.Playable.Count == 0) return 0;
+
+            var existingPuzzles = await _context.Puzzles.ToListAsync();
+            if (existingPuzzles.Any())
+            {
+                _context.Puzzles.RemoveRange(existingPuzzles);
+                await _context.SaveChangesAsync();
+            }
+
+            var list = new List<Puzzle>();
+            int globalLevel = 1;
+            foreach (var p in _campaign.Playable)
+            {
+                int difficulty = p.Level <= 2 ? 1 : (p.Level <= 4 ? 2 : 3);
+                list.Add(new Puzzle
+                {
+                    Level = globalLevel++,
+                    Title = !string.IsNullOrWhiteSpace(p.Title) ? p.Title : $"Thế cờ sát cục #{p.Number}",
+                    Description = $"{p.Category} - {p.Pieces} quân ({p.Key})",
+                    Fen = p.Fen,
+                    MateIn = p.MateIn > 0 ? p.MateIn : 1,
+                    Difficulty = difficulty
+                });
+            }
+
+            await _context.Puzzles.AddRangeAsync(list);
+            await _context.SaveChangesAsync();
+            return list.Count;
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreatePuzzle(Puzzle puzzle)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             if (string.IsNullOrWhiteSpace(puzzle.Title) || string.IsNullOrWhiteSpace(puzzle.Fen))
             {
                 TempData["ErrorMessage"] = "Tiêu đề và chuỗi FEN không được để trống!";
+                return RedirectToAction(nameof(Puzzles));
+            }
+
+            // FIX BUG_015: Kiểm tra tính hợp lệ của chuỗi FEN trước khi thêm cờ thế
+            if (!Board.TryParseFen(puzzle.Fen.Trim(), out _, out string fenError))
+            {
+                TempData["ErrorMessage"] = $"Chuỗi FEN không hợp lệ: {fenError}";
                 return RedirectToAction(nameof(Puzzles));
             }
 
@@ -95,7 +338,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditPuzzle(Puzzle puzzle)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var existing = await _context.Puzzles.FindAsync(puzzle.Id);
             if (existing == null)
@@ -103,6 +346,17 @@ namespace ChessCore.Controllers
                 TempData["ErrorMessage"] = "Không tìm thấy thế cờ cần chỉnh sửa.";
                 return RedirectToAction(nameof(Puzzles));
             }
+
+            // FIX BUG_015: Kiểm tra tính hợp lệ của chuỗi FEN khi chỉnh sửa cờ thế
+            if (!Board.TryParseFen(puzzle.Fen.Trim(), out _, out string editFenError))
+            {
+                TempData["ErrorMessage"] = $"Chuỗi FEN không hợp lệ: {editFenError}";
+                return RedirectToAction(nameof(Puzzles));
+            }
+
+            
+
+            
 
             existing.Title = puzzle.Title;
             existing.Description = puzzle.Description ?? "";
@@ -120,15 +374,19 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeletePuzzle(int id)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var puzzle = await _context.Puzzles.FindAsync(id);
-            if (puzzle != null)
+            if (puzzle == null)
             {
-                _context.Puzzles.Remove(puzzle);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Đã xóa thế cờ #{id} thành công!";
+                // FIX BUG_007: Trả về thông báo lỗi 404 khi ID bài cờ thế không tồn tại
+                TempData["ErrorMessage"] = $"Không tìm thấy thế cờ #{id} để xóa (404 Not Found).";
+                return NotFound(new { message = $"Không tìm thấy thế cờ #{id} để xóa." });
             }
+
+            _context.Puzzles.Remove(puzzle);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = $"Đã xóa thế cờ #{id} thành công!";
             return RedirectToAction(nameof(Puzzles));
         }
 
@@ -138,7 +396,7 @@ namespace ChessCore.Controllers
         [HttpGet]
         public async Task<IActionResult> Courses()
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var modules = await _context.CourseModules
                 .Include(m => m.Lessons)
@@ -152,7 +410,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateLesson(CourseLesson lesson)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             if (string.IsNullOrWhiteSpace(lesson.Title) || lesson.ModuleId <= 0)
             {
@@ -179,7 +437,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditLesson(CourseLesson lesson)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var existing = await _context.CourseLessons.FindAsync(lesson.Id);
             if (existing == null)
@@ -204,7 +462,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteLesson(int id)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var lesson = await _context.CourseLessons.FindAsync(id);
             if (lesson != null)
@@ -222,17 +480,100 @@ namespace ChessCore.Controllers
         [HttpGet]
         public async Task<IActionResult> Users()
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
-            var users = await _context.Users.OrderByDescending(u => u.Id).ToListAsync();
-            return View(users);
+            var users = await _context.Users.OrderByDescending(u => u.Elo).ToListAsync();
+
+            // Thống kê số lượng bài cờ thế đã giải thành công
+            var puzzleSolvedCounts = await _context.PuzzleProgresses
+                .GroupBy(p => p.UserId)
+                .Select(g => new { UserId = g.Key, Solved = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Solved);
+
+            // Thống kê số bài học đã hoàn thành
+            var lessonCompletedCounts = await _context.UserCourseProgresses
+                .Where(c => c.IsCompleted)
+                .GroupBy(c => c.UserId)
+                .Select(g => new { UserId = g.Key, Completed = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Completed);
+
+            var allUserDtos = users.Select(u =>
+            {
+                double winRate = u.GamesPlayed > 0 ? Math.Round((double)u.Wins * 100.0 / u.GamesPlayed, 1) : 0;
+                string rankTitle = u.Elo switch
+                {
+                    >= 1500 => "Đặc cấp Đại sư",
+                    >= 1400 => "Kiện tướng",
+                    >= 1250 => "Kỳ thủ Giỏi",
+                    >= 1150 => "Kỳ thủ Nghiệp dư",
+                    >= 1050 => "Người mới chơi",
+                    _ => "Tập sự"
+                };
+
+                return new AdminUserOverviewDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    PlayerId = u.PlayerId,
+                    Elo = u.Elo,
+                    Role = u.Role ?? "Player",
+                    IsLocked = u.IsLocked,
+                    CreatedAt = u.CreatedAt,
+                    GamesPlayed = u.GamesPlayed,
+                    Wins = u.Wins,
+                    Losses = u.Losses,
+                    Draws = u.Draws,
+                    WinRate = winRate,
+                    PuzzleScore = u.PuzzleScore,
+                    PuzzlesSolved = puzzleSolvedCounts.TryGetValue(u.Id, out int pCount) ? pCount : 0,
+                    LessonsCompleted = lessonCompletedCounts.TryGetValue(u.Id, out int lCount) ? lCount : 0,
+                    Title = rankTitle
+                };
+            }).ToList();
+
+            return View(allUserDtos);
+        }
+
+        // FIX BUG_014: Tính năng Khóa / Mở khóa tài khoản người dùng
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleLockUser(int userId)
+        {
+            if (!await IsAdminUserAsync())
+            {
+                Response.StatusCode = 403;
+                return View("AccessDenied");
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin/Users");
+            }
+
+            if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Không thể khóa tài khoản có quyền Quản trị viên (Admin).";
+                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin/Users");
+            }
+
+            user.IsLocked = !user.IsLocked;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = user.IsLocked 
+                ? $"Đã khóa tài khoản {user.Username} ({user.PlayerId}) thành công!" 
+                : $"Đã mở khóa tài khoản {user.Username} ({user.PlayerId}) thành công!";
+
+            return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin/Users");
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleAdminRole(int userId)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var user = await _context.Users.FindAsync(userId);
             if (user != null)
@@ -248,7 +589,7 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteUser(int userId)
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var currentUsername = User.Identity?.Name;
             var user = await _context.Users.FindAsync(userId);
@@ -276,7 +617,7 @@ namespace ChessCore.Controllers
         [HttpGet]
         public async Task<IActionResult> AiBenchmark()
         {
-            if (!await IsAdminUserAsync()) return View("AccessDenied");
+            if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             // Chạy kiểm thử mẫu trên thế cờ chuẩn với các độ sâu 1, 2, 3
             var sampleBoard = new ChessCore.Engine.Board();
@@ -356,6 +697,41 @@ namespace ChessCore.Controllers
         public double ElapsedMs { get; set; }
     }
 
+    public class AdminUserOverviewDto
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string PlayerId { get; set; } = string.Empty;
+        public int Elo { get; set; }
+        public string Role { get; set; } = "Player";
+        public bool IsLocked { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public int GamesPlayed { get; set; }
+        public int Wins { get; set; }
+        public int Losses { get; set; }
+        public int Draws { get; set; }
+        public double WinRate { get; set; }
+        public int PuzzleScore { get; set; }
+        public int PuzzlesSolved { get; set; }
+        public int LessonsCompleted { get; set; }
+        public string Title { get; set; } = "Tập sự";
+    }
+
+    public class AdminModeStatDto
+    {
+        public string Mode { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public int Created { get; set; }
+        public int InProgress { get; set; }
+        public int Waiting { get; set; }
+        public int Finished { get; set; }
+        public int Wins { get; set; }
+        public int Losses { get; set; }
+        public int Draws { get; set; }
+        public double WinRate { get; set; }
+    }
+
     public class AdminDashboardViewModel
     {
         public int TotalUsers { get; set; }
@@ -363,6 +739,14 @@ namespace ChessCore.Controllers
         public int TotalPuzzles { get; set; }
         public int TotalModules { get; set; }
         public int TotalLessons { get; set; }
+        public int TotalMoves { get; set; }
+        public double AverageSystemWinRate { get; set; }
+        public int TotalWins { get; set; }
+        public int TotalDraws { get; set; }
+        public int TotalLosses { get; set; }
+        public Dictionary<string, int> GameModesDistribution { get; set; } = new();
+        public List<AdminModeStatDto> ModeStats { get; set; } = new();
+        public List<AdminUserOverviewDto> AllUsers { get; set; } = new();
         public List<User> RecentUsers { get; set; } = new();
         public List<Puzzle> RecentPuzzles { get; set; } = new();
     }

@@ -1,6 +1,6 @@
-@model List<ChessCore.Models.User>
+@model List<ChessCore.Controllers.AdminUserOverviewDto>
 @{
-    ViewData["Title"] = "Quản lý Người dùng";
+    ViewData["Title"] = "Quản lý Người dùng - Admin";
 }
 
 @section Styles {
@@ -18,14 +18,16 @@
             min-width: 250px;
             padding: 10px 14px;
             border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-navy-panel);
-            color: var(--text-main);
+            border: 1px solid var(--border-color, #e2e8f0);
+            background: var(--bg-navy-dark, #f1f5f9);
+            color: var(--text-main, #0f172a);
             font-size: 14px;
+            transition: all 0.2s ease;
         }
         .user-search-input:focus {
             outline: 2px solid rgba(217, 119, 6, 0.2);
-            border-color: var(--accent-gold);
+            border-color: var(--accent-gold, #d97706);
+            background: #ffffff;
         }
         .pagination-wrapper {
             display: flex;
@@ -33,13 +35,13 @@
             align-items: center;
             margin-top: 18px;
             padding-top: 14px;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid var(--border-color, #e2e8f0);
             flex-wrap: wrap;
             gap: 10px;
         }
         .pagination-info {
             font-size: 13px;
-            color: var(--text-muted);
+            color: var(--text-muted, #64748b);
         }
         .pagination-controls {
             display: flex;
@@ -47,9 +49,9 @@
             align-items: center;
         }
         .page-btn {
-            background: var(--bg-navy-panel);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
+            background: var(--bg-navy-panel, #ffffff);
+            border: 1px solid var(--border-color, #e2e8f0);
+            color: var(--text-main, #0f172a);
             padding: 6px 12px;
             border-radius: 6px;
             font-size: 13px;
@@ -58,14 +60,14 @@
             transition: all 0.2s ease;
         }
         .page-btn:hover:not(:disabled) {
-            border-color: var(--accent-gold);
-            background: var(--bg-navy-light);
-            color: var(--accent-gold-dark);
+            border-color: var(--accent-gold, #d97706);
+            background: var(--bg-navy-light, #e2e8f0);
+            color: var(--accent-gold-dark, #b45309);
         }
         .page-btn.active {
-            background: var(--accent-gold);
+            background: var(--accent-gold, #d97706);
             color: #ffffff;
-            border-color: var(--accent-gold);
+            border-color: var(--accent-gold, #d97706);
         }
         .page-btn:disabled {
             opacity: 0.4;
@@ -101,54 +103,113 @@
 
     <div class="admin-card">
         <div class="admin-card-header">
-            <h2><i class="fa-solid fa-user-group" style="color: #60a5fa;"></i> Danh sách Tất cả Thành viên (@Model.Count)</h2>
+            <h2>
+                <i class="fa-solid fa-ranking-star" style="color: #facc15;"></i>
+                Danh sách Tất cả Thành viên (@Model.Count)
+            </h2>
+            <div style="font-size: 13px; color: var(--text-muted); font-weight: 500;">
+                <i class="fa-solid fa-arrow-down-wide-short" style="color: var(--accent-gold);"></i> Xếp hạng theo Elo từ cao xuống thấp
+            </div>
         </div>
 
         <div class="user-search-box">
-            <input type="text" id="user-search" class="user-search-input" placeholder="Tìm kiếm theo Tên, Email hoặc Mã ID (CT-xxxxx)..." oninput="filterUsers();" />
+            <input type="text" id="user-search" class="user-search-input" placeholder="🔍 Tìm kiếm theo Tên kỳ thủ, Email hoặc Mã ID (CT-xxxxx)..." oninput="filterUsers();" />
+            <select id="user-role-filter" class="user-search-input" onchange="filterUsers();" style="flex: 0 0 180px; min-width: 160px; cursor: pointer;">
+                <option value="all">Tất cả vai trò</option>
+                <option value="admin">Quản trị viên (Admin)</option>
+                <option value="player">Kỳ thủ (Player)</option>
+            </select>
         </div>
 
-        <div class="admin-table-wrapper">
+        <div class="admin-table-wrapper" style="overflow-x: auto;">
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px;">ID</th>
-                        <th>Kỳ thủ / Tài khoản</th>
-                        <th>Mã ID</th>
-                        <th>Điểm Elo</th>
-                        <th>Số trận (Thắng/Thua/Hòa)</th>
-                        <th>Vai trò</th>
-                        <th>Ngày tạo</th>
-                        <th style="text-align: right;">Hành động</th>
+                        <th style="width: 60px; text-align: center;">Hạng</th>
+                        <th>Kỳ thủ</th>
+                        <th style="width: 150px;">Kỳ lực & Elo</th>
+                        <th style="width: 90px; text-align: center;">Tổng ván</th>
+                        <th style="width: 160px; text-align: center;">Thắng - Hòa - Thua</th>
+                        <th style="width: 150px;">Tỉ lệ thắng</th>
+                        <th style="width: 140px; text-align: center;">Cờ thế đã giải</th>
+                        <th style="width: 110px; text-align: center;">Khóa học</th>
+                        <th style="width: 100px; text-align: center;">Vai trò</th>
+                        <th style="text-align: right; min-width: 190px;">Hành động</th>
                     </tr>
                 </thead>
                 <tbody id="user-table-body">
                     @{
+                        int rank = 1;
                         int userIndex = 0;
                     }
                     @foreach (var u in Model)
                     {
                         var isCurrentAdmin = string.Equals(u.Username, User.Identity?.Name, StringComparison.OrdinalIgnoreCase);
-                        <tr class="user-row" data-index="@userIndex" data-search="@u.Username.ToLower() @u.Email.ToLower() @u.PlayerId.ToLower()">
-                            <td><strong>#@u.Id</strong></td>
-                            <td>
-                                <strong>@u.Username</strong>
-                                <div style="font-size: 11.5px; color: var(--text-muted);">@u.Email</div>
+                        var medalClass = rank == 1 ? "gold" : (rank == 2 ? "silver" : (rank == 3 ? "bronze" : "normal"));
+                        var tierClass = u.Elo >= 1500 ? "tier-grandmaster" : (u.Elo >= 1400 ? "tier-master" : (u.Elo >= 1250 ? "tier-expert" : (u.Elo >= 1150 ? "tier-amateur" : "tier-novice")));
+                        var winRateColor = u.WinRate >= 60 ? "#10b981" : (u.WinRate >= 45 ? "#d97706" : "#ef4444");
+                        var winRatePercentStr = u.WinRate.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+                        var winRateWidthStr = Math.Min(100.0, Math.Max(0.0, u.WinRate)).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+
+                        <tr class="user-row" data-index="@userIndex" data-search="@u.Username.ToLower() @u.Email.ToLower() @u.PlayerId.ToLower()" data-role="@(u.Role?.ToLower() ?? "player")">
+                            <td style="text-align: center;">
+                                <span class="rank-medal @medalClass">
+                                    @(rank <= 3 ? (rank == 1 ? "🥇" : (rank == 2 ? "🥈" : "🥉")) : $"#{rank}")
+                                </span>
                             </td>
-                            <td><code style="color: var(--accent-gold-dark); background: var(--bg-navy-light); padding: 2px 7px; border-radius: 4px; font-weight: 700;">@u.PlayerId</code></td>
-                            <td><strong style="color: var(--accent-gold); font-size: 15px;">@u.Elo</strong></td>
                             <td>
-                                <span>@u.GamesPlayed trận</span>
-                                <small style="color: var(--text-muted); display: block; font-size: 11px;">(@u.Wins T / @u.Losses B / @u.Draws H)</small>
+                                <div>
+                                    <strong style="color: var(--text-main, #0f172a); font-size: 14px;">@u.Username</strong>
+                                    @if (u.IsLocked)
+                                    {
+                                        <span style="background: rgba(239, 68, 68, 0.15); color: #dc2626; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">
+                                            <i class="fa-solid fa-lock"></i> ĐÃ KHÓA
+                                        </span>
+                                    }
+                                    <div style="font-size: 11px; color: var(--text-muted, #64748b);">
+                                        @u.Email <span style="opacity: 0.5;">|</span> Mã: <code style="color: var(--accent-gold-dark, #b45309); font-weight: 700;">@u.PlayerId</code>
+                                    </div>
+                                </div>
                             </td>
                             <td>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <span class="tier-badge @tierClass">@u.Title</span>
+                                    <span style="font-size: 13px; font-weight: 800; color: var(--accent-gold, #d97706);">
+                                        <i class="fa-solid fa-star" style="font-size: 10px;"></i> @u.Elo
+                                    </span>
+                                </div>
+                            </td>
+                            <td style="text-align: center;">
+                                <strong style="font-size: 14px; color: var(--text-main, #0f172a);">@u.GamesPlayed</strong>
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="stat-wdl-pill">
+                                    <span class="wdl-w"><i class="fa-solid fa-check"></i> @u.Wins</span> - 
+                                    <span class="wdl-d">@u.Draws</span> - 
+                                    <span class="wdl-l"><i class="fa-solid fa-xmark"></i> @u.Losses</span>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="winrate-bar-container">
+                                    <div class="winrate-bar-bg">
+                                        <div class="winrate-bar-fill" style="width: @(winRateWidthStr)%; background-color: @winRateColor;"></div>
+                                    </div>
+                                    <strong style="color: @winRateColor; font-size: 13px; min-width: 44px; text-align: right;">@(winRatePercentStr)%</strong>
+                                </div>
+                            </td>
+                            <td style="text-align: center;">
+                                <strong style="color: #0284c7;">@u.PuzzleScore</strong> <span style="font-size: 11px; color: var(--text-muted, #64748b);">(@u.PuzzlesSolved bài)</span>
+                            </td>
+                            <td style="text-align: center;">
+                                <strong style="color: #9333ea;">@u.LessonsCompleted / 19</strong>
+                            </td>
+                            <td style="text-align: center;">
                                 <span class="role-badge @(u.Role?.ToLower() == "admin" ? "admin" : "player")">
                                     @(u.Role ?? "Player")
                                 </span>
                             </td>
-                            <td><span style="font-size: 12px; color: var(--text-muted);">@u.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span></td>
                             <td style="text-align: right;">
-                                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                <div style="display: inline-flex; gap: 6px; align-items: center; justify-content: flex-end;">
                                     <form asp-controller="Admin" asp-action="ToggleAdminRole" method="post" style="display: inline;">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="userId" value="@u.Id" />
@@ -156,6 +217,17 @@
                                             @(u.Role == "Admin" ? "Hạ quyền" : "Cấp Admin")
                                         </button>
                                     </form>
+
+                                    @if (!isCurrentAdmin)
+                                    {
+                                        <form asp-controller="Admin" asp-action="ToggleLockUser" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc muốn @(u.IsLocked ? "mở khóa" : "khóa") tài khoản @u.Username?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@u.Id" />
+                                            <button type="submit" class="btn-admin @(u.IsLocked ? "btn-admin-success" : "btn-admin-warning") btn-admin-sm" title="@(u.IsLocked ? "Mở khóa tài khoản" : "Khóa tài khoản")">
+                                                <i class="fa-solid @(u.IsLocked ? "fa-lock-open" : "fa-lock")"></i> @(u.IsLocked ? "Mở khóa" : "Khóa")
+                                            </button>
+                                        </form>
+                                    }
 
                                     @if (!isCurrentAdmin)
                                     {
@@ -170,6 +242,7 @@
                                 </div>
                             </td>
                         </tr>
+                        rank++;
                         userIndex++;
                     }
                 </tbody>
@@ -196,13 +269,14 @@
 
         function filterUsers() {
             const query = (document.getElementById('user-search')?.value || '').toLowerCase().trim();
+            const roleFilter = (document.getElementById('user-role-filter')?.value || 'all').toLowerCase();
             const allRows = Array.from(document.querySelectorAll('.user-row'));
 
-            if (!query) {
-                visibleRows = allRows;
-            } else {
-                visibleRows = allRows.filter(r => r.dataset.search.includes(query));
-            }
+            visibleRows = allRows.filter(r => {
+                const matchesSearch = !query || r.dataset.search.includes(query);
+                const matchesRole = roleFilter === 'all' || r.dataset.role === roleFilter;
+                return matchesSearch && matchesRole;
+            });
             renderUsersPage(1);
         }
 
@@ -223,8 +297,8 @@
             const infoEl = document.getElementById('users-pagination-info');
             if (infoEl) {
                 infoEl.textContent = totalItems === 0 
-                    ? 'Không tìm thấy người dùng phù hợp' 
-                    : `Hiển thị ${start + 1} - ${end} / tổng số ${totalItems} người dùng`;
+                    ? 'Không tìm thấy kỳ thủ phù hợp' 
+                    : `Hiển thị ${start + 1} - ${end} / tổng số ${totalItems} kỳ thủ`;
             }
 
             renderUsersControls(totalPages);

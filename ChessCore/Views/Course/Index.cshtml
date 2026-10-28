@@ -9,6 +9,14 @@
 }
 
 <div class="course-page">
+    @* FIX BUG_005: Hiển thị banner cảnh báo giải thích lý do khi bị từ chối cấp chứng chỉ *@
+    @if (TempData["CertificateLockMessage"] != null)
+    {
+        <div class="admin-alert admin-alert-warning" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-weight: 500;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 20px; color: #f59e0b;"></i>
+            <span>@TempData["CertificateLockMessage"]</span>
+        </div>
+    }
     <section class="course-hero">
         <div>
             <span class="course-kicker"><i class="fa-solid fa-graduation-cap"></i> LỘ TRÌNH CHO NGƯỜI MỚI</span>
