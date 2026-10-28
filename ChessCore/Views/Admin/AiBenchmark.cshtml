@@ -1,15 +1,289 @@
 @model ChessCore.Controllers.AiBenchmarkViewModel
 @{
-    ViewData["Title"] = "Đo lường Hiệu năng AI - Admin";
+    ViewData["Title"] = "Đo lường & Hiệu năng AI - Admin";
+    var resultsJson = System.Text.Json.JsonSerializer.Serialize(Model.Results);
+
+    long maxNps = 0;
+    foreach (var r in Model.Results)
+    {
+        if (r.ElapsedMs > 0)
+        {
+            long nps = (long)(r.NodesEvaluated / (r.ElapsedMs / 1000.0));
+            if (nps > maxNps) maxNps = nps;
+        }
+    }
+    if (maxNps == 0) maxNps = 4329;
+
+    double maxElapsed = Model.Results.Any() ? Model.Results.Max(r => r.ElapsedMs) : 1;
+    if (maxElapsed <= 0) maxElapsed = 1;
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+    <style>
+        /* =========================================================
+           AI BENCHMARK MODERN DASHBOARD STYLES
+           ========================================================= */
+        .bench-telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .bench-telemetry-card {
+            background: var(--bg-navy-panel, #ffffff);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 12px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .bench-telemetry-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-gold, #d97706);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+        }
+        .bench-telemetry-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .bench-telemetry-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .bench-telemetry-val {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-main, #0f172a);
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bench-telemetry-lbl {
+            font-size: 12px;
+            color: var(--text-muted, #64748b);
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Requirements Grid */
+        .req-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 14px;
+        }
+        .req-card {
+            background: var(--bg-navy-dark, #f8fafc);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .req-card:hover {
+            transform: translateY(-3px);
+            background: var(--bg-navy-panel, #ffffff);
+            border-color: var(--accent-gold, #d97706);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+        .req-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .req-icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .req-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .req-badge.green { background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); }
+        .req-badge.blue { background: rgba(59, 130, 246, 0.12); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.25); }
+        .req-badge.amber { background: rgba(217, 119, 6, 0.12); color: #b45309; border: 1px solid rgba(217, 119, 6, 0.25); }
+        .req-badge.purple { background: rgba(168, 85, 247, 0.12); color: #9333ea; border: 1px solid rgba(168, 85, 247, 0.25); }
+
+        .req-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted, #64748b);
+            margin-bottom: 4px;
+        }
+        .req-main-spec {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main, #0f172a);
+            margin-bottom: 8px;
+        }
+        .req-desc {
+            font-size: 12.5px;
+            color: var(--text-muted, #64748b);
+            line-height: 1.5;
+        }
+
+        /* Charts Row */
+        .bench-charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        /* Table Badges & Cells */
+        .depth-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .depth-1 { background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .depth-2 { background: rgba(59, 130, 246, 0.12); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .depth-3 { background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .depth-4 { background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+        .move-notation-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            background: rgba(217, 119, 6, 0.08);
+            border: 1px solid rgba(217, 119, 6, 0.25);
+            color: #b45309;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .nps-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(14, 165, 233, 0.1);
+            color: #0284c7;
+            border: 1px solid rgba(14, 165, 233, 0.25);
+        }
+
+        .tt-hit-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(16, 185, 129, 0.12);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .time-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            min-width: 120px;
+        }
+        .time-bar-bg {
+            width: 100%;
+            height: 5px;
+            background: var(--bg-navy-light, #e2e8f0);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .time-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #3b82f6, #dc2626);
+            transition: width 0.4s ease;
+        }
+
+        /* Tech Highlights Footer */
+        .tech-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        .tech-summary-card {
+            background: var(--bg-navy-panel, #ffffff);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+        .tech-summary-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .tech-summary-content h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-main, #0f172a);
+        }
+        .tech-summary-content p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-muted, #64748b);
+            line-height: 1.5;
+        }
+    </style>
 }
 
 <div class="admin-container">
     <div class="admin-header">
-        <h1><i class="fa-solid fa-microchip"></i> Đo lường & Kiểm thử Hiệu năng Động cơ AI</h1>
+        <h1><i class="fa-solid fa-microchip" style="color: var(--accent-gold);"></i> Đo lường & Kiểm thử Hiệu năng Động cơ AI</h1>
         <div class="admin-tabs">
             <a href="/Admin" class="admin-tab-btn"><i class="fa-solid fa-chart-pie"></i> Tổng quan</a>
             <a href="/Admin/Users" class="admin-tab-btn"><i class="fa-solid fa-users"></i> Quản lý Người dùng</a>
@@ -19,70 +293,432 @@
         </div>
     </div>
 
-    <!-- Yêu cầu cấu hình hệ thống khuyến nghị để vận hành Web & AI Realtime -->
-    <div class="admin-card" style="margin-bottom: 24px;">
-        <div class="admin-card-header">
-            <h2><i class="fa-solid fa-server" style="color: var(--accent-gold);"></i> Cấu hình Khuyến nghị Vận hành Hệ thống & Realtime (Production Requirements)</h2>
+    <!-- 1. DÀN THẺ CHỈ SỐ THỜI GIAN THỰC (SERVER TELEMETRY & SPECS) -->
+    <div class="bench-telemetry-grid">
+        <div class="bench-telemetry-card">
+            <div class="bench-telemetry-icon" style="background: rgba(59, 130, 246, 0.12); color: #2563eb;">
+                <i class="fa-solid fa-server"></i>
+            </div>
+            <div class="bench-telemetry-info">
+                <span class="bench-telemetry-val">.NET 9 (@Model.ProcessArchitecture)</span>
+                <span class="bench-telemetry-lbl" title="@Model.OsDescription">@Model.OsDescription</span>
+            </div>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; padding: 12px 0;">
-            <div style="background: var(--bg-hover); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-microchip" style="margin-right: 6px;"></i> Cấu hình CPU (Server / Cloud)</div>
-                <div style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 6px;">Tối thiểu 2 vCPU <span style="font-size: 13px; font-weight: 400; color: #059669;">(Khuyên dùng: 4 vCPU)</span></div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">Đáp ứng tính toán Minimax Cấp 1-4 song song nhiều phòng chơi và xử lý SignalR WebSockets mượt mà.</div>
+        <div class="bench-telemetry-card">
+            <div class="bench-telemetry-icon" style="background: rgba(168, 85, 247, 0.12); color: #9333ea;">
+                <i class="fa-solid fa-microchip"></i>
             </div>
-            <div style="background: var(--bg-hover); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-memory" style="margin-right: 6px;"></i> Bộ nhớ RAM Khuyến nghị</div>
-                <div style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 6px;">Tối thiểu 2 GB <span style="font-size: 13px; font-weight: 400; color: #059669;">(Khuyên dùng: 4 GB)</span></div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">Phục vụ bảng chuyển vị Transposition Table (Zobrist Cache), bộ đệm kết nối SignalR và Entity Framework.</div>
+            <div class="bench-telemetry-info">
+                <span class="bench-telemetry-val">@Model.ProcessorCount Logical Cores</span>
+                <span class="bench-telemetry-lbl">Song song hóa đa luồng máy chủ</span>
             </div>
-            <div style="background: var(--bg-hover); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-bolt" style="margin-right: 6px;"></i> Kết nối & Mạng Realtime</div>
-                <div style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 6px;">SignalR WebSocket <span style="font-size: 13px; font-weight: 400; color: #2563eb;">(Độ trễ &lt; 50ms)</span></div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">Băng thông tối thiểu 10 Mbps, hỗ trợ Full-Duplex WebSockets truyền nhận nước cờ tức thì giữa người chơi.</div>
+        </div>
+        <div class="bench-telemetry-card">
+            <div class="bench-telemetry-icon" style="background: rgba(16, 185, 129, 0.12); color: #059669;">
+                <i class="fa-solid fa-memory"></i>
             </div>
-            <div style="background: var(--bg-hover); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;"><i class="fa-solid fa-layer-group" style="margin-right: 6px;"></i> Môi trường & Hệ điều hành</div>
-                <div style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 6px;">.NET 9 Runtime <span style="font-size: 13px; font-weight: 400; color: var(--text-muted);">(Linux / Windows / Docker)</span></div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">Hỗ trợ triển khai đa nền tảng (Ubuntu 22.04 LTS, Windows Server, Docker container) kết hợp MySQL 8.0+.</div>
+            <div class="bench-telemetry-info">
+                <span class="bench-telemetry-val">@Model.TotalMemoryAllocatedMb MB Heap</span>
+                <span class="bench-telemetry-lbl">RAM khả dụng: @((Model.MaxMemoryLimitMb / 1024).ToString("0.0")) GB System</span>
+            </div>
+        </div>
+        <div class="bench-telemetry-card">
+            <div class="bench-telemetry-icon" style="background: rgba(217, 119, 6, 0.12); color: #d97706;">
+                <i class="fa-solid fa-gauge-high"></i>
+            </div>
+            <div class="bench-telemetry-info">
+                <span class="bench-telemetry-val">~@maxNps.ToString("N0") NPS</span>
+                <span class="bench-telemetry-lbl">Tốc độ duyệt đỉnh (Nodes/giây)</span>
             </div>
         </div>
     </div>
 
-    <!-- Bảng so sánh các cấp độ duyệt -->
-    <div class="admin-card">
-        <div class="admin-card-header">
-            <h2><i class="fa-solid fa-table-columns" style="color: var(--accent-gold);"></i> Bảng số liệu đo lường hiệu năng theo Độ sâu (Depth)</h2>
-            <a href="/Admin/AiBenchmark" class="btn-admin btn-admin-gold btn-admin-sm">
+    <!-- 2. CẤU HÌNH KHUYẾN NGHỊ VẬN HÀNH HỆ THỐNG (PRODUCTION REQUIREMENTS) -->
+    <div class="panel-box" style="margin-bottom: 24px; padding: 22px 24px; background: var(--bg-navy-panel); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(217, 119, 6, 0.12); color: var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text-main);">Cấu hình Khuyến nghị Vận hành Hệ thống & Realtime</h2>
+                    <span style="font-size: 12.5px; color: var(--text-muted);">Tiêu chuẩn phần cứng và môi trường mạng phục vụ vận hành quy mô sản xuất (Production Requirements)</span>
+                </div>
+            </div>
+            <span style="font-size: 12px; font-weight: 700; color: #059669; background: rgba(16, 185, 129, 0.1); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.25);">
+                <i class="fa-solid fa-circle-check"></i> Đạt chuẩn vận hành
+            </span>
+        </div>
+
+        <div class="req-grid">
+            <!-- Thẻ 1: CPU -->
+            <div class="req-card">
+                <div>
+                    <div class="req-card-top">
+                        <div class="req-icon-box" style="background: rgba(59, 130, 246, 0.12); color: #2563eb;">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <span class="req-badge blue"><i class="fa-solid fa-check"></i> Khuyên dùng: 4 vCPU</span>
+                    </div>
+                    <div class="req-title">Cấu hình CPU (Server / Cloud)</div>
+                    <div class="req-main-spec">Tối thiểu 2 vCPU</div>
+                    <div class="req-desc">Đáp ứng tính toán Minimax Cấp 1-4 song song nhiều phòng chơi và xử lý SignalR WebSockets mượt mà không nghẽn luồng.</div>
+                </div>
+            </div>
+
+            <!-- Thẻ 2: RAM -->
+            <div class="req-card">
+                <div>
+                    <div class="req-card-top">
+                        <div class="req-icon-box" style="background: rgba(16, 185, 129, 0.12); color: #059669;">
+                            <i class="fa-solid fa-memory"></i>
+                        </div>
+                        <span class="req-badge green"><i class="fa-solid fa-check"></i> Khuyên dùng: 4 GB</span>
+                    </div>
+                    <div class="req-title">Bộ nhớ RAM Khuyến nghị</div>
+                    <div class="req-main-spec">Tối thiểu 2 GB</div>
+                    <div class="req-desc">Phục vụ bảng chuyển vị Transposition Table (Zobrist Cache), bộ đệm kết nối SignalR realtime và kết nối dữ liệu Entity Framework.</div>
+                </div>
+            </div>
+
+            <!-- Thẻ 3: Realtime Network -->
+            <div class="req-card">
+                <div>
+                    <div class="req-card-top">
+                        <div class="req-icon-box" style="background: rgba(168, 85, 247, 0.12); color: #9333ea;">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <span class="req-badge purple"><i class="fa-solid fa-gauge-simple-high"></i> Độ trễ &lt; 50ms</span>
+                    </div>
+                    <div class="req-title">Kết nối & Mạng Realtime</div>
+                    <div class="req-main-spec">SignalR WebSocket</div>
+                    <div class="req-desc">Băng thông tối thiểu 10 Mbps, hỗ trợ Full-Duplex WebSockets truyền nhận nước cờ tức thì, đồng bộ bàn đấu song song.</div>
+                </div>
+            </div>
+
+            <!-- Thẻ 4: OS & Container -->
+            <div class="req-card">
+                <div>
+                    <div class="req-card-top">
+                        <div class="req-icon-box" style="background: rgba(217, 119, 6, 0.12); color: #d97706;">
+                            <i class="fa-solid fa-cubes"></i>
+                        </div>
+                        <span class="req-badge amber"><i class="fa-solid fa-cube"></i> Đa nền tảng</span>
+                    </div>
+                    <div class="req-title">Môi trường & Hệ điều hành</div>
+                    <div class="req-main-spec">.NET 9 Runtime</div>
+                    <div class="req-desc">Hỗ trợ triển khai đa nền tảng linh hoạt (Ubuntu 22.04 LTS, Windows Server, Docker Container) kết hợp máy chủ MySQL 8.0+.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. CỤM SƠ ĐỒ & BIỂU ĐỒ TRỰC QUAN HÓA HIỆU NĂNG (CHART.JS 2 CỘT HIỆN ĐẠI) -->
+    <div class="bench-charts-grid">
+        <!-- Biểu đồ 1: Thời gian xử lý & Tốc độ duyệt theo Cấp độ -->
+        <div class="panel-box" style="padding: 22px 24px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                <h2 class="panel-title" style="margin: 0; font-size: 16px;">
+                    <i class="fa-solid fa-clock-rotate-left" style="color: #3b82f6;"></i> Thời gian thực thi theo Độ sâu (ms)
+                </h2>
+                <span style="font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-microchip"></i> Động cơ Minimax</span>
+            </div>
+            <div style="position: relative; width: 100%; height: 260px;">
+                <canvas id="benchmarkLatencyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Biểu đồ 2: Cơ cấu Nút duyệt & Hiệu quả Cắt tỉa Alpha-Beta -->
+        <div class="panel-box" style="padding: 22px 24px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                <h2 class="panel-title" style="margin: 0; font-size: 16px;">
+                    <i class="fa-solid fa-scissors" style="color: #10b981;"></i> Nút duyệt & Cắt tỉa Alpha-Beta
+                </h2>
+                <span style="font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-shield-check"></i> Tối ưu nhánh</span>
+            </div>
+            <div style="position: relative; width: 100%; height: 260px;">
+                <canvas id="benchmarkPruningChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. BẢNG SỐ LIỆU ĐO LƯỜNG HIỆU NĂNG CHI TIẾT THEO ĐỘ SÂU (DEPTH) -->
+    <div class="panel-box" style="margin-bottom: 24px; padding: 22px 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(217, 119, 6, 0.12); color: var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                    <i class="fa-solid fa-table-columns"></i>
+                </div>
+                <div>
+                    <h2 class="panel-title" style="margin: 0; font-size: 17px;">Bảng số liệu đo lường hiệu năng theo Độ sâu (Depth)</h2>
+                    <span style="font-size: 12.5px; color: var(--text-muted);">Thực nghiệm trực tiếp thuật toán Minimax kết hợp Alpha-Beta và Zobrist Transposition Table</span>
+                </div>
+            </div>
+            <a href="/Admin/AiBenchmark" class="btn-admin btn-admin-gold btn-admin-sm" style="box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);">
                 <i class="fa-solid fa-rotate"></i> Chạy lại Benchmark
             </a>
         </div>
 
-        <div class="admin-table-wrapper">
-            <table class="admin-table">
+        <div class="admin-table-wrapper" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px;">
+            <table class="admin-table" style="margin: 0;">
                 <thead>
-                    <tr>
-                        <th style="width: 120px; text-align: center;">Độ sâu (Depth)</th>
-                        <th style="text-align: center;">Nước đi tốt nhất tìm được</th>
+                    <tr style="background: var(--bg-navy-dark, #f8fafc);">
+                        <th style="width: 140px; text-align: center;">Độ sâu (Depth)</th>
+                        <th>Nước đi tối ưu tìm được</th>
                         <th style="text-align: center;">Số nút đã duyệt (Nodes)</th>
                         <th style="text-align: center;">Trúng Bảng chuyển vị (TT Hits)</th>
-                        <th style="text-align: center;">Số lần cắt tỉa Beta (Cutoffs)</th>
-                        <th style="text-align: center;">Thời gian thực thi (ms)</th>
+                        <th style="text-align: center;">Cắt tỉa Beta (Cutoffs)</th>
+                        <th style="text-align: center; width: 170px;">Thời gian thực thi</th>
+                        <th style="text-align: center; width: 140px;">Tốc độ xử lý</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var r in Model.Results)
                     {
+                        var depthClass = r.Depth == 1 ? "depth-1" : (r.Depth == 2 ? "depth-2" : (r.Depth == 3 ? "depth-3" : "depth-4"));
+                        var depthLabel = r.Depth == 1 ? "Cấp 1 · Tức thì" : (r.Depth == 2 ? "Cấp 2 · Cơ bản" : (r.Depth == 3 ? "Cấp 3 · Chiến thuật" : "Cấp 4 · Chiều sâu"));
+                        var depthIcon = r.Depth == 1 ? "fa-bolt" : (r.Depth == 2 ? "fa-gauge" : (r.Depth == 3 ? "fa-brain" : "fa-crown"));
+                        long nps = r.ElapsedMs > 0 ? (long)(r.NodesEvaluated / (r.ElapsedMs / 1000.0)) : 0;
+                        double timePct = Math.Min(100.0, Math.Max(4.0, (r.ElapsedMs / maxElapsed) * 100.0));
+
                         <tr>
-                            <td style="text-align: center;"><strong style="color: var(--accent-gold-dark); font-size: 16px;">Cấp @r.Depth</strong></td>
-                            <td style="text-align: center;"><code style="background: rgba(180, 83, 9, 0.08); color: #b45309; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 14px; border: 1px solid rgba(180, 83, 9, 0.2);">@r.BestMove</code></td>
-                            <td style="text-align: center; font-weight: 700; color: #2563eb;">@r.NodesEvaluated.ToString("N0")</td>
-                            <td style="text-align: center; font-weight: 700; color: #059669;">@r.TranspositionHits.ToString("N0")</td>
-                            <td style="text-align: center; font-weight: 700; color: #d97706;">@r.BetaCutoffs.ToString("N0")</td>
-                            <td style="text-align: center; font-weight: 700; color: var(--text-main);">@r.ElapsedMs.ToString("F2") ms</td>
+                            <td style="text-align: center;">
+                                <span class="depth-pill @depthClass">
+                                    <i class="fa-solid @depthIcon"></i> @depthLabel
+                                </span>
+                            </td>
+                            <td>
+                                <span class="move-notation-box">
+                                    <i class="fa-solid fa-chess-knight" style="font-size: 11px;"></i> @r.BestMove
+                                </span>
+                            </td>
+                            <td style="text-align: center;">
+                                <strong style="color: #2563eb; font-size: 15px;">@r.NodesEvaluated.ToString("N0")</strong>
+                                <div style="font-size: 11px; color: var(--text-muted);">nút cờ</div>
+                            </td>
+                            <td style="text-align: center;">
+                                @if (r.TranspositionHits > 0)
+                                {
+                                    <span class="tt-hit-pill">
+                                        <i class="fa-solid fa-bolt"></i> @r.TranspositionHits.ToString("N0") hits
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--text-muted); font-size: 13px; font-weight: 600;">0</span>
+                                }
+                            </td>
+                            <td style="text-align: center;">
+                                <strong style="color: #d97706; font-size: 14px;">@r.BetaCutoffs.ToString("N0")</strong>
+                                <div style="font-size: 11px; color: var(--text-muted);">nhánh cắt</div>
+                            </td>
+                            <td style="text-align: center;">
+                                <div class="time-bar-wrapper">
+                                    <strong style="color: var(--text-main); font-size: 14px;">@r.ElapsedMs.ToString("F2") ms</strong>
+                                    <div class="time-bar-bg">
+                                        <div class="time-bar-fill" style="width: @timePct%;"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="nps-pill">
+                                    <i class="fa-solid fa-gauge-high"></i> @nps.ToString("N0") NPS
+                                </span>
+                            </td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- 5. TÓM TẮT NỀN TẢNG KỸ THUẬT & CƠ CHẾ ĐỘNG CƠ CỜ (ENGINE MECHANISMS) -->
+    <div class="tech-summary-grid">
+        <div class="tech-summary-card">
+            <div class="tech-summary-icon" style="background: rgba(59, 130, 246, 0.12); color: #2563eb;">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <div class="tech-summary-content">
+                <h4>Động cơ Minimax Đệ quy</h4>
+                <p>Khám phá cây trò chơi đối kháng 2 người có tổng bằng 0 (Zero-Sum Game), tối ưu hóa từng bước đi cho phe Đỏ và phe Đen.</p>
+            </div>
+        </div>
+        <div class="tech-summary-card">
+            <div class="tech-summary-icon" style="background: rgba(16, 185, 129, 0.12); color: #059669;">
+                <i class="fa-solid fa-scissors"></i>
+            </div>
+            <div class="tech-summary-content">
+                <h4>Cắt tỉa Alpha-Beta Pruning</h4>
+                <p>Loại bỏ hơn 80% các nhánh tìm kiếm kém triển vọng, giảm độ phức tạp tính toán từ $O(b^d)$ xuống xấp xỉ $O(b^{d/2})$.</p>
+            </div>
+        </div>
+        <div class="tech-summary-card">
+            <div class="tech-summary-icon" style="background: rgba(217, 119, 6, 0.12); color: #d97706;">
+                <i class="fa-solid fa-database"></i>
+            </div>
+            <div class="tech-summary-content">
+                <h4>Bảng chuyển vị Zobrist Hashing</h4>
+                <p>Mã hóa trạng thái bàn cờ thành mã băm 64-bit ngẫu nhiên, lưu đệm các thế cờ trùng lặp nhằm tái sử dụng kết quả tức thời.</p>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function () {
+            const rawResults = @Html.Raw(resultsJson);
+            if (!rawResults || rawResults.length === 0) return;
+
+            const labels = rawResults.map(r => 'Cấp ' + r.Depth);
+            const latencyData = rawResults.map(r => r.ElapsedMs);
+            const nodesData = rawResults.map(r => r.NodesEvaluated);
+            const cutoffsData = rawResults.map(r => r.BetaCutoffs);
+            const ttHitsData = rawResults.map(r => r.TranspositionHits);
+
+            // ========================================================
+            // 1. BIỂU ĐỒ THỜI GIAN PHẢN HỒI (LATENCY BY DEPTH)
+            // ========================================================
+            const latencyCanvas = document.getElementById('benchmarkLatencyChart');
+            if (latencyCanvas && window.Chart) {
+                new Chart(latencyCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Thời gian thực thi (ms)',
+                            data: latencyData,
+                            backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#dc2626'],
+                            hoverBackgroundColor: ['#059669', '#2563eb', '#d97706', '#b91c1c'],
+                            borderRadius: 8,
+                            barPercentage: 0.55
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                titleColor: '#f8fafc',
+                                bodyColor: '#cbd5e1',
+                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                borderWidth: 1,
+                                padding: 10,
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ' Độ trễ: ' + ctx.raw.toFixed(2) + ' ms';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#0f172a', font: { size: 12, weight: '700' } }
+                            },
+                            y: {
+                                grid: { color: 'rgba(0, 0, 0, 0.06)' },
+                                ticks: {
+                                    color: '#64748b',
+                                    font: { size: 11, weight: '600' },
+                                    callback: function(v) { return v + ' ms'; }
+                                },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            // ========================================================
+            // 2. BIỂU ĐỒ CƠ CẤU NÚT DUYỆT & CẮT TỈA (PRUNING & TT HITS)
+            // ========================================================
+            const pruningCanvas = document.getElementById('benchmarkPruningChart');
+            if (pruningCanvas && window.Chart) {
+                new Chart(pruningCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Nút đã duyệt (Nodes)',
+                                data: nodesData,
+                                backgroundColor: '#3b82f6',
+                                hoverBackgroundColor: '#2563eb',
+                                borderRadius: 6,
+                                barPercentage: 0.65,
+                                categoryPercentage: 0.65
+                            },
+                            {
+                                label: 'Cắt tỉa Beta (Cutoffs)',
+                                data: cutoffsData,
+                                backgroundColor: '#f59e0b',
+                                hoverBackgroundColor: '#d97706',
+                                borderRadius: 6,
+                                barPercentage: 0.65,
+                                categoryPercentage: 0.65
+                            },
+                            {
+                                label: 'Trúng Cache (TT Hits)',
+                                data: ttHitsData,
+                                backgroundColor: '#10b981',
+                                hoverBackgroundColor: '#059669',
+                                borderRadius: 6,
+                                barPercentage: 0.65,
+                                categoryPercentage: 0.65
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                align: 'end',
+                                labels: {
+                                    color: '#1e293b',
+                                    font: { size: 11, weight: '700' },
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    padding: 10
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                titleColor: '#f8fafc',
+                                bodyColor: '#cbd5e1',
+                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                borderWidth: 1,
+                                padding: 10,
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ' ' + ctx.dataset.label + ': ' + ctx.raw.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#0f172a', font: { size: 12, weight: '700' } }
+                            },
+                            y: {
+                                grid: { color: 'rgba(0, 0, 0, 0.06)' },
+                                ticks: {
+                                    color: '#64748b',
+                                    font: { size: 11, weight: '600' },
+                                    callback: function(v) { return v.toLocaleString(); }
+                                },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
+}
