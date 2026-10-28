@@ -53,14 +53,90 @@ namespace ChessCore.Controllers
                 }
             }
 
+            var users = await _context.Users.OrderByDescending(u => u.Elo).ToListAsync();
+
+            // Thống kê số lượng bài cờ thế đã giải thành công
+            var puzzleSolvedCounts = await _context.PuzzleProgresses
+                .GroupBy(p => p.UserId)
+                .Select(g => new { UserId = g.Key, Solved = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Solved);
+
+            // Thống kê số bài học đã hoàn thành
+            var lessonCompletedCounts = await _context.UserCourseProgresses
+                .Where(c => c.IsCompleted)
+                .GroupBy(c => c.UserId)
+                .Select(g => new { UserId = g.Key, Completed = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Completed);
+
+            var allUserDtos = users.Select(u =>
+            {
+                double winRate = u.GamesPlayed > 0 ? Math.Round((double)u.Wins * 100.0 / u.GamesPlayed, 1) : 0;
+                string rankTitle = u.Elo switch
+                {
+                    >= 1500 => "Đặc cấp Đại sư",
+                    >= 1400 => "Kiện tướng",
+                    >= 1250 => "Kỳ thủ Giỏi",
+                    >= 1150 => "Kỳ thủ Nghiệp dư",
+                    >= 1050 => "Người mới chơi",
+                    _ => "Tập sự"
+                };
+
+                return new AdminUserOverviewDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    PlayerId = u.PlayerId,
+                    Elo = u.Elo,
+                    Role = u.Role ?? "Player",
+                    GamesPlayed = u.GamesPlayed,
+                    Wins = u.Wins,
+                    Losses = u.Losses,
+                    Draws = u.Draws,
+                    WinRate = winRate,
+                    PuzzleScore = u.PuzzleScore,
+                    PuzzlesSolved = puzzleSolvedCounts.TryGetValue(u.Id, out int pCount) ? pCount : 0,
+                    LessonsCompleted = lessonCompletedCounts.TryGetValue(u.Id, out int lCount) ? lCount : 0,
+                    Title = rankTitle
+                };
+            }).ToList();
+
+            // Phân bổ 4 chế độ chơi chuẩn chính quy
+            var modeCounts = await _context.Games
+                .GroupBy(g => g.GameMode)
+                .Select(g => new { Mode = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var modeDist = new Dictionary<string, int>
+            {
+                ["Online"] = 0,
+                ["PvE"] = 0,
+                ["PvP"] = 0,
+                ["AiVsAi"] = 0
+            };
+            foreach (var m in modeCounts)
+            {
+                if (m.Mode == "Online" || m.Mode == "OnlinePublic") modeDist["Online"] += m.Count;
+                else if (m.Mode == "PvE") modeDist["PvE"] += m.Count;
+                else if (m.Mode == "PvP") modeDist["PvP"] += m.Count;
+                else if (m.Mode == "AiVsAi") modeDist["AiVsAi"] += m.Count;
+            }
+
+            int totalMoves = await _context.Moves.CountAsync();
+            double avgWinRate = allUserDtos.Count > 0 ? Math.Round(allUserDtos.Average(u => u.WinRate), 1) : 0;
+
             var vm = new AdminDashboardViewModel
             {
-                TotalUsers = await _context.Users.CountAsync(),
+                TotalUsers = users.Count,
                 TotalGames = await _context.Games.CountAsync(),
                 TotalPuzzles = await _context.Puzzles.CountAsync(),
                 TotalModules = await _context.CourseModules.CountAsync(),
                 TotalLessons = await _context.CourseLessons.CountAsync(),
-                RecentUsers = await _context.Users.OrderByDescending(u => u.Id).Take(5).ToListAsync(),
+                TotalMoves = totalMoves,
+                AverageSystemWinRate = avgWinRate,
+                GameModesDistribution = modeDist,
+                AllUsers = allUserDtos,
+                RecentUsers = users.Take(5).ToList(),
                 RecentPuzzles = await _context.Puzzles.OrderByDescending(p => p.Id).Take(5).ToListAsync()
             };
 
@@ -483,6 +559,25 @@ namespace ChessCore.Controllers
         public double ElapsedMs { get; set; }
     }
 
+    public class AdminUserOverviewDto
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string PlayerId { get; set; } = string.Empty;
+        public int Elo { get; set; }
+        public string Role { get; set; } = "Player";
+        public int GamesPlayed { get; set; }
+        public int Wins { get; set; }
+        public int Losses { get; set; }
+        public int Draws { get; set; }
+        public double WinRate { get; set; }
+        public int PuzzleScore { get; set; }
+        public int PuzzlesSolved { get; set; }
+        public int LessonsCompleted { get; set; }
+        public string Title { get; set; } = "Tập sự";
+    }
+
     public class AdminDashboardViewModel
     {
         public int TotalUsers { get; set; }
@@ -490,6 +585,10 @@ namespace ChessCore.Controllers
         public int TotalPuzzles { get; set; }
         public int TotalModules { get; set; }
         public int TotalLessons { get; set; }
+        public int TotalMoves { get; set; }
+        public double AverageSystemWinRate { get; set; }
+        public Dictionary<string, int> GameModesDistribution { get; set; } = new();
+        public List<AdminUserOverviewDto> AllUsers { get; set; } = new();
         public List<User> RecentUsers { get; set; } = new();
         public List<Puzzle> RecentPuzzles { get; set; } = new();
     }
