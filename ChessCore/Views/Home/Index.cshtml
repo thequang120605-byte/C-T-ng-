@@ -30,9 +30,11 @@
 
         @if (Model.CurrentUser != null)
         {
+            var initial = !string.IsNullOrEmpty(Model.CurrentUser.Username) ? Model.CurrentUser.Username.Substring(0, 1).ToUpper() : "U";
             <div class="hero-user-card">
-                <div class="user-avatar-circle">
-                    <i class="fa-solid fa-user-ninja"></i>
+                <div class="user-avatar-circle" title="Tài khoản: @Model.CurrentUser.Username">
+                    <span class="avatar-initial" style="font-size: 32px; font-weight: 800; text-transform: uppercase; user-select: none;">@initial</span>
+                    <span class="status-indicator-dot" style="width: 15px; height: 15px; border-width: 3px; bottom: 2px; right: 2px;" title="Đang trực tuyến"></span>
                 </div>
                 <h3>@Model.CurrentUser.Username</h3>
                 <div class="user-elo"><i class="fa-solid fa-trophy"></i> Elo: @Model.CurrentUser.Elo</div>
