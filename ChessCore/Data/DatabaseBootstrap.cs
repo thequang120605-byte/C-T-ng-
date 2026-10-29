@@ -33,6 +33,9 @@ namespace ChessCore.Data
 
             // 4. Seed dữ liệu 12 ván cờ Kỳ phổ Danh thủ kinh điển
             await EnsureMasterGamesAsync(dbContext, logger);
+
+            // 5. Chuẩn hóa tiêu đề cờ thế (loại bỏ chú thích thừa và số bài thừa)
+            await NormalizePuzzleTitlesAsync(dbContext, logger);
         }
 
         public static async Task EnsureSchemaColumnsAndTablesAsync(AppDbContext dbContext, ILogger? logger = null)
@@ -205,6 +208,19 @@ namespace ChessCore.Data
             catch (Exception ex)
             {
                 logger.LogWarning(">>> Cảnh báo khi tạo/kiểm tra tài khoản admin: {Message}", ex.Message);
+            }
+        }
+
+        public static async Task NormalizePuzzleTitlesAsync(AppDbContext dbContext, ILogger? logger = null)
+        {
+            try
+            {
+                await ExecuteRawSqlSafely(dbContext, "UPDATE `Puzzles` SET `Title` = 'Đối diện tiếu' WHERE `Title` LIKE 'Đối diện tiếu%';", logger);
+                await ExecuteRawSqlSafely(dbContext, "UPDATE `Puzzles` SET `Title` = 'Bạch diện tướng' WHERE `Title` LIKE 'Bạch diện tướng%';", logger);
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(">>> Cảnh báo khi chuẩn hóa tiêu đề cờ thế: {Message}", ex.Message);
             }
         }
 

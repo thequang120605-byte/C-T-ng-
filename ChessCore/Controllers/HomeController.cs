@@ -71,12 +71,21 @@ namespace ChessCore.Controllers
             if (dailyPuzzle != null)
             {
                 vm.DailyPuzzleId = dailyPuzzle.Id;
-                vm.DailyPuzzleTitle = dailyPuzzle.Title;
+                vm.DailyPuzzleTitle = CleanDailyPuzzleTitle(dailyPuzzle.Title);
                 vm.DailyPuzzleCategory = dailyPuzzle.MateIn > 0 ? $"Sát pháp {dailyPuzzle.MateIn} nước" : "Cờ thế căn bản";
                 vm.DailyPuzzleFen = dailyPuzzle.Fen;
             }
 
             return View(vm);
+        }
+
+        private static string CleanDailyPuzzleTitle(string? title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return "Sát cục kinh điển";
+            var cleaned = title;
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\s*\([Tt]ướng đối mặt\)", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\s*\([Bb]ài\s*\d+\)", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return cleaned.Trim();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
