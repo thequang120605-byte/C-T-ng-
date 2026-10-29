@@ -14,20 +14,19 @@ namespace ChessCore.Data
     {
         public static async Task InitializeAsync(AppDbContext dbContext, ILogger logger)
         {
-            // 1. Tự động khắc phục các cột và bảng bị thiếu trên TiDB Cloud/MySQL (Self-Healing Schema)
-            // Phải chạy trước để khi Database.Migrate hoặc các truy vấn EntityFramework chạy không bị lỗi Unknown column
-            await EnsureSchemaColumnsAndTablesAsync(dbContext, logger);
-
-            // 2. Chạy Migration tự động của EF Core (với try-catch an toàn)
+            // 1. Chạy Migration tự động của EF Core (đã sửa lỗi collation puzzlekey trên TiDB)
             try
             {
                 await dbContext.Database.MigrateAsync();
-                logger.LogInformation(">>> EF Core Database.Migrate hoàn tất.");
+                logger.LogInformation(">>> EF Core Database.Migrate hoàn tất thành công.");
             }
             catch (Exception ex)
             {
-                logger.LogWarning(">>> Cảnh báo khi chạy Database.Migrate (bỏ qua do đã tự vá schema): {Message}", ex.Message);
+                logger.LogWarning(">>> Cảnh báo khi chạy Database.Migrate: {Message}. Tiến hành Self-Healing vá dự phòng...", ex.Message);
             }
+
+            // 2. Tự động kiểm tra và vá bổ sung các cột/bảng bị thiếu (Self-Healing Schema)
+            await EnsureSchemaColumnsAndTablesAsync(dbContext, logger);
 
             // 3. Seed tài khoản Quản trị viên mặc định (admin / Admin@123)
             await EnsureAdminUserAsync(dbContext, logger);

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,9 +10,8 @@ namespace ChessCore.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // TiDB Cloud đã mặc định hỗ trợ utf8mb4. Bỏ lệnh CONVERT COLLATE trên bảng có index để tránh lỗi TiDB 80004005.
             migrationBuilder.Sql(
-                "ALTER TABLE `Puzzles` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" +
-                "ALTER TABLE `PuzzleProgresses` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" +
                 "UPDATE `Puzzles` SET `Title` = CASE `Id` " +
                 "WHEN 1 THEN 'Tuyệt sát 1' " +
                 "WHEN 2 THEN 'Pháo lồng' " +
@@ -27,9 +26,6 @@ namespace ChessCore.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql(
-                "ALTER TABLE `Puzzles` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" +
-                "ALTER TABLE `PuzzleProgresses` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
         }
     }
 }
