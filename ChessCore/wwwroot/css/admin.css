@@ -3,7 +3,8 @@
 ========================================================= */
 
 .admin-container {
-    max-width: 1300px;
+    max-width: 1440px;
+    width: 100%;
     margin: 0 auto;
     padding: 0 20px 48px;
     color: var(--text-main);
@@ -164,7 +165,7 @@
     background: var(--bg-navy-panel);
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    padding: 24px;
+    padding: 20px 16px;
     margin-bottom: 24px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 }
@@ -202,16 +203,18 @@
 .admin-table th {
     background: var(--bg-navy-light);
     color: var(--text-muted);
-    padding: 12px 14px;
+    padding: 10px 8px;
     font-weight: 600;
+    font-size: 13px;
     border-bottom: 1px solid var(--border-color);
 }
 
 .admin-table td {
-    padding: 12px 14px;
+    padding: 10px 8px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-main);
     vertical-align: middle;
+    font-size: 13px;
 }
 
 .admin-table tr:hover td {
@@ -274,8 +277,8 @@
 .winrate-bar-container {
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-width: 110px;
+    gap: 6px;
+    min-width: 80px;
 }
 .winrate-bar-bg {
     flex: 1;
@@ -383,8 +386,11 @@
 }
 
 .btn-admin-sm {
-    padding: 6px 12px;
-    font-size: 12px;
+    padding: 5px 8px;
+    font-size: 11.5px;
+    border-radius: 6px;
+    gap: 4px;
+    white-space: nowrap;
 }
 
 /* Modal Form Styles */

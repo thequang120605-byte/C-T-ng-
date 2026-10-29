@@ -125,16 +125,16 @@
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th style="width: 60px; text-align: center; white-space: nowrap;">Hạng</th>
-                        <th style="min-width: 180px;">Kỳ thủ</th>
-                        <th style="width: 140px; white-space: nowrap;">Kỳ lực & Elo</th>
-                        <th style="width: 85px; text-align: center; white-space: nowrap;">Tổng ván</th>
-                        <th style="width: 175px; text-align: center; white-space: nowrap;">Thắng - Hòa - Thua</th>
-                        <th style="width: 150px; white-space: nowrap;">Tỉ lệ thắng</th>
-                        <th style="width: 150px; text-align: center; white-space: nowrap;">Cờ thế đã giải</th>
-                        <th style="width: 110px; text-align: center; white-space: nowrap;">Khóa học</th>
-                        <th style="width: 100px; text-align: center; white-space: nowrap;">Vai trò</th>
-                        <th style="text-align: right; min-width: 200px; white-space: nowrap;">Hành động</th>
+                        <th style="width: 44px; text-align: center; white-space: nowrap;">Hạng</th>
+                        <th>Kỳ thủ</th>
+                        <th style="width: 105px; white-space: nowrap;">Kỳ lực & Elo</th>
+                        <th style="width: 65px; text-align: center; white-space: nowrap;">Tổng ván</th>
+                        <th style="width: 125px; text-align: center; white-space: nowrap;">Thắng - Hòa - Thua</th>
+                        <th style="width: 105px; white-space: nowrap;">Tỉ lệ thắng</th>
+                        <th style="width: 95px; text-align: center; white-space: nowrap;">Cờ thế đã giải</th>
+                        <th style="width: 70px; text-align: center; white-space: nowrap;">Khóa học</th>
+                        <th style="width: 75px; text-align: center; white-space: nowrap;">Vai trò</th>
+                        <th style="text-align: right; width: 155px; white-space: nowrap;">Hành động</th>
                     </tr>
                 </thead>
                 <tbody id="user-table-body">
@@ -159,14 +159,14 @@
                             </td>
                             <td>
                                 <div>
-                                    <strong style="color: var(--text-main, #0f172a); font-size: 14px;">@u.Username</strong>
+                                    <strong style="color: var(--text-main, #0f172a); font-size: 13.5px;">@u.Username</strong>
                                     @if (u.IsLocked)
                                     {
-                                        <span style="background: rgba(239, 68, 68, 0.15); color: #dc2626; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">
-                                            <i class="fa-solid fa-lock"></i> ĐÃ KHÓA
+                                        <span style="background: rgba(239, 68, 68, 0.15); color: #dc2626; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">
+                                            <i class="fa-solid fa-lock"></i> KHÓA
                                         </span>
                                     }
-                                    <div style="font-size: 11px; color: var(--text-muted, #64748b);">
+                                    <div style="font-size: 11px; color: var(--text-muted, #64748b); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
                                         @u.Email <span style="opacity: 0.5;">|</span> Mã: <code style="color: var(--accent-gold-dark, #b45309); font-weight: 700;">@u.PlayerId</code>
                                     </div>
                                 </div>
@@ -174,13 +174,13 @@
                             <td style="white-space: nowrap;">
                                 <div style="display: flex; flex-direction: column; gap: 2px;">
                                     <span class="tier-badge @tierClass">@u.Title</span>
-                                    <span style="font-size: 13px; font-weight: 800; color: var(--accent-gold, #d97706);">
+                                    <span style="font-size: 12.5px; font-weight: 800; color: var(--accent-gold, #d97706);">
                                         <i class="fa-solid fa-star" style="font-size: 10px;"></i> @u.Elo
                                     </span>
                                 </div>
                             </td>
                             <td style="text-align: center; white-space: nowrap;">
-                                <strong style="font-size: 14px; color: var(--text-main, #0f172a);">@u.GamesPlayed</strong>
+                                <strong style="font-size: 13.5px; color: var(--text-main, #0f172a);">@u.GamesPlayed</strong>
                             </td>
                             <td style="text-align: center; white-space: nowrap;">
                                 <span class="stat-wdl-pill">
@@ -194,7 +194,7 @@
                                     <div class="winrate-bar-bg">
                                         <div class="winrate-bar-fill" style="width: @(winRateWidthStr)%; background-color: @winRateColor;"></div>
                                     </div>
-                                    <strong style="color: @winRateColor; font-size: 13px; min-width: 44px; text-align: right;">@(winRatePercentStr)%</strong>
+                                    <strong style="color: @winRateColor; font-size: 12.5px; min-width: 40px; text-align: right;">@(winRatePercentStr)%</strong>
                                 </div>
                             </td>
                             <td style="text-align: center; white-space: nowrap;">
@@ -208,8 +208,8 @@
                                     @(u.Role ?? "Player")
                                 </span>
                             </td>
-                            <td style="text-align: right; white-space: nowrap;">
-                                <div style="display: inline-flex; gap: 6px; align-items: center; justify-content: flex-end; white-space: nowrap;">
+                            <td style="text-align: right; width: 155px; white-space: nowrap;">
+                                <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: flex-end; white-space: nowrap;">
                                     <form asp-controller="Admin" asp-action="ToggleAdminRole" method="post" style="display: inline;">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="userId" value="@u.Id" />
@@ -224,7 +224,7 @@
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="userId" value="@u.Id" />
                                             <button type="submit" class="btn-admin @(u.IsLocked ? "btn-admin-success" : "btn-admin-warning") btn-admin-sm" title="@(u.IsLocked ? "Mở khóa tài khoản" : "Khóa tài khoản")">
-                                                <i class="fa-solid @(u.IsLocked ? "fa-lock-open" : "fa-lock")"></i> @(u.IsLocked ? "Mở khóa" : "Khóa")
+                                                <i class="fa-solid @(u.IsLocked ? "fa-lock-open" : "fa-lock")"></i> @(u.IsLocked ? "Mở" : "Khóa")
                                             </button>
                                         </form>
                                     }
