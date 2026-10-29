@@ -252,15 +252,15 @@
                                 </div>
                                 <div class="leader-user">
                                     <div class="leader-name-row">
-                                        <strong class="leader-username">@player.Username</strong>
+                                        <strong class="leader-username" title="@player.Username">@player.Username</strong>
                                         <span class="player-tier-badge @tierClass">
                                             <i class="fa-solid @tierIcon"></i> @tierName
                                         </span>
                                     </div>
                                     <div class="leader-sub-info">
                                         <span><i class="fa-solid fa-chess-board"></i> @player.GamesPlayed ván</span>
-                                        <span>•</span>
-                                        <span style="color: #10b981;"><i class="fa-solid fa-check"></i> @player.Wins thắng</span>
+                                        <span class="sub-dot">•</span>
+                                        <span class="sub-wins"><i class="fa-solid fa-check"></i> @player.Wins thắng</span>
                                     </div>
                                 </div>
                                 <div class="leader-elo-pill">
