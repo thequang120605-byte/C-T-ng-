@@ -239,7 +239,7 @@
         <div class="board-column">
             
             <!-- THÔNG TIN ĐỐI THỦ (QUÂN ĐEN) -->
-            <div class="player-bar player-black">
+            <div id="black-player-card" class="player-bar player-black">
                 <div class="player-info-left">
                     <div class="player-avatar black-bg"><i class="fa-solid fa-user"></i></div>
                     <div class="player-details">
@@ -247,7 +247,7 @@
                         <span id="black-player-status" class="status-text">Đang chờ...</span>
                     </div>
                 </div>
-                <div class="player-captured black-pieces">
+                <div id="black-captured-pieces" class="player-captured black-pieces" aria-label="Quân Đen đã ăn">
                     <!-- Quân bị bắt sẽ hiển thị ở đây -->
                 </div>
                 <div id="black-player-timer" class="player-timer">03:00</div>
@@ -329,7 +329,7 @@
             </div>
 
             <!-- THÔNG TIN NGƯỜI CHƠI (QUÂN ĐỎ) -->
-            <div class="player-bar player-red">
+            <div id="red-player-card" class="player-bar player-red">
                 <div class="player-info-left">
                     <div class="player-avatar red-bg"><i class="fa-solid fa-user"></i></div>
                     <div class="player-details">
@@ -337,7 +337,7 @@
                         <span id="red-player-status" class="status-text">Đang chờ...</span>
                     </div>
                 </div>
-                <div class="player-captured red-pieces">
+                <div id="red-captured-pieces" class="player-captured red-pieces" aria-label="Quân Đỏ đã ăn">
                     <!-- Quân bị bắt sẽ hiển thị ở đây -->
                 </div>
                 <div id="red-player-timer" class="player-timer">03:00</div>

@@ -33,13 +33,17 @@ namespace ChessCore.Controllers
         private readonly Microsoft.AspNetCore.SignalR.IHubContext<Hubs.GameHub> _hubContext;
         private readonly AppDbContext _dbContext;
         private readonly IMemoryCache _cache;
+        private readonly IGameSettlementService _settlementService;
+        private readonly ChessCore.Services.AiCapacity _aiCapacity;
 
         public GamesController(
             IGameService gameService,
             IMoveService moveService,
             Microsoft.AspNetCore.SignalR.IHubContext<Hubs.GameHub> hubContext,
             AppDbContext dbContext,
-            IMemoryCache cache
+            IMemoryCache cache,
+            IGameSettlementService settlementService,
+            ChessCore.Services.AiCapacity aiCapacity
         )
         {
             _gameService = gameService;
@@ -47,6 +51,8 @@ namespace ChessCore.Controllers
             _hubContext = hubContext;
             _dbContext = dbContext;
             _cache = cache;
+            _settlementService = settlementService;
+            _aiCapacity = aiCapacity;
         }
 
         // Bảng xếp hạng kỳ thủ theo Elo và Cờ thế (REST API công khai cho Mobile & Web)
@@ -324,6 +330,8 @@ namespace ChessCore.Controllers
             var game = await _gameService.CreateGameAsync(status: GameStatus.WaitingForPlayers);
             game.RedPlayerId = userId;
             game.GameMode = isPublic ? "OnlinePublic" : "OnlinePrivate";
+            game.IsRated = string.IsNullOrWhiteSpace(game.InitialFen);
+            game.AiColor = "Black";
             await _dbContext.SaveChangesAsync();
 
             if (isPublic)
@@ -420,18 +428,19 @@ namespace ChessCore.Controllers
             if (game.Status != GameStatus.InProgress) return BadRequest(new { message = "Ván cờ không trong trạng thái đang diễn ra." });
             if (game.RedPlayerId != userId && game.BlackPlayerId != userId) return Forbid();
 
-            var lastActionTime = game.LastMoveAt ?? game.CreatedAt;
-            if (DateTime.UtcNow - lastActionTime <= TimeSpan.FromSeconds(180))
+            // Sử dụng deadline thống nhất GetMoveDeadlineUtc
+            if (DateTime.UtcNow <= GameModes.GetMoveDeadlineUtc(game))
             {
-                return BadRequest(new { message = "Thời gian của đối thủ vẫn chưa kết thúc (chưa đủ 3 phút)." });
+                return BadRequest(new { message = "Thời gian của đối thủ vẫn chưa kết thúc." });
             }
 
             // Bên đang tới lượt đi bị hết giờ -> Xử bên kia thắng
-            game.Status = game.CurrentTurn == PieceColor.Red ? GameStatus.BlackWins : GameStatus.RedWins;
-            _dbContext.Games.Update(game);
-            await _dbContext.SaveChangesAsync();
-
-            await UpdateUserStatsOnGameEndAsync(game, game.Status);
+            var winningStatus = game.CurrentTurn == PieceColor.Red ? GameStatus.BlackWins : GameStatus.RedWins;
+            var settlement = await _settlementService.SettleGameAsync(game.Id, winningStatus, "Đối thủ rụng kim (hết giờ)", HttpContext.RequestAborted);
+            if (!settlement.Success)
+            {
+                return Conflict(new { message = settlement.Message });
+            }
 
             var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
             var response = BuildGameResponse(game, board);
@@ -598,7 +607,8 @@ namespace ChessCore.Controllers
             var game =
                 await _gameService.CreateGameAsync(targetFen);
 
-            game.GameMode = GameModes.Normalize(gameMode);
+            game.GameMode = GameModes.Normalize(targetMode);
+            game.TimeControlMinutes = (targetTime.HasValue && targetTime.Value > 0) ? targetTime.Value : 3;
 
             if (TryGetCurrentUserId(out int userId))
             {
@@ -687,6 +697,20 @@ namespace ChessCore.Controllers
             }
 
             if (!CanAccessOnlineGame(game)) return Unauthorized();
+
+            // P0 FIX: Ràng buộc người gửi phải là người sở hữu màu quân của lượt hiện tại
+            if (game.GameMode != null && game.GameMode.StartsWith("Online"))
+            {
+                if (!TryGetCurrentUserId(out var currentUserId)) return Unauthorized();
+                if (game.CurrentTurn == PieceColor.Red && game.RedPlayerId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Không phải lượt đi của bạn (Bạn không cầm quân Đỏ)." });
+                }
+                if (game.CurrentTurn == PieceColor.Black && game.BlackPlayerId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Không phải lượt đi của bạn (Bạn không cầm quân Đen)." });
+                }
+            }
 
             if (game.Status != GameStatus.InProgress)
             {
@@ -788,6 +812,20 @@ namespace ChessCore.Controllers
 
             if (!CanAccessOnlineGame(game)) return Unauthorized();
 
+            // P0 FIX: Ràng buộc người gửi phải là người sở hữu màu quân của lượt hiện tại
+            if (game.GameMode != null && game.GameMode.StartsWith("Online"))
+            {
+                if (!TryGetCurrentUserId(out var currentUserId)) return Unauthorized();
+                if (game.CurrentTurn == PieceColor.Red && game.RedPlayerId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Không phải lượt đi của bạn (Bạn không cầm quân Đỏ)." });
+                }
+                if (game.CurrentTurn == PieceColor.Black && game.BlackPlayerId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Không phải lượt đi của bạn (Bạn không cầm quân Đen)." });
+                }
+            }
+
             if (game.Status != GameStatus.InProgress)
             {
                 return BadRequest(new
@@ -797,17 +835,15 @@ namespace ChessCore.Controllers
                 });
             }
 
-            // Kiểm tra giới hạn thời gian 3 phút (cộng 2s dung sai độ trễ mạng)
-            var lastActionTime = game.LastMoveAt ?? game.CreatedAt;
+            // Kiểm tra giới hạn thời gian theo hàm deadline chuẩn thống nhất
             if ((game.RedPlayerId.HasValue || game.BlackPlayerId.HasValue) &&
-                DateTime.UtcNow - lastActionTime > TimeSpan.FromSeconds(182))
+                DateTime.UtcNow > GameModes.GetMoveDeadlineUtc(game))
             {
-                game.Status = game.CurrentTurn == PieceColor.Red
+                var timeoutStatus = game.CurrentTurn == PieceColor.Red
                     ? GameStatus.BlackWins
                     : GameStatus.RedWins;
 
-                _dbContext.Games.Update(game);
-                await _dbContext.SaveChangesAsync();
+                await _settlementService.SettleGameAsync(game.Id, timeoutStatus, "Hết giờ (Rụng kim)", HttpContext.RequestAborted);
 
                 var currentBoard = GameRules.RebuildBoard(
                     game.InitialFen,
@@ -819,7 +855,7 @@ namespace ChessCore.Controllers
 
                 return BadRequest(new
                 {
-                    message = "Đã hết thời gian 3 phút! Bạn đã bị xử thua vì rụng kim.",
+                    message = "Đã hết thời gian thi đấu! Bạn đã bị xử thua vì rụng kim.",
                     game = timeoutResponse
                 });
             }
@@ -890,45 +926,74 @@ namespace ChessCore.Controllers
             }
 
             // =================================================
-            // LƯU NƯỚC ĐI
+            // GHI NƯỚC ĐI VÀ CHUYỂN LƯỢT NGUYÊN TỬ (TRANSACTION + CONCURRENCY)
             // =================================================
-
-            await _moveService.RecordMoveAsync(
-                id,
-                request.FromX,
-                request.FromY,
-                request.ToX,
-                request.ToY,
-                movingPiece.Type,
-                movingPiece.Color
-            );
-
-            // =================================================
-            // CẬP NHẬT TRẠNG THÁI
-            // =================================================
-
             board.Grid[request.ToX, request.ToY] = movingPiece;
             board.Grid[request.FromX, request.FromY] = null;
             PieceColor nextTurn = GameRules.Opponent(game.CurrentTurn);
             board.SetCurrentTurn(nextTurn);
             GameStatus newStatus = GameRules.StatusAfterMove(board);
 
-            // Kiểm tra luật lặp lại thế cờ và luật Chiếu dai
             var repCheck = GameRules.CheckRepetitionRule(game.InitialFen, game.Moves);
             if (repCheck.HasViolation)
             {
                 newStatus = repCheck.ResultStatus;
             }
 
-            await _gameService.UpdateGameTurnAndStatusAsync(
-                id,
-                nextTurn,
-                newStatus
-            );
+            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            bool moveSaved = await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _dbContext.Database.BeginTransactionAsync(HttpContext.RequestAborted);
+                try
+                {
+                    var freshGame = await _dbContext.Games
+                        .Include(g => g.Moves)
+                        .FirstOrDefaultAsync(g => g.Id == id, HttpContext.RequestAborted);
+
+                    if (freshGame == null || freshGame.Status != GameStatus.InProgress) return false;
+                    if (freshGame.CurrentTurn != movingPiece.Color) return false;
+
+                    int nextOrder = freshGame.Moves.Any() ? freshGame.Moves.Max(m => m.MoveOrder) + 1 : 0;
+                    freshGame.Moves.Add(new Move
+                    {
+                        GameId = freshGame.Id,
+                        MoveOrder = nextOrder,
+                        FromX = request.FromX,
+                        FromY = request.FromY,
+                        ToX = request.ToX,
+                        ToY = request.ToY,
+                        PieceType = movingPiece.Type,
+                        PieceColor = movingPiece.Color,
+                        MovedAt = DateTime.UtcNow
+                    });
+
+                    freshGame.CurrentTurn = nextTurn;
+                    freshGame.Status = newStatus;
+                    freshGame.LastMoveAt = DateTime.UtcNow;
+                    freshGame.Version++;
+
+                    await _dbContext.SaveChangesAsync(HttpContext.RequestAborted);
+                    await transaction.CommitAsync(HttpContext.RequestAborted);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync(HttpContext.RequestAborted);
+                    return false;
+                }
+            });
+
+            if (!moveSaved)
+            {
+                return Conflict(new { message = "Xung đột nước đi do thao tác đồng thời hoặc sai lượt. Vui lòng tải lại ván cờ." });
+            }
 
             if (newStatus != GameStatus.InProgress)
             {
-                await UpdateUserStatsOnGameEndAsync(game, newStatus);
+                string endWinReason = repCheck.HasViolation
+                    ? "Vi phạm luật lặp lại thế cờ hoặc chiếu dai"
+                    : (MoveGenerator.CheckIfInCheck(board, nextTurn) ? "Chiếu bí" : "Hết nước đi");
+                await _settlementService.SettleGameAsync(id, newStatus, endWinReason);
             }
 
             // =================================================
@@ -956,6 +1021,7 @@ namespace ChessCore.Controllers
 
             var response = BuildGameResponse(updatedGame, updatedBoard);
             await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
+            _aiCapacity.Gate.Release();
             return Ok(response);
         }
 
@@ -1003,18 +1069,36 @@ namespace ChessCore.Controllers
             }
 
             // =================================================
-            // 3. KIỂM TRA LƯỢT
+            // 3. ĐIỀU PHỐI TẢI AI VÀ KIỂM TRA CHẾ ĐỘ (P0 & P1 FIX)
             // =================================================
-
-            PieceColor engineColor = computerColor.ToLower() == "red" ? PieceColor.Red : PieceColor.Black;
+            string normalizedMode = GameModes.Normalize(game.GameMode);
+            PieceColor engineColor;
+            if (normalizedMode == GameModes.AiVsAi)
+            {
+                engineColor = game.CurrentTurn; // Trong chế độ Máy vs Máy, máy luôn đi cho bên đang tới lượt
+            }
+            else if (normalizedMode == GameModes.PvE)
+            {
+                engineColor = string.Equals(game.AiColor, "Red", StringComparison.OrdinalIgnoreCase) 
+                    ? PieceColor.Red 
+                    : PieceColor.Black;
+            }
+            else
+            {
+                return BadRequest(new { message = "Không thể gọi nước đi của máy trong chế độ Online PvP." });
+            }
 
             if (game.CurrentTurn != engineColor)
             {
                 return BadRequest(new
                 {
-                    message =
-                        "Hiện tại chưa tới lượt của máy."
+                    message = "Hiện tại chưa tới lượt của máy."
                 });
+            }
+
+            if (!await _aiCapacity.Gate.WaitAsync(0, HttpContext.RequestAborted))
+            {
+                return StatusCode(429, new { message = "Máy chủ AI hiện đang bận tính toán. Vui lòng thử lại sau giây lát." });
             }
 
             // =================================================
@@ -1143,7 +1227,10 @@ namespace ChessCore.Controllers
 
             if (newStatus != GameStatus.InProgress)
             {
-                await UpdateUserStatsOnGameEndAsync(game, newStatus);
+                string endWinReason = repCheck.HasViolation
+                    ? "Vi phạm luật lặp lại thế cờ hoặc chiếu dai"
+                    : (MoveGenerator.CheckIfInCheck(board, nextTurn) ? "Chiếu bí" : "Hết nước đi");
+                await _settlementService.SettleGameAsync(id, newStatus, endWinReason);
             }
 
             // =================================================
@@ -1179,6 +1266,7 @@ namespace ChessCore.Controllers
 
             var response = BuildGameResponse(updatedGame, updatedBoard);
             await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
+            _aiCapacity.Gate.Release();
             return Ok(response);
         }
 
@@ -1304,8 +1392,8 @@ namespace ChessCore.Controllers
                 newStatus
             );
 
-            // Cập nhật điểm Elo và thống kê cho người chơi nếu kết thúc ván
-            await UpdateUserStatsOnGameEndAsync(game, newStatus);
+            // Quyết toán tập trung qua GameSettlementService
+            await _settlementService.SettleGameAsync(id, newStatus, "Đối thủ xin đầu hàng");
 
             // =================================================
             // 5. LẤY GAME SAU KHI UPDATE
@@ -1340,6 +1428,7 @@ namespace ChessCore.Controllers
 
             var response = BuildGameResponse(updatedGame, updatedBoard);
             await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
+            _aiCapacity.Gate.Release();
             return Ok(response);
         }
 
@@ -1493,11 +1582,7 @@ namespace ChessCore.Controllers
             bool isAccepted = request != null && (request.Accepted || request.IsAccepted);
             if (isAccepted)
             {
-                game.Status = GameStatus.Draw;
-                _dbContext.Games.Update(game);
-                await _dbContext.SaveChangesAsync();
-
-                await UpdateUserStatsOnGameEndAsync(game, GameStatus.Draw);
+                await _settlementService.SettleGameAsync(id, GameStatus.Draw, "Hai bên thỏa thuận hòa");
 
                 var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
                 var drawResponse = BuildGameResponse(game, board);
@@ -1564,6 +1649,20 @@ namespace ChessCore.Controllers
             var game = await _gameService.GetGameByIdAsync(id);
             if (game == null) return NotFound(new { message = "Không tìm thấy ván cờ." });
             if (!CanAccessOnlineGame(game)) return Unauthorized();
+
+            // P0 FIX: Ràng buộc người gửi phải là người sở hữu màu quân của lượt hiện tại
+            if (game.GameMode != null && game.GameMode.StartsWith("Online"))
+            {
+                if (!TryGetCurrentUserId(out var currentUserId)) return Unauthorized();
+                if (game.CurrentTurn == PieceColor.Red && game.RedPlayerId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Không phải lượt đi của bạn (Bạn không cầm quân Đỏ)." });
+                }
+                if (game.CurrentTurn == PieceColor.Black && game.BlackPlayerId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Không phải lượt đi của bạn (Bạn không cầm quân Đen)." });
+                }
+            }
 
             if (game.Status != GameStatus.InProgress)
             {
@@ -1685,8 +1784,9 @@ namespace ChessCore.Controllers
             // =================================================
 
             var lastAction = game.LastMoveAt ?? game.CreatedAt;
+            int limitSec = (game.TimeControlMinutes > 0 ? game.TimeControlMinutes : 3) * 60;
             var remainingSeconds = game.Status == GameStatus.InProgress
-                ? Math.Max(0, 180 - (int)(DateTime.UtcNow - lastAction).TotalSeconds)
+                ? Math.Max(0, limitSec - (int)(DateTime.UtcNow - lastAction).TotalSeconds)
                 : 0;
             var neuralScore = NeuralNetworkEvaluator.EvaluateNeural(board, PieceColor.Red);
 

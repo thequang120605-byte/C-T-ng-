@@ -71,6 +71,29 @@ var authBuilder = builder.Services.AddAuthentication(options =>
         context.Response.Redirect(context.RedirectUri);
         return Task.CompletedTask;
     };
+    // Thu hồi phiên Cookie ngay lập tức nếu tài khoản bị khóa
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        var userIdStr = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(userIdStr, out int userId))
+        {
+            var db = context.HttpContext.RequestServices.GetRequiredService<ChessCore.Data.AppDbContext>();
+            bool accountActive = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(
+                Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(
+                    System.Linq.Queryable.Where(db.Users, u => u.Id == userId && !u.IsLocked)
+                ),
+                context.HttpContext.RequestAborted
+            );
+            if (!accountActive)
+            {
+                context.RejectPrincipal();
+                await Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.SignOutAsync(
+                    context.HttpContext, 
+                    Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme
+                );
+            }
+        }
+    };
 });
 
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
@@ -127,6 +150,8 @@ builder.Services.AddSingleton<PuzzleCampaignService>();
 builder.Services.AddScoped<StatisticsService>();
 
 builder.Services.AddScoped<IMoveService, MoveService>();
+builder.Services.AddScoped<IGameSettlementService, GameSettlementService>();
+builder.Services.AddSingleton<ChessCore.Services.AiCapacity>();
 builder.Services.AddHostedService<GameTimeoutWorker>();
 
 var app = builder.Build();
@@ -191,7 +216,25 @@ app.Use(async (context, next) =>
         var principal = tokenService.ValidateToken(token);
         if (principal != null)
         {
-            context.User = principal;
+            var userIdStr = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                var db = context.RequestServices.GetRequiredService<ChessCore.Data.AppDbContext>();
+                bool accountActive = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(
+                    Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(
+                        System.Linq.Queryable.Where(db.Users, u => u.Id == userId && !u.IsLocked)
+                    ),
+                    context.RequestAborted
+                );
+                if (accountActive)
+                {
+                    context.User = principal;
+                }
+            }
+            else
+            {
+                context.User = principal;
+            }
         }
     }
 

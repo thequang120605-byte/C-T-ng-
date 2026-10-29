@@ -50,6 +50,10 @@ namespace ChessCore.Data
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `RoomCode` VARCHAR(50) NOT NULL DEFAULT '';", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `InitialFen` VARCHAR(255) NULL;", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `LastMoveAt` DATETIME(6) NULL;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `TimeControlMinutes` INT NOT NULL DEFAULT 3;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `Version` BIGINT NOT NULL DEFAULT 0;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `AiColor` VARCHAR(10) NULL DEFAULT 'Black';", logger);
+            await ExecuteRawSqlSafely(dbContext, "CREATE UNIQUE INDEX `IX_Moves_GameId_MoveOrder` ON `Moves` (`GameId`, `MoveOrder`);", logger);
 
             // --- 3. BẢNG Moves (Sửa lỗi các trường đánh giá AI) ---
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Moves` ADD COLUMN `EvalScore` INT NULL;", logger);
@@ -176,7 +180,7 @@ namespace ChessCore.Data
                     };
                     dbContext.Users.Add(adminUser);
                     await dbContext.SaveChangesAsync();
-                    logger.LogInformation(">>> Đã tạo tài khoản Admin mặc định: admin / Admin@123");
+                    logger.LogInformation(">>> Đã khởi tạo thành công tài khoản quản trị viên mặc định (admin).");
                 }
                 else
                 {

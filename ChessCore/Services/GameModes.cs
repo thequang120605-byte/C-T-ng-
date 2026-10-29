@@ -48,6 +48,12 @@ public static class GameModes
         _ => "Hai người cùng máy"
     };
 
+        public static DateTime GetMoveDeadlineUtc(Game g)
+    {
+        int minutes = g.TimeControlMinutes > 0 ? g.TimeControlMinutes : 3;
+        return (g.LastMoveAt ?? g.CreatedAt).AddMinutes(minutes).AddSeconds(3);
+    }
+
     public static bool CanRate(Game g) => g.IsRated && Normalize(g.GameMode) == Online
         && g.RedPlayerId.HasValue && g.BlackPlayerId.HasValue
         && g.RedPlayerId != g.BlackPlayerId && string.IsNullOrWhiteSpace(g.InitialFen);

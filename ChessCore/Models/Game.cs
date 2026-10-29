@@ -28,7 +28,18 @@ namespace ChessCore.Models
         public DateTime? ResultsProcessedAt { get; set; }
         public string GameMode { get; set; } = "PvP"; // PvP, PvE, Online, AiVsAi
         public int? AiDepth { get; set; }             // AI search depth (1..4) for PvE matches
+        public string? AiColor { get; set; } = "Black"; // Quân máy cầm trong chế độ PvE (Red/Black)
         public int? OpeningId { get; set; }           // Linked opening book
+
+        /// <summary>
+        /// Phiên bản ván cờ (Optimistic Concurrency Token) chống ghi đè và race condition.
+        /// </summary>
+        public long Version { get; set; } = 0;
+
+        /// <summary>
+        /// Thời gian giới hạn mỗi nước đi/ván (tính bằng phút). Mặc định là 3 phút.
+        /// </summary>
+        public int TimeControlMinutes { get; set; } = 3;
 
         // Navigation properties
         public Opening? Opening { get; set; }

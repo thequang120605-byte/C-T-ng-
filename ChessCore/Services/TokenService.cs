@@ -26,7 +26,16 @@ namespace ChessCore.Services
 
     public class TokenService : ITokenService
     {
-        private static readonly byte[] SecretKey = Encoding.UTF8.GetBytes("ChessCore_Secret_Key_For_Jwt_Bearer_2026_HK7_KLCN_153!");
+        private readonly byte[] _secretKey;
+
+        public TokenService(Microsoft.Extensions.Configuration.IConfiguration configuration)
+        {
+            var keyStr = configuration["Jwt:SecretKey"] 
+                ?? configuration["Jwt:Key"] 
+                ?? Environment.GetEnvironmentVariable("JWT_SECRET") 
+                ?? "ChessCore_DevSecret_Key_Fallback_Change_In_Production_2026!";
+            _secretKey = Encoding.UTF8.GetBytes(keyStr);
+        }
 
         public string GenerateToken(User user)
         {
@@ -44,7 +53,7 @@ namespace ChessCore.Services
             var jsonBytes = JsonSerializer.SerializeToUtf8Bytes(payload);
             var payloadBase64 = Convert.ToBase64String(jsonBytes);
 
-            using var hmac = new HMACSHA256(SecretKey);
+            using var hmac = new HMACSHA256(_secretKey);
             var sigBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(payloadBase64));
             var sigBase64 = Convert.ToBase64String(sigBytes);
 
@@ -68,7 +77,7 @@ namespace ChessCore.Services
 
             try
             {
-                using var hmac = new HMACSHA256(SecretKey);
+                using var hmac = new HMACSHA256(_secretKey);
                 var expectedSig = hmac.ComputeHash(Encoding.UTF8.GetBytes(payloadBase64));
                 var actualSig = Convert.FromBase64String(sigBase64);
 

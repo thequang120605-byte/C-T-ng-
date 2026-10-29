@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace ChessCore.Hubs
@@ -7,12 +9,14 @@ namespace ChessCore.Hubs
     {
         public async Task JoinGame(string gameId)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+            if (string.IsNullOrWhiteSpace(gameId)) return;
+            await Groups.AddToGroupAsync(Context.ConnectionId, gameId.Trim());
         }
 
         public async Task LeaveGame(string gameId)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
+            if (string.IsNullOrWhiteSpace(gameId)) return;
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId.Trim());
         }
 
         public async Task JoinLobby()
@@ -25,22 +29,37 @@ namespace ChessCore.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, "lobby");
         }
 
-        public async Task RegisterUser(string playerId)
+        /// <summary>
+        /// Đăng ký nhận thông báo cá nhân (thách đấu, tin nhắn riêng).
+        /// Bắt buộc xác thực từ phiên làm việc máy chủ (JWT/Cookie), chống mạo danh.
+        /// </summary>
+        [Authorize]
+        public async Task RegisterUser(string? ignoredPlayerId = null)
         {
-            if (!string.IsNullOrWhiteSpace(playerId))
+            string? playerId = Context.User?.FindFirst("PlayerId")?.Value;
+            if (string.IsNullOrWhiteSpace(playerId))
             {
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{playerId.Trim()}");
+                throw new HubException("Không xác định được danh tính người dùng.");
             }
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{playerId.Trim()}", Context.ConnectionAborted);
         }
 
+        /// <summary>
+        /// Gửi lời thách đấu. Danh tính người gửi bắt buộc trích xuất từ phiên đã xác thực.
+        /// </summary>
+        [Authorize]
         public async Task SendChallenge(string targetPlayerId, string fromPlayerName, string fromPlayerId, string roomCode)
         {
             if (string.IsNullOrWhiteSpace(targetPlayerId) || string.IsNullOrWhiteSpace(roomCode)) return;
+
+            string verifiedSenderName = Context.User?.Identity?.Name ?? fromPlayerName ?? "Đối thủ";
+            string verifiedSenderId = Context.User?.FindFirst("PlayerId")?.Value ?? fromPlayerId ?? "";
+
             await Clients.Group($"user_{targetPlayerId.Trim()}").SendAsync("ReceiveChallenge", new
             {
-                fromPlayerName = fromPlayerName ?? "Đối thủ",
-                fromPlayerId = fromPlayerId ?? "",
-                roomCode = roomCode,
+                fromPlayerName = verifiedSenderName,
+                fromPlayerId = verifiedSenderId,
+                roomCode = roomCode.Trim().ToUpperInvariant(),
                 sentAt = System.DateTime.UtcNow.AddHours(7).ToString("HH:mm:ss")
             });
         }
@@ -48,23 +67,28 @@ namespace ChessCore.Hubs
         public async Task JoinSpectator(string gameId, string viewerName)
         {
             if (string.IsNullOrWhiteSpace(gameId)) return;
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
-            await Clients.Group(gameId).SendAsync("SpectatorJoined", new
+            var safeGameId = gameId.Trim();
+            await Groups.AddToGroupAsync(Context.ConnectionId, safeGameId);
+
+            string verifiedViewer = Context.User?.Identity?.Name ?? viewerName ?? "Khán giả";
+            await Clients.Group(safeGameId).SendAsync("SpectatorJoined", new
             {
-                viewerName = viewerName ?? "Khán giả",
-                gameId = gameId
+                viewerName = verifiedViewer,
+                gameId = safeGameId
             });
         }
 
         public async Task SendChatMessage(string gameId, string sender, string message)
         {
             if (string.IsNullOrWhiteSpace(gameId) || string.IsNullOrWhiteSpace(message)) return;
-            // Giới hạn độ dài tin nhắn
+
+            string verifiedSender = Context.User?.Identity?.Name ?? sender ?? "Người chơi";
             var safeMessage = message.Length > 200 ? message.Substring(0, 200) : message;
-            await Clients.Group(gameId).SendAsync("ReceiveChatMessage", new
+
+            await Clients.Group(gameId.Trim()).SendAsync("ReceiveChatMessage", new
             {
-                gameId = gameId,
-                sender = sender ?? "Người chơi",
+                gameId = gameId.Trim(),
+                sender = verifiedSender,
                 message = safeMessage,
                 sentAt = System.DateTime.UtcNow.AddHours(7).ToString("HH:mm")
             });

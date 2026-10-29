@@ -49,8 +49,8 @@ namespace ChessCore.Controllers
         public string BlackRank { get; set; } = "Kỳ Thủ";
         public string ResultDescription { get; set; } = "Trận đấu kịch tính";
         public List<GameReviewItem> AnalyzedMoves { get; set; } = new();
-        public int AccuracyRed { get; set; } = 85;
-        public int AccuracyBlack { get; set; } = 82;
+        public int AccuracyRed { get; set; } = 100;
+        public int AccuracyBlack { get; set; } = 100;
         public string InitialFen { get; set; } = "";
     }
 
@@ -117,6 +117,7 @@ namespace ChessCore.Controllers
             }
 
             var vm = await GetOrBuildReviewViewModel(request.GameId ?? 0);
+            if (vm == null) return NotFound(new { message = $"Không tìm thấy ván cờ với ID {request.GameId}." });
             return Ok(vm);
         }
 
@@ -208,71 +209,76 @@ namespace ChessCore.Controllers
                     aiAlternative = $"{GetPieceVietnameseName(optPiece?.Type ?? PieceType.Pawn)} ({optFx},{optFy}) ➜ ({optTx},{optTy})";
                 }
 
-                // Áp dụng nước đi lên bàn cờ mô phỏng
+                // Đánh giá nước đi bằng cách so sánh nước tốt nhất của AI với nước người chơi đã đi tại cùng vị trí
+                int bestEvalScore = 0;
+                if (bestEngineMove != null)
+                {
+                    var optBoard = board.Clone();
+                    optBoard.Grid[optFx, optFy] = null;
+                    optBoard.Grid[optTx, optTy] = board.GetPieceAt(optFx, optFy);
+                    optBoard.SetCurrentTurn(GameRules.Opponent(move.PieceColor));
+                    bestEvalScore = engine.EvaluatePosition(optBoard, move.PieceColor);
+                }
+
+                // Áp dụng nước đi thực tế của người chơi lên bàn cờ
                 board.Grid[move.FromX, move.FromY] = null;
                 if (piece != null)
                 {
                     board.Grid[move.ToX, move.ToY] = piece;
                 }
-                board.SetCurrentTurn((move.PieceColor == PieceColor.Red) ? PieceColor.Black : PieceColor.Red);
+                board.SetCurrentTurn(GameRules.Opponent(move.PieceColor));
 
-                // Tính điểm thế cờ sau nước đi (góc nhìn của Đỏ)
-                int currentEval = engine.EvaluatePosition(board, PieceColor.Red);
-                int evalDiff = (move.PieceColor == PieceColor.Red) ? (currentEval - previousEval) : (previousEval - currentEval);
+                int actualMoveEval = engine.EvaluatePosition(board, move.PieceColor);
+                int evalLoss = (bestEngineMove != null) ? Math.Max(0, bestEvalScore - actualMoveEval) : 0;
 
                 string judgment = "Good";
                 string quality = "Nước tốt";
                 string badge = "✓";
                 string comment = "";
 
-                if (evalDiff >= 150)
-                {
-                    judgment = "Brilliant";
-                    quality = "Nước xuất sắc";
-                    badge = "⭐";
-                    comment = "Nước đi xuất sắc! Tạo đột biến lớn cho thế trận.";
-                }
-                else if (evalDiff >= 30)
+                bool isSameAsBest = (bestEngineMove != null && move.FromX == optFx && move.FromY == optFy && move.ToX == optTx && move.ToY == optTy);
+
+                if (isSameAsBest || evalLoss <= 15)
                 {
                     judgment = "Best";
                     quality = "Nước tối ưu";
                     badge = "⭐";
-                    comment = "Nước đi tối ưu và chuẩn xác.";
+                    comment = "Nước đi tối ưu nhất theo đánh giá của máy.";
                 }
-                else if (evalDiff >= -40)
+                else if (evalLoss <= 60)
                 {
                     judgment = "Good";
                     quality = "Nước tốt";
                     badge = "✓";
-                    comment = "Nước đi hợp lý và vững chắc.";
+                    comment = "Nước đi chuẩn xác và vững chắc.";
                 }
-                else if (evalDiff >= -150)
+                else if (evalLoss <= 180)
                 {
                     judgment = "Inaccuracy";
                     quality = "Nước chưa chuẩn";
                     badge = "?";
-                    comment = "Nước đi hơi thiếu chuẩn xác, có thể bị đối phương ép thế.";
+                    comment = "Nước đi chưa tối ưu, bỏ lỡ cơ hội tạo ưu thế tốt hơn.";
                 }
                 else
                 {
                     judgment = "Blunder";
                     quality = "Nước sai lầm";
                     badge = "??";
-                    comment = "Sai lầm nghiêm trọng! Đã để mất lợi thế kiểm soát hoặc thất thoát quân lớn.";
+                    comment = "Sai lầm nghiêm trọng! Làm suy giảm đáng kể ưu thế thế trận.";
                 }
 
                 if (move.PieceColor == PieceColor.Red)
                 {
                     redTotal++;
-                    if (judgment == "Brilliant" || judgment == "Best" || judgment == "Good") redGoodCount++;
+                    if (judgment == "Best" || judgment == "Good") redGoodCount++;
                 }
                 else
                 {
                     blackTotal++;
-                    if (judgment == "Brilliant" || judgment == "Best" || judgment == "Good") blackGoodCount++;
+                    if (judgment == "Best" || judgment == "Good") blackGoodCount++;
                 }
 
-                previousEval = currentEval;
+                int currentEval = actualMoveEval;
 
                 vm.AnalyzedMoves.Add(new GameReviewItem
                 {
@@ -284,7 +290,7 @@ namespace ChessCore.Controllers
                     ToX = move.ToX,
                     ToY = move.ToY,
                     Notation = $"{GetPieceVietnameseName(move.PieceType)} ({move.FromX},{move.FromY}) ➜ ({move.ToX},{move.ToY})",
-                    EvalScore = currentEval,
+                    EvalScore = (move.PieceColor == PieceColor.Red) ? currentEval : -currentEval,
                     Judgment = judgment,
                     Quality = quality,
                     QualityBadge = badge,
@@ -298,8 +304,8 @@ namespace ChessCore.Controllers
                 });
             }
 
-            vm.AccuracyRed = redTotal > 0 ? (int)Math.Round((double)redGoodCount * 100 / redTotal) : 88;
-            vm.AccuracyBlack = blackTotal > 0 ? (int)Math.Round((double)blackGoodCount * 100 / blackTotal) : 84;
+            vm.AccuracyRed = redTotal > 0 ? (int)Math.Round((double)redGoodCount * 100 / redTotal) : 100;
+            vm.AccuracyBlack = blackTotal > 0 ? (int)Math.Round((double)blackGoodCount * 100 / blackTotal) : 100;
 
             return vm;
         }
@@ -361,70 +367,75 @@ namespace ChessCore.Controllers
                     aiAlternative = $"{GetPieceVietnameseName(optPiece?.Type ?? PieceType.Pawn)} ({optFx},{optFy}) ➜ ({optTx},{optTy})";
                 }
 
+                int bestEvalScore = 0;
+                if (bestEngineMove != null)
+                {
+                    var optBoard = board.Clone();
+                    optBoard.Grid[optFx, optFy] = null;
+                    optBoard.Grid[optTx, optTy] = board.GetPieceAt(optFx, optFy);
+                    optBoard.SetCurrentTurn(GameRules.Opponent(pieceColor));
+                    bestEvalScore = engine.EvaluatePosition(optBoard, pieceColor);
+                }
+
                 // Thực hiện nước đi trên board
                 board.Grid[fx, fy] = null;
                 if (piece != null)
                 {
                     board.Grid[tx, ty] = piece;
                 }
-                board.SetCurrentTurn(pieceColor == PieceColor.Red ? PieceColor.Black : PieceColor.Red);
+                board.SetCurrentTurn(GameRules.Opponent(pieceColor));
 
-                int currentEval = engine.EvaluatePosition(board, PieceColor.Red);
-                int evalDiff = (pieceColor == PieceColor.Red) ? (currentEval - previousEval) : (previousEval - currentEval);
+                int actualMoveEval = engine.EvaluatePosition(board, pieceColor);
+                int evalLoss = (bestEngineMove != null) ? Math.Max(0, bestEvalScore - actualMoveEval) : 0;
 
                 string judgment = "Good";
                 string quality = "Nước tốt";
                 string badge = "✓";
                 string comment = "";
 
-                if (evalDiff >= 150)
-                {
-                    judgment = "Brilliant";
-                    quality = "Nước xuất sắc";
-                    badge = "⭐";
-                    comment = "Nước đi xuất sắc! Tạo đột biến chiến thuật lớn cho thế trận.";
-                }
-                else if (evalDiff >= 30)
+                bool isSameAsBest = (bestEngineMove != null && fx == optFx && fy == optFy && tx == optTx && ty == optTy);
+
+                if (isSameAsBest || evalLoss <= 15)
                 {
                     judgment = "Best";
                     quality = "Nước tối ưu";
                     badge = "⭐";
-                    comment = "Nước đi tối ưu và chuẩn xác.";
+                    comment = "Nước đi tối ưu nhất theo đánh giá của máy.";
                 }
-                else if (evalDiff >= -40)
+                else if (evalLoss <= 60)
                 {
                     judgment = "Good";
                     quality = "Nước tốt";
                     badge = "✓";
-                    comment = "Nước đi hợp lý và vững chắc.";
+                    comment = "Nước đi chuẩn xác và vững chắc.";
                 }
-                else if (evalDiff >= -150)
+                else if (evalLoss <= 180)
                 {
                     judgment = "Inaccuracy";
                     quality = "Nước chưa chuẩn";
                     badge = "?";
-                    comment = "Nước đi hơi thiếu chuẩn xác, có thể bị đối phương ép thế.";
+                    comment = "Nước đi chưa tối ưu, bỏ lỡ cơ hội tạo ưu thế tốt hơn.";
                 }
                 else
                 {
                     judgment = "Blunder";
                     quality = "Nước sai lầm";
                     badge = "??";
-                    comment = "Sai lầm nghiêm trọng! Đã để mất lợi thế kiểm soát hoặc thất thoát quân lớn.";
+                    comment = "Sai lầm nghiêm trọng! Đã để mất lợi thế kiểm soát thế trận.";
                 }
 
                 if (pieceColor == PieceColor.Red)
                 {
                     redTotal++;
-                    if (judgment == "Brilliant" || judgment == "Best" || judgment == "Good") redGoodCount++;
+                    if (judgment == "Best" || judgment == "Good") redGoodCount++;
                 }
                 else
                 {
                     blackTotal++;
-                    if (judgment == "Brilliant" || judgment == "Best" || judgment == "Good") blackGoodCount++;
+                    if (judgment == "Best" || judgment == "Good") blackGoodCount++;
                 }
 
-                previousEval = currentEval;
+                int currentEval = actualMoveEval;
 
                 vm.AnalyzedMoves.Add(new GameReviewItem
                 {
@@ -436,7 +447,7 @@ namespace ChessCore.Controllers
                     ToX = tx,
                     ToY = ty,
                     Notation = $"{GetPieceVietnameseName(pieceType)} ({fx},{fy}) ➜ ({tx},{ty})",
-                    EvalScore = currentEval,
+                    EvalScore = (pieceColor == PieceColor.Red) ? currentEval : -currentEval,
                     Judgment = judgment,
                     Quality = quality,
                     QualityBadge = badge,
@@ -450,8 +461,8 @@ namespace ChessCore.Controllers
                 });
             }
 
-            vm.AccuracyRed = redTotal > 0 ? (int)Math.Round((double)redGoodCount * 100 / redTotal) : 89;
-            vm.AccuracyBlack = blackTotal > 0 ? (int)Math.Round((double)blackGoodCount * 100 / blackTotal) : 85;
+            vm.AccuracyRed = redTotal > 0 ? (int)Math.Round((double)redGoodCount * 100 / redTotal) : 100;
+            vm.AccuracyBlack = blackTotal > 0 ? (int)Math.Round((double)blackGoodCount * 100 / blackTotal) : 100;
 
             return vm;
         }

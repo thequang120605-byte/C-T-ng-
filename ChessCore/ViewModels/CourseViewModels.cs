@@ -35,5 +35,6 @@ namespace ChessCore.ViewModels
         public int QuizScore { get; set; }
         public int QuizAttempts { get; set; }
         public int LastPosition { get; set; }
+        public Dictionary<int, int>? Answers { get; set; }
     }
 }

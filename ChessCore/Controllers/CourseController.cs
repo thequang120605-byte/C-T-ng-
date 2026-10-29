@@ -134,9 +134,7 @@ namespace ChessCore.Controllers
                     {
                         id = q.Id,
                         question = q.Question,
-                        optionsJson = q.OptionsJson,
-                        correctAnswer = q.CorrectAnswer,
-                        explanation = q.Explanation
+                        optionsJson = q.OptionsJson
                     }).ToList()
                 });
             }
@@ -169,13 +167,34 @@ namespace ChessCore.Controllers
             if (!lessonExists) return NotFound(new { message = "Không tìm thấy bài học trong hệ thống." });
 
             // FIX BUG_006: Giới hạn điểm trắc nghiệm Quiz trong khoảng [0, 100] cho cả khách vãng lai
-            int clampedQuizScore = Math.Clamp(request.QuizScore, 0, 100);
+            // Server-side quiz verification: Chấm điểm bài làm trên máy chủ từ ngân hàng câu hỏi
+            var questions = await _context.CourseQuizQuestions
+                .Where(q => q.LessonId == request.LessonId)
+                .ToListAsync();
 
+            int calculatedScore = request.QuizScore;
+            bool calculatedPassed = request.IsCompleted;
+
+            if (questions.Count > 0)
+            {
+                if (request.Answers != null && request.Answers.Count > 0)
+                {
+                    int correctCount = questions.Count(q => request.Answers.TryGetValue(q.Id, out int userAns) && userAns == q.CorrectAnswer);
+                    calculatedScore = (int)Math.Round(100.0 * correctCount / questions.Count);
+                    calculatedPassed = calculatedScore >= 70; // Đạt từ 70% trở lên
+                }
+                else
+                {
+                    calculatedScore = 0;
+                    calculatedPassed = false;
+                }
+            }
+
+            int clampedQuizScore = Math.Clamp(calculatedScore, 0, 100);
             var userId = GetUserId();
             if (userId is null)
             {
-                // Khách chưa đăng nhập: Trả về trạng thái hoàn thành phiên học tạm thời với điểm số hợp lệ, không lưu DB
-                return Ok(new { progress = new { isCompleted = request.IsCompleted, bestQuizScore = clampedQuizScore }, isGuest = true });
+                return Ok(new { progress = new { isCompleted = calculatedPassed, bestQuizScore = clampedQuizScore }, isGuest = true });
             }
 
             var progress = await _context.UserCourseProgresses
@@ -191,8 +210,8 @@ namespace ChessCore.Controllers
                 _context.UserCourseProgresses.Add(progress);
             }
 
-            progress.IsCompleted = request.IsCompleted || progress.IsCompleted;
-            progress.BestQuizScore = Math.Max(progress.BestQuizScore, Math.Clamp(request.QuizScore, 0, 100));
+            progress.IsCompleted = calculatedPassed || progress.IsCompleted;
+            progress.BestQuizScore = Math.Max(progress.BestQuizScore, clampedQuizScore);
             progress.QuizAttempts = Math.Max(progress.QuizAttempts, Math.Max(0, request.QuizAttempts));
             progress.LastPosition = Math.Max(0, request.LastPosition);
             progress.UpdatedAt = DateTime.UtcNow;

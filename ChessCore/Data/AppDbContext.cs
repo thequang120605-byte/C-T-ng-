@@ -29,6 +29,16 @@ namespace ChessCore.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Game>(entity =>
+            {
+                entity.Property(g => g.Version).IsConcurrencyToken();
+            });
+
+            modelBuilder.Entity<Move>(entity =>
+            {
+                entity.HasIndex(m => new { m.GameId, m.MoveOrder }).IsUnique();
+            });
+
             modelBuilder.Entity<PuzzleProgress>(entity =>
             {
                 entity.HasKey(e => e.Id);

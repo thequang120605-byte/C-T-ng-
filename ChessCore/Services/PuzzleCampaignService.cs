@@ -20,6 +20,7 @@ namespace ChessCore.Services
         public PieceColor Attacker { get; set; }
         public string Title { get; set; } = "";
         public string Category { get; set; } = "";
+        public string TacticalMotif { get; set; } = "";
         public int Pieces { get; set; }
 
         /// <summary>Số nước chiếu bí cưỡng bức đã được MateSolver xác minh (1..3); 0 = chưa xác minh.</summary>
@@ -50,11 +51,11 @@ namespace ChessCore.Services
 
         public static readonly PuzzleLevelDef[] Levels =
         {
-            new() { Level = 1, Name = "Làm quen",  Rule = "Sát cục nhập môn, chiếu bí trong 1 nước (Bài 1 - 100)" },
-            new() { Level = 2, Name = "Cơ bản",    Rule = "Sát cục cơ bản, chiếu bí trong 1–2 nước (Bài 101 - 200)" },
-            new() { Level = 3, Name = "Trung cấp", Rule = "Sát cục trung cấp, chiếu bí trong 2 nước (Bài 201 - 300)" },
-            new() { Level = 4, Name = "Nâng cao",  Rule = "Sát cục nâng cao, chiếu bí trong 2–3 nước (Bài 301 - 400)" },
-            new() { Level = 5, Name = "Chuyên sâu", Rule = "Sát cục chuyên sâu, chiếu bí trong 3 nước hiểm hóc (Bài 401 - 500)" },
+            new() { Level = 1, Name = "Làm quen",  Rule = "Sát cục đa binh chủng & thử thách 2 nước (Bài 1 - 100)" },
+            new() { Level = 2, Name = "Cơ bản",    Rule = "Sát cục cơ bản, phối hợp 1–2 nước (Bài 101 - 200)" },
+            new() { Level = 3, Name = "Trung cấp", Rule = "Sát cục trung cấp, thế cờ thực chiến (Bài 201 - 300)" },
+            new() { Level = 4, Name = "Nâng cao",  Rule = "Sát cục nâng cao, 3 nước hiểm hóc (Bài 301 - 400)" },
+            new() { Level = 5, Name = "Chuyên sâu", Rule = "Sát cục chuyên sâu & giang hồ đỉnh cao (Bài 401 - 500)" },
         };
 
         /// <summary>Tỉ lệ bài cần hoàn thành ở một cấp để mở cấp kế tiếp (100% để đảm bảo tuần tự).</summary>
@@ -322,42 +323,107 @@ namespace ChessCore.Services
             }
         }
 
+        public static string GetTacticalMotif(PuzzleEntry p)
+        {
+            string board = p.Fen.Split(' ')[0];
+            bool hasR = board.Contains('R');
+            bool hasC = board.Contains('C');
+            bool hasN = board.Contains('N') || board.Contains('H');
+            bool hasP = board.Contains('P');
+
+            if (hasC && hasN && !hasR) return "Pháo - Mã";
+            if (hasC && !hasR && !hasN && !hasP) return "Pháo";
+            if (hasN && !hasR && !hasC && !hasP) return "Mã";
+            if (hasR && hasC && !hasN) return "Xe - Pháo";
+            if (hasR && hasN && !hasC) return "Xe - Mã";
+            if (hasP && !hasR && !hasC && !hasN) return "Binh";
+            if (hasC && hasP && !hasR && !hasN) return "Pháo - Tốt";
+            if (hasN && hasP && !hasR && !hasC) return "Mã - Tốt";
+            if (hasR && hasP && !hasC && !hasN) return "Xe - Tốt";
+            if (hasR && !hasC && !hasN && !hasP) return "Xe";
+            return "Tổng hợp";
+        }
+
+        private static readonly string[] MotifOrder =
+        {
+            "Pháo",
+            "Mã",
+            "Pháo - Mã",
+            "Xe - Pháo",
+            "Xe - Mã",
+            "Pháo - Tốt",
+            "Mã - Tốt",
+            "Binh",
+            "Tổng hợp",
+            "Xe - Tốt",
+            "Xe"
+        };
+
+        private static List<PuzzleEntry> BuildInterleavedList(IEnumerable<PuzzleEntry> pool)
+        {
+            var poolList = pool.ToList();
+            var buckets = new Dictionary<string, List<PuzzleEntry>>();
+
+            foreach (var m in MotifOrder)
+            {
+                buckets[m] = poolList
+                    .Where(p => GetTacticalMotif(p) == m)
+                    .OrderBy(p => p.Source == "basic" ? 1 : (p.Source == "advanced" ? 2 : 3))
+                    .ThenBy(p => p.Pieces)
+                    .ThenBy(p => p.OriginalIndex)
+                    .ToList();
+            }
+
+            var result = new List<PuzzleEntry>();
+            while (true)
+            {
+                int added = 0;
+                foreach (var m in MotifOrder)
+                {
+                    if (buckets.TryGetValue(m, out var bucket) && bucket.Count > 0)
+                    {
+                        result.Add(bucket[0]);
+                        bucket.RemoveAt(0);
+                        added++;
+                    }
+                }
+                if (added == 0) break;
+            }
+
+            return result;
+        }
+
         private void Finish()
         {
-            // Lọc các bài đã có lời giải sát cục cưỡng bức (MateIn 1..3)
-            var m1 = _all.Where(p => p.MateIn == 1)
-                         .OrderBy(p => p.Pieces)
-                         .ThenBy(p => p.Source == "basic" ? 1 : (p.Source == "advanced" ? 2 : 3))
-                         .ThenBy(p => p.OriginalIndex)
-                         .ToList();
+            // Sắp xếp các pool MateIn 1..3 theo thuật toán đa dạng hóa binh chủng xen kẽ
+            var m1Pool = BuildInterleavedList(_all.Where(p => p.MateIn == 1));
+            var m2Pool = BuildInterleavedList(_all.Where(p => p.MateIn == 2));
+            var m3Pool = BuildInterleavedList(_all.Where(p => p.MateIn == 3));
 
-            var m2 = _all.Where(p => p.MateIn == 2)
-                         .OrderBy(p => p.Pieces)
-                         .ThenBy(p => p.Source == "basic" ? 1 : (p.Source == "advanced" ? 2 : 3))
-                         .ThenBy(p => p.OriginalIndex)
-                         .ToList();
+            static List<PuzzleEntry> TakeFrom(List<PuzzleEntry> source, int count)
+            {
+                int take = Math.Min(count, source.Count);
+                var items = source.Take(take).ToList();
+                source.RemoveRange(0, take);
+                return items;
+            }
 
-            var m3 = _all.Where(p => p.MateIn == 3)
-                         .OrderBy(p => p.Pieces)
-                         .ThenBy(p => p.Source == "basic" ? 1 : (p.Source == "advanced" ? 2 : 3))
-                         .ThenBy(p => p.OriginalIndex)
-                         .ToList();
+            // Phân bổ đều đặn và hấp dẫn thành 500 bài (5 cấp, mỗi cấp đúng 100 bài):
+            // Cấp 1 (Bài 1 - 100): 40 bài sát cục 1 nước đa binh chủng (Pháo, Mã, Pháo-Mã, Xe-Pháo, Xe-Mã, Binh, Xe)
+            //                      + 60 bài sát cục 2 nước nhập môn kích thích tư duy, xoá bỏ hoàn toàn cảm giác lặp xe nhàm chán
+            var l1 = TakeFrom(m1Pool, 40).Concat(TakeFrom(m2Pool, 60)).ToList();
 
-            // Phân bổ đều và mượt mà thành 500 bài (5 cấp, mỗi cấp đúng 100 bài):
-            // Cấp 1 (Bài 1 - 100): 100 bài chiếu bí 1 nước nhập môn
-            var l1 = m1.Take(100).ToList();
+            // Cấp 2 (Bài 101 - 200): 50 bài sát cục 1 nước đa binh chủng + 50 bài sát cục 2 nước
+            var l2 = TakeFrom(m1Pool, 50).Concat(TakeFrom(m2Pool, 50)).ToList();
 
-            // Cấp 2 (Bài 101 - 200): 60 bài chiếu bí 1 nước tiếp theo + 40 bài chiếu bí 2 nước
-            var l2 = m1.Skip(100).Take(60).Concat(m2.Take(40)).ToList();
+            // Cấp 3 (Bài 201 - 300): 34 bài sát cục 1 nước + 66 bài sát cục 2 nước (dùng hết toàn bộ m2Pool)
+            var l3 = TakeFrom(m1Pool, 34).Concat(TakeFrom(m2Pool, m2Pool.Count)).ToList();
 
-            // Cấp 3 (Bài 201 - 300): 100 bài chiếu bí 2 nước tiếp theo
-            var l3 = m2.Skip(40).Take(100).ToList();
+            // Cấp 4 (Bài 301 - 400): 100 bài sát cục 3 nước chuyên sâu
+            var l4 = TakeFrom(m3Pool, 100).ToList();
 
-            // Cấp 4 (Bài 301 - 400): 36 bài chiếu bí 2 nước tiếp theo + 64 bài chiếu bí 3 nước
-            var l4 = m2.Skip(140).Take(36).Concat(m3.Take(64)).ToList();
-
-            // Cấp 5 (Bài 401 - 500): 100 bài chiếu bí 3 nước đỉnh cao
-            var l5 = m3.Skip(64).Take(100).ToList();
+            // Cấp 5 (Bài 401 - 500): Toàn bộ sát cục 3 nước còn lại (96 bài) + 4 bài sát cục đặc sắc từ m1Pool
+            var l5 = TakeFrom(m3Pool, m3Pool.Count).Concat(TakeFrom(m1Pool, 4)).ToList();
 
             var levelsList = new[] { l1, l2, l3, l4, l5 };
             var playable = new List<PuzzleEntry>();
@@ -371,6 +437,26 @@ namespace ChessCore.Services
                     var p = list[i];
                     p.Level = levelNum;
                     p.Number = i + 1;
+                    string motif = GetTacticalMotif(p);
+                    p.TacticalMotif = motif;
+
+                    if (p.Source == "endgame")
+                    {
+                        p.Category = motif switch
+                        {
+                            "Pháo - Mã" => "Mã Hậu Pháo & Pháo Mã",
+                            "Pháo" => "Sát pháp Pháo & Trùng Pháo",
+                            "Mã" => "Sát pháp Mã & Ngọa Tào",
+                            "Xe - Pháo" => "Sát cục Xa Pháo phối hợp",
+                            "Xe - Mã" => "Sát cục Xa Mã phối hợp",
+                            "Xe - Tốt" => "Sát cục Xe Tốt áp thành",
+                            "Pháo - Tốt" => "Sát cục Pháo Tốt kết hợp",
+                            "Mã - Tốt" => "Sát cục Mã Tốt kết hợp",
+                            "Binh" => "Sát pháp Binh / Tốt khóa cung",
+                            "Xe" => "Sát cục Thiết Môn Thuyên & Xa",
+                            _ => "Sát pháp phối hợp tổng hợp"
+                        };
+                    }
                     playable.Add(p);
                 }
             }

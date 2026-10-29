@@ -53,30 +53,6 @@ namespace ChessCore.Controllers
                 var user = await _context.Users.FirstOrDefaultAsync(u => 
                     u.Username == inputUser || u.Email == inputUser);
 
-                // Nếu là tài khoản admin mặc định nhưng chưa có trong DB hoặc sai hash mật khẩu
-                if (user == null && string.Equals(inputUser, "admin", StringComparison.OrdinalIgnoreCase) && model.Password == "Admin@123")
-                {
-                    user = new User
-                    {
-                        Username = "admin",
-                        Email = "admin@cotuong.pro",
-                        PasswordHash = HashPassword("Admin@123"),
-                        PlayerId = "CT-00001",
-                        Role = "Admin",
-                        Elo = 1500,
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    _context.Users.Add(user);
-                    await _context.SaveChangesAsync();
-                }
-                else if (user != null && string.Equals(user.Username, "admin", StringComparison.OrdinalIgnoreCase) && model.Password == "Admin@123")
-                {
-                    // Đảm bảo mật khẩu và quyền của admin chuẩn xác
-                    user.PasswordHash = HashPassword("Admin@123");
-                    user.Role = "Admin";
-                    await _context.SaveChangesAsync();
-                }
-
                 if (user != null && user.IsLocked)
                 {
                     ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
@@ -172,7 +148,7 @@ namespace ChessCore.Controllers
                 }
                 else
                 {
-                    TempData["OtpMessage"] = $"Lỗi khi gửi email qua Gmail. Vui lòng kiểm tra lại cấu hình SMTP. MÃ OTP CỦA BẠN LÀ: {otp}";
+                    TempData["OtpMessage"] = "Không thể gửi email xác thực lúc này do lỗi máy chủ thư. Vui lòng thử lại sau hoặc liên hệ quản trị viên.";
                 }
 
                 return RedirectToAction("VerifyOtp", new { email = model.Email });
@@ -394,8 +370,8 @@ namespace ChessCore.Controllers
                 }
                 else
                 {
-                    TempData["OtpMessage"] = $"Lỗi khi gửi email. MÃ OTP CỦA BẠN LÀ: {newOtp}";
-                    TempData["DevOtp"] = newOtp;
+                    TempData["OtpMessage"] = "Không thể gửi lại mã OTP lúc này do lỗi kết nối máy chủ thư. Vui lòng thử lại sau.";
+                    // OTP leak removed for security
                 }
 
                 return RedirectToAction("ResetPassword", new { email = email });
@@ -549,9 +525,13 @@ namespace ChessCore.Controllers
         {
             try
             {
-                // Email gửi thật (Thay thế bằng địa chỉ Gmail thật của bạn nếu cần)
-                string senderEmail = "nguyentrongnguyen30042005@gmail.com"; 
-                string senderPassword = "fdwv lpjz pakd cifz"; // Mật khẩu ứng dụng
+                string senderEmail = _configuration["Smtp:Email"] ?? Environment.GetEnvironmentVariable("SMTP_EMAIL") ?? "";
+                string senderPassword = _configuration["Smtp:Password"] ?? Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? "";
+                if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(senderPassword))
+                {
+                    Console.WriteLine("[SMTP WARNING] Chưa cấu hình SMTP_EMAIL và SMTP_PASSWORD trong biến môi trường hoặc appsettings.");
+                    return false;
+                }
 
                 var fromAddress = new System.Net.Mail.MailAddress(senderEmail, "Cờ Tướng Pro");
                 var toAddress = new System.Net.Mail.MailAddress(toEmail);
@@ -638,22 +618,6 @@ namespace ChessCore.Controllers
 
             var inputUser = request.Username.Trim();
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == inputUser || u.Email == inputUser);
-
-            if (user == null && string.Equals(inputUser, "admin", StringComparison.OrdinalIgnoreCase) && request.Password == "Admin@123")
-            {
-                user = new User
-                {
-                    Username = "admin",
-                    Email = "admin@cotuong.pro",
-                    PasswordHash = HashPassword("Admin@123"),
-                    PlayerId = "CT-00001",
-                    Role = "Admin",
-                    Elo = 1500,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-            }
 
             // FIX BUG_010: Rate Limiting & Lockout chống tấn công Brute-force mật khẩu
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -824,17 +788,26 @@ namespace ChessCore.Controllers
         [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         public async Task<IActionResult> ApiRefreshToken([FromBody] RefreshTokenApiRequest request)
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.RefreshToken))
+            {
+                return Unauthorized(new { message = "Refresh token không hợp lệ hoặc để trống." });
+            }
+
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(userIdStr, out int userId))
             {
                 var user = await _context.Users.FindAsync(userId);
                 if (user != null)
                 {
+                    if (user.IsLocked)
+                    {
+                        return Unauthorized(new { message = "Tài khoản của bạn đã bị khóa bởi Quản trị viên." });
+                    }
                     var newToken = _tokenService.GenerateToken(user);
-                    return Ok(new { success = true, token = newToken, refreshToken = request?.RefreshToken ?? _tokenService.GenerateRefreshToken() });
+                    return Ok(new { success = true, token = newToken, refreshToken = _tokenService.GenerateRefreshToken() });
                 }
             }
-            return Ok(new { success = true, token = Guid.NewGuid().ToString("N"), refreshToken = Guid.NewGuid().ToString("N") });
+            return Unauthorized(new { message = "Phiên làm việc đã hết hạn hoặc token không hợp lệ. Vui lòng đăng nhập lại." });
         }
 
         [HttpGet("api/auth/me")]
