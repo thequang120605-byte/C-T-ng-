@@ -281,21 +281,60 @@
 
     <!-- 4. THỐNG KÊ TOÀN HỆ THỐNG -->
     <div class="system-stats-strip">
-        <div class="strip-item">
-            <b>@Model.TotalUsers</b>
-            <span>Kỳ thủ tham gia</span>
+        <div class="strip-item stat-card-users">
+            <div class="stat-icon-box icon-users">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="stat-info-box">
+                <div class="stat-number">@Model.TotalUsers.ToString("N0")</div>
+                <div class="stat-title">Kỳ thủ tham gia</div>
+                <span class="stat-badge badge-blue">
+                    <i class="fa-solid fa-signal"></i> Đang hoạt động
+                </span>
+            </div>
+            <i class="fa-solid fa-users stat-bg-icon"></i>
         </div>
-        <div class="strip-item">
-            <b>@Model.TotalGames</b>
-            <span>Ván đấu đã diễn ra</span>
+
+        <div class="strip-item stat-card-games">
+            <div class="stat-icon-box icon-games">
+                <i class="fa-solid fa-chess-board"></i>
+            </div>
+            <div class="stat-info-box">
+                <div class="stat-number">@Model.TotalGames.ToString("N0")</div>
+                <div class="stat-title">Ván đấu đã diễn ra</div>
+                <span class="stat-badge badge-red">
+                    <i class="fa-solid fa-bolt"></i> Realtime &amp; AI
+                </span>
+            </div>
+            <i class="fa-solid fa-chess-board stat-bg-icon"></i>
         </div>
-        <div class="strip-item">
-            <b>@Model.TotalPuzzles</b>
-            <span>Thế cờ sát cục</span>
+
+        <div class="strip-item stat-card-puzzles">
+            <div class="stat-icon-box icon-puzzles">
+                <i class="fa-solid fa-puzzle-piece"></i>
+            </div>
+            <div class="stat-info-box">
+                <div class="stat-number">@Model.TotalPuzzles.ToString("N0")</div>
+                <div class="stat-title">Thế cờ sát cục</div>
+                <span class="stat-badge badge-gold">
+                    <i class="fa-solid fa-crosshairs"></i> 1 - 5 nước sát chiêu
+                </span>
+            </div>
+            <i class="fa-solid fa-puzzle-piece stat-bg-icon"></i>
         </div>
-        <div class="strip-item">
-            <b>@Model.TotalLessons</b>
-            <span>Bài học cờ tướng</span>
+
+        <div class="strip-item stat-card-lessons">
+            <div class="stat-icon-box icon-lessons">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div class="stat-info-box">
+                <div class="stat-number">@Model.TotalLessons.ToString("N0")</div>
+                <div class="stat-title">Bài học cờ tướng</div>
+                <span class="stat-badge badge-green">
+                    <i class="fa-solid fa-book-open"></i> Giáo trình &amp; Quiz
+                </span>
+            </div>
+            <i class="fa-solid fa-graduation-cap stat-bg-icon"></i>
         </div>
     </div>
 </div>
