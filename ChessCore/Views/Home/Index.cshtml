@@ -281,60 +281,44 @@
 
     <!-- 4. THỐNG KÊ TOÀN HỆ THỐNG -->
     <div class="system-stats-strip">
-        <div class="strip-item stat-card-users">
-            <div class="stat-icon-box icon-users">
+        <div class="strip-item">
+            <div class="strip-icon" style="background: #eff6ff; color: #2563eb;">
                 <i class="fa-solid fa-users"></i>
             </div>
-            <div class="stat-info-box">
-                <div class="stat-number">@Model.TotalUsers.ToString("N0")</div>
-                <div class="stat-title">Kỳ thủ tham gia</div>
-                <span class="stat-badge badge-blue">
-                    <i class="fa-solid fa-signal"></i> Đang hoạt động
-                </span>
+            <div class="strip-content">
+                <span class="strip-number">@Model.TotalUsers.ToString("N0")</span>
+                <span class="strip-label">Kỳ thủ tham gia</span>
             </div>
-            <i class="fa-solid fa-users stat-bg-icon"></i>
         </div>
 
-        <div class="strip-item stat-card-games">
-            <div class="stat-icon-box icon-games">
+        <div class="strip-item">
+            <div class="strip-icon" style="background: #fef2f2; color: #dc2626;">
                 <i class="fa-solid fa-chess-board"></i>
             </div>
-            <div class="stat-info-box">
-                <div class="stat-number">@Model.TotalGames.ToString("N0")</div>
-                <div class="stat-title">Ván đấu đã diễn ra</div>
-                <span class="stat-badge badge-red">
-                    <i class="fa-solid fa-bolt"></i> Realtime &amp; AI
-                </span>
+            <div class="strip-content">
+                <span class="strip-number">@Model.TotalGames.ToString("N0")</span>
+                <span class="strip-label">Ván đấu đã diễn ra</span>
             </div>
-            <i class="fa-solid fa-chess-board stat-bg-icon"></i>
         </div>
 
-        <div class="strip-item stat-card-puzzles">
-            <div class="stat-icon-box icon-puzzles">
+        <div class="strip-item">
+            <div class="strip-icon" style="background: #fef3c7; color: #d97706;">
                 <i class="fa-solid fa-puzzle-piece"></i>
             </div>
-            <div class="stat-info-box">
-                <div class="stat-number">@Model.TotalPuzzles.ToString("N0")</div>
-                <div class="stat-title">Thế cờ sát cục</div>
-                <span class="stat-badge badge-gold">
-                    <i class="fa-solid fa-crosshairs"></i> 1 - 5 nước sát chiêu
-                </span>
+            <div class="strip-content">
+                <span class="strip-number">@Model.TotalPuzzles.ToString("N0")</span>
+                <span class="strip-label">Thế cờ sát cục</span>
             </div>
-            <i class="fa-solid fa-puzzle-piece stat-bg-icon"></i>
         </div>
 
-        <div class="strip-item stat-card-lessons">
-            <div class="stat-icon-box icon-lessons">
+        <div class="strip-item">
+            <div class="strip-icon" style="background: #ecfdf5; color: #059669;">
                 <i class="fa-solid fa-graduation-cap"></i>
             </div>
-            <div class="stat-info-box">
-                <div class="stat-number">@Model.TotalLessons.ToString("N0")</div>
-                <div class="stat-title">Bài học cờ tướng</div>
-                <span class="stat-badge badge-green">
-                    <i class="fa-solid fa-book-open"></i> Giáo trình &amp; Quiz
-                </span>
+            <div class="strip-content">
+                <span class="strip-number">@Model.TotalLessons.ToString("N0")</span>
+                <span class="strip-label">Bài học cờ tướng</span>
             </div>
-            <i class="fa-solid fa-graduation-cap stat-bg-icon"></i>
         </div>
     </div>
 </div>
