@@ -40,6 +40,7 @@ html, body {
     background-color: var(--bg-navy-dark);
     color: var(--text-main);
     overflow: hidden; /* Hide scroll on body, handle inside main */
+    scrollbar-gutter: stable;
 }
 
 button, input, select, textarea {
@@ -390,6 +391,7 @@ button, input, select, textarea {
 .app-main {
     flex: 1;
     overflow-y: auto;
+    scrollbar-gutter: stable;
     position: relative;
     background: var(--bg-navy-dark);
 }
