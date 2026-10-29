@@ -50,8 +50,10 @@ namespace ChessCore.Controllers
 
             vm.ModeStats = await _statistics.ModesAsync(userId, HttpContext.RequestAborted);
             vm.Learning = await _statistics.LearningAsync(userId, HttpContext.RequestAborted);
-            var online = vm.ModeStats.Single(r => r.Mode == GameModes.Online);
-            vm.WinRate = online.WinRate;
+            int totalFinished = currentUser.Wins + currentUser.Draws + currentUser.Losses;
+            vm.WinRate = totalFinished > 0 
+                ? Math.Round((double)currentUser.Wins / totalFinished * 100, 1) 
+                : (currentUser.GamesPlayed > 0 ? Math.Round((double)currentUser.Wins / currentUser.GamesPlayed * 100, 1) : 0);
 
             // Puzzles solved
             vm.PuzzlesSolved = await _context.PuzzleProgresses
