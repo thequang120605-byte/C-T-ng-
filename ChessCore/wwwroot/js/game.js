@@ -411,6 +411,33 @@ document.addEventListener("DOMContentLoaded", function () {
   // SELECT MODE
   // =====================================================
 
+  function resetGameModeSelection() {
+    VS_COMPUTER = false;
+    IS_AI_VS_AI = false;
+    gameModeSelected = false;
+
+    if (playerVsPlayerButton) {
+      playerVsPlayerButton.classList.remove("selected");
+      playerVsPlayerButton.setAttribute("aria-pressed", "false");
+    }
+    if (playerVsComputerButton) {
+      playerVsComputerButton.classList.remove("selected");
+      playerVsComputerButton.setAttribute("aria-pressed", "false");
+    }
+    if (playerVsOnlineButton) {
+      playerVsOnlineButton.classList.remove("selected");
+      playerVsOnlineButton.setAttribute("aria-pressed", "false");
+    }
+    if (playerVsAiButton) {
+      playerVsAiButton.classList.remove("selected");
+      playerVsAiButton.setAttribute("aria-pressed", "false");
+    }
+    if (selectedDifficultyContainer) {
+      selectedDifficultyContainer.style.display = "none";
+      selectedDifficultyContainer.classList.add("hidden");
+    }
+  }
+
   function selectGameMode(isComputer) {
     VS_COMPUTER = isComputer;
 
