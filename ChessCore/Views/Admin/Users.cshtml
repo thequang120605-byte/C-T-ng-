@@ -73,6 +73,19 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
+        .badge-current-admin {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+            background: rgba(217, 119, 6, 0.12);
+            color: var(--accent-gold-dark, #b45309);
+            border: 1px dashed rgba(217, 119, 6, 0.45);
+            white-space: nowrap;
+        }
     </style>
 }
 
@@ -134,7 +147,7 @@
                         <th style="width: 95px; text-align: center; white-space: nowrap;">Cờ thế đã giải</th>
                         <th style="width: 70px; text-align: center; white-space: nowrap;">Khóa học</th>
                         <th style="width: 75px; text-align: center; white-space: nowrap;">Vai trò</th>
-                        <th style="text-align: right; width: 155px; white-space: nowrap;">Hành động</th>
+                        <th style="text-align: right; width: 175px; white-space: nowrap;">Hành động</th>
                     </tr>
                 </thead>
                 <tbody id="user-table-body">
@@ -208,18 +221,24 @@
                                     @(u.Role ?? "Player")
                                 </span>
                             </td>
-                            <td style="text-align: right; width: 155px; white-space: nowrap;">
+                            <td style="text-align: right; width: 175px; white-space: nowrap;">
                                 <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: flex-end; white-space: nowrap;">
-                                    <form asp-controller="Admin" asp-action="ToggleAdminRole" method="post" style="display: inline;">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="userId" value="@u.Id" />
-                                        <button type="submit" class="btn-admin btn-admin-sm @(u.Role == "Admin" ? "btn-admin-danger" : "btn-admin-primary")" title="Đổi quyền Admin / Player">
-                                            @(u.Role == "Admin" ? "Hạ quyền" : "Cấp Admin")
-                                        </button>
-                                    </form>
-
-                                    @if (!isCurrentAdmin)
+                                    @if (isCurrentAdmin)
                                     {
+                                        <span class="badge-current-admin" title="Tài khoản Quản trị viên của bạn đang đăng nhập">
+                                            <i class="fa-solid fa-user-shield"></i> Bạn (Đang đăng nhập)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <form asp-controller="Admin" asp-action="ToggleAdminRole" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn @(u.Role == "Admin" ? "HẠ QUYỀN Admin của" : "CẤP QUYỀN Admin cho") tài khoản @u.Username?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@u.Id" />
+                                            <button type="submit" class="btn-admin btn-admin-sm @(u.Role == "Admin" ? "btn-admin-danger" : "btn-admin-primary")" title="@(u.Role == "Admin" ? "Hạ quyền xuống Player" : "Nâng cấp lên Admin")">
+                                                @(u.Role == "Admin" ? "Hạ quyền" : "Cấp Admin")
+                                            </button>
+                                        </form>
+
                                         <form asp-controller="Admin" asp-action="ToggleLockUser" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc muốn @(u.IsLocked ? "mở khóa" : "khóa") tài khoản @u.Username?');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="userId" value="@u.Id" />
@@ -227,10 +246,7 @@
                                                 <i class="fa-solid @(u.IsLocked ? "fa-lock-open" : "fa-lock")"></i> @(u.IsLocked ? "Mở" : "Khóa")
                                             </button>
                                         </form>
-                                    }
 
-                                    @if (!isCurrentAdmin)
-                                    {
                                         <form asp-controller="Admin" asp-action="DeleteUser" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản @u.Username (@u.PlayerId)? Dữ liệu liên quan sẽ bị xóa hoàn toàn.');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="userId" value="@u.Id" />

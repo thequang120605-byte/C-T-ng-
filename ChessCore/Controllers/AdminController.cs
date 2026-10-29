@@ -687,6 +687,16 @@ namespace ChessCore.Controllers
         }
 
         // FIX BUG_014: Tính năng Khóa / Mở khóa tài khoản người dùng
+        private IActionResult SafeRedirectBack(string defaultUrl = "/Admin/Users")
+        {
+            var referer = Request.Headers.Referer.ToString();
+            if (string.IsNullOrWhiteSpace(referer))
+            {
+                return Redirect(defaultUrl);
+            }
+            return Redirect(referer);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleLockUser(int userId)
@@ -701,13 +711,13 @@ namespace ChessCore.Controllers
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
-                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin/Users");
+                return SafeRedirectBack();
             }
 
             if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
             {
                 TempData["ErrorMessage"] = "Không thể khóa tài khoản có quyền Quản trị viên (Admin).";
-                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin/Users");
+                return SafeRedirectBack();
             }
 
             user.IsLocked = !user.IsLocked;
@@ -717,7 +727,7 @@ namespace ChessCore.Controllers
                 ? $"Đã khóa tài khoản {user.Username} ({user.PlayerId}) thành công!" 
                 : $"Đã mở khóa tài khoản {user.Username} ({user.PlayerId}) thành công!";
 
-            return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin/Users");
+            return SafeRedirectBack();
         }
 
         [HttpPost]
@@ -726,14 +736,39 @@ namespace ChessCore.Controllers
         {
             if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
+            var currentUsername = User.Identity?.Name;
             var user = await _context.Users.FindAsync(userId);
-            if (user != null)
+            if (user == null)
             {
-                user.Role = (user.Role == "Admin") ? "Player" : "Admin";
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Đã cập nhật quyền của {user.Username} thành: {user.Role}";
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return SafeRedirectBack();
             }
-            return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin");
+
+            // 1. Chống tự hạ quyền chính mình
+            if (string.Equals(user.Username, currentUsername, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Thao tác bị từ chối: Bạn không thể tự hạ quyền Quản trị viên (Admin) của chính mình để tránh mất quyền quản trị hệ thống!";
+                return SafeRedirectBack();
+            }
+
+            // 2. Chống hạ quyền nếu đây là Admin duy nhất còn lại trong toàn hệ thống
+            if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                var adminCount = await _context.Users.CountAsync(u => u.Role == "Admin");
+                if (adminCount <= 1)
+                {
+                    TempData["ErrorMessage"] = "Thao tác bị từ chối: Đây là tài khoản Quản trị viên (Admin) duy nhất còn lại. Hệ thống bắt buộc phải duy trì ít nhất 1 Quản trị viên!";
+                    return SafeRedirectBack();
+                }
+            }
+
+            // 3. Thực hiện chuyển đổi quyền
+            user.Role = string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase) ? "Player" : "Admin";
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = $"Đã cập nhật quyền của {user.Username} thành: {user.Role}";
+
+            return SafeRedirectBack();
         }
 
         [HttpPost]
@@ -747,19 +782,29 @@ namespace ChessCore.Controllers
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy người dùng cần xóa.";
-                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin");
+                return SafeRedirectBack();
             }
 
             if (string.Equals(user.Username, currentUsername, StringComparison.OrdinalIgnoreCase))
             {
                 TempData["ErrorMessage"] = "Bạn không thể tự xóa tài khoản của chính mình!";
-                return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin");
+                return SafeRedirectBack();
+            }
+
+            if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                var adminCount = await _context.Users.CountAsync(u => u.Role == "Admin");
+                if (adminCount <= 1)
+                {
+                    TempData["ErrorMessage"] = "Thao tác bị từ chối: Không thể xóa tài khoản Quản trị viên duy nhất trong hệ thống!";
+                    return SafeRedirectBack();
+                }
             }
 
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = $"Đã xóa người dùng {user.Username} ({user.PlayerId}) thành công!";
-            return Redirect(Request.Headers["Referer"].ToString() ?? "/Admin");
+            return SafeRedirectBack();
         }
 
         // ==========================================
