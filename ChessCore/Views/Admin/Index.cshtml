@@ -406,7 +406,7 @@
                         var tierClass = u.Elo >= 1500 ? "tier-grandmaster" : (u.Elo >= 1400 ? "tier-master" : (u.Elo >= 1250 ? "tier-expert" : (u.Elo >= 1150 ? "tier-amateur" : "tier-novice")));
                         var winRateColor = u.WinRate >= 60 ? "#10b981" : (u.WinRate >= 45 ? "#d97706" : "#ef4444");
 
-                        <tr>
+                        <tr class="overview-user-row">
                             <td style="text-align: center;">
                                 <span class="rank-medal @medalClass">
                                     @(rank <= 3 ? (rank == 1 ? "🥇" : (rank == 2 ? "🥈" : "🥉")) : $"#{rank}")
@@ -464,6 +464,10 @@
                     }
                 </tbody>
             </table>
+        </div>
+        <div class="pagination-wrapper" id="overview-users-pagination" style="margin-top: 14px; padding-top: 14px;">
+            <div class="pagination-info" id="overview-users-info"></div>
+            <div class="pagination-controls" id="overview-users-controls"></div>
         </div>
     </div>
 
@@ -831,6 +835,104 @@
                 script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
                 script.onload = initAllCharts;
                 document.head.appendChild(script);
+            }
+        })();
+
+        // ==========================================
+        // PHÂN TRANG BẢNG TỔNG QUAN KẾT QUẢ KỲ THỦ
+        // ==========================================
+        (function() {
+            const pageSize = 10;
+            let currentPage = 1;
+            const rows = Array.from(document.querySelectorAll('.overview-user-row'));
+            const totalItems = rows.length;
+            const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+            function renderPage(page) {
+                if (page < 1) page = 1;
+                if (page > totalPages) page = totalPages;
+                currentPage = page;
+
+                const start = (page - 1) * pageSize;
+                const end = Math.min(start + pageSize, totalItems);
+
+                rows.forEach((row, idx) => {
+                    row.style.display = (idx >= start && idx < end) ? '' : 'none';
+                });
+
+                const infoEl = document.getElementById('overview-users-info');
+                if (infoEl) {
+                    infoEl.textContent = totalItems === 0
+                        ? 'Chưa có dữ liệu kỳ thủ'
+                        : `Hiển thị ${start + 1} - ${end} / tổng số ${totalItems} kỳ thủ`;
+                }
+
+                renderControls();
+            }
+
+            function renderControls() {
+                const controlsEl = document.getElementById('overview-users-controls');
+                if (!controlsEl) return;
+                controlsEl.innerHTML = '';
+
+                if (totalPages <= 1) return;
+
+                // Nút Trang trước (Previous)
+                const prevBtn = document.createElement('button');
+                prevBtn.type = 'button';
+                prevBtn.className = 'page-btn';
+                prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+                prevBtn.title = 'Trang trước';
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.onclick = () => renderPage(currentPage - 1);
+                controlsEl.appendChild(prevBtn);
+
+                // Danh sách trang hiển thị
+                let pages = [];
+                if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                } else {
+                    pages.push(1);
+                    if (currentPage > 3) pages.push('...');
+                    let startP = Math.max(2, currentPage - 1);
+                    let endP = Math.min(totalPages - 1, currentPage + 1);
+                    for (let i = startP; i <= endP; i++) pages.push(i);
+                    if (currentPage < totalPages - 2) pages.push('...');
+                    pages.push(totalPages);
+                }
+
+                pages.forEach(item => {
+                    if (item === '...') {
+                        const dots = document.createElement('span');
+                        dots.className = 'page-btn';
+                        dots.style.border = 'none';
+                        dots.style.background = 'transparent';
+                        dots.style.cursor = 'default';
+                        dots.textContent = '...';
+                        controlsEl.appendChild(dots);
+                    } else {
+                        const pBtn = document.createElement('button');
+                        pBtn.type = 'button';
+                        pBtn.className = 'page-btn' + (item === currentPage ? ' active' : '');
+                        pBtn.textContent = item;
+                        pBtn.onclick = () => renderPage(item);
+                        controlsEl.appendChild(pBtn);
+                    }
+                });
+
+                // Nút Trang kế tiếp (Next)
+                const nextBtn = document.createElement('button');
+                nextBtn.type = 'button';
+                nextBtn.className = 'page-btn';
+                nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+                nextBtn.title = 'Trang kế tiếp';
+                nextBtn.disabled = currentPage === totalPages;
+                nextBtn.onclick = () => renderPage(currentPage + 1);
+                controlsEl.appendChild(nextBtn);
+            }
+
+            if (totalItems > 0) {
+                renderPage(1);
             }
         })();
     </script>
