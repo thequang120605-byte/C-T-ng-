@@ -73,6 +73,21 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
+        .user-elo-tier {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+        }
+        .user-elo-val {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--accent-gold, #d97706);
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+        }
         .badge-current-admin {
             display: inline-flex;
             align-items: center;
@@ -140,14 +155,14 @@
                     <tr>
                         <th style="width: 44px; text-align: center; white-space: nowrap;">Hạng</th>
                         <th>Kỳ thủ</th>
-                        <th style="width: 105px; white-space: nowrap;">Kỳ lực & Elo</th>
+                        <th style="width: 175px; white-space: nowrap;">Kỳ lực & Elo</th>
                         <th style="width: 65px; text-align: center; white-space: nowrap;">Tổng ván</th>
                         <th style="width: 125px; text-align: center; white-space: nowrap;">Thắng - Hòa - Thua</th>
                         <th style="width: 105px; white-space: nowrap;">Tỉ lệ thắng</th>
                         <th style="width: 95px; text-align: center; white-space: nowrap;">Cờ thế đã giải</th>
                         <th style="width: 70px; text-align: center; white-space: nowrap;">Khóa học</th>
                         <th style="width: 75px; text-align: center; white-space: nowrap;">Vai trò</th>
-                        <th style="text-align: right; width: 175px; white-space: nowrap;">Hành động</th>
+                        <th style="text-align: right; width: 150px; white-space: nowrap;">Hành động</th>
                     </tr>
                 </thead>
                 <tbody id="user-table-body">
@@ -185,10 +200,10 @@
                                 </div>
                             </td>
                             <td style="white-space: nowrap;">
-                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <div class="user-elo-tier">
                                     <span class="tier-badge @tierClass">@u.Title</span>
-                                    <span style="font-size: 12.5px; font-weight: 800; color: var(--accent-gold, #d97706);">
-                                        <i class="fa-solid fa-star" style="font-size: 10px;"></i> @u.Elo
+                                    <span class="user-elo-val">
+                                        <i class="fa-solid fa-star" style="font-size: 11px;"></i> @u.Elo
                                     </span>
                                 </div>
                             </td>
@@ -221,7 +236,7 @@
                                     @(u.Role ?? "Player")
                                 </span>
                             </td>
-                            <td style="text-align: right; width: 175px; white-space: nowrap;">
+                            <td style="text-align: right; width: 150px; white-space: nowrap;">
                                 <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: flex-end; white-space: nowrap;">
                                     @if (isCurrentAdmin)
                                     {
@@ -247,14 +262,7 @@
                                             </button>
                                         </form>
 
-                                        <form asp-controller="Admin" asp-action="DeleteUser" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản @u.Username (@u.PlayerId)? Dữ liệu liên quan sẽ bị xóa hoàn toàn.');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="userId" value="@u.Id" />
-                                            <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" title="Xóa tài khoản">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    }
+                                        }
                                 </div>
                             </td>
                         </tr>

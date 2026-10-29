@@ -777,33 +777,7 @@ namespace ChessCore.Controllers
         {
             if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
-            var currentUsername = User.Identity?.Name;
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-            {
-                TempData["ErrorMessage"] = "Không tìm thấy người dùng cần xóa.";
-                return SafeRedirectBack();
-            }
-
-            if (string.Equals(user.Username, currentUsername, StringComparison.OrdinalIgnoreCase))
-            {
-                TempData["ErrorMessage"] = "Bạn không thể tự xóa tài khoản của chính mình!";
-                return SafeRedirectBack();
-            }
-
-            if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
-            {
-                var adminCount = await _context.Users.CountAsync(u => u.Role == "Admin");
-                if (adminCount <= 1)
-                {
-                    TempData["ErrorMessage"] = "Thao tác bị từ chối: Không thể xóa tài khoản Quản trị viên duy nhất trong hệ thống!";
-                    return SafeRedirectBack();
-                }
-            }
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = $"Đã xóa người dùng {user.Username} ({user.PlayerId}) thành công!";
+            TempData["ErrorMessage"] = "Chính sách hệ thống: Không xóa vĩnh viễn tài khoản người dùng để bảo toàn dữ liệu kỳ phổ và lịch sử thi đấu. Vui lòng sử dụng tính năng Khóa tài khoản!";
             return SafeRedirectBack();
         }
 
