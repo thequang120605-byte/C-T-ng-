@@ -1,0 +1,37 @@
+================================================================================
+          HƯỚNG DẪN CÀI ĐẶT VÀ KHỞI CHẠY ĐỒ ÁN CHESSCORE (.NET 9)
+================================================================================
+
+1. YÊU CẦU MÔI TRƯỜNG:
+   - .NET SDK: Phiên bản 9.0 trở lên.
+   - Cơ sở dữ liệu: MySQL 8.0 trở lên (khuyên dùng Laragon hoặc XAMPP / MySQL Server).
+   - Node.js: Phiên bản 18+ (nếu muốn chạy kịch bản Master Test Matrix E2E).
+
+2. CẤU HÌNH CƠ SỞ DỮ LIỆU (appsettings.json):
+   - Mặc định hệ thống kết nối MySQL tại:
+     Server=localhost;Port=3306;Database=chess_db;User=root;Password=;
+   - Nếu MySQL của bạn có mật khẩu, chỉnh sửa tại file:
+     ChessCore/appsettings.json (hoặc appsettings.Development.json)
+
+3. CÁC BƯỚC KHỞI CHẠY HỆ THỐNG:
+   Bước 1: Mở terminal (PowerShell hoặc CMD) tại thư mục dự án này.
+   Bước 2: Khôi phục dependencies:
+           dotnet restore
+   Bước 3: Khởi chạy ứng dụng:
+           dotnet run --project ChessCore
+   Bước 4: Hệ thống tự động kiểm tra và áp dụng toàn bộ Entity Framework Migrations (18 migrations).
+   Bước 5: Mở trình duyệt web và truy cập:
+           http://localhost:5000
+
+4. CÁCH CHẠY BỘ KIỂM THỬ (TESTING SUITE):
+   - Chạy 12 Unit Tests (Bàn 1 - xUnit):
+     dotnet test
+   - Chạy toàn bộ 50 Test Cases Kịch bản Master E2E (Bàn 3 - Khớp 1-1 với file Excel):
+     (Đảm bảo Web Server đang chạy ở cổng 5000)
+     node Testing/03_Ban3_E2ETests_Scripts/run_master_test_matrix.cjs
+
+5. CẤU TRÚC THƯ MỤC CHÍNH:
+   - ChessCore/              : Mã nguồn ứng dụng web chính (ASP.NET Core MVC, Engine, SignalR Hubs, Data, Views).
+   - docs/                   : Toàn bộ sơ đồ phân tích thiết kế Use Case, Class, ERD và Thuyết minh Chương 3 (.docx).
+   - Testing/                : Toàn bộ tài liệu, kịch bản E2E, Unit Test, Postman API và Báo cáo Excel 50 Test Cases.
+================================================================================

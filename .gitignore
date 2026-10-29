@@ -5,3 +5,20 @@
 
 /CHESSCORE_COMPLETE.patch
 **/appsettings.Development.json
+
+# Scratch and temporary extraction files
+scratch/
+temp_*.puml
+check_*.py
+scan_*.py
+dump_*.py
+export_*.py
+verify_*.py
+item4_dump.json
+parsed_questions.json
+form.html
+all_mcqs.txt
+questions.txt
+potential_multi.txt
+
+docs/~$*
