@@ -284,13 +284,16 @@
 .home-content-right {
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
 .home-leaderboard-card {
+    height: 100%;
     flex: 1;
     display: flex;
     flex-direction: column;
     margin-bottom: 0;
+    box-sizing: border-box;
 }
 
 .panel-card {
@@ -365,7 +368,8 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    justify-content: space-between;
+    gap: 10px;
     flex: 1;
 }
 
@@ -597,6 +601,10 @@
     }
     .home-content-layout {
         grid-template-columns: 1fr;
+    }
+    .home-content-right,
+    .home-leaderboard-card {
+        height: auto;
     }
     .system-stats-strip {
         grid-template-columns: repeat(2, 1fr);

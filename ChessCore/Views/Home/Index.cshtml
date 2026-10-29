@@ -176,7 +176,7 @@
             </div>
 
             <!-- Khối công nghệ AI -->
-            <div class="panel-card">
+            <div class="panel-card" style="margin-bottom: 0;">
                 <div class="panel-card-header">
                     <div class="panel-card-title">
                         <i class="fa-solid fa-microchip" style="color: #2563eb;"></i>
@@ -213,8 +213,8 @@
         </div>
 
         <!-- Cột phải: Top Kỳ Thủ -->
-        <div class="home-content-right">
-            <div class="panel-card home-leaderboard-card">
+        <div class="home-content-right" style="height: 100%; display: flex; flex-direction: column;">
+            <div class="panel-card home-leaderboard-card" style="height: 100%; flex: 1; display: flex; flex-direction: column; margin-bottom: 0; box-sizing: border-box;">
                 <div class="panel-card-header">
                     <div class="panel-card-title">
                         <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i>
@@ -224,7 +224,7 @@
                         Xem bảng đầy đủ
                     </a>
                 </div>
-                <ul class="home-leaderboard-list">
+                <ul class="home-leaderboard-list" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; margin: 0; padding: 0;">
                     @{
                         int rank = 1;
                         foreach (var player in Model.TopPlayers)
@@ -235,7 +235,7 @@
                             var tierClass = player.Elo >= 1500 ? "tier-gm" : (player.Elo >= 1400 ? "tier-master" : (player.Elo >= 1300 ? "tier-expert" : "tier-player"));
                             var tierIcon = player.Elo >= 1500 ? "fa-crown" : (player.Elo >= 1400 ? "fa-award" : (player.Elo >= 1300 ? "fa-shield-halved" : "fa-user"));
 
-                            <li class="leader-item @(rank <= 3 ? $"top-{rank}-row" : "")">
+                            <li class="leader-item @(rank <= 3 ? $"top-{rank}-row" : "")" style="flex: 1; min-height: 52px; display: flex; align-items: center;">
                                 <div class="leader-rank-badge top-@rank">
                                     @if (!string.IsNullOrEmpty(medalIcon))
                                     {
