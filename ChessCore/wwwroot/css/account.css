@@ -182,6 +182,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
     gap: 24px;
+    align-items: stretch;
 }
 
 .account-form-card {
@@ -190,6 +191,192 @@
     border-radius: 14px;
     padding: 24px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    display: flex;
+    flex-direction: column;
+}
+
+.acc-flex-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.btn-acc-primary.btn-acc-full {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+    font-size: 14px;
+    margin-top: auto;
+}
+
+/* IDENTITY READOUT ROW */
+.acc-identity-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.acc-identity-tile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--bg-main, #f8fafc);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.acc-identity-tile:hover {
+    border-color: rgba(217, 119, 6, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.acc-identity-tile .tile-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--accent-gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.acc-identity-tile .tile-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.acc-identity-tile .tile-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 2px;
+}
+
+.acc-identity-tile .tile-val-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.acc-identity-tile .tile-id-val {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: 0.5px;
+}
+
+.acc-identity-tile .tile-email-val {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn-tile-copy {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    line-height: 1;
+}
+
+.btn-tile-copy:hover {
+    color: var(--accent-gold);
+    background: rgba(245, 158, 11, 0.12);
+}
+
+.btn-tile-copy.copied {
+    color: #10b981;
+}
+
+.tile-verified-badge {
+    color: #10b981;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* CHAR COUNT BADGE */
+.char-count-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+/* GUIDELINE BOX */
+.acc-guideline-box {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(217, 119, 6, 0.02));
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 10px;
+    padding: 13px 15px;
+    margin-bottom: 20px;
+}
+
+.guideline-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--accent-gold-dark, #b45309);
+    margin-bottom: 9px;
+    padding-bottom: 7px;
+    border-bottom: 1px dashed rgba(245, 158, 11, 0.25);
+}
+
+.guideline-header i {
+    font-size: 13px;
+    color: var(--accent-gold);
+}
+
+.guideline-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.guideline-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.guideline-list li i {
+    color: #10b981;
+    font-size: 11px;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.guideline-list li strong {
+    color: var(--text-main);
 }
 
 .card-title-row {
@@ -511,6 +698,12 @@
 .pwd-match-hint.show-error {
     display: flex;
     color: #dc2626;
+}
+
+@media (max-width: 520px) {
+    .acc-identity-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 480px) {

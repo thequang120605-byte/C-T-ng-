@@ -142,40 +142,88 @@
 
     <!-- FORMS ROW -->
     <div class="account-forms-grid">
-        <!-- ĐỔI TÊN HIỂN THỊ -->
+        <!-- HỒ SƠ & DANH TÍNH KỲ THỦ -->
         <div class="account-form-card">
             <div class="card-title-row">
-                <i class="fa-solid fa-id-card"></i>
-                <h3>Đổi Tên Hiển Thị</h3>
+                <i class="fa-solid fa-id-badge"></i>
+                <h3>Hồ Sơ & Danh Tính Kỳ Thủ</h3>
             </div>
-            <form asp-controller="Account" asp-action="UpdateUsername" method="post">
+
+            <!-- Khối thông tin định danh hệ thống (Read-only Info Tiles) -->
+            <div class="acc-identity-row">
+                <div class="acc-identity-tile">
+                    <div class="tile-icon"><i class="fa-solid fa-hashtag"></i></div>
+                    <div class="tile-content">
+                        <span class="tile-label">Mã ID Kỳ Thủ</span>
+                        <div class="tile-val-wrap">
+                            <span class="tile-id-val">@Model.PlayerId</span>
+                            <button type="button" class="btn-tile-copy" onclick="copyPlayerId('@Model.PlayerId', this)" title="Sao chép mã ID">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="acc-identity-tile">
+                    <div class="tile-icon"><i class="fa-solid fa-envelope"></i></div>
+                    <div class="tile-content">
+                        <span class="tile-label">Email Đăng Ký</span>
+                        <div class="tile-val-wrap">
+                            <span class="tile-email-val" title="@Model.Email">@Model.Email</span>
+                            <span class="tile-verified-badge" title="Tài khoản đã kích hoạt"><i class="fa-solid fa-circle-check"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Cập nhật Tên hiển thị -->
+            <form asp-controller="Account" asp-action="UpdateUsername" method="post" class="acc-flex-form">
                 @Html.AntiForgeryToken()
                 <div class="form-group-acc">
-                    <label>Mã ID Định Danh (Không đổi)</label>
-                    <input type="text" class="form-control-acc" value="@Model.PlayerId" disabled />
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label for="acc-username-input" style="margin-bottom: 0;">Tên hiển thị kỳ thủ</label>
+                        <span class="char-count-badge" id="username-char-count">@Model.Username.Length/30 ký tự</span>
+                    </div>
+                    <div class="acc-input-icon-wrap">
+                        <i class="fa-solid fa-user-pen acc-input-icon"></i>
+                        <input type="text" id="acc-username-input" name="Username" class="form-control-acc" value="@Model.Username" required minlength="3" maxlength="30" placeholder="Nhập tên hiển thị mới" />
+                    </div>
                 </div>
-                <div class="form-group-acc">
-                    <label>Email Đăng Ký</label>
-                    <input type="text" class="form-control-acc" value="@Model.Email" disabled />
+
+                <!-- Hộp quy chuẩn danh xưng kỳ đạo -->
+                <div class="acc-guideline-box">
+                    <div class="guideline-header">
+                        <i class="fa-solid fa-scroll text-gold"></i>
+                        <span>Quy Chuẩn Danh Xưng Kỳ Đạo</span>
+                    </div>
+                    <ul class="guideline-list">
+                        <li>
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Tên hiển thị xuất hiện trên bàn cờ, bảng xếp hạng Elo và chứng chỉ khóa học.</span>
+                        </li>
+                        <li>
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Độ dài từ <strong>3 đến 30 ký tự</strong>, cho phép chữ cái tiếng Việt có dấu và chữ số.</span>
+                        </li>
+                        <li>
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Khuyến khích danh xưng chuẩn mực, thể hiện phong thái và tinh thần kỳ đạo.</span>
+                        </li>
+                    </ul>
                 </div>
-                <div class="form-group-acc">
-                    <label>Tên hiển thị hiện tại</label>
-                    <input type="text" name="Username" class="form-control-acc" value="@Model.Username" required minlength="3" maxlength="30" />
-                    <small style="color: var(--text-muted); font-size: 12px; margin-top: 4px; display: block;">Tên hiển thị sẽ xuất hiện trên bàn cờ, bảng xếp hạng và chứng chỉ khóa học.</small>
-                </div>
-                <button type="submit" class="btn-acc-primary">
-                    <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
+
+                <button type="submit" class="btn-acc-primary btn-acc-full">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi danh tính
                 </button>
             </form>
         </div>
 
-        <!-- ĐỔI MẬT KHẨU -->
+        <!-- ĐỔI MẬT KHẨU & BẢO MẬT -->
         <div class="account-form-card">
             <div class="card-title-row">
-                <i class="fa-solid fa-lock"></i>
-                <h3>Đổi Mật Khẩu</h3>
+                <i class="fa-solid fa-shield-halved"></i>
+                <h3>Đổi Mật Khẩu & Bảo Mật</h3>
             </div>
-            <form asp-controller="Account" asp-action="ChangePassword" method="post" id="form-change-password">
+            <form asp-controller="Account" asp-action="ChangePassword" method="post" id="form-change-password" class="acc-flex-form">
                 @Html.AntiForgeryToken()
                 <div class="form-group-acc">
                     <label for="current-pwd">Mật khẩu hiện tại</label>
@@ -238,8 +286,8 @@
                     <div id="pwd-match-hint" class="pwd-match-hint"></div>
                 </div>
 
-                <button type="submit" id="btn-submit-pwd" class="btn-acc-primary">
-                    <i class="fa-solid fa-key"></i> Đổi mật khẩu
+                <button type="submit" id="btn-submit-pwd" class="btn-acc-primary btn-acc-full">
+                    <i class="fa-solid fa-key"></i> Đổi mật khẩu tài khoản
                 </button>
             </form>
         </div>
@@ -248,6 +296,20 @@
 
 @section Scripts {
     <script>
+        function copyPlayerId(text, btn) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.className = 'fa-solid fa-check';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        if (icon) icon.className = 'fa-regular fa-copy';
+                        btn.classList.remove('copied');
+                    }, 1800);
+                });
+            }
+        }
+
         function toggleAccPassword(inputId, iconElement) {
             const input = document.getElementById(inputId);
             if (!input) return;
@@ -263,6 +325,14 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            const usernameInput = document.getElementById('acc-username-input');
+            const charCount = document.getElementById('username-char-count');
+            if (usernameInput && charCount) {
+                usernameInput.addEventListener('input', function() {
+                    charCount.textContent = `${this.value.length}/30 ký tự`;
+                });
+            }
+
             const pwdInput = document.getElementById('acc-new-pwd');
             const confirmPwdInput = document.getElementById('acc-confirm-pwd');
             const strengthBadge = document.getElementById('pwd-strength-text');
