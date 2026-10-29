@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ChessCore.Models;
+using ChessCore.Enums;
 
 namespace ChessCore.Data
 {
@@ -36,6 +37,9 @@ namespace ChessCore.Data
 
             // 5. Chuẩn hóa tiêu đề cờ thế (loại bỏ chú thích thừa và số bài thừa)
             await NormalizePuzzleTitlesAsync(dbContext, logger);
+
+            // 6. Dọn dẹp phòng trống bỏ rơi và chuẩn hóa đồng bộ thống kê người dùng
+            await SynchronizeUserStatsAndCleanupAsync(dbContext, logger);
         }
 
         public static async Task EnsureSchemaColumnsAndTablesAsync(AppDbContext dbContext, ILogger? logger = null)
@@ -423,6 +427,63 @@ namespace ChessCore.Data
                     CreatedAt = DateTime.UtcNow
                 }
             };
+        }
+
+        public static async Task SynchronizeUserStatsAndCleanupAsync(AppDbContext dbContext, ILogger logger)
+        {
+            try
+            {
+                // 1. Dọn dẹp các ván Online tạo phòng dở bị bỏ rơi (Resigned, không có đối thủ, không có nước đi)
+                await ExecuteRawSqlSafely(dbContext,
+                    "DELETE FROM `Games` WHERE `GameMode` = 'OnlinePublic' AND `Status` = 'Resigned' AND `BlackPlayerId` IS NULL;", logger);
+
+                // 2. Đồng bộ chỉ số ván đấu thực tế cho các tài khoản người dùng có tham gia trận đấu
+                var activeUserIds = await dbContext.Games
+                    .Where(g => g.RedPlayerId.HasValue || g.BlackPlayerId.HasValue)
+                    .Select(g => g.RedPlayerId ?? g.BlackPlayerId!.Value)
+                    .Distinct()
+                    .ToListAsync();
+
+                var users = await dbContext.Users
+                    .Where(u => activeUserIds.Contains(u.Id))
+                    .ToListAsync();
+
+                var games = await dbContext.Games.AsNoTracking()
+                    .Where(g => !(g.GameMode == "OnlinePublic" && g.BlackPlayerId == null && g.Status == GameStatus.Resigned))
+                    .Where(g => (g.GameMode.StartsWith("Online") || g.GameMode == "PvE") &&
+                                (g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw))
+                    .ToListAsync();
+
+                bool anyChanged = false;
+                foreach (var u in users)
+                {
+                    int played = games.Count(g => g.RedPlayerId == u.Id || g.BlackPlayerId == u.Id);
+                    int wins = games.Count(g => (g.RedPlayerId == u.Id && g.Status == GameStatus.RedWins) ||
+                                               (g.BlackPlayerId == u.Id && g.Status == GameStatus.BlackWins));
+                    int losses = games.Count(g => (g.RedPlayerId == u.Id && g.Status == GameStatus.BlackWins) ||
+                                                 (g.BlackPlayerId == u.Id && g.Status == GameStatus.RedWins));
+                    int draws = games.Count(g => (g.RedPlayerId == u.Id || g.BlackPlayerId == u.Id) && g.Status == GameStatus.Draw);
+
+                    if (u.GamesPlayed != played || u.Wins != wins || u.Losses != losses || u.Draws != draws)
+                    {
+                        u.GamesPlayed = played;
+                        u.Wins = wins;
+                        u.Losses = losses;
+                        u.Draws = draws;
+                        anyChanged = true;
+                    }
+                }
+
+                if (anyChanged)
+                {
+                    await dbContext.SaveChangesAsync();
+                    logger.LogInformation(">>> Đã chuẩn hóa và đồng bộ thành công chỉ số GamesPlayed/Wins/Losses/Draws cho người dùng.");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(">>> Cảnh báo khi chuẩn hóa thống kê người dùng: {Message}", ex.Message);
+            }
         }
     }
 }

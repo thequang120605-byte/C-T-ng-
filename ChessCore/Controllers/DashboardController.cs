@@ -68,10 +68,14 @@ namespace ChessCore.Controllers
 
             vm.ModeStats = await _statistics.ModesAsync(userId, HttpContext.RequestAborted);
             vm.Learning = await _statistics.LearningAsync(userId, HttpContext.RequestAborted);
-            int totalFinished = currentUser.Wins + currentUser.Draws + currentUser.Losses;
-            vm.WinRate = totalFinished > 0 
-                ? Math.Round((double)currentUser.Wins / totalFinished * 100, 1) 
-                : (currentUser.GamesPlayed > 0 ? Math.Round((double)currentUser.Wins / currentUser.GamesPlayed * 100, 1) : 0);
+            await _statistics.ApplyDisplayCountersAsync(new[] { currentUser });
+
+            var rankedModes = vm.ModeStats.Where(m => m.Mode == "Online" || m.Mode == "PvE").ToList();
+            int rankedFinished = rankedModes.Sum(m => m.Finished);
+            int rankedWins = rankedModes.Sum(m => m.Wins);
+            vm.WinRate = rankedFinished > 0 
+                ? Math.Round((double)rankedWins * 100.0 / rankedFinished, 1) 
+                : 0;
 
             // Puzzles solved
             vm.PuzzlesSolved = await _context.PuzzleProgresses

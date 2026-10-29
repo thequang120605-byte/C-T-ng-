@@ -57,6 +57,7 @@ namespace ChessCore.Controllers
             }
 
             var users = await _context.Users.OrderByDescending(u => u.Elo).ToListAsync();
+            await _statistics.ApplyDisplayCountersAsync(users);
 
             // Thống kê số lượng bài cờ thế đã giải thành công
             var puzzleSolvedCounts = await _context.PuzzleProgresses
@@ -246,6 +247,7 @@ namespace ChessCore.Controllers
             }
 
             var users = await _context.Users.OrderByDescending(u => u.Elo).ToListAsync();
+            await _statistics.ApplyDisplayCountersAsync(users);
 
             var puzzleSolvedCounts = await _context.PuzzleProgresses
                 .GroupBy(p => p.UserId)
@@ -634,6 +636,7 @@ namespace ChessCore.Controllers
             if (!await IsAdminUserAsync()) { Response.StatusCode = 403; return View("AccessDenied"); }
 
             var users = await _context.Users.OrderByDescending(u => u.Elo).ToListAsync();
+            await _statistics.ApplyDisplayCountersAsync(users);
 
             // Thống kê số lượng bài cờ thế đã giải thành công
             var puzzleSolvedCounts = await _context.PuzzleProgresses

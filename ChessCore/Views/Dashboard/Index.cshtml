@@ -1,6 +1,12 @@
 @model ChessCore.ViewModels.DashboardViewModel
 @{
     ViewData["Title"] = "Thống kê";
+    var rankedModes = Model.ModeStats?.Where(m => m.Mode == "Online" || m.Mode == "PvE").ToList() ?? new List<ChessCore.Services.ModeStatistics>();
+    int totalWins = rankedModes.Sum(m => m.Wins);
+    int totalLosses = rankedModes.Sum(m => m.Losses);
+    int totalDraws = Model.ModeStats?.Sum(m => m.Draws) ?? 0;
+    int totalRankedFinished = rankedModes.Sum(m => m.Finished);
+    double avgWinRate = totalRankedFinished > 0 ? Math.Round((double)totalWins * 100.0 / totalRankedFinished, 1) : 0;
 }
 
 @section Styles {
@@ -209,7 +215,7 @@
                 <!-- Badge hiển thị số liệu nổi bật ngay chính giữa vòng tròn -->
                 <div style="position: absolute; text-align: center; pointer-events: none; transform: translateY(-14px);">
                     <div id="donutWinRateValue" style="font-size: 26px; font-weight: 900; color: #b45309; line-height: 1.1;">
-                        @Model.WinRate%
+                        @avgWinRate.ToString("0.0")%
                     </div>
                     <div style="font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">
                         Tỉ lệ thắng
@@ -220,15 +226,15 @@
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-color);">
                 <div style="text-align: center; background: rgba(0,0,0,0.03); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <span style="color: #334155; font-size: 11px; display: block; font-weight: 800;">THẮNG</span>
-                    <strong id="donutWinsCount" style="color: #10b981; font-size: 18px; font-weight: 800;">@Model.CurrentUser.Wins</strong>
+                    <strong id="donutWinsCount" style="color: #10b981; font-size: 18px; font-weight: 800;">@totalWins</strong>
                 </div>
                 <div style="text-align: center; background: rgba(0,0,0,0.03); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <span style="color: #334155; font-size: 11px; display: block; font-weight: 800;">HÒA</span>
-                    <strong id="donutDrawsCount" style="color: #d97706; font-size: 18px; font-weight: 800;">@Model.CurrentUser.Draws</strong>
+                    <strong id="donutDrawsCount" style="color: #d97706; font-size: 18px; font-weight: 800;">@totalDraws</strong>
                 </div>
                 <div style="text-align: center; background: rgba(0,0,0,0.03); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <span style="color: #334155; font-size: 11px; display: block; font-weight: 800;">THUA</span>
-                    <strong id="donutLossesCount" style="color: #ef4444; font-size: 18px; font-weight: 800;">@Model.CurrentUser.Losses</strong>
+                    <strong id="donutLossesCount" style="color: #ef4444; font-size: 18px; font-weight: 800;">@totalLosses</strong>
                 </div>
             </div>
         </div>
@@ -718,11 +724,10 @@
                     var wins = 0, draws = 0, losses = 0, winRate = 0;
 
                     if (modeKey === 'ALL') {
-                        wins = @Model.CurrentUser.Wins;
-                        draws = @Model.CurrentUser.Draws;
-                        losses = @Model.CurrentUser.Losses;
-                        var total = wins + draws + losses;
-                        winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : 0;
+                        wins = @totalWins;
+                        draws = @totalDraws;
+                        losses = @totalLosses;
+                        winRate = @avgWinRate;
                     } else {
                         var found = modeStatsList.find(function(m) { return m.Mode === modeKey; });
                         if (found) {
@@ -757,9 +762,9 @@
                     var ctx = document.getElementById('outcomeDonutChart');
                     if (!ctx || !window.Chart) return;
 
-                    var wins = @Model.CurrentUser.Wins;
-                    var draws = @Model.CurrentUser.Draws;
-                    var losses = @Model.CurrentUser.Losses;
+                    var wins = @totalWins;
+                    var draws = @totalDraws;
+                    var losses = @totalLosses;
                     var total = wins + draws + losses;
 
                     outcomeChartInstance = new Chart(ctx, {

@@ -38,7 +38,9 @@ public sealed class StatisticsService(AppDbContext db)
         var query = db.Games.AsNoTracking();
         if (userId.HasValue) query = query.Where(g => g.RedPlayerId == userId || g.BlackPlayerId == userId);
 
-        var rawGames = await query.Select(g => new {
+        var rawGames = await query
+            .Where(g => !(g.GameMode == "OnlinePublic" && g.BlackPlayerId == null && g.Status == GameStatus.Resigned))
+            .Select(g => new {
             g.GameMode,
             g.Status,
             g.RedPlayerId,
@@ -107,6 +109,7 @@ public sealed class StatisticsService(AppDbContext db)
     {
         var ids = users.Select(u => u.Id).ToArray();
         var games = db.Games.AsNoTracking().Where(g =>
+            !(g.GameMode == "OnlinePublic" && g.BlackPlayerId == null && g.Status == GameStatus.Resigned) &&
             (g.GameMode.StartsWith("Online") || g.GameMode == GameModes.PvE) &&
             (g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw));
         var red = await games.Where(g => g.RedPlayerId.HasValue && ids.Contains(g.RedPlayerId.Value))
@@ -124,8 +127,10 @@ public sealed class StatisticsService(AppDbContext db)
                   Losses: g.Sum(x => x.Losses), Draws: g.Sum(x => x.Draws)));
         foreach (var u in users)
         {
-            totals.TryGetValue(u.Id, out var t);
-            u.GamesPlayed = t.Played; u.Wins = t.Wins; u.Losses = t.Losses; u.Draws = t.Draws;
+            if (totals.TryGetValue(u.Id, out var t))
+            {
+                u.GamesPlayed = t.Played; u.Wins = t.Wins; u.Losses = t.Losses; u.Draws = t.Draws;
+            }
         }
     }
 
