@@ -83,48 +83,6 @@ namespace ChessCore.Controllers
                     return View(model);
                 }
 
-                if (user != null && user.IsLocked)
-                {
-                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
-                    return View(model);
-                }
-
-                if (user != null && user.IsLocked)
-                {
-                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
-                    return View(model);
-                }
-
-                if (user != null && user.IsLocked)
-                {
-                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
-                    return View(model);
-                }
-
-                if (user != null && user.IsLocked)
-                {
-                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
-                    return View(model);
-                }
-
-                if (user != null && user.IsLocked)
-                {
-                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
-                    return View(model);
-                }
-
-                if (user != null && user.IsLocked)
-                {
-                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
-                    return View(model);
-                }
-
-                if (user != null && user.IsLocked)
-                {
-                    ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa bởi Quản trị viên do vi phạm quy định.");
-                    return View(model);
-                }
-
                 if (user != null && VerifyPassword(model.Password, user.PasswordHash))
                 {
                     if (string.IsNullOrEmpty(user.PlayerId))

@@ -131,51 +131,21 @@ builder.Services.AddHostedService<GameTimeoutWorker>();
 
 var app = builder.Build();
 
-// Tu dong cap nhat cac bang database con thieu khi ung dung khoi dong
+// Tu dong cap nhat schema va seed du lieu can thiet khi ung dung khoi dong (Self-Healing Database)
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
-        dbContext.Database.Migrate();
-
-        // Seed default Admin account if not exists
-        var adminUser = dbContext.Users.FirstOrDefault(u => u.Username == "admin");
-        if (adminUser == null)
-        {
-            using var sha256 = System.Security.Cryptography.SHA256.Create();
-            var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes("Admin@123"));
-            var passwordHash = Convert.ToBase64String(hashBytes);
-
-            adminUser = new ChessCore.Models.User
-            {
-                Username = "admin",
-                Email = "admin@cotuong.pro",
-                PasswordHash = passwordHash,
-                PlayerId = "CT-00001",
-                Role = "Admin",
-                Elo = 1500,
-                CreatedAt = DateTime.UtcNow
-            };
-            dbContext.Users.Add(adminUser);
-            dbContext.SaveChanges();
-            logger.LogInformation(">>> Da tao tai khoan Admin mac dinh: admin / Admin@123");
-        }
-        else if (adminUser.Role != "Admin")
-        {
-            adminUser.Role = "Admin";
-            dbContext.SaveChanges();
-            logger.LogInformation(">>> Da cap quyen Admin cho tai khoan 'admin'");
-        }
+        await DatabaseBootstrap.InitializeAsync(dbContext, logger);
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Loi khi tu dong ap dung migration hoac seed du lieu.");
+        logger.LogError(ex, "Loi khi khoi tao va tu phuc hoi database khoi dong.");
     }
 }
 
-// Doc dataset Co The va xac minh loi giai (chay nen, co cache)
 app.Services.GetRequiredService<PuzzleCampaignService>().Start(
     Path.Combine(app.Environment.ContentRootPath, "Data", "Puzzles"),
     Path.Combine(app.Environment.ContentRootPath, "Data", "PuzzleCache"));
