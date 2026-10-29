@@ -145,7 +145,7 @@
     <!-- 3. NỘI DUNG 2 CỘT: CÂU ĐỐ HÔM NAY & TOP KỲ THỦ -->
     <div class="home-content-layout">
         <!-- Cột trái: Thế cờ rèn luyện & Giới thiệu AI Engine -->
-        <div>
+        <div class="home-content-left">
             <div class="panel-card" style="border: 2px solid rgba(217, 119, 6, 0.4); background: radial-gradient(circle at top right, rgba(217, 119, 6, 0.08), transparent 70%), var(--bg-navy-panel, #ffffff);">
                 <div class="panel-card-header">
                     <div class="panel-card-title" style="display: flex; align-items: center; gap: 8px;">
@@ -213,8 +213,8 @@
         </div>
 
         <!-- Cột phải: Top Kỳ Thủ -->
-        <div>
-            <div class="panel-card">
+        <div class="home-content-right">
+            <div class="panel-card home-leaderboard-card">
                 <div class="panel-card-header">
                     <div class="panel-card-title">
                         <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i>
@@ -270,7 +270,7 @@
                     }
                     @if (!Model.TopPlayers.Any())
                     {
-                        <li style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                        <li style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px; margin: auto;">
                             Chưa có dữ liệu xếp hạng.
                         </li>
                     }

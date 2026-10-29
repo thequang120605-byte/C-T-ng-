@@ -269,6 +269,28 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) 380px;
     gap: 24px;
+    align-items: stretch;
+}
+
+.home-content-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.home-content-left .panel-card:last-child {
+    margin-bottom: 0;
+}
+
+.home-content-right {
+    display: flex;
+    flex-direction: column;
+}
+
+.home-leaderboard-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0;
 }
 
 .panel-card {
@@ -343,7 +365,8 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
+    flex: 1;
 }
 
 .leader-item {
@@ -357,6 +380,8 @@
     font-size: 13.5px;
     transition: all 0.2s ease;
     box-sizing: border-box;
+    flex: 1;
+    min-height: 52px;
 }
 
 .leader-item:hover {
