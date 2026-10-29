@@ -59,9 +59,14 @@
                     <span style="font-size: 12.5px; color: var(--text-muted);">Chi tiết số lượng ván đấu, kết quả và tỉ lệ thắng theo từng hình thức thi đấu</span>
                 </div>
             </div>
-            <a href="/Dashboard/Export" style="padding: 9px 18px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;">
-                <i class="fa-solid fa-file-arrow-down"></i> Tải báo cáo CSV
-            </a>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <a href="/Dashboard/ExportExcel" style="padding: 9px 18px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25); transition: all 0.2s;" title="Tải file bảng tính Excel .xlsx định dạng chuẩn đẹp">
+                    <i class="fa-solid fa-file-excel" style="font-size: 15px;"></i> Tải báo cáo Excel
+                </a>
+                <a href="/Dashboard/Export" style="padding: 9px 14px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); color: #3b82f6; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" title="Tải file dữ liệu CSV">
+                    <i class="fa-solid fa-file-csv" style="font-size: 14px;"></i> CSV
+                </a>
+            </div>
         </div>
 
         <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-navy-dark);">
@@ -82,9 +87,21 @@
                 <tbody>
                     @if (Model.ModeStats != null && Model.ModeStats.Any())
                     {
+                        int pSumCreated = 0, pSumInProgress = 0, pSumWaiting = 0, pSumFinished = 0;
+                        int pSumWins = 0, pSumLosses = 0, pSumDraws = 0;
                         foreach (var r in Model.ModeStats)
                         {
-                            <tr style="border-bottom: 1px solid var(--border-color);">
+                            pSumCreated += r.Created;
+                            pSumInProgress += r.InProgress;
+                            pSumWaiting += r.Waiting;
+                            pSumFinished += r.Finished;
+                            if (r.Mode == "Online" || r.Mode == "PvE")
+                            {
+                                pSumWins += r.Wins;
+                                pSumLosses += r.Losses;
+                            }
+                            pSumDraws += r.Draws;
+                            <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.15s ease;" onmouseover="this.style.background='var(--bg-navy-light)'" onmouseout="this.style.background='transparent'">
                                 <td style="padding: 12px 18px; font-weight: 700; color: var(--text-main);">
                                     @if (r.Mode == "Online") { <i class="fa-solid fa-earth-americas" style="color: #3b82f6; margin-right: 8px;" title="Online"></i> }
                                     else if (r.Mode == "PvE") { <i class="fa-solid fa-robot" style="color: #10b981; margin-right: 8px;" title="Chơi với máy"></i> }
@@ -105,6 +122,23 @@
                                 </td>
                             </tr>
                         }
+                        int pFinishedRanked = Model.ModeStats.Where(m => m.Mode == "Online" || m.Mode == "PvE").Sum(m => m.Finished);
+                        double pAvgWinRate = pFinishedRanked > 0 ? Math.Round((double)pSumWins * 100.0 / pFinishedRanked, 1) : 0;
+                        <tr style="background: rgba(217, 119, 6, 0.08); font-weight: 700; border-top: 2px solid var(--border-color);">
+                            <td style="padding: 14px 18px; color: var(--text-main);">
+                                <i class="fa-solid fa-calculator" style="color: var(--accent-gold); margin-right: 8px;"></i> TỔNG CỘNG THÀNH TÍCH
+                            </td>
+                            <td style="padding: 14px 14px; text-align: center; color: var(--text-main);">@pSumCreated</td>
+                            <td style="padding: 14px 14px; text-align: center; color: var(--text-main);">@pSumInProgress</td>
+                            <td style="padding: 14px 14px; text-align: center; color: var(--text-main);">@pSumWaiting</td>
+                            <td style="padding: 14px 14px; text-align: center; color: var(--text-main); font-weight: 800;">@pSumFinished</td>
+                            <td style="padding: 14px 14px; text-align: center; color: #10b981; font-weight: 800;">@pSumWins</td>
+                            <td style="padding: 14px 14px; text-align: center; color: #ef4444; font-weight: 800;">@pSumLosses</td>
+                            <td style="padding: 14px 14px; text-align: center; color: #f59e0b; font-weight: 800;">@pSumDraws</td>
+                            <td style="padding: 14px 18px; text-align: right; color: var(--accent-gold-dark, #b45309); font-weight: 900; font-size: 14px;">
+                                @pAvgWinRate.ToString("0.0")%
+                            </td>
+                        </tr>
                     }
                 </tbody>
             </table>

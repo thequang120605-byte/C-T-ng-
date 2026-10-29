@@ -32,6 +32,24 @@ namespace ChessCore.Controllers
                 "text/csv; charset=utf-8", "thong-ke-ca-nhan.csv");
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ExportExcel()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId)) return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            var username = user?.Username ?? User.Identity?.Name ?? "Player";
+            int elo = user?.Elo ?? 1200;
+
+            var modes = await _statistics.ModesAsync(userId);
+            var learning = await _statistics.LearningAsync(userId);
+
+            var fileBytes = ExcelExportService.ExportPersonalReport(modes, learning, username, elo);
+            var fileName = $"Bao-Cao-Thanh-Tich-{username}-{DateTime.Now:yyyyMMdd-HHmm}.xlsx";
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
         public async Task<IActionResult> Index()
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

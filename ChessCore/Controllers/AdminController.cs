@@ -18,11 +18,13 @@ namespace ChessCore.Controllers
     {
         private readonly AppDbContext _context;
         private readonly PuzzleCampaignService _campaign;
+        private readonly StatisticsService _statistics;
 
-        public AdminController(AppDbContext context, PuzzleCampaignService campaign)
+        public AdminController(AppDbContext context, PuzzleCampaignService campaign, StatisticsService statistics)
         {
             _context = context;
             _campaign = campaign;
+            _statistics = statistics;
         }
 
         private async Task<bool> IsAdminUserAsync()
@@ -230,6 +232,155 @@ namespace ChessCore.Controllers
             };
 
             return View(vm);
+        }
+
+        // ==========================================
+        // 1B. XUẤT BÁO CÁO EXCEL TOÀN HỆ THỐNG
+        // ==========================================
+        [HttpGet]
+        public async Task<IActionResult> ExportExcel()
+        {
+            if (!await IsAdminUserAsync())
+            {
+                return View("AccessDenied");
+            }
+
+            var users = await _context.Users.OrderByDescending(u => u.Elo).ToListAsync();
+
+            var puzzleSolvedCounts = await _context.PuzzleProgresses
+                .GroupBy(p => p.UserId)
+                .Select(g => new { UserId = g.Key, Solved = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Solved);
+
+            var lessonCompletedCounts = await _context.UserCourseProgresses
+                .Where(c => c.IsCompleted)
+                .GroupBy(c => c.UserId)
+                .Select(g => new { UserId = g.Key, Completed = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Completed);
+
+            var allUserDtos = users.Select(u =>
+            {
+                double winRate = u.GamesPlayed > 0 ? Math.Round((double)u.Wins * 100.0 / u.GamesPlayed, 1) : 0;
+                string rankTitle = u.Elo switch
+                {
+                    >= 1500 => "Đặc cấp Đại sư",
+                    >= 1400 => "Kiện tướng",
+                    >= 1250 => "Kỳ thủ Giỏi",
+                    >= 1150 => "Kỳ thủ Nghiệp dư",
+                    >= 1050 => "Người mới chơi",
+                    _ => "Tập sự"
+                };
+
+                return new AdminUserOverviewDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    PlayerId = u.PlayerId,
+                    Elo = u.Elo,
+                    Role = u.Role ?? "Player",
+                    IsLocked = u.IsLocked,
+                    CreatedAt = u.CreatedAt,
+                    GamesPlayed = u.GamesPlayed,
+                    Wins = u.Wins,
+                    Losses = u.Losses,
+                    Draws = u.Draws,
+                    WinRate = winRate,
+                    PuzzleScore = u.PuzzleScore,
+                    PuzzlesSolved = puzzleSolvedCounts.TryGetValue(u.Id, out int pCount) ? pCount : 0,
+                    LessonsCompleted = lessonCompletedCounts.TryGetValue(u.Id, out int lCount) ? lCount : 0,
+                    Title = rankTitle
+                };
+            }).ToList();
+
+            var allGames = await _context.Games.Select(g => new {
+                g.GameMode,
+                g.Status,
+                g.RedPlayerId,
+                g.BlackPlayerId
+            }).ToListAsync();
+
+            var modeStats = new List<AdminModeStatDto>();
+
+            var onlineGames = allGames.Where(g => g.GameMode == "Online" || g.GameMode == "OnlinePublic").ToList();
+            int onlineFinished = onlineGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
+            int onlineWins = onlineGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Resigned);
+            int onlineDraws = onlineGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "Online",
+                Label = "Chơi qua mạng (Online)",
+                Created = onlineGames.Count,
+                InProgress = onlineGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = onlineGames.Count(g => g.Status == GameStatus.WaitingForPlayers),
+                Finished = onlineFinished,
+                Wins = onlineWins,
+                Losses = onlineWins,
+                Draws = onlineDraws,
+                WinRate = onlineFinished > 0 ? Math.Round((double)onlineWins * 100.0 / onlineFinished, 1) : 0
+            });
+
+            var pveGames = allGames.Where(g => g.GameMode == "PvE").ToList();
+            int pveFinished = pveGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
+            int pveWins = pveGames.Count(g => g.Status == GameStatus.RedWins);
+            int pveLosses = pveGames.Count(g => g.Status == GameStatus.BlackWins || g.Status == GameStatus.Resigned);
+            int pveDraws = pveGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "PvE",
+                Label = "Chơi với máy (PvE)",
+                Created = pveGames.Count,
+                InProgress = pveGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = 0,
+                Finished = pveFinished,
+                Wins = pveWins,
+                Losses = pveLosses,
+                Draws = pveDraws,
+                WinRate = pveFinished > 0 ? Math.Round((double)pveWins * 100.0 / pveFinished, 1) : 0
+            });
+
+            var pvpGames = allGames.Where(g => g.GameMode == "PvP" || g.GameMode == "Local").ToList();
+            int pvpFinished = pvpGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
+            int pvpWins = pvpGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Resigned);
+            int pvpDraws = pvpGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "PvP",
+                Label = "Hai người cùng máy (PvP)",
+                Created = pvpGames.Count,
+                InProgress = pvpGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = 0,
+                Finished = pvpFinished,
+                Wins = pvpWins,
+                Losses = pvpWins,
+                Draws = pvpDraws,
+                WinRate = pvpFinished > 0 ? Math.Round((double)pvpWins * 100.0 / pvpFinished, 1) : 0
+            });
+
+            var aivsaiGames = allGames.Where(g => g.GameMode == "AiVsAi").ToList();
+            int aivsaiFinished = aivsaiGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
+            int aivsaiWins = aivsaiGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins);
+            int aivsaiDraws = aivsaiGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "AiVsAi",
+                Label = "Máy với máy (AiVsAi)",
+                Created = aivsaiGames.Count,
+                InProgress = aivsaiGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = 0,
+                Finished = aivsaiFinished,
+                Wins = aivsaiWins,
+                Losses = aivsaiWins,
+                Draws = aivsaiDraws,
+                WinRate = aivsaiFinished > 0 ? Math.Round((double)aivsaiWins * 100.0 / aivsaiFinished, 1) : 0
+            });
+
+            var learning = await _statistics.LearningAsync(null);
+            var adminName = User.Identity?.Name ?? "Admin";
+
+            var fileBytes = ExcelExportService.ExportAdminReport(modeStats, learning, allUserDtos, adminName);
+            var fileName = $"Bao-Cao-Thong-Ke-He-Thong-{DateTime.Now:yyyyMMdd-HHmm}.xlsx";
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
         // ==========================================
