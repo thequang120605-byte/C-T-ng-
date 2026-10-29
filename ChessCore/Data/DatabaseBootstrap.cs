@@ -14,7 +14,11 @@ namespace ChessCore.Data
     {
         public static async Task InitializeAsync(AppDbContext dbContext, ILogger logger)
         {
-            // 1. Chạy Migration tự động của EF Core (với try-catch an toàn)
+            // 1. Tự động khắc phục các cột và bảng bị thiếu trên TiDB Cloud/MySQL (Self-Healing Schema)
+            // Phải chạy trước để khi Database.Migrate hoặc các truy vấn EntityFramework chạy không bị lỗi Unknown column
+            await EnsureSchemaColumnsAndTablesAsync(dbContext, logger);
+
+            // 2. Chạy Migration tự động của EF Core (với try-catch an toàn)
             try
             {
                 await dbContext.Database.MigrateAsync();
@@ -22,11 +26,8 @@ namespace ChessCore.Data
             }
             catch (Exception ex)
             {
-                logger.LogWarning(">>> Cảnh báo khi chạy Database.Migrate (tiếp tục tự sửa schema): {Message}", ex.Message);
+                logger.LogWarning(">>> Cảnh báo khi chạy Database.Migrate (bỏ qua do đã tự vá schema): {Message}", ex.Message);
             }
-
-            // 2. Tự động khắc phục các cột / bảng quan trọng (Self-Healing Schema)
-            await EnsureSchemaColumnsAndTablesAsync(dbContext, logger);
 
             // 3. Seed tài khoản Quản trị viên mặc định (admin / Admin@123)
             await EnsureAdminUserAsync(dbContext, logger);
@@ -37,98 +38,119 @@ namespace ChessCore.Data
 
         public static async Task EnsureSchemaColumnsAndTablesAsync(AppDbContext dbContext, ILogger? logger = null)
         {
-            // Đảm bảo cột IsLocked trên bảng Users
-            try
-            {
-                await dbContext.Database.ExecuteSqlRawAsync(
-                    "ALTER TABLE `Users` ADD COLUMN `IsLocked` TINYINT(1) NOT NULL DEFAULT 0;"
-                );
-                logger?.LogInformation(">>> Đã bổ sung thành công cột IsLocked vào bảng Users.");
-            }
-            catch { /* Đã tồn tại cột IsLocked */ }
+            // --- 1. BẢNG Users ---
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Users` ADD COLUMN `IsLocked` TINYINT(1) NOT NULL DEFAULT 0;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Users` ADD COLUMN `PuzzleScore` INT NOT NULL DEFAULT 500;", logger);
 
-            // Đảm bảo bảng MasterGames
-            try
-            {
-                await dbContext.Database.ExecuteSqlRawAsync(@"
-                    CREATE TABLE IF NOT EXISTS `MasterGames` (
-                        `Id` INT NOT NULL AUTO_INCREMENT,
-                        `Title` VARCHAR(200) NOT NULL,
-                        `RedPlayer` VARCHAR(100) NOT NULL,
-                        `BlackPlayer` VARCHAR(100) NOT NULL,
-                        `Event` VARCHAR(150) NULL,
-                        `EventDate` DATETIME(6) NULL,
-                        `Result` VARCHAR(20) NOT NULL,
-                        `OpeningName` VARCHAR(150) NULL,
-                        `InitialFen` VARCHAR(255) NULL,
-                        `PgnContent` LONGTEXT NULL,
-                        `MovesJson` LONGTEXT NULL,
-                        `CreatedAt` DATETIME(6) NOT NULL,
-                        PRIMARY KEY (`Id`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-                ");
-            }
-            catch (Exception ex)
-            {
-                logger?.LogWarning(">>> Cảnh báo khi tạo bảng MasterGames: {Message}", ex.Message);
-            }
+            // --- 2. BẢNG Games (Sửa lỗi Unknown column 'g.aidepth', 'g.gamemode', 'g.israted', v.v.) ---
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `AiDepth` INT NULL;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `GameMode` VARCHAR(20) NOT NULL DEFAULT 'PvP';", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `OpeningId` INT NULL;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `IsRated` TINYINT(1) NOT NULL DEFAULT 0;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `ResultsProcessedAt` DATETIME(6) NULL;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `RoomCode` VARCHAR(50) NOT NULL DEFAULT '';", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `InitialFen` VARCHAR(255) NULL;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `LastMoveAt` DATETIME(6) NULL;", logger);
 
-            // Đảm bảo bảng Openings
-            try
-            {
-                await dbContext.Database.ExecuteSqlRawAsync(@"
-                    CREATE TABLE IF NOT EXISTS `Openings` (
-                        `Id` INT NOT NULL AUTO_INCREMENT,
-                        `Code` VARCHAR(30) NOT NULL,
-                        `Name` VARCHAR(150) NOT NULL,
-                        `Description` VARCHAR(500) NULL,
-                        `StartingFen` VARCHAR(255) NOT NULL,
-                        PRIMARY KEY (`Id`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-                ");
-            }
-            catch { }
+            // --- 3. BẢNG Moves (Sửa lỗi các trường đánh giá AI) ---
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Moves` ADD COLUMN `EvalScore` INT NULL;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Moves` ADD COLUMN `WinRate` FLOAT NULL;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Moves` ADD COLUMN `Judgment` VARCHAR(30) NULL;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Moves` ADD COLUMN `BestAlternative` VARCHAR(50) NULL;", logger);
 
-            // Đảm bảo bảng UserEloHistories
-            try
-            {
-                await dbContext.Database.ExecuteSqlRawAsync(@"
-                    CREATE TABLE IF NOT EXISTS `UserEloHistories` (
-                        `Id` INT NOT NULL AUTO_INCREMENT,
-                        `UserId` INT NOT NULL,
-                        `GameId` INT NULL,
-                        `OldElo` INT NOT NULL,
-                        `NewElo` INT NOT NULL,
-                        `ChangedAt` DATETIME(6) NOT NULL,
-                        `Reason` VARCHAR(100) NULL,
-                        PRIMARY KEY (`Id`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-                ");
-            }
-            catch { }
+            // --- 4. BẢNG MasterGames ---
+            await ExecuteRawSqlSafely(dbContext, @"
+                CREATE TABLE IF NOT EXISTS `MasterGames` (
+                    `Id` INT NOT NULL AUTO_INCREMENT,
+                    `Title` VARCHAR(200) NOT NULL,
+                    `RedPlayer` VARCHAR(100) NOT NULL,
+                    `BlackPlayer` VARCHAR(100) NOT NULL,
+                    `Event` VARCHAR(150) NULL,
+                    `EventDate` DATETIME(6) NULL,
+                    `Result` VARCHAR(20) NOT NULL,
+                    `OpeningName` VARCHAR(150) NULL,
+                    `InitialFen` VARCHAR(255) NULL,
+                    `PgnContent` LONGTEXT NULL,
+                    `MovesJson` LONGTEXT NULL,
+                    `CreatedAt` DATETIME(6) NOT NULL,
+                    PRIMARY KEY (`Id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ", logger);
 
-            // Đảm bảo bảng GameAnalyses
+            // --- 5. BẢNG Openings ---
+            await ExecuteRawSqlSafely(dbContext, @"
+                CREATE TABLE IF NOT EXISTS `Openings` (
+                    `Id` INT NOT NULL AUTO_INCREMENT,
+                    `Code` VARCHAR(30) NOT NULL,
+                    `Name` VARCHAR(150) NOT NULL,
+                    `Description` VARCHAR(500) NULL,
+                    `StartingFen` VARCHAR(255) NOT NULL,
+                    PRIMARY KEY (`Id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ", logger);
+
+            // --- 6. BẢNG OpeningBookMoves ---
+            await ExecuteRawSqlSafely(dbContext, @"
+                CREATE TABLE IF NOT EXISTS `OpeningBookMoves` (
+                    `Id` INT NOT NULL AUTO_INCREMENT,
+                    `OpeningId` INT NOT NULL,
+                    `Fen` VARCHAR(255) NOT NULL,
+                    `MoveNotation` VARCHAR(50) NOT NULL,
+                    `MoveOrder` INT NOT NULL,
+                    `WinCount` INT NOT NULL DEFAULT 0,
+                    `DrawCount` INT NOT NULL DEFAULT 0,
+                    `LossCount` INT NOT NULL DEFAULT 0,
+                    `WinRate` DOUBLE NOT NULL DEFAULT 0,
+                    `Explanation` VARCHAR(500) NULL,
+                    PRIMARY KEY (`Id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ", logger);
+
+            // --- 7. BẢNG UserEloHistories ---
+            await ExecuteRawSqlSafely(dbContext, @"
+                CREATE TABLE IF NOT EXISTS `UserEloHistories` (
+                    `Id` INT NOT NULL AUTO_INCREMENT,
+                    `UserId` INT NOT NULL,
+                    `GameId` INT NULL,
+                    `OldElo` INT NOT NULL,
+                    `NewElo` INT NOT NULL,
+                    `EloChange` INT NOT NULL DEFAULT 0,
+                    `Reason` VARCHAR(100) NULL,
+                    `RecordedAt` DATETIME(6) NOT NULL,
+                    PRIMARY KEY (`Id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ", logger);
+
+            // --- 8. BẢNG GameAnalyses ---
+            await ExecuteRawSqlSafely(dbContext, @"
+                CREATE TABLE IF NOT EXISTS `GameAnalyses` (
+                    `Id` INT NOT NULL AUTO_INCREMENT,
+                    `GameId` INT NOT NULL,
+                    `AccuracyRed` INT NOT NULL DEFAULT 0,
+                    `AccuracyBlack` INT NOT NULL DEFAULT 0,
+                    `TurningPointMoveOrder` INT NULL,
+                    `BrilliantCount` INT NOT NULL DEFAULT 0,
+                    `BestCount` INT NOT NULL DEFAULT 0,
+                    `GoodCount` INT NOT NULL DEFAULT 0,
+                    `InaccuracyCount` INT NOT NULL DEFAULT 0,
+                    `BlunderCount` INT NOT NULL DEFAULT 0,
+                    `SummaryReviewJson` LONGTEXT NULL,
+                    `AnalyzedAt` DATETIME(6) NOT NULL,
+                    PRIMARY KEY (`Id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ", logger);
+        }
+
+        private static async Task ExecuteRawSqlSafely(AppDbContext dbContext, string sql, ILogger? logger)
+        {
             try
             {
-                await dbContext.Database.ExecuteSqlRawAsync(@"
-                    CREATE TABLE IF NOT EXISTS `GameAnalyses` (
-                        `Id` INT NOT NULL AUTO_INCREMENT,
-                        `GameId` INT NOT NULL,
-                        `AccuracyRed` INT NOT NULL,
-                        `AccuracyBlack` INT NOT NULL,
-                        `TurningPointMoveOrder` INT NULL,
-                        `BrilliantCount` INT NOT NULL,
-                        `BestCount` INT NOT NULL,
-                        `GoodCount` INT NOT NULL,
-                        `InaccuracyCount` INT NOT NULL,
-                        `BlunderCount` INT NOT NULL,
-                        `SummaryReviewJson` LONGTEXT NULL,
-                        `AnalyzedAt` DATETIME(6) NOT NULL,
-                        PRIMARY KEY (`Id`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-                ");
+                await dbContext.Database.ExecuteSqlRawAsync(sql);
             }
-            catch { }
+            catch
+            {
+                // Bỏ qua ngoại lệ nếu cột hoặc bảng đã tồn tại sẵn
+            }
         }
 
         private static async Task EnsureAdminUserAsync(AppDbContext dbContext, ILogger logger)
@@ -307,7 +329,7 @@ namespace ChessCore.Data
                     Result = "1-0",
                     OpeningName = "Ngũ Cửu Pháo đối Bình Phong Mã Tả Mã Bàn Hà",
                     InitialFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
-                    PgnContent = "[Event \"National Masters Vietnam 2021\"]\n[Site \"Vung Tau\"]\n[Date \"2021.11.28\"]\n[Round \"Chung Ket\"]\n[Red \"Lai Ly Huynh\"]\n[Black \"Nguyen Thanh Bao\"]\n[Result \"1-0\"]\n1. C2.5 H8.7\n2. H2.3 R9.1\n3. R1.2 H2.3\n4. P7.1 P7.1\n5. C8.9 C8.9\n6. R2.6 P3.1\n7. H8.7 R1.2\n8. P9.1 H7.6\n9. C9.4 A4.5\n10. R6.7 C9.2\n(Trận thư hùng đỉnh cao giữa hai tượng đài cờ tướng hàng đầu Việt Nam suốt hai thập kỷ)",
+                    PgnContent = "[Event \"National Masters Vietnam 2021\"]\n[Site \"Vung Tau\"]\n[Date \"2021.11.28\"]\n[Round \"Chung Ket\"]\n[Red \"Lai Ly Huynh\"]\n[Black \"Nguyen Thanh Bảo\"]\n[Result \"1-0\"]\n1. C2.5 H8.7\n2. H2.3 R9.1\n3. R1.2 H2.3\n4. P7.1 P7.1\n5. C8.9 C8.9\n6. R2.6 P3.1\n7. H8.7 R1.2\n8. P9.1 H7.6\n9. C9.4 A4.5\n10. R6.7 C9.2\n(Trận thư hùng đỉnh cao giữa hai tượng đài cờ tướng hàng đầu Việt Nam suốt hai thập kỷ)",
                     MovesJson = "[]",
                     CreatedAt = DateTime.UtcNow
                 },
