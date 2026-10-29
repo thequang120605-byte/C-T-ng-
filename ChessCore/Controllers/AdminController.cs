@@ -108,110 +108,24 @@ namespace ChessCore.Controllers
             }).ToList();
 
             // 4 chế độ chơi chuẩn chính quy & thống kê chi tiết theo format Dashboard
-            var allGames = await _context.Games.Select(g => new {
+            var allGames = await _context.Games.Select(g => new AdminGameRecord(
                 g.GameMode,
                 g.Status,
                 g.RedPlayerId,
                 g.BlackPlayerId
-            }).ToListAsync();
+            )).ToListAsync();
 
-            var modeStats = new List<AdminModeStatDto>();
-
-            // 1. Online
-            var onlineGames = allGames.Where(g => g.GameMode == "Online" || g.GameMode == "OnlinePublic").ToList();
-            int onlineFinished = onlineGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
-            int onlineWins = onlineGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Resigned);
-            int onlineDraws = onlineGames.Count(g => g.Status == GameStatus.Draw);
-            int onlineLosses = onlineWins; // Ván đấu có người thắng sẽ có người thua đối ứng
-            modeStats.Add(new AdminModeStatDto
-            {
-                Mode = "Online",
-                Label = "Chơi qua mạng (Online)",
-                Created = onlineGames.Count,
-                InProgress = onlineGames.Count(g => g.Status == GameStatus.InProgress),
-                Waiting = onlineGames.Count(g => g.Status == GameStatus.WaitingForPlayers),
-                Finished = onlineFinished,
-                Wins = onlineWins,
-                Losses = onlineLosses,
-                Draws = onlineDraws,
-                WinRate = onlineFinished > 0 ? Math.Round((double)onlineWins * 100.0 / onlineFinished, 1) : 0
-            });
-
-            // 2. PvE (Chơi với máy)
-            var pveGames = allGames.Where(g => g.GameMode == "PvE").ToList();
-            int pveFinished = pveGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
-            int pveWins = pveGames.Count(g => g.Status == GameStatus.RedWins);
-            int pveLosses = pveGames.Count(g => g.Status == GameStatus.BlackWins);
-            int pveDraws = pveGames.Count(g => g.Status == GameStatus.Draw);
-            modeStats.Add(new AdminModeStatDto
-            {
-                Mode = "PvE",
-                Label = "Chơi với máy (PvE)",
-                Created = pveGames.Count,
-                InProgress = pveGames.Count(g => g.Status == GameStatus.InProgress),
-                Waiting = 0,
-                Finished = pveFinished,
-                Wins = pveWins,
-                Losses = pveLosses,
-                Draws = pveDraws,
-                WinRate = pveFinished > 0 ? Math.Round((double)pveWins * 100.0 / pveFinished, 1) : 0
-            });
-
-            // 3. PvP (Hai người cùng máy)
-            var pvpGames = allGames.Where(g => g.GameMode == "PvP" || g.GameMode == "Local").ToList();
-            int pvpFinished = pvpGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
-            int pvpWins = pvpGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins);
-            int pvpLosses = pvpWins;
-            int pvpDraws = pvpGames.Count(g => g.Status == GameStatus.Draw);
-            modeStats.Add(new AdminModeStatDto
-            {
-                Mode = "PvP",
-                Label = "Hai người cùng máy (PvP)",
-                Created = pvpGames.Count,
-                InProgress = pvpGames.Count(g => g.Status == GameStatus.InProgress),
-                Waiting = 0,
-                Finished = pvpFinished,
-                Wins = pvpWins,
-                Losses = pvpLosses,
-                Draws = pvpDraws,
-                WinRate = pvpFinished > 0 ? Math.Round((double)pvpWins * 100.0 / pvpFinished, 1) : 0
-            });
-
-            // 4. AiVsAi (Máy với máy)
-            var aivsaiGames = allGames.Where(g => g.GameMode == "AiVsAi").ToList();
-            int aivsaiFinished = aivsaiGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
-            int aivsaiWins = aivsaiGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins);
-            int aivsaiLosses = aivsaiWins;
-            int aivsaiDraws = aivsaiGames.Count(g => g.Status == GameStatus.Draw);
-            modeStats.Add(new AdminModeStatDto
-            {
-                Mode = "AiVsAi",
-                Label = "Máy với máy (AiVsAi)",
-                Created = aivsaiGames.Count,
-                InProgress = aivsaiGames.Count(g => g.Status == GameStatus.InProgress),
-                Waiting = 0,
-                Finished = aivsaiFinished,
-                Wins = aivsaiWins,
-                Losses = aivsaiLosses,
-                Draws = aivsaiDraws,
-                WinRate = aivsaiFinished > 0 ? Math.Round((double)aivsaiWins * 100.0 / aivsaiFinished, 1) : 0
-            });
-
-            var modeDist = new Dictionary<string, int>
-            {
-                ["Online"] = onlineGames.Count,
-                ["PvE"] = pveGames.Count,
-                ["PvP"] = pvpGames.Count,
-                ["AiVsAi"] = aivsaiGames.Count
-            };
+            var modeStats = BuildAdminModeStats(allGames);
+            var modeDist = modeStats.ToDictionary(m => m.Mode, m => m.Created);
 
             int totalMoves = await _context.Moves.CountAsync();
-            int totalWins = users.Sum(u => u.Wins);
-            int totalDraws = users.Sum(u => u.Draws);
-            int totalLosses = users.Sum(u => u.Losses);
-            double avgWinRate = (totalWins + totalDraws + totalLosses > 0)
-                ? Math.Round((double)totalWins * 100.0 / (totalWins + totalDraws + totalLosses), 1)
-                : (allUserDtos.Count > 0 ? Math.Round(allUserDtos.Average(u => u.WinRate), 1) : 0);
+            int totalWins = modeStats.Sum(m => m.Wins);
+            int totalLosses = modeStats.Sum(m => m.Losses);
+            int totalDraws = modeStats.Sum(m => m.Draws);
+            int totalFinished = modeStats.Sum(m => m.Finished);
+            double avgWinRate = totalFinished > 0
+                ? Math.Round((double)totalWins * 100.0 / totalFinished, 1)
+                : 0;
 
             var vm = new AdminDashboardViewModel
             {
@@ -295,87 +209,14 @@ namespace ChessCore.Controllers
                 };
             }).ToList();
 
-            var allGames = await _context.Games.Select(g => new {
+            var allGames = await _context.Games.Select(g => new AdminGameRecord(
                 g.GameMode,
                 g.Status,
                 g.RedPlayerId,
                 g.BlackPlayerId
-            }).ToListAsync();
+            )).ToListAsync();
 
-            var modeStats = new List<AdminModeStatDto>();
-
-            var onlineGames = allGames.Where(g => g.GameMode == "Online" || g.GameMode == "OnlinePublic").ToList();
-            int onlineFinished = onlineGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
-            int onlineWins = onlineGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Resigned);
-            int onlineDraws = onlineGames.Count(g => g.Status == GameStatus.Draw);
-            modeStats.Add(new AdminModeStatDto
-            {
-                Mode = "Online",
-                Label = "Chơi qua mạng (Online)",
-                Created = onlineGames.Count,
-                InProgress = onlineGames.Count(g => g.Status == GameStatus.InProgress),
-                Waiting = onlineGames.Count(g => g.Status == GameStatus.WaitingForPlayers),
-                Finished = onlineFinished,
-                Wins = onlineWins,
-                Losses = onlineWins,
-                Draws = onlineDraws,
-                WinRate = onlineFinished > 0 ? Math.Round((double)onlineWins * 100.0 / onlineFinished, 1) : 0
-            });
-
-            var pveGames = allGames.Where(g => g.GameMode == "PvE").ToList();
-            int pveFinished = pveGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
-            int pveWins = pveGames.Count(g => g.Status == GameStatus.RedWins);
-            int pveLosses = pveGames.Count(g => g.Status == GameStatus.BlackWins || g.Status == GameStatus.Resigned);
-            int pveDraws = pveGames.Count(g => g.Status == GameStatus.Draw);
-            modeStats.Add(new AdminModeStatDto
-            {
-                Mode = "PvE",
-                Label = "Chơi với máy (PvE)",
-                Created = pveGames.Count,
-                InProgress = pveGames.Count(g => g.Status == GameStatus.InProgress),
-                Waiting = 0,
-                Finished = pveFinished,
-                Wins = pveWins,
-                Losses = pveLosses,
-                Draws = pveDraws,
-                WinRate = pveFinished > 0 ? Math.Round((double)pveWins * 100.0 / pveFinished, 1) : 0
-            });
-
-            var pvpGames = allGames.Where(g => g.GameMode == "PvP" || g.GameMode == "Local").ToList();
-            int pvpFinished = pvpGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw || g.Status == GameStatus.Resigned);
-            int pvpWins = pvpGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Resigned);
-            int pvpDraws = pvpGames.Count(g => g.Status == GameStatus.Draw);
-            modeStats.Add(new AdminModeStatDto
-            {
-                Mode = "PvP",
-                Label = "Hai người cùng máy (PvP)",
-                Created = pvpGames.Count,
-                InProgress = pvpGames.Count(g => g.Status == GameStatus.InProgress),
-                Waiting = 0,
-                Finished = pvpFinished,
-                Wins = pvpWins,
-                Losses = pvpWins,
-                Draws = pvpDraws,
-                WinRate = pvpFinished > 0 ? Math.Round((double)pvpWins * 100.0 / pvpFinished, 1) : 0
-            });
-
-            var aivsaiGames = allGames.Where(g => g.GameMode == "AiVsAi").ToList();
-            int aivsaiFinished = aivsaiGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
-            int aivsaiWins = aivsaiGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins);
-            int aivsaiDraws = aivsaiGames.Count(g => g.Status == GameStatus.Draw);
-            modeStats.Add(new AdminModeStatDto
-            {
-                Mode = "AiVsAi",
-                Label = "Máy với máy (AiVsAi)",
-                Created = aivsaiGames.Count,
-                InProgress = aivsaiGames.Count(g => g.Status == GameStatus.InProgress),
-                Waiting = 0,
-                Finished = aivsaiFinished,
-                Wins = aivsaiWins,
-                Losses = aivsaiWins,
-                Draws = aivsaiDraws,
-                WinRate = aivsaiFinished > 0 ? Math.Round((double)aivsaiWins * 100.0 / aivsaiFinished, 1) : 0
-            });
+            var modeStats = BuildAdminModeStats(allGames);
 
             var learning = await _statistics.LearningAsync(null);
             var adminName = User.Identity?.Name ?? "Admin";
@@ -847,6 +688,93 @@ namespace ChessCore.Controllers
 
             return View(vm);
         }
+
+        private static List<AdminModeStatDto> BuildAdminModeStats(IReadOnlyCollection<AdminGameRecord> allGames)
+        {
+            var modeStats = new List<AdminModeStatDto>();
+
+            // 1. Online
+            var onlineGames = allGames.Where(g => g.GameMode == "Online" || g.GameMode == "OnlinePublic").ToList();
+            int onlineFinished = onlineGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
+            int onlineWins = onlineGames.Count(g => g.Status == GameStatus.RedWins);
+            int onlineLosses = onlineGames.Count(g => g.Status == GameStatus.BlackWins);
+            int onlineDraws = onlineGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "Online",
+                Label = "Chơi qua mạng (Online)",
+                Created = onlineGames.Count,
+                InProgress = onlineGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = onlineGames.Count(g => g.Status == GameStatus.WaitingForPlayers),
+                Finished = onlineFinished,
+                Wins = onlineWins,
+                Losses = onlineLosses,
+                Draws = onlineDraws,
+                WinRate = onlineFinished > 0 ? Math.Round((double)onlineWins * 100.0 / onlineFinished, 1) : 0
+            });
+
+            // 2. PvE (Chơi với máy)
+            var pveGames = allGames.Where(g => g.GameMode == "PvE").ToList();
+            int pveFinished = pveGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
+            int pveWins = pveGames.Count(g => g.Status == GameStatus.RedWins);
+            int pveLosses = pveGames.Count(g => g.Status == GameStatus.BlackWins);
+            int pveDraws = pveGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "PvE",
+                Label = "Chơi với máy (PvE)",
+                Created = pveGames.Count,
+                InProgress = pveGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = 0,
+                Finished = pveFinished,
+                Wins = pveWins,
+                Losses = pveLosses,
+                Draws = pveDraws,
+                WinRate = pveFinished > 0 ? Math.Round((double)pveWins * 100.0 / pveFinished, 1) : 0
+            });
+
+            // 3. PvP (Hai người cùng máy)
+            var pvpGames = allGames.Where(g => g.GameMode == "PvP" || g.GameMode == "Local").ToList();
+            int pvpFinished = pvpGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
+            int pvpWins = pvpGames.Count(g => g.Status == GameStatus.RedWins);
+            int pvpLosses = pvpGames.Count(g => g.Status == GameStatus.BlackWins);
+            int pvpDraws = pvpGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "PvP",
+                Label = "Hai người cùng máy (PvP)",
+                Created = pvpGames.Count,
+                InProgress = pvpGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = 0,
+                Finished = pvpFinished,
+                Wins = pvpWins,
+                Losses = pvpLosses,
+                Draws = pvpDraws,
+                WinRate = pvpFinished > 0 ? Math.Round((double)pvpWins * 100.0 / pvpFinished, 1) : 0
+            });
+
+            // 4. AiVsAi (Máy với máy)
+            var aivsaiGames = allGames.Where(g => g.GameMode == "AiVsAi").ToList();
+            int aivsaiFinished = aivsaiGames.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw);
+            int aivsaiWins = aivsaiGames.Count(g => g.Status == GameStatus.RedWins);
+            int aivsaiLosses = aivsaiGames.Count(g => g.Status == GameStatus.BlackWins);
+            int aivsaiDraws = aivsaiGames.Count(g => g.Status == GameStatus.Draw);
+            modeStats.Add(new AdminModeStatDto
+            {
+                Mode = "AiVsAi",
+                Label = "Máy với máy (AiVsAi)",
+                Created = aivsaiGames.Count,
+                InProgress = aivsaiGames.Count(g => g.Status == GameStatus.InProgress),
+                Waiting = 0,
+                Finished = aivsaiFinished,
+                Wins = aivsaiWins,
+                Losses = aivsaiLosses,
+                Draws = aivsaiDraws,
+                WinRate = aivsaiFinished > 0 ? Math.Round((double)aivsaiWins * 100.0 / aivsaiFinished, 1) : 0
+            });
+
+            return modeStats;
+        }
     }
 
     public class AiBenchmarkViewModel
@@ -923,4 +851,6 @@ namespace ChessCore.Controllers
         public List<User> RecentUsers { get; set; } = new();
         public List<Puzzle> RecentPuzzles { get; set; } = new();
     }
+
+    internal sealed record AdminGameRecord(string GameMode, GameStatus Status, int? RedPlayerId, int? BlackPlayerId);
 }

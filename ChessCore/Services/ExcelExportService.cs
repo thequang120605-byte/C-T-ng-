@@ -69,7 +69,7 @@ namespace ChessCore.Services
             // Table Header
             string[] modeHeaders = {
                 "STT", "Chế độ thi đấu", "Đã tạo", "Đang chơi", "Chờ đấu",
-                "Đã kết thúc", "Thắng", "Thua", "Hòa", "Tỉ lệ thắng (%)"
+                "Đã kết thúc", "Thắng (Đỏ)", "Thua (Đen)", "Hòa", "Tỉ lệ thắng (%)"
             };
 
             for (int i = 0; i < modeHeaders.Length; i++)

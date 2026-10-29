@@ -197,7 +197,7 @@
             </div>
             <div class="admin-kpi-info">
                 <span class="admin-kpi-val">@Model.AverageSystemWinRate.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)%</span>
-                <span class="admin-kpi-lbl">Tỉ lệ Thắng TB Kỳ thủ</span>
+                <span class="admin-kpi-lbl">Tỉ lệ Thắng toàn hệ thống</span>
             </div>
         </div>
     </div>
@@ -233,8 +233,8 @@
                         <th style="padding: 12px 14px; text-align: center;">Đang chơi</th>
                         <th style="padding: 12px 14px; text-align: center;">Chờ đấu</th>
                         <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: var(--text-main);">Kết thúc</th>
-                        <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;">Thắng</th>
-                        <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: #ef4444;">Thua</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;">Thắng (Đỏ)</th>
+                        <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: #ef4444;">Thua (Đen)</th>
                         <th style="padding: 12px 14px; text-align: center; font-weight: 700; color: #d97706;">Hòa</th>
                         <th style="padding: 12px 18px; text-align: right; font-weight: 800; color: var(--accent-gold);">Tỉ lệ thắng</th>
                     </tr>
@@ -296,7 +296,7 @@
 
         <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-top: 12px;">
             <i class="fa-solid fa-circle-info" style="color: var(--accent-gold); margin-right: 4px;"></i>
-            <em>Tỉ lệ thắng = Số ván thắng / Số ván đã hoàn thành. Điểm Elo xếp hạng chỉ được áp dụng trong chế độ PvP Online.</em>
+            <em>Quy chuẩn thống kê hệ thống: Cột Thắng ghi nhận ván bên Đỏ (đi Tiên) thắng; Cột Thua ghi nhận ván bên Đen (đi Hậu) thắng; riêng chế độ PvE (chơi với máy), người chơi cầm quân Đỏ. Tỉ lệ thắng = Ván thắng / Ván kết thúc.</em>
         </div>
     </div>
 
