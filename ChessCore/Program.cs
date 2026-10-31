@@ -128,6 +128,28 @@ builder.Services.AddCors(options =>
 
 // Cấu hình Entity Framework Core với MySQL (Pomelo)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
+{
+    try
+    {
+        var uri = new Uri(connectionString);
+        var userInfo = uri.UserInfo.Split(':');
+        var user = Uri.UnescapeDataString(userInfo[0]);
+        var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+        var host = uri.Host;
+        var port = uri.Port > 0 ? uri.Port : 3306;
+        var database = uri.AbsolutePath.TrimStart('/');
+        if (string.IsNullOrEmpty(database) || database.Equals("sys", StringComparison.OrdinalIgnoreCase))
+        {
+            database = "test";
+        }
+        connectionString = $"Server={host};Port={port};Database={database};User={user};Password={password};SslMode=Required;";
+    }
+    catch
+    {
+        // Fallback giữ nguyên nếu không parse được URI
+    }
+}
 ServerVersion serverVersion;
 try
 {
