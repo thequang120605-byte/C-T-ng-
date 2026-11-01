@@ -323,14 +323,19 @@ namespace ChessCore.Controllers
         // remain available for local/offline play.
         [Authorize]
         [HttpPost("online")]
-        public async Task<ActionResult<GameResponseDto>> CreateOnlineGame([FromQuery] bool isPublic = false)
+        public async Task<ActionResult<GameResponseDto>> CreateOnlineGame(
+            [FromQuery] bool isPublic = false,
+            [FromQuery] bool isRated = true,
+            [FromQuery] int? timeControl = 3)
         {
             if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
 
             var game = await _gameService.CreateGameAsync(status: GameStatus.WaitingForPlayers);
             game.RedPlayerId = userId;
             game.GameMode = isPublic ? "OnlinePublic" : "OnlinePrivate";
-            game.IsRated = string.IsNullOrWhiteSpace(game.InitialFen);
+            game.TimeControlMinutes = (timeControl.HasValue && timeControl.Value > 0) ? timeControl.Value : 3;
+            // Chỉ xếp hạng khi người dùng chọn isRated VÀ không dùng thế cờ tùy chỉnh
+            game.IsRated = isRated && string.IsNullOrWhiteSpace(game.InitialFen);
             game.AiColor = "Black";
             await _dbContext.SaveChangesAsync();
 
@@ -343,7 +348,9 @@ namespace ChessCore.Controllers
                     roomCode = game.RoomCode,
                     createdAt = game.CreatedAt,
                     creatorUsername = creatorUser?.Username ?? "Người chơi",
-                    creatorElo = creatorUser?.Elo ?? 1200
+                    creatorElo = creatorUser?.Elo ?? 1200,
+                    isRated = game.IsRated,
+                    timeControlMinutes = game.TimeControlMinutes
                 });
             }
 
@@ -507,6 +514,8 @@ namespace ChessCore.Controllers
                 newGame.RedPlayerId = newRed;
                 newGame.BlackPlayerId = newBlack;
                 newGame.GameMode = game.GameMode;
+                newGame.TimeControlMinutes = game.TimeControlMinutes > 0 ? game.TimeControlMinutes : 3;
+                newGame.IsRated = game.IsRated && GameModes.CanRate(newGame);
                 newGame.LastMoveAt = DateTime.UtcNow;
                 await _dbContext.SaveChangesAsync();
 
@@ -633,12 +642,23 @@ namespace ChessCore.Controllers
             var game =
                 await _gameService.CreateGameAsync(targetFen);
 
-            game.GameMode = GameModes.Normalize(targetMode);
+            string normalizedTargetMode = GameModes.Normalize(targetMode);
+            game.GameMode = normalizedTargetMode;
             game.TimeControlMinutes = (targetTime.HasValue && targetTime.Value > 0) ? targetTime.Value : 3;
 
+            // AN TOÀN THỐNG KÊ: Chỉ gán người chơi cho PvE. Với Local (cùng máy) hoặc AiVsAi (hai bot),
+            // RedPlayerId và BlackPlayerId phải là null để không làm sai lệch số liệu thắng/thua cá nhân.
             if (TryGetCurrentUserId(out int userId))
             {
-                game.RedPlayerId = userId;
+                if (normalizedTargetMode == GameModes.PvE)
+                {
+                    game.RedPlayerId = userId;
+                }
+                else
+                {
+                    game.RedPlayerId = null;
+                    game.BlackPlayerId = null;
+                }
             }
             await _dbContext.SaveChangesAsync();
 
@@ -1479,19 +1499,31 @@ namespace ChessCore.Controllers
                 return BadRequest(new { message = "Ván đấu không trong trạng thái đang diễn ra." });
             }
 
-            int currentUserId = 0;
-            bool isOnline = game.RedPlayerId.HasValue || game.BlackPlayerId.HasValue;
-            if (isOnline)
-            {
-                if (!TryGetCurrentUserId(out currentUserId))
-                {
-                    return Unauthorized();
-                }
+            var normalizedMode = GameModes.Normalize(game.GameMode);
+            bool isOnline = normalizedMode == GameModes.Online;
 
-                if (game.RedPlayerId != currentUserId && game.BlackPlayerId != currentUserId)
+            // Xử lý khi Chơi 2 người trên một máy (Local) hoặc Máy với máy (AiVsAi)
+            if (normalizedMode == GameModes.Local || normalizedMode == GameModes.AiVsAi)
+            {
+                await _settlementService.SettleGameAsync(id, GameStatus.Draw, "Hai bên thỏa thuận hòa");
+                var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+                var drawResponse = BuildGameResponse(game, board);
+                await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", drawResponse);
+                await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Ván cờ kết thúc hòa do hai bên thỏa thuận." });
+                return Ok(new { accepted = true, message = "Ván cờ kết thúc hòa.", game = drawResponse });
+            }
+
+            int currentUserId = 0;
+            if (TryGetCurrentUserId(out currentUserId))
+            {
+                if (isOnline && game.RedPlayerId != currentUserId && game.BlackPlayerId != currentUserId)
                 {
                     return Forbid();
                 }
+            }
+            else if (isOnline)
+            {
+                return Unauthorized();
             }
 
             // --- NGHIỆP VỤ CHỐNG SPAM ---
@@ -1515,8 +1547,8 @@ namespace ChessCore.Controllers
                 return BadRequest(new { message = "Đang có lời đề nghị hòa chờ phản hồi." });
             }
 
-            // Xử lý khi Chơi với Máy (VS COMPUTER)
-            if (!isOnline)
+            // Xử lý khi Chơi với Máy (PvE): AI tự đánh giá thế cờ
+            if (normalizedMode == GameModes.PvE)
             {
                 var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
                 int eval = BoardEvaluator.Evaluate(board, PieceColor.Black);
@@ -1524,11 +1556,7 @@ namespace ChessCore.Controllers
 
                 if (computerAgrees)
                 {
-                    game.Status = GameStatus.Draw;
-                    _dbContext.Games.Update(game);
-                    await _dbContext.SaveChangesAsync();
-
-                    await UpdateUserStatsOnGameEndAsync(game, GameStatus.Draw);
+                    await _settlementService.SettleGameAsync(id, GameStatus.Draw, "Máy đồng ý hòa");
 
                     var drawResponse = BuildGameResponse(game, board);
                     await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", drawResponse);
@@ -1544,7 +1572,7 @@ namespace ChessCore.Controllers
                 }
             }
 
-            // Xử lý khi Chơi Online:
+            // Xử lý khi Chơi Online PvP:
             _cache.Set(pendingKey, currentUserId, TimeSpan.FromSeconds(15));
             _cache.Set(countKey, offerCount + 1, TimeSpan.FromHours(2));
             _cache.Set(cooldownKey, true, TimeSpan.FromSeconds(30));
@@ -1908,119 +1936,6 @@ namespace ChessCore.Controllers
             };
         }
 
-        private async Task UpdateUserStatsOnGameEndAsync(Game game, GameStatus status)
-        {
-            if (status == GameStatus.InProgress || status == GameStatus.WaitingForPlayers) return;
-
-            bool isOnlineMatch = GameModes.Normalize(game.GameMode) == GameModes.Online;
-
-            if (game.RedPlayerId.HasValue)
-            {
-                var redUser = await _dbContext.Users.FindAsync(game.RedPlayerId.Value);
-                if (redUser != null)
-                {
-                    int oldElo = redUser.Elo;
-                    int eloChange = 0;
-                    redUser.GamesPlayed++;
-                    if (status == GameStatus.RedWins)
-                    {
-                        redUser.Wins++;
-                        if (isOnlineMatch)
-                        {
-                            eloChange = 15;
-                            redUser.Elo += eloChange;
-                        }
-                    }
-                    else if (status == GameStatus.BlackWins)
-                    {
-                        redUser.Losses++;
-                        if (isOnlineMatch)
-                        {
-                            eloChange = -10;
-                            redUser.Elo = Math.Max(400, redUser.Elo + eloChange);
-                            eloChange = redUser.Elo - oldElo;
-                        }
-                    }
-                    else if (status == GameStatus.Draw)
-                    {
-                        redUser.Draws++;
-                        if (isOnlineMatch)
-                        {
-                            eloChange = 2;
-                            redUser.Elo += eloChange;
-                        }
-                    }
-
-                    if (isOnlineMatch && eloChange != 0)
-                    {
-                        _dbContext.UserEloHistories.Add(new UserEloHistory
-                        {
-                            UserId = redUser.Id,
-                            GameId = game.Id,
-                            OldElo = oldElo,
-                            NewElo = redUser.Elo,
-                            EloChange = eloChange,
-                            Reason = status == GameStatus.RedWins ? "Thắng trận PvP Online" : status == GameStatus.BlackWins ? "Thua trận PvP Online" : "Hòa trận PvP Online",
-                            RecordedAt = DateTime.UtcNow
-                        });
-                    }
-                }
-            }
-
-            if (game.BlackPlayerId.HasValue)
-            {
-                var blackUser = await _dbContext.Users.FindAsync(game.BlackPlayerId.Value);
-                if (blackUser != null)
-                {
-                    int oldElo = blackUser.Elo;
-                    int eloChange = 0;
-                    blackUser.GamesPlayed++;
-                    if (status == GameStatus.BlackWins)
-                    {
-                        blackUser.Wins++;
-                        if (isOnlineMatch)
-                        {
-                            eloChange = 15;
-                            blackUser.Elo += eloChange;
-                        }
-                    }
-                    else if (status == GameStatus.RedWins)
-                    {
-                        blackUser.Losses++;
-                        if (isOnlineMatch)
-                        {
-                            eloChange = -10;
-                            blackUser.Elo = Math.Max(400, blackUser.Elo + eloChange);
-                            eloChange = blackUser.Elo - oldElo;
-                        }
-                    }
-                    else if (status == GameStatus.Draw)
-                    {
-                        blackUser.Draws++;
-                        if (isOnlineMatch)
-                        {
-                            eloChange = 2;
-                            blackUser.Elo += eloChange;
-                        }
-                    }
-
-                    if (isOnlineMatch && eloChange != 0)
-                    {
-                        _dbContext.UserEloHistories.Add(new UserEloHistory
-                        {
-                            UserId = blackUser.Id,
-                            GameId = game.Id,
-                            OldElo = oldElo,
-                            NewElo = blackUser.Elo,
-                            EloChange = eloChange,
-                            Reason = status == GameStatus.BlackWins ? "Thắng trận PvP Online" : status == GameStatus.RedWins ? "Thua trận PvP Online" : "Hòa trận PvP Online",
-                            RecordedAt = DateTime.UtcNow
-                        });
-                    }
-                }
-            }
-
-            await _dbContext.SaveChangesAsync();
-        }
+// Đã dọn dẹp phương thức UpdateUserStatsOnGameEndAsync cũ. Tất cả kết thúc ván hiện được quyết toán duy nhất qua IGameSettlementService.
     }
 }

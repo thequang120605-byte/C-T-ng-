@@ -65,7 +65,7 @@ namespace ChessCore.Services
             var activeGames = await dbContext.Games
                 .Include(g => g.Moves)
                 .Where(g => g.Status == GameStatus.InProgress &&
-                            g.ResultsProcessedAt == null)
+                            g.ResultsProcessedAt == null && (g.GameMode == GameModes.Online || g.GameMode == "OnlinePublic" || g.GameMode == "OnlinePrivate") && g.RedPlayerId != null && g.BlackPlayerId != null && g.RedPlayerId != g.BlackPlayerId)
                 .ToListAsync();
 
             if (activeGames.Count == 0) return;

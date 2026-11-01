@@ -24,7 +24,9 @@ namespace ChessCore.ViewModels
     {
         public string DateLabel { get; set; } = string.Empty;
         public int Elo { get; set; }
+        public int OldElo { get; set; }
         public int Change { get; set; }
+        public int? GameId { get; set; }
         public string Reason { get; set; } = string.Empty;
     }
 
@@ -44,9 +46,12 @@ namespace ChessCore.ViewModels
         public string OpponentName { get; set; }
         public int? OpponentElo { get; set; }
         public int? PlayerElo { get; set; }
+        public int? OldElo { get; set; }
+        public int? NewElo { get; set; }
         public int? EloChange { get; set; }
         public bool IsRated { get; set; }
-        public string GameMode { get; set; } = "PvE"; // "PvE" hoặc "PvP"
+        public string GameMode { get; set; } = "PvE";
+        public string SubModeBadge { get; set; } = string.Empty;
         public DateTime PlayedAt { get; set; }
         public int TotalMoves { get; set; }
         public string Result { get; set; } // "win", "loss", "draw"

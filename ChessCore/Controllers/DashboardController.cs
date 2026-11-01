@@ -244,10 +244,36 @@ namespace ChessCore.Controllers
 
                 bool isGameRated = gameRatingMap.TryGetValue(g.Id, out var rating);
                 int? playerElo = isGameRated ? rating!.NewElo : (int?)null;
+                int? oldElo = isGameRated ? rating!.OldElo : (int?)null;
                 int? eloChange = isGameRated ? rating!.EloChange : (int?)null;
-                DateTime playedAt = isGameRated 
+                DateTime rawPlayedAt = isGameRated 
                     ? rating!.RecordedAt 
                     : (g.ResultsProcessedAt ?? g.LastMoveAt ?? g.CreatedAt);
+                DateTime playedAtVn = rawPlayedAt.AddHours(7);
+
+                string subModeBadge = "Không tính Elo";
+                if (g.Status == GameStatus.InProgress)
+                {
+                    subModeBadge = "Đang thi đấu";
+                }
+                else if (isOnline)
+                {
+                    if (isGameRated) subModeBadge = "Online xếp hạng";
+                    else if (g.IsRated) subModeBadge = "Chờ quyết toán";
+                    else subModeBadge = "Online giao hữu";
+                }
+                else if (g.GameMode == GameModes.PvE)
+                {
+                    subModeBadge = "Tập luyện (với AI)";
+                }
+                else if (g.GameMode == GameModes.Local || g.GameMode == "Local" || g.GameMode == "PvP")
+                {
+                    subModeBadge = "Hai người cùng máy";
+                }
+                else if (g.GameMode == GameModes.AiVsAi)
+                {
+                    subModeBadge = "Máy với máy";
+                }
 
                 vm.RecentGames.Add(new GameHistoryItem
                 {
@@ -255,10 +281,13 @@ namespace ChessCore.Controllers
                     OpponentName = opponentName,
                     OpponentElo = opponentElo,
                     PlayerElo = playerElo,
+                    OldElo = oldElo,
+                    NewElo = playerElo,
                     EloChange = eloChange,
                     IsRated = isGameRated,
                     GameMode = mode,
-                    PlayedAt = playedAt,
+                    SubModeBadge = subModeBadge,
+                    PlayedAt = playedAtVn,
                     TotalMoves = g.Moves.Count,
                     Result = resultClass,
                     ResultText = resultText
@@ -274,12 +303,15 @@ namespace ChessCore.Controllers
             if (eloHistories.Count > 0)
             {
                 var sorted = eloHistories.OrderBy(h => h.RecordedAt).ThenBy(h => h.Id).ToList();
+                string firstLabel = allUserRatings.Count > 30 ? "Trước giai đoạn hiển thị" : "Mốc khởi đầu";
                 vm.EloHistory.Add(new EloPointDto
                 {
-                    DateLabel = "Khởi đầu",
+                    DateLabel = firstLabel,
                     Elo = sorted.First().OldElo,
+                    OldElo = sorted.First().OldElo,
                     Change = 0,
-                    Reason = "Mốc Elo khởi đầu"
+                    GameId = null,
+                    Reason = allUserRatings.Count > 30 ? "Điểm Elo trước 30 ván gần nhất" : "Mốc Elo khởi đầu"
                 });
 
                 foreach (var h in sorted)
@@ -292,9 +324,11 @@ namespace ChessCore.Controllers
 
                     vm.EloHistory.Add(new EloPointDto
                     {
-                        DateLabel = h.RecordedAt.ToString("dd/MM HH:mm"),
+                        DateLabel = h.RecordedAt.AddHours(7).ToString("dd/MM HH:mm"),
                         Elo = h.NewElo,
+                        OldElo = h.OldElo,
                         Change = h.EloChange,
+                        GameId = h.GameId,
                         Reason = reason
                     });
                 }
@@ -305,7 +339,9 @@ namespace ChessCore.Controllers
                 {
                     DateLabel = "Hiện tại",
                     Elo = currentUser.Elo,
+                    OldElo = currentUser.Elo,
                     Change = 0,
+                    GameId = null,
                     Reason = "Chưa có lịch sử biến động được ghi nhận"
                 });
             }

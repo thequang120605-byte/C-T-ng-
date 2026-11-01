@@ -187,6 +187,8 @@ namespace ChessCore.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Reason).HasMaxLength(150);
+                entity.HasIndex(e => new { e.UserId, e.GameId });
+                entity.HasIndex(e => new { e.UserId, e.RecordedAt });
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.EloHistories)
                     .HasForeignKey(e => e.UserId)

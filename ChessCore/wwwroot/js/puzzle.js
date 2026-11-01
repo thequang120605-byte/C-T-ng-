@@ -1411,14 +1411,8 @@
       modal.classList.add("show");
     }
 
-    // Cập nhật lại navbar Elo nếu có thưởng
-    if (earnedElo > 0) {
-      const eloBadge = $("navbar-user-elo");
-      if (eloBadge) {
-        const curElo = parseInt(eloBadge.textContent.replace(/\D/g, ""), 10) || 1200;
-        eloBadge.innerHTML = `<i class="fa-solid fa-star" style="font-size: 9px;"></i> ${curElo + earnedElo}`;
-      }
-    }
+    // Điểm thưởng giải cờ thế được ghi nhận vào điểm PuzzleScore của tài khoản,
+    // tuyệt đối không tự ý cộng vào navbar-user-elo (vốn là Elo xếp hạng PvP Online).
   }
 
   // Sự kiện nút trong modal kết quả

@@ -108,45 +108,61 @@ namespace ChessCore.Services
                         blackUser.Elo = Math.Max(400, oldBlackElo + rawBlackDelta);
                         actualBlackDelta = blackUser.Elo - oldBlackElo;
 
-                        // Ghi lịch sử Elo thực tế sau khi đã áp dụng sàn 400
-                        db.UserEloHistories.Add(new UserEloHistory
+                        // Ghi lịch sử Elo thực tế sau khi đã áp dụng sàn 400 (kiểm tra chống trùng lặp theo UserId + GameId)
+                        bool redHistoryExists = await db.UserEloHistories.AnyAsync(h => h.UserId == redUser.Id && h.GameId == game.Id, cancellationToken);
+                        if (!redHistoryExists)
                         {
-                            UserId = redUser.Id,
-                            GameId = game.Id,
-                            OldElo = oldRedElo,
-                            NewElo = redUser.Elo,
-                            EloChange = actualRedDelta,
-                            Reason = $"Ván đấu #{game.Id} ({winReason})",
-                            RecordedAt = DateTime.UtcNow
-                        });
+                            db.UserEloHistories.Add(new UserEloHistory
+                            {
+                                UserId = redUser.Id,
+                                GameId = game.Id,
+                                OldElo = oldRedElo,
+                                NewElo = redUser.Elo,
+                                EloChange = actualRedDelta,
+                                Reason = $"Ván đấu #{game.Id} ({winReason})",
+                                RecordedAt = DateTime.UtcNow
+                            });
+                        }
 
-                        db.UserEloHistories.Add(new UserEloHistory
+                        bool blackHistoryExists = await db.UserEloHistories.AnyAsync(h => h.UserId == blackUser.Id && h.GameId == game.Id, cancellationToken);
+                        if (!blackHistoryExists)
                         {
-                            UserId = blackUser.Id,
-                            GameId = game.Id,
-                            OldElo = oldBlackElo,
-                            NewElo = blackUser.Elo,
-                            EloChange = actualBlackDelta,
-                            Reason = $"Ván đấu #{game.Id} ({winReason})",
-                            RecordedAt = DateTime.UtcNow
-                        });
+                            db.UserEloHistories.Add(new UserEloHistory
+                            {
+                                UserId = blackUser.Id,
+                                GameId = game.Id,
+                                OldElo = oldBlackElo,
+                                NewElo = blackUser.Elo,
+                                EloChange = actualBlackDelta,
+                                Reason = $"Ván đấu #{game.Id} ({winReason})",
+                                RecordedAt = DateTime.UtcNow
+                            });
+                        }
                     }
 
-                    // Cập nhật thống kê số trận thắng/thua/hòa
-                    if (redUser != null)
-                    {
-                        redUser.GamesPlayed++;
-                        if (status == GameStatus.RedWins) redUser.Wins++;
-                        else if (status == GameStatus.BlackWins) redUser.Losses++;
-                        else if (status == GameStatus.Draw) redUser.Draws++;
-                    }
+                    // QUY TẮC AN TOÀN: Chỉ cập nhật thống kê cá nhân (GamesPlayed, Wins, Losses, Draws)
+                    // cho các ván Online hoặc PvE với tài khoản hợp lệ.
+                    // Tuyệt đối không ghi nhận thành tích cá nhân cho ván Local (2 người cùng máy) hay AiVsAi (hai bot).
+                    string normalizedMode = GameModes.Normalize(game.GameMode);
+                    bool shouldUpdateStats = (normalizedMode == GameModes.Online || normalizedMode == GameModes.PvE) && (redUser?.Id != blackUser?.Id);
 
-                    if (blackUser != null)
+                    if (shouldUpdateStats)
                     {
-                        blackUser.GamesPlayed++;
-                        if (status == GameStatus.BlackWins) blackUser.Wins++;
-                        else if (status == GameStatus.RedWins) blackUser.Losses++;
-                        else if (status == GameStatus.Draw) blackUser.Draws++;
+                        if (redUser != null)
+                        {
+                            redUser.GamesPlayed++;
+                            if (status == GameStatus.RedWins) redUser.Wins++;
+                            else if (status == GameStatus.BlackWins) redUser.Losses++;
+                            else if (status == GameStatus.Draw) redUser.Draws++;
+                        }
+
+                        if (blackUser != null)
+                        {
+                            blackUser.GamesPlayed++;
+                            if (status == GameStatus.BlackWins) blackUser.Wins++;
+                            else if (status == GameStatus.RedWins) blackUser.Losses++;
+                            else if (status == GameStatus.Draw) blackUser.Draws++;
+                        }
                     }
 
                     await db.SaveChangesAsync(cancellationToken);

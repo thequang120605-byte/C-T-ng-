@@ -11,6 +11,17 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+    <style>
+        @@keyframes pulseHighlight {
+            0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.8); border-color: var(--accent-gold); }
+            50% { box-shadow: 0 0 0 12px rgba(212, 175, 55, 0); border-color: var(--accent-gold); background: rgba(212, 175, 55, 0.15); }
+            100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+        }
+        .highlight-pulse {
+            animation: pulseHighlight 1.2s ease-in-out 2 !important;
+            border-color: var(--accent-gold) !important;
+        }
+    </style>
 }
 
 <div class="dashboard-container">
@@ -256,7 +267,7 @@
     <div class="panel-box" style="margin-bottom: 24px; padding: 20px 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <h2 class="panel-title" style="margin: 0;">
-                <i class="fa-solid fa-chart-line" style="color: var(--accent-gold);"></i> Biểu đồ phong độ Elo
+                <i class="fa-solid fa-chart-line" style="color: var(--accent-gold);"></i> Lịch sử Elo xếp hạng — 30 ván gần nhất
             </h2>
             <div style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 12px;">
                 <span><i class="fa-solid fa-circle" style="color: #3b82f6; font-size: 8px;"></i> Elo ván đấu</span>
@@ -301,7 +312,7 @@
                     var index = 0;
                     foreach (var game in Model.RecentGames)
                     {
-                        <a href="/Game/Review/@game.GameId" class="history-item @game.Result match-row" data-index="@index" data-mode="@game.GameMode" style="text-decoration: none; cursor: pointer; display: none;" title="Nhấn để xem chi tiết phân tích ván đấu">
+                        <a href="/Game/Review/@game.GameId" id="game-row-@game.GameId" data-game-id="@game.GameId" class="history-item @game.Result match-row" data-index="@index" data-mode="@game.GameMode" style="text-decoration: none; cursor: pointer; display: none;" title="Nhấn để xem chi tiết phân tích ván đấu">
                             <div class="history-main">
                                 <div class="history-opp">
                                     vs. @game.OpponentName 
@@ -314,11 +325,11 @@
                                 <div class="history-meta">
                                     <span><i class="fa-regular fa-calendar"></i> @game.PlayedAt.ToString("dd/MM/yyyy HH:mm")</span>
                                     <span><i class="fa-solid fa-chess-board"></i> @game.TotalMoves nước</span>
-                                    @if (game.IsRated && game.PlayerElo.HasValue)
+                                    @if (game.IsRated && game.OldElo.HasValue && game.NewElo.HasValue)
                                     {
                                         <span style="color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
-                                            <i class="fa-solid fa-star" style="color: var(--accent-gold); font-size: 11px;"></i> Elo sau trận: 
-                                            <strong style="color: var(--accent-gold);">@game.PlayerElo.Value</strong>
+                                            <i class="fa-solid fa-star" style="color: var(--accent-gold); font-size: 11px;"></i> Elo: 
+                                            <strong style="color: var(--accent-gold);">@game.OldElo.Value &rarr; @game.NewElo.Value</strong>
                                             @if (game.EloChange.HasValue && game.EloChange.Value > 0)
                                             {
                                                 <span style="color: #10b981; font-weight: 800; font-size: 12px;">(+@game.EloChange.Value)</span>
@@ -337,7 +348,7 @@
                                     {
                                         <span style="color: #64748b; display: inline-flex; align-items: center; gap: 4px; font-size: 12px;">
                                             <i class="fa-solid fa-shield-halved" style="color: #94a3b8; font-size: 11px;"></i> 
-                                            <span>Tập luyện (Không tính Elo)</span>
+                                            <span>@(string.IsNullOrEmpty(game.SubModeBadge) ? "Không tính Elo" : game.SubModeBadge)</span>
                                         </span>
                                     }
                                     <span class="history-review-hint"><i class="fa-solid fa-magnifying-glass-chart"></i> Phân tích ván đấu</span>
@@ -368,8 +379,8 @@
                                 }
                                 else
                                 {
-                                    <div class="history-elo-delta unrated" title="Trận đấu tập luyện hoặc chơi với máy không tính vào điểm xếp hạng Elo">
-                                        <i class="fa-solid fa-shield-halved"></i> Không xếp hạng
+                                    <div class="history-elo-delta unrated" title="@game.SubModeBadge">
+                                        <i class="fa-solid fa-shield-halved"></i> @(string.IsNullOrEmpty(game.SubModeBadge) ? "Không xếp hạng" : game.SubModeBadge)
                                     </div>
                                 }
                             </div>
@@ -519,6 +530,10 @@
                     if (paginationWrapper) paginationWrapper.style.display = 'flex';
                     renderPage(1);
                 }
+
+                window.goToHistoryPage = function(page) {
+                    renderPage(page);
+                };
 
                 function renderPage(page) {
                     currentPage = page;
@@ -740,7 +755,27 @@
                                 if (!elements || elements.length === 0) return;
                                 var idx = elements[0].index;
                                 var item = eloDataRaw[idx];
-                                if (item && window.filterHistoryByMode) {
+                                if (item && item.GameId) {
+                                    var filterSelect = document.getElementById('historyModeFilter');
+                                    if (filterSelect && filterSelect.value !== 'ALL' && filterSelect.value !== 'Online') {
+                                        filterSelect.value = 'ALL';
+                                        if (window.filterHistoryByMode) window.filterHistoryByMode('ALL');
+                                    }
+                                    var row = document.getElementById('game-row-' + item.GameId);
+                                    if (row) {
+                                        var allMatches = Array.from(document.querySelectorAll('.match-row'));
+                                        var rowPos = allMatches.indexOf(row);
+                                        if (rowPos !== -1 && window.goToHistoryPage) {
+                                            var targetPage = Math.floor(rowPos / 5) + 1;
+                                            window.goToHistoryPage(targetPage);
+                                        }
+                                        setTimeout(function() {
+                                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            row.classList.add('highlight-pulse');
+                                            setTimeout(function() { row.classList.remove('highlight-pulse'); }, 2500);
+                                        }, 100);
+                                    }
+                                } else if (item && window.filterHistoryByMode) {
                                     window.filterHistoryByMode('Online');
                                 }
                             },
@@ -765,6 +800,9 @@
                                             var cleanReason = item.Reason || 'Ván đấu PvP Online';
                                             if (cleanReason.indexOf('?') !== -1) {
                                                 cleanReason = item.Change > 0 ? 'Thắng trận PvP Online' : (item.Change < 0 ? 'Thua trận PvP Online' : 'Hòa trận PvP Online');
+                                            }
+                                            if (item.OldElo && item.Elo && item.GameId) {
+                                                return 'Elo: ' + item.OldElo + ' → ' + item.Elo + ' (' + changeText + ') - ' + cleanReason;
                                             }
                                             return 'Elo: ' + item.Elo + ' (' + changeText + ') - ' + cleanReason;
                                         }
