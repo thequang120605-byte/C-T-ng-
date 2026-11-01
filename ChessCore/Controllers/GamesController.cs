@@ -1021,7 +1021,6 @@ namespace ChessCore.Controllers
 
             var response = BuildGameResponse(updatedGame, updatedBoard);
             await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
-            _aiCapacity.Gate.Release();
             return Ok(response);
         }
 
@@ -1345,11 +1344,14 @@ namespace ChessCore.Controllers
 
             if (game.Status != GameStatus.InProgress)
             {
-                return BadRequest(new
-                {
-                    message =
-                        "Ván cờ đã kết thúc."
-                });
+                // Nếu ván cờ đã kết thúc, trả về dữ liệu ván cờ hiện tại thay vì lỗi BadRequest
+                var existingBoard = GameRules.RebuildBoard(
+                    game.InitialFen,
+                    game.Moves,
+                    game.CurrentTurn
+                );
+                var existingResponse = BuildGameResponse(game, existingBoard);
+                return Ok(existingResponse);
             }
 
             // =================================================
@@ -1428,7 +1430,6 @@ namespace ChessCore.Controllers
 
             var response = BuildGameResponse(updatedGame, updatedBoard);
             await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", response);
-            _aiCapacity.Gate.Release();
             return Ok(response);
         }
 

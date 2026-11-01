@@ -66,7 +66,8 @@ namespace ChessCore.Services
                 .Include(g => g.Moves)
                 .Where(g => g.Status == GameStatus.InProgress &&
                             g.ResultsProcessedAt == null &&
-                            (g.RedPlayerId.HasValue || g.BlackPlayerId.HasValue))
+                            g.GameMode != null && g.GameMode.StartsWith("Online") &&
+                            g.RedPlayerId.HasValue && g.BlackPlayerId.HasValue)
                 .ToListAsync();
 
             if (activeGames.Count == 0) return;

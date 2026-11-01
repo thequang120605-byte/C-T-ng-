@@ -82,6 +82,15 @@ document.addEventListener("DOMContentLoaded", function () {
           }
       });
 
+      connection.on("MatchEnded_Timeout", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
+              showToast(data.message || "Ván cờ đã kết thúc do hết thời gian!", "warning");
+              closeResignModal();
+              closeDrawOfferModal();
+              loadGame();
+          }
+      });
+
       connection.on("ReceiveChatMessage", function (data) {
           if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
               appendChatMessage(data.sender, data.message, data.sentAt);
@@ -1417,6 +1426,10 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    closeResignModal();
+    closeConfirmDrawModal();
+    closeDrawOfferModal();
+
     if (title.includes("CHIẾN THẮNG")) {
       playSound('win');
     } else if (title.includes("THẤT BẠI")) {
@@ -2234,6 +2247,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function showResignModal() {
     if (gameStatus !== "InProgress") {
+      checkGameResult();
       return;
     }
 
@@ -2276,17 +2290,33 @@ document.addEventListener("DOMContentLoaded", function () {
   // RESIGN GAME
   // =====================================================
 
+  let isResigning = false;
+
   async function resignGame() {
     if (!gameId) {
+      closeResignModal();
+      return;
+    }
+
+    if (isResigning) {
       return;
     }
 
     if (gameStatus !== "InProgress") {
+      closeResignModal();
+      await loadGame();
+      checkGameResult();
       return;
     }
 
+    isResigning = true;
+    if (confirmResignButton) {
+      confirmResignButton.disabled = true;
+      confirmResignButton.style.opacity = "0.6";
+    }
+
     try {
-      // FIX BUG_004: Gửi kèm Authorization Bearer Token & credentials: 'include' khi Xin hàng
+      // Gửi kèm Authorization Bearer Token & credentials: 'include' khi Xin hàng
       const jwtToken = localStorage.getItem("token") || localStorage.getItem("jwt_token") || "";
       const resignHeaders = {
         "Content-Type": "application/json",
@@ -2301,8 +2331,18 @@ document.addEventListener("DOMContentLoaded", function () {
         headers: resignHeaders,
       });
 
+      // Luôn đóng modal xác nhận ngay khi có phản hồi từ máy chủ
+      closeResignModal();
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
+
+        // Nếu ván cờ đã kết thúc trước đó, tải lại dữ liệu để hiển thị bảng kết quả
+        if (response.status === 400 && (errorData?.message?.includes("kết thúc") || errorData?.message?.includes("ended"))) {
+          await loadGame();
+          checkGameResult();
+          return;
+        }
 
         throw new Error(
           errorData?.message || `Không thể đầu hàng. HTTP ${response.status}`,
@@ -2312,8 +2352,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
 
       console.log("Đầu hàng thành công:", data);
-
-      closeResignModal();
 
       clearSelection();
 
@@ -2331,7 +2369,17 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (error) {
       console.error("Lỗi đầu hàng:", error);
 
+      closeResignModal();
       showToast(error.message, "warning");
+      await loadGame();
+      checkGameResult();
+    } finally {
+      isResigning = false;
+      if (confirmResignButton) {
+        confirmResignButton.disabled = false;
+        confirmResignButton.style.opacity = "1";
+      }
+      closeResignModal();
     }
   }
 
@@ -3463,14 +3511,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function updateActionButtonsVisibility() {
     const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+    const isGameActive = gameStatus === "InProgress";
 
     if (isOnline) {
       // Chơi Online: Xóa/ẩn Đi lại, ẩn Gợi ý; Giữ Xin hòa và Đầu hàng; Hiện Chat box
       if (undoButton) undoButton.style.display = "none";
       if (hintMenuContainer) hintMenuContainer.style.display = "none";
       else if (hintButton) hintButton.style.display = "none";
-      if (drawButton) drawButton.style.display = "flex";
-      if (resignButton) resignButton.style.display = "flex";
+      if (drawButton) drawButton.style.display = isGameActive ? "flex" : "none";
+      if (resignButton) resignButton.style.display = isGameActive ? "flex" : "none";
       if (onlineChatBox) onlineChatBox.classList.remove("hidden");
     } else if (VS_COMPUTER) {
       // Chơi với máy: Có Đi lại, có Gợi ý, có Đầu hàng, ẩn Xin hòa; Ẩn Chat box
@@ -3478,7 +3527,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (hintMenuContainer) hintMenuContainer.style.display = "inline-block";
       else if (hintButton) hintButton.style.display = "flex";
       if (drawButton) drawButton.style.display = "none";
-      if (resignButton) resignButton.style.display = "flex";
+      if (resignButton) resignButton.style.display = isGameActive ? "flex" : "none";
       if (onlineChatBox) onlineChatBox.classList.add("hidden");
       updateUndoButtonUI();
     } else {
