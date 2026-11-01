@@ -980,6 +980,82 @@ document.addEventListener("DOMContentLoaded", function () {
     return `${mins < 10 ? "0" : ""}${mins}:${secs < 10 ? "0" : ""}${secs}`;
   }
 
+  let isHandlingTimeout = false;
+
+  async function handleTimeoutExpiry() {
+    if (isHandlingTimeout) return;
+    if (gameStatus !== "InProgress") return;
+    isHandlingTimeout = true;
+
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    playSound('timeout');
+
+    const losingColor = currentTurn; // Bên đang tới lượt đi bị hết giờ
+    const winningColor = losingColor === "Red" ? "Black" : "Red";
+    const newStatus = losingColor === "Red" ? "BlackWins" : "RedWins";
+
+    console.log(`[TIMEOUT] Hết thời gian lượt đi! Bên ${losingColor} bị xử thua.`);
+
+    const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+    const myColor = localStorage.getItem("onlinePlayerColor");
+    const isUserWinner = !isOnline ? (losingColor === "Black") : (myColor === winningColor);
+
+    let notifyMsg = "";
+    if (VS_COMPUTER) {
+      notifyMsg = losingColor === "Red"
+        ? "Hết thời gian 3 phút! Bạn đã bị xử thua vì rụng kim."
+        : "Máy đã hết thời gian 3 phút! Bạn giành chiến thắng vì máy rụng kim.";
+    } else if (isOnline) {
+      notifyMsg = losingColor === myColor
+        ? "Bạn đã hết thời gian 3 phút! Bạn bị xử thua do rụng kim."
+        : "Đối thủ đã hết thời gian 3 phút! Bạn giành chiến thắng do đối thủ rụng kim.";
+    } else {
+      const loserText = losingColor === "Red" ? "Quân Đỏ" : "Quân Đen";
+      const winnerText = winningColor === "Red" ? "Quân Đỏ" : "Quân Đen";
+      notifyMsg = `Hết thời gian 3 phút! ${loserText} bị xử thua do rụng kim. ${winnerText} giành chiến thắng!`;
+    }
+
+    showToast(notifyMsg, isUserWinner ? "success" : "danger");
+
+    gameStatus = newStatus;
+    remainingSeconds = 0;
+    updatePlayerStatus();
+    updateTurnStatus();
+    checkGameResult();
+
+    // Gửi yêu cầu cập nhật đồng bộ lên Backend API
+    if (gameId) {
+      try {
+        const jwtToken = localStorage.getItem("token") || localStorage.getItem("jwt_token") || "";
+        const headers = { "Content-Type": "application/json" };
+        if (jwtToken) headers["Authorization"] = "Bearer " + jwtToken;
+
+        const response = await fetch(`${API_BASE_URL}/${gameId}/timeout`, {
+          method: "POST",
+          headers: headers,
+          credentials: "include"
+        });
+
+        if (response.ok) {
+          const data = await response.json().catch(() => null);
+          if (data && data.game) {
+            updateGameFromApi(data.game);
+          }
+        }
+      } catch (err) {
+        console.warn("Lỗi gọi timeout API:", err);
+      }
+    }
+
+    setTimeout(() => {
+      isHandlingTimeout = false;
+    }, 1500);
+  }
+
   function updatePlayerTimers(data) {
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -991,8 +1067,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!redTimer || !blackTimer) return;
 
     if (data.status !== "InProgress") {
-      redTimer.classList.remove("danger");
-      blackTimer.classList.remove("danger");
+      redTimer.classList.remove("danger", "critical");
+      blackTimer.classList.remove("danger", "critical");
       return;
     }
 
@@ -1009,30 +1085,39 @@ document.addEventListener("DOMContentLoaded", function () {
     const waitingTimer = data.currentTurn === "Red" ? blackTimer : redTimer;
 
     waitingTimer.textContent = "03:00";
-    waitingTimer.classList.remove("danger");
+    waitingTimer.classList.remove("danger", "critical");
 
     activeTimer.textContent = formatTime(remainingSeconds);
     activeTimer.classList.toggle("danger", remainingSeconds <= 30);
+    activeTimer.classList.toggle("critical", remainingSeconds <= 5);
+
+    if (remainingSeconds <= 0) {
+      activeTimer.textContent = "00:00";
+      handleTimeoutExpiry();
+      return;
+    }
 
     timerInterval = setInterval(function () {
       if (remainingSeconds > 0) {
         remainingSeconds--;
         activeTimer.textContent = formatTime(remainingSeconds);
         activeTimer.classList.toggle("danger", remainingSeconds <= 30);
-      } else {
+        activeTimer.classList.toggle("critical", remainingSeconds <= 5);
+
+        // Phát âm thanh tích tắc đếm ngược các giây cuối (5, 4, 3, 2, 1)
+        if (remainingSeconds <= 5 && remainingSeconds > 0) {
+          playSound('countdown', remainingSeconds);
+        }
+      }
+
+      if (remainingSeconds <= 0) {
         clearInterval(timerInterval);
         timerInterval = null;
         activeTimer.textContent = "00:00";
         activeTimer.classList.add("danger");
+        activeTimer.classList.remove("critical");
 
-        // Nếu đang trong trận online và đối thủ hết giờ -> Tự động kích hoạt claim timeout
-        const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
-        if (isOnline && gameId && gameStatus === "InProgress") {
-          const myColor = localStorage.getItem("onlinePlayerColor");
-          if (currentTurn !== myColor) {
-            claimOpponentTimeout();
-          }
-        }
+        handleTimeoutExpiry();
       }
     }, 1000);
   }
@@ -1391,13 +1476,32 @@ document.addEventListener("DOMContentLoaded", function () {
       const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
       const isMyWin = !isOnline ? true : (localStorage.getItem("onlinePlayerColor") === "Red");
       const isTimeout = remainingSeconds <= 0;
-      const subtitle = isTimeout ? (isMyWin ? "Đối thủ đã hết 3 phút (Bị xử thua do rụng kim)!" : "Bạn đã hết 3 phút (Bị xử thua do rụng kim)!") : (isMyWin ? "Bạn đã giành chiến thắng!" : "Đối thủ đã giành chiến thắng!");
+      let subtitle = "";
+      if (isTimeout) {
+        if (VS_COMPUTER) {
+          subtitle = isMyWin
+            ? "Máy đã hết thời gian 3 phút (Bị xử thua do rụng kim)!"
+            : "Bạn đã hết thời gian 3 phút (Bị xử thua do rụng kim)!";
+        } else if (isOnline) {
+          subtitle = isMyWin
+            ? "Đối thủ đã hết 3 phút (Bị xử thua do rụng kim)!"
+            : "Bạn đã hết 3 phút (Bị xử thua do rụng kim)!";
+        } else {
+          subtitle = "Quân Đen đã hết thời gian! Quân Đỏ giành chiến thắng do rụng kim.";
+        }
+      } else {
+        if (isOnline) {
+          subtitle = isMyWin ? "Bạn đã giành chiến thắng!" : "Đối thủ đã giành chiến thắng!";
+        } else if (VS_COMPUTER) {
+          subtitle = isMyWin ? "Bạn đã đánh bại máy!" : "Máy đã giành chiến thắng!";
+        } else {
+          subtitle = "Quân Đỏ đã giành chiến thắng!";
+        }
+      }
       showGameResult(
         isMyWin ? "🏆 CHIẾN THẮNG" : "😔 THẤT BẠI",
         "🔴 QUÂN ĐỎ",
-        isOnline
-          ? subtitle
-          : (VS_COMPUTER ? "Bạn đã đánh bại máy!" : "Quân Đỏ đã giành chiến thắng!"),
+        subtitle,
       );
       return;
     }
@@ -1406,13 +1510,32 @@ document.addEventListener("DOMContentLoaded", function () {
       const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
       const isMyWin = !isOnline ? false : (localStorage.getItem("onlinePlayerColor") === "Black");
       const isTimeout = remainingSeconds <= 0;
-      const subtitle = isTimeout ? (isMyWin ? "Đối thủ đã hết 3 phút (Bị xử thua do rụng kim)!" : "Bạn đã hết 3 phút (Bị xử thua do rụng kim)!") : (isMyWin ? "Bạn đã giành chiến thắng!" : "Đối thủ đã giành chiến thắng!");
+      let subtitle = "";
+      if (isTimeout) {
+        if (VS_COMPUTER) {
+          subtitle = isMyWin
+            ? "Bạn đã giành chiến thắng!"
+            : "Hết thời gian! Bạn bị xử thua do rụng kim.";
+        } else if (isOnline) {
+          subtitle = isMyWin
+            ? "Đối thủ đã hết 3 phút (Bị xử thua do rụng kim)!"
+            : "Bạn đã hết 3 phút (Bị xử thua do rụng kim)!";
+        } else {
+          subtitle = "Quân Đỏ đã hết thời gian! Quân Đen giành chiến thắng do rụng kim.";
+        }
+      } else {
+        if (isOnline) {
+          subtitle = isMyWin ? "Bạn đã giành chiến thắng!" : "Đối thủ đã giành chiến thắng!";
+        } else if (VS_COMPUTER) {
+          subtitle = isMyWin ? "Bạn đã giành chiến thắng!" : "Máy đã giành chiến thắng!";
+        } else {
+          subtitle = "Quân Đen đã giành chiến thắng!";
+        }
+      }
       showGameResult(
         (VS_COMPUTER || isOnline) ? (isMyWin ? "🏆 CHIẾN THẮNG" : "😔 THẤT BẠI") : "🏆 CHIẾN THẮNG",
         "⚫ QUÂN ĐEN",
-        isOnline
-          ? subtitle
-          : (VS_COMPUTER ? "Máy đã giành chiến thắng!" : "Quân Đen đã giành chiến thắng!"),
+        subtitle,
       );
     }
   }
@@ -2200,6 +2323,7 @@ document.addEventListener("DOMContentLoaded", function () {
       gameStatus = null;
       isCheck = false;
       isComputerThinking = false;
+      isHandlingTimeout = false;
       undoCount = 0;
       previousMovesCount = 0;
       previousPieceCount = 0;
@@ -3593,7 +3717,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return audioCtx;
   }
 
-  function playSound(type) {
+  function playSound(type, arg) {
     if (!isSoundEnabled()) return;
     try {
       const ctx = getAudioContext();
@@ -3674,6 +3798,35 @@ document.addEventListener("DOMContentLoaded", function () {
           osc.start(now + i * 0.15);
           osc.stop(now + i * 0.15 + 0.3);
         });
+      } else if (type === 'countdown') {
+        // Âm thanh đếm ngược trong vài giây cuối: âm tick/beep dồn dập tăng dần cao độ
+        const secondsLeft = typeof arg === 'number' ? arg : 5;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        const freq = 780 + (5 - Math.max(1, Math.min(5, secondsLeft))) * 80;
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.7, now + 0.08);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } else if (type === 'timeout') {
+        // Tiếng còi buzzer báo hiệu hết giờ / rụng kim (2 tiếng buzzer trầm dứt khoát)
+        [440, 330].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now + i * 0.16);
+          gain.gain.setValueAtTime(0.45, now + i * 0.16);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.16 + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.16);
+          osc.stop(now + i * 0.16 + 0.2);
+        });
       }
     } catch (e) {
       console.warn('Lỗi phát âm thanh:', e);
@@ -3699,6 +3852,8 @@ document.addEventListener("DOMContentLoaded", function () {
       text = "Chiến thắng!";
     } else if (type === 'loss') {
       text = "Thất bại!";
+    } else if (type === 'timeout') {
+      text = "Hết giờ! Rụng kim!";
     }
 
     if (!text) return;

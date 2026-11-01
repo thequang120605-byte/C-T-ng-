@@ -61,13 +61,11 @@ namespace ChessCore.Services
 
             var now = DateTime.UtcNow;
 
-            // Quét các ván online đang InProgress và chưa quyết toán
+            // Quét các ván đang InProgress và chưa quyết toán đã vượt quá thời gian
             var activeGames = await dbContext.Games
                 .Include(g => g.Moves)
                 .Where(g => g.Status == GameStatus.InProgress &&
-                            g.ResultsProcessedAt == null &&
-                            g.GameMode != null && g.GameMode.StartsWith("Online") &&
-                            g.RedPlayerId.HasValue && g.BlackPlayerId.HasValue)
+                            g.ResultsProcessedAt == null)
                 .ToListAsync();
 
             if (activeGames.Count == 0) return;

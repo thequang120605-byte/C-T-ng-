@@ -418,34 +418,60 @@ namespace ChessCore.Controllers
             return Ok(new { success = true, message = "Đã hủy bàn thành công." });
         }
 
-        [Authorize]
+        [HttpPost("{id}/timeout")]
         [HttpPost("{id}/claim-timeout")]
         public async Task<IActionResult> ClaimTimeout(int id)
         {
-            if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
             var game = await _gameService.GetGameByIdAsync(id);
             if (game == null) return NotFound(new { message = "Không tìm thấy bàn cờ." });
-            if (game.Status != GameStatus.InProgress) return BadRequest(new { message = "Ván cờ không trong trạng thái đang diễn ra." });
-            if (game.RedPlayerId != userId && game.BlackPlayerId != userId) return Forbid();
-
-            // Sử dụng deadline thống nhất GetMoveDeadlineUtc
-            if (DateTime.UtcNow <= GameModes.GetMoveDeadlineUtc(game))
+            if (game.Status != GameStatus.InProgress)
             {
-                return BadRequest(new { message = "Thời gian của đối thủ vẫn chưa kết thúc." });
+                var existingBoard = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
+                return Ok(new { success = true, message = "Ván cờ đã kết thúc.", game = BuildGameResponse(game, existingBoard) });
+            }
+
+            // Với ván đấu online nhiều người chơi có định danh
+            if (game.RedPlayerId.HasValue && game.BlackPlayerId.HasValue && game.GameMode != null && game.GameMode.StartsWith("Online"))
+            {
+                if (TryGetCurrentUserId(out var userId))
+                {
+                    if (game.RedPlayerId != userId && game.BlackPlayerId != userId) return Forbid();
+                }
+                // Dung sai 2 giây đối với trễ mạng
+                if (DateTime.UtcNow.AddSeconds(2) < GameModes.GetMoveDeadlineUtc(game))
+                {
+                    return BadRequest(new { message = "Thời gian của lượt đi vẫn chưa kết thúc." });
+                }
             }
 
             // Bên đang tới lượt đi bị hết giờ -> Xử bên kia thắng
-            var winningStatus = game.CurrentTurn == PieceColor.Red ? GameStatus.BlackWins : GameStatus.RedWins;
-            var settlement = await _settlementService.SettleGameAsync(game.Id, winningStatus, "Đối thủ rụng kim (hết giờ)", HttpContext.RequestAborted);
-            if (!settlement.Success)
+            var losingColor = game.CurrentTurn;
+            var winningStatus = losingColor == PieceColor.Red ? GameStatus.BlackWins : GameStatus.RedWins;
+            var loserName = losingColor == PieceColor.Red ? "Quân Đỏ" : "Quân Đen";
+            var winnerName = losingColor == PieceColor.Red ? "Quân Đen" : "Quân Đỏ";
+
+            await _gameService.UpdateGameTurnAndStatusAsync(game.Id, losingColor, winningStatus);
+            var settlement = await _settlementService.SettleGameAsync(game.Id, winningStatus, $"{loserName} hết giờ (Rụng kim)", HttpContext.RequestAborted);
+            if (!settlement.Success && !settlement.AlreadyProcessed)
             {
                 return Conflict(new { message = settlement.Message });
             }
 
-            var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
-            var response = BuildGameResponse(game, board);
+            var updatedGame = await _gameService.GetGameByIdAsync(id) ?? game;
+            var board = GameRules.RebuildBoard(updatedGame.InitialFen, updatedGame.Moves, updatedGame.CurrentTurn);
+            var response = BuildGameResponse(updatedGame, board);
+
             await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("GameUpdated", response);
-            return Ok(new { success = true, message = "Đối thủ đã hết thời gian! Bạn được xử thắng vì đối thủ rụng kim.", game = response });
+            await _hubContext.Clients.Group(game.Id.ToString()).SendAsync("MatchEnded_Timeout", new
+            {
+                gameId = game.Id,
+                loserColor = losingColor.ToString(),
+                message = $"Hết thời gian! {loserName} đã bị xử thua vì rụng kim.",
+                redEloChange = settlement?.RedEloChange ?? 0,
+                blackEloChange = settlement?.BlackEloChange ?? 0
+            });
+
+            return Ok(new { success = true, message = $"Hết thời gian! {loserName} bị xử thua do rụng kim. {winnerName} giành chiến thắng.", game = response });
         }
 
         [Authorize]

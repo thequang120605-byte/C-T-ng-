@@ -577,9 +577,22 @@
     animation: timerPulse 0.8s infinite alternate;
 }
 
+.player-timer.critical {
+    color: #ffffff !important;
+    background-color: #ef4444 !important;
+    border-color: #b91c1c !important;
+    animation: timerCriticalPulse 0.4s infinite alternate !important;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.8) !important;
+}
+
 @keyframes timerPulse {
     from { transform: scale(1); }
     to { transform: scale(1.05); }
+}
+
+@keyframes timerCriticalPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
 }
 
 /* CAPTURED PIECES */
