@@ -130,6 +130,11 @@ namespace ChessCore.Data
                     PRIMARY KEY (`Id`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             ", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `UserEloHistories` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `UserEloHistories` MODIFY COLUMN `Reason` VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;", logger);
+            await ExecuteRawSqlSafely(dbContext, "UPDATE `UserEloHistories` SET `Reason` = 'Thắng trận PvP Online' WHERE `Reason` LIKE 'Th%ng tr%n PvP Online' OR `Reason` LIKE '%Th???ng%';", logger);
+            await ExecuteRawSqlSafely(dbContext, "UPDATE `UserEloHistories` SET `Reason` = 'Thua trận PvP Online' WHERE `Reason` LIKE 'Thua tr%n PvP Online' OR `Reason` LIKE '%tr???n%';", logger);
+            await ExecuteRawSqlSafely(dbContext, "UPDATE `UserEloHistories` SET `Reason` = 'Hòa trận PvP Online' WHERE `Reason` LIKE 'H%a tr%n PvP Online' OR `Reason` LIKE '%H???a%';", logger);
 
             // --- 8. BẢNG GameAnalyses ---
             await ExecuteRawSqlSafely(dbContext, @"

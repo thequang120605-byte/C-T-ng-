@@ -268,12 +268,18 @@ namespace ChessCore.Controllers
 
                 foreach (var h in sorted)
                 {
+                    string reason = h.Reason ?? "Ván đấu Online";
+                    if (reason.Contains("?"))
+                    {
+                        reason = h.EloChange > 0 ? "Thắng trận PvP Online" : (h.EloChange < 0 ? "Thua trận PvP Online" : "Hòa trận PvP Online");
+                    }
+
                     vm.EloHistory.Add(new EloPointDto
                     {
                         DateLabel = h.RecordedAt.ToString("dd/MM HH:mm"),
                         Elo = h.NewElo,
                         Change = h.EloChange,
-                        Reason = h.Reason ?? "Ván đấu Online"
+                        Reason = reason
                     });
                 }
             }

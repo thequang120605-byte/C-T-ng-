@@ -722,7 +722,11 @@
                                             var idx = context.dataIndex;
                                             var item = eloDataRaw[idx];
                                             var changeText = item.Change > 0 ? ('+' + item.Change) : (item.Change < 0 ? item.Change : '0');
-                                            return 'Elo: ' + item.Elo + ' (' + changeText + ') - ' + item.Reason;
+                                            var cleanReason = item.Reason || 'Ván đấu PvP Online';
+                                            if (cleanReason.indexOf('?') !== -1) {
+                                                cleanReason = item.Change > 0 ? 'Thắng trận PvP Online' : (item.Change < 0 ? 'Thua trận PvP Online' : 'Hòa trận PvP Online');
+                                            }
+                                            return 'Elo: ' + item.Elo + ' (' + changeText + ') - ' + cleanReason;
                                         }
                                     }
                                 }
