@@ -444,7 +444,7 @@
                     </g>
                     <g class="palace-lines"><line x1="350" y1="50" x2="550" y2="250" /><line x1="550" y1="50" x2="350" y2="250" /><line x1="350" y1="750" x2="550" y2="950" /><line x1="550" y1="750" x2="350" y2="950" /></g>
                     <g class="river-text"><text x="250" y="520">楚 河</text><text x="650" y="520">漢 界</text></g>
-                    <g id="replay-moves-layer"></g><g id="replay-pieces-layer"></g>
+                    <g id="replay-moves-layer"></g><g id="replay-pieces-layer"></g><g id="replay-last-move-layer" pointer-events="none"></g>
                 </svg>
             </div>
         </div>
@@ -688,6 +688,54 @@
                 evalBarRed.style.width = '50%';
                 document.getElementById('comment-title').textContent = 'Khởi đầu ván cờ';
                 document.getElementById('comment-text').textContent = 'Hãy bấm các nút điều hướng hoặc chọn nước đi bên dưới để xem AI nhận xét.';
+            }
+
+            // Highlight nước đi vừa đi (Kiểu A - Classic & Elegant)
+            const replayLastMoveLayer = document.getElementById('replay-last-move-layer');
+            if (replayLastMoveLayer) {
+                replayLastMoveLayer.replaceChildren();
+                if (step >= 0 && step < analyzedMoves.length) {
+                    const m = analyzedMoves[step];
+                    const fromCol = isBoardFlipped ? (8 - m.FromY) : m.FromY;
+                    const fromRow = isBoardFlipped ? (9 - m.FromX) : m.FromX;
+                    const toCol = isBoardFlipped ? (8 - m.ToY) : m.ToY;
+                    const toRow = isBoardFlipped ? (9 - m.ToX) : m.ToX;
+
+                    const fx = 50 + fromCol * 100;
+                    const fy = 50 + fromRow * 100;
+                    const tx = 50 + toCol * 100;
+                    const ty = 50 + toRow * 100;
+
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.setAttribute('class', 'last-move-group last-move-highlight');
+                    g.setAttribute('pointer-events', 'none');
+
+                    const fromCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    fromCircle.setAttribute('cx', fx);
+                    fromCircle.setAttribute('cy', fy);
+                    fromCircle.setAttribute('r', 32);
+                    fromCircle.setAttribute('class', 'last-move-from');
+                    fromCircle.setAttribute('pointer-events', 'none');
+
+                    const fromDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    fromDot.setAttribute('cx', fx);
+                    fromDot.setAttribute('cy', fy);
+                    fromDot.setAttribute('r', 3.5);
+                    fromDot.setAttribute('class', 'last-move-from-dot');
+                    fromDot.setAttribute('pointer-events', 'none');
+
+                    const toCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    toCircle.setAttribute('cx', tx);
+                    toCircle.setAttribute('cy', ty);
+                    toCircle.setAttribute('r', 47);
+                    toCircle.setAttribute('class', 'last-move-to');
+                    toCircle.setAttribute('pointer-events', 'none');
+
+                    g.appendChild(fromCircle);
+                    g.appendChild(fromDot);
+                    g.appendChild(toCircle);
+                    replayLastMoveLayer.appendChild(g);
+                }
             }
 
             // Highlight danh sách nước đi

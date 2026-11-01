@@ -264,6 +264,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const piecesLayer = document.getElementById("pieces-layer");
 
   const movesLayer = document.getElementById("moves-layer");
+  const lastMoveLayer = document.getElementById("last-move-layer");
+  let currentLastMove = null;
 
   const newGameButton = document.getElementById("new-game-btn");
 
@@ -641,6 +643,7 @@ document.addEventListener("DOMContentLoaded", function () {
     closeDrawOfferModal();
 
     clearSelection();
+    clearLastMoveHighlight();
 
     if (piecesLayer) {
       piecesLayer.innerHTML = "";
@@ -931,6 +934,14 @@ document.addEventListener("DOMContentLoaded", function () {
     previousPieceCount = currentPieceCount;
 
     renderMoveHistory(data.moves);
+
+    // Highlight nước đi vừa mới đi (Kiểu A - Classic & Elegant)
+    if (data.moves && data.moves.length > 0) {
+      const lastMove = data.moves[data.moves.length - 1];
+      renderLastMoveHighlight(lastMove.fromX, lastMove.fromY, lastMove.toX, lastMove.toY);
+    } else {
+      clearLastMoveHighlight();
+    }
 
     // Cập nhật Đánh giá thế trận (H1, H2, H3, Thước đo ưu thế) từ ArenaUI
     if (window.ArenaUI && typeof window.ArenaUI.update === "function") {
@@ -1791,6 +1802,8 @@ document.addEventListener("DOMContentLoaded", function () {
     initialPieces.forEach(function (piece) {
       createPiece(piece);
     });
+
+    refreshLastMoveHighlight();
   }
 
   // =====================================================
@@ -1916,6 +1929,84 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Lỗi valid moves:", error);
 
       clearMoveHighlights();
+    }
+  }
+
+  // =====================================================
+  // LAST MOVE HIGHLIGHT (KIỂU A - CLASSIC & ELEGANT)
+  // =====================================================
+
+  function clearLastMoveHighlight() {
+    currentLastMove = null;
+    const layer = lastMoveLayer || document.getElementById("last-move-layer");
+    if (layer) {
+      layer.innerHTML = "";
+    }
+  }
+
+  function renderLastMoveHighlight(fromX, fromY, toX, toY) {
+    const layer = lastMoveLayer || document.getElementById("last-move-layer");
+    if (!layer) return;
+
+    layer.innerHTML = "";
+
+    if (
+      typeof fromX !== "number" ||
+      typeof fromY !== "number" ||
+      typeof toX !== "number" ||
+      typeof toY !== "number"
+    ) {
+      currentLastMove = null;
+      return;
+    }
+
+    currentLastMove = { fromX, fromY, toX, toY };
+
+    const fromPos = getPosition(fromX, fromY);
+    const toPos = getPosition(toX, toY);
+
+    const group = document.createElementNS(SVG_NS, "g");
+    group.setAttribute("class", "last-move-group last-move-highlight");
+    group.setAttribute("pointer-events", "none");
+
+    // Nước đi cũ (from): Vòng tròn rỗng thanh lịch, chấm nhẹ ở tâm
+    const fromCircle = document.createElementNS(SVG_NS, "circle");
+    fromCircle.setAttribute("cx", fromPos.x);
+    fromCircle.setAttribute("cy", fromPos.y);
+    fromCircle.setAttribute("r", 32);
+    fromCircle.setAttribute("class", "last-move-from");
+    fromCircle.setAttribute("pointer-events", "none");
+
+    const fromDot = document.createElementNS(SVG_NS, "circle");
+    fromDot.setAttribute("cx", fromPos.x);
+    fromDot.setAttribute("cy", fromPos.y);
+    fromDot.setAttribute("r", 3.5);
+    fromDot.setAttribute("class", "last-move-from-dot");
+    fromDot.setAttribute("pointer-events", "none");
+
+    // Nước đi mới (to): Vòng tròn viền ngoài ôm trọn quân cờ
+    const toCircle = document.createElementNS(SVG_NS, "circle");
+    toCircle.setAttribute("cx", toPos.x);
+    toCircle.setAttribute("cy", toPos.y);
+    toCircle.setAttribute("r", 47);
+    toCircle.setAttribute("class", "last-move-to");
+    toCircle.setAttribute("pointer-events", "none");
+
+    group.appendChild(fromCircle);
+    group.appendChild(fromDot);
+    group.appendChild(toCircle);
+
+    layer.appendChild(group);
+  }
+
+  function refreshLastMoveHighlight() {
+    if (currentLastMove) {
+      renderLastMoveHighlight(
+        currentLastMove.fromX,
+        currentLastMove.fromY,
+        currentLastMove.toX,
+        currentLastMove.toY
+      );
     }
   }
 
@@ -2102,6 +2193,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       clearSelection();
       clearMoveHighlights();
+      clearLastMoveHighlight();
       updateBoardOrientation();
       updateUndoButtonUI();
 
@@ -2914,6 +3006,7 @@ document.addEventListener("DOMContentLoaded", function () {
       clearMoveHighlights();
       updateBoardOrientation();
       renderPieces();
+      refreshLastMoveHighlight();
       updatePlayerNames();
     });
   }
