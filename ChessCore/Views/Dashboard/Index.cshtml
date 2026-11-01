@@ -314,11 +314,46 @@
                                 <div class="history-meta">
                                     <span><i class="fa-regular fa-calendar"></i> @game.PlayedAt.ToString("dd/MM/yyyy HH:mm")</span>
                                     <span><i class="fa-solid fa-chess-board"></i> @game.TotalMoves nước</span>
-                                    <span style="color: var(--text-muted);"><i class="fa-solid fa-star" style="color: var(--accent-gold); font-size: 11px;"></i> Elo của bạn: <strong style="color: var(--accent-gold);">@game.PlayerElo</strong></span>
+                                    <span style="color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
+                                        <i class="fa-solid fa-star" style="color: var(--accent-gold); font-size: 11px;"></i> Elo của bạn: 
+                                        <strong style="color: var(--accent-gold);">@(game.PlayerElo ?? Model.CurrentUser.Elo)</strong>
+                                        @if (game.EloChange.HasValue && game.EloChange.Value > 0)
+                                        {
+                                            <span style="color: #10b981; font-weight: 800; font-size: 12px;">(+@game.EloChange.Value)</span>
+                                        }
+                                        else if (game.EloChange.HasValue && game.EloChange.Value < 0)
+                                        {
+                                            <span style="color: #ef4444; font-weight: 800; font-size: 12px;">(@game.EloChange.Value)</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="color: #64748b; font-weight: 700; font-size: 12px;">(±0)</span>
+                                        }
+                                    </span>
                                     <span class="history-review-hint"><i class="fa-solid fa-magnifying-glass-chart"></i> Phân tích ván đấu</span>
                                 </div>
                             </div>
-                            <div class="history-result @game.Result">@game.ResultText</div>
+                            <div class="history-status-group">
+                                <div class="history-result @game.Result">@game.ResultText</div>
+                                @if (game.EloChange.HasValue && game.EloChange.Value > 0)
+                                {
+                                    <div class="history-elo-delta positive" title="Được cộng @game.EloChange.Value điểm Elo">
+                                        <i class="fa-solid fa-arrow-trend-up"></i> +@game.EloChange.Value Elo
+                                    </div>
+                                }
+                                else if (game.EloChange.HasValue && game.EloChange.Value < 0)
+                                {
+                                    <div class="history-elo-delta negative" title="Bị trừ @(Math.Abs(game.EloChange.Value)) điểm Elo">
+                                        <i class="fa-solid fa-arrow-trend-down"></i> @game.EloChange.Value Elo
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="history-elo-delta neutral" title="Không thay đổi điểm Elo">
+                                        <i class="fa-solid fa-minus"></i> 0 Elo
+                                    </div>
+                                }
+                            </div>
                         </a>
                         index++;
                     }

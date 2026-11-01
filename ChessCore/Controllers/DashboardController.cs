@@ -222,19 +222,38 @@ namespace ChessCore.Controllers
                 });
             }
 
-            var recentIds = vm.RecentGames.Select(g => g.GameId).ToArray();
-            var ratingForGames = await _context.UserEloHistories.AsNoTracking()
-                .Where(h => h.UserId == userId && h.GameId.HasValue && recentIds.Contains(h.GameId.Value))
-                .OrderBy(h => h.Id).ToListAsync();
+            var allUserRatings = await _context.UserEloHistories.AsNoTracking()
+                .Where(h => h.UserId == userId)
+                .OrderBy(h => h.RecordedAt)
+                .ThenBy(h => h.Id)
+                .ToListAsync();
+
+            var gameRatingMap = allUserRatings
+                .Where(h => h.GameId.HasValue)
+                .GroupBy(h => h.GameId!.Value)
+                .ToDictionary(g => g.Key, g => g.Last());
+
             foreach (var item in vm.RecentGames)
             {
-                var rating = ratingForGames.LastOrDefault(h => h.GameId == item.GameId);
-                item.PlayerElo = rating?.NewElo;
-                item.EloChange = rating?.EloChange;
+                if (gameRatingMap.TryGetValue(item.GameId, out var rating))
+                {
+                    item.PlayerElo = rating.NewElo;
+                    item.EloChange = rating.EloChange;
+                }
+                else
+                {
+                    // Ván không tính Elo (PvE máy, tập luyện, hoặc ván chưa xếp hạng)
+                    var historicalRating = allUserRatings.LastOrDefault(h => h.RecordedAt <= item.PlayedAt.AddMinutes(15));
+                    item.PlayerElo = historicalRating?.NewElo ?? (allUserRatings.FirstOrDefault()?.OldElo ?? currentUser.Elo);
+                    item.EloChange = 0;
+                }
             }
-            var eloHistories = await _context.UserEloHistories.AsNoTracking()
-                .Where(h => h.UserId == userId).OrderByDescending(h => h.RecordedAt)
-                .ThenByDescending(h => h.Id).Take(30).ToListAsync();
+
+            var eloHistories = allUserRatings
+                .OrderByDescending(h => h.RecordedAt)
+                .ThenByDescending(h => h.Id)
+                .Take(30)
+                .ToList();
 
             if (eloHistories.Count > 0)
             {

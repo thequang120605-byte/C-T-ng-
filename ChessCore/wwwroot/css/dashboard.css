@@ -189,7 +189,46 @@
 
 .history-result.win { background: rgba(16, 185, 129, 0.1); color: #10b981; }
 .history-result.loss { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
 .history-result.draw { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+.history-status-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.history-elo-delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+}
+
+.history-elo-delta.positive {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.history-elo-delta.negative {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.history-elo-delta.neutral {
+    background: rgba(100, 116, 139, 0.12);
+    color: #64748b;
+    border: 1px solid rgba(100, 116, 139, 0.22);
+}
 
 .leaderboard-list {
     display: flex;
