@@ -230,6 +230,13 @@
     border: 1px solid rgba(100, 116, 139, 0.22);
 }
 
+.history-elo-delta.unrated {
+    background: rgba(148, 163, 184, 0.10);
+    color: #64748b;
+    border: 1px dashed rgba(148, 163, 184, 0.35);
+    font-size: 11.5px;
+}
+
 .leaderboard-list {
     display: flex;
     flex-direction: column;

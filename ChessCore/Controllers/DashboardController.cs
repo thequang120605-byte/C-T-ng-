@@ -170,24 +170,58 @@ namespace ChessCore.Controllers
                 }
             }
 
+            var allUserRatings = await _context.UserEloHistories.AsNoTracking()
+                .Where(h => h.UserId == userId)
+                .OrderBy(h => h.RecordedAt)
+                .ThenBy(h => h.Id)
+                .ToListAsync();
+
+            var gameRatingMap = allUserRatings
+                .Where(h => h.GameId.HasValue)
+                .GroupBy(h => h.GameId!.Value)
+                .ToDictionary(g => g.Key, g => g.Last());
+
+            var ratedGameIds = allUserRatings
+                .Where(h => h.GameId.HasValue)
+                .Select(h => h.GameId!.Value)
+                .ToHashSet();
+
             // Fetch Recent Games (Toàn bộ lịch sử ván đấu đã tham gia)
             var recentGames = await _context.Games
                 .Include(g => g.RedPlayer)
                 .Include(g => g.BlackPlayer)
                 .Include(g => g.Moves)
                 .Where(g => (g.RedPlayerId == userId || g.BlackPlayerId == userId) && g.Status != GameStatus.WaitingForPlayers)
-                .OrderByDescending(g => g.CreatedAt)
-                .Take(100)
+                .OrderByDescending(g => g.ResultsProcessedAt ?? g.LastMoveAt ?? g.CreatedAt)
+                .Take(250)
                 .ToListAsync();
+
+            // Đảm bảo tất cả các ván đấu được biểu diễn trên Biểu đồ phong độ Elo luôn luôn có mặt trong danh sách lịch sử đấu
+            var loadedGameIds = recentGames.Select(g => g.Id).ToHashSet();
+            var missingRatedIds = ratedGameIds.Where(id => !loadedGameIds.Contains(id)).ToList();
+            if (missingRatedIds.Count > 0)
+            {
+                var additionalRatedGames = await _context.Games
+                    .Include(g => g.RedPlayer)
+                    .Include(g => g.BlackPlayer)
+                    .Include(g => g.Moves)
+                    .Where(g => missingRatedIds.Contains(g.Id))
+                    .ToListAsync();
+                recentGames.AddRange(additionalRatedGames);
+                recentGames = recentGames
+                    .OrderByDescending(g => g.ResultsProcessedAt ?? g.LastMoveAt ?? g.CreatedAt)
+                    .ToList();
+            }
 
             foreach (var g in recentGames)
             {
                 bool isRed = g.RedPlayerId == userId;
                 var opponent = isRed ? g.BlackPlayer : g.RedPlayer;
-                string opponentName = (g.GameMode == GameModes.Online || g.GameMode.StartsWith("Online"))
+                bool isOnline = g.GameMode == GameModes.Online || g.GameMode.StartsWith("Online", StringComparison.OrdinalIgnoreCase);
+                string opponentName = isOnline
                     ? opponent?.Username ?? "Người chơi khác"
                     : g.GameMode == GameModes.PvE ? "Máy (AI)" : GameModes.Label(g.GameMode);
-                int? opponentElo = null; // Historical opponent rating was not stored.
+                int? opponentElo = isOnline ? opponent?.Elo : null;
                 string mode = GameModes.Label(g.GameMode);
 
                 string resultClass = "draw";
@@ -208,45 +242,27 @@ namespace ChessCore.Controllers
                     resultClass = "draw"; resultText = "Đang chơi";
                 }
 
+                bool isGameRated = gameRatingMap.TryGetValue(g.Id, out var rating);
+                int? playerElo = isGameRated ? rating!.NewElo : (int?)null;
+                int? eloChange = isGameRated ? rating!.EloChange : (int?)null;
+                DateTime playedAt = isGameRated 
+                    ? rating!.RecordedAt 
+                    : (g.ResultsProcessedAt ?? g.LastMoveAt ?? g.CreatedAt);
+
                 vm.RecentGames.Add(new GameHistoryItem
                 {
                     GameId = g.Id,
                     OpponentName = opponentName,
                     OpponentElo = opponentElo,
-                    PlayerElo = null,
+                    PlayerElo = playerElo,
+                    EloChange = eloChange,
+                    IsRated = isGameRated,
                     GameMode = mode,
-                    PlayedAt = g.CreatedAt,
+                    PlayedAt = playedAt,
                     TotalMoves = g.Moves.Count,
                     Result = resultClass,
                     ResultText = resultText
                 });
-            }
-
-            var allUserRatings = await _context.UserEloHistories.AsNoTracking()
-                .Where(h => h.UserId == userId)
-                .OrderBy(h => h.RecordedAt)
-                .ThenBy(h => h.Id)
-                .ToListAsync();
-
-            var gameRatingMap = allUserRatings
-                .Where(h => h.GameId.HasValue)
-                .GroupBy(h => h.GameId!.Value)
-                .ToDictionary(g => g.Key, g => g.Last());
-
-            foreach (var item in vm.RecentGames)
-            {
-                if (gameRatingMap.TryGetValue(item.GameId, out var rating))
-                {
-                    item.PlayerElo = rating.NewElo;
-                    item.EloChange = rating.EloChange;
-                }
-                else
-                {
-                    // Ván không tính Elo (PvE máy, tập luyện, hoặc ván chưa xếp hạng)
-                    var historicalRating = allUserRatings.LastOrDefault(h => h.RecordedAt <= item.PlayedAt.AddMinutes(15));
-                    item.PlayerElo = historicalRating?.NewElo ?? (allUserRatings.FirstOrDefault()?.OldElo ?? currentUser.Elo);
-                    item.EloChange = 0;
-                }
             }
 
             var eloHistories = allUserRatings

@@ -45,6 +45,7 @@ namespace ChessCore.ViewModels
         public int? OpponentElo { get; set; }
         public int? PlayerElo { get; set; }
         public int? EloChange { get; set; }
+        public bool IsRated { get; set; }
         public string GameMode { get; set; } = "PvE"; // "PvE" hoặc "PvP"
         public DateTime PlayedAt { get; set; }
         public int TotalMoves { get; set; }
