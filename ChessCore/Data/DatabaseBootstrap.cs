@@ -232,8 +232,6 @@ namespace ChessCore.Data
         {
             try
             {
-                await EnsureSchemaColumnsAndTablesAsync(dbContext, logger);
-
                 if (await dbContext.MasterGames.CountAsync() < 12)
                 {
                     var games = GetSeedMasterGames();
