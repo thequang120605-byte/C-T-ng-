@@ -74,13 +74,21 @@
 .mode-overlay {
     position: absolute;
     inset: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: rgba(241, 245, 249, 0.92);
+    background: rgba(241, 245, 249, 0.94);
     backdrop-filter: blur(8px);
     z-index: 50;
     padding: 20px;
+}
+
+body[data-theme="wood"] .mode-overlay,
+html[data-theme="wood"] .mode-overlay {
+    background: rgba(251, 245, 232, 0.94);
 }
 
 .mode-card {
