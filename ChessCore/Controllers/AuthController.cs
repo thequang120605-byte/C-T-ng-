@@ -53,8 +53,9 @@ namespace ChessCore.Controllers
             if (ModelState.IsValid)
             {
                 var inputUser = (model.Username ?? "").Trim();
+                var inputLower = inputUser.ToLowerInvariant();
                 var user = await _context.Users.FirstOrDefaultAsync(u => 
-                    u.Username == inputUser || u.Email == inputUser);
+                    u.Username.ToLower() == inputLower || u.Email.ToLower() == inputLower);
 
                 if (user != null && user.IsLocked)
                 {
@@ -403,15 +404,19 @@ namespace ChessCore.Controllers
             return RedirectToAction("ForgotPassword");
         }
 
+        private static bool IsConfiguredOAuthValue(string? val) =>
+            !string.IsNullOrWhiteSpace(val) &&
+            !val.StartsWith("YOUR_", StringComparison.OrdinalIgnoreCase);
+
         [HttpGet]
         public IActionResult GoogleLogin()
         {
             var clientId = _configuration["Authentication:Google:ClientId"];
             var clientSecret = _configuration["Authentication:Google:ClientSecret"];
 
-            if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
+            if (!IsConfiguredOAuthValue(clientId) || !IsConfiguredOAuthValue(clientSecret))
             {
-                TempData["ErrorMessage"] = "Chưa cấu hình Google ClientId/ClientSecret trong appsettings.json. Vui lòng cấu hình để sử dụng tính năng Đăng nhập bằng Google.";
+                TempData["ErrorMessage"] = "Đăng nhập Google chưa được kích hoạt trên máy chủ này (chưa cấu hình Google ClientId/ClientSecret thật). Vui lòng đăng nhập bằng Tên đăng nhập hoặc Email của bạn.";
                 return RedirectToAction("Login");
             }
 
@@ -594,9 +599,10 @@ namespace ChessCore.Controllers
 
                 using var smtp = new System.Net.Mail.SmtpClient
                 {
-                    Host = "smtp.gmail.com",
-                    Port = 587,
+                    Host = _configuration["Smtp:Host"] ?? "smtp.gmail.com",
+                    Port = int.TryParse(_configuration["Smtp:Port"], out int p) ? p : 587,
                     EnableSsl = true,
+                    Timeout = 10000,
                     DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = false,
                     Credentials = new System.Net.NetworkCredential(fromAddress.Address, senderPassword)
@@ -647,7 +653,9 @@ namespace ChessCore.Controllers
             }
 
             var inputUser = request.Username.Trim();
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == inputUser || u.Email == inputUser);
+            var inputLower = inputUser.ToLowerInvariant();
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.Username.ToLower() == inputLower || u.Email.ToLower() == inputLower);
 
             // FIX BUG_010: Rate Limiting & Lockout chống tấn công Brute-force mật khẩu
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";

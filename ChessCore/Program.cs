@@ -3,6 +3,7 @@ using ChessCore.Data;
 using ChessCore.Services;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 
 // Keep MVC's view lookup rooted at the ChessCore project when the app is
 // launched from the solution/repository root (for example by an IDE task).
@@ -60,6 +61,8 @@ var authBuilder = builder.Services.AddAuthentication(options =>
     options.LogoutPath = "/Auth/Logout";
     options.AccessDeniedPath = "/Auth/AccessDenied";
     options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
 
     // FIX BUG_003: Trả về HTTP 403 Forbidden thay vì 302 Redirect khi truy cập /Admin hoặc /api trái phép
@@ -103,17 +106,29 @@ var authBuilder = builder.Services.AddAuthentication(options =>
     };
 });
 
+static bool IsConfiguredOAuthValue(string? val) =>
+    !string.IsNullOrWhiteSpace(val) &&
+    !val.StartsWith("YOUR_", StringComparison.OrdinalIgnoreCase);
+
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+if (IsConfiguredOAuthValue(googleClientId) && IsConfiguredOAuthValue(googleClientSecret))
 {
     authBuilder.AddGoogle(options =>
     {
-        options.ClientId = googleClientId;
-        options.ClientSecret = googleClientSecret;
+        options.ClientId = googleClientId!;
+        options.ClientSecret = googleClientSecret!;
         options.CallbackPath = "/signin-google";
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
 }
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+});
 
 // Cấu hình CORS cho phép Frontend truy cập
 builder.Services.AddCors(options =>
@@ -204,6 +219,15 @@ app.Services.GetRequiredService<PuzzleCampaignService>().Start(
     Path.Combine(app.Environment.ContentRootPath, "Data", "Puzzles"),
     Path.Combine(app.Environment.ContentRootPath, "Data", "PuzzleCache"));
 
+// Hỗ trợ Reverse Proxy (Render / Cloud Run) đọc đúng X-Forwarded-Proto & X-Forwarded-For (https)
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -218,7 +242,7 @@ else
 // Bắt các mã lỗi HTTP như 404, 403, 500 và điều hướng sang trang lỗi thân thiện
 app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
 
-if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment() && string.IsNullOrEmpty(envPort))
 {
     app.UseHttpsRedirection();
 }
