@@ -106,6 +106,7 @@ namespace ChessCore.ViewModels
         public double WinRate { get; set; }
         public double AvgElo { get; set; }
         public int MaxElo { get; set; }
+        public int MinElo { get; set; }
         public int PuzzlesSolved { get; set; }
         public int SelectedCount { get; set; }
         public string DisplayEloText { get; set; } = string.Empty;

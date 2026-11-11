@@ -165,7 +165,7 @@
             <div class="stat-info">
                 <h3 id="kpiEloTitle">ĐIỂM ELO</h3>
                 <p class="stat-value" id="kpiEloValue">@Model.CurrentUser.Elo</p>
-                <span id="kpiEloSub" style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 3px;">Hạng #@Model.RankIndex</span>
+                <span id="kpiEloSub" class="stat-sub">Hạng #@Model.RankIndex · Điểm xếp hạng</span>
             </div>
         </div>
         <div class="stat-card">
@@ -173,7 +173,7 @@
             <div class="stat-info">
                 <h3 id="kpiWinRateTitle">TỈ LỆ THẮNG</h3>
                 <p class="stat-value" id="kpiWinRateValue">@Model.WinRate%</p>
-                <span id="kpiWinRateSub" style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 3px;">Ván hoàn tất</span>
+                <span id="kpiWinRateSub" class="stat-sub">Ván hoàn tất</span>
             </div>
         </div>
         <div class="stat-card">
@@ -181,7 +181,7 @@
             <div class="stat-info">
                 <h3 id="kpiGamesTitle">TỔNG SỐ TRẬN</h3>
                 <p class="stat-value" id="kpiGamesValue">@Model.CurrentUser.GamesPlayed</p>
-                <span id="kpiGamesSub" style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 3px;">Tổng ván đã tham gia</span>
+                <span id="kpiGamesSub" class="stat-sub">Tổng ván đã tham gia</span>
             </div>
         </div>
         <div class="stat-card">
@@ -189,7 +189,7 @@
             <div class="stat-info">
                 <h3 id="kpiPuzzlesTitle">CỜ THẾ ĐÃ GIẢI</h3>
                 <p class="stat-value" id="kpiPuzzlesValue">@Model.PuzzlesSolved</p>
-                <span id="kpiPuzzlesSub" style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 3px;">Bài thế giải thành công</span>
+                <span id="kpiPuzzlesSub" class="stat-sub">Bài thế giải thành công</span>
             </div>
         </div>
     </div>
@@ -1331,43 +1331,66 @@
                     var elEloTitle = document.getElementById('kpiEloTitle');
                     var kpiAvgElo = kpi.avgElo !== undefined ? kpi.avgElo : (kpi.AvgElo || 0);
                     var kpiMaxElo = kpi.maxElo !== undefined ? kpi.maxElo : (kpi.MaxElo || 0);
+                    var kpiMinElo = kpi.minElo !== undefined ? kpi.minElo : (kpi.MinElo || 0);
                     var kpiSelectedCount = kpi.selectedCount !== undefined ? kpi.selectedCount : (kpi.SelectedCount || 0);
-                    var kpiDisplayElo = kpi.displayEloText || kpi.DisplayEloText || (kpiAvgElo + '');
+                    var userList = data.users || data.Users || [];
 
                     if (elElo) {
-                        elElo.textContent = kpiDisplayElo;
-                        if (elEloSub) {
-                            elEloSub.textContent = kpiSelectedCount > 1 
-                                ? ('Trung bình: ' + kpiAvgElo + ' · Cao nhất: ' + kpiMaxElo)
-                                : 'Điểm Elo xếp hạng';
-                        }
+                        elElo.textContent = Math.round(kpiAvgElo);
                         if (elEloTitle) {
-                            elEloTitle.textContent = kpiSelectedCount > 1 ? 'ĐIỂM ELO (NHÓM)' : 'ĐIỂM ELO';
+                            elEloTitle.textContent = kpiSelectedCount > 1 ? 'ELO TRUNG BÌNH' : 'ĐIỂM ELO';
+                        }
+                        if (elEloSub) {
+                            if (kpiSelectedCount > 1) {
+                                var subHtml = 'Cao nhất: <b style="color: var(--accent-gold);">' + kpiMaxElo + '</b>';
+                                if (kpiMinElo && kpiMinElo !== kpiMaxElo) {
+                                    subHtml += ' · Thấp nhất: <b>' + kpiMinElo + '</b>';
+                                }
+                                elEloSub.innerHTML = subHtml;
+                            } else if (kpiSelectedCount === 1 && userList.length > 0) {
+                                var singleUser = userList[0];
+                                var rankVal = singleUser.rank || singleUser.Rank;
+                                elEloSub.textContent = (rankVal ? ('Hạng #' + rankVal + ' · ') : '') + (singleUser.username || singleUser.Username || 'Kỳ thủ');
+                            } else {
+                                elEloSub.textContent = 'Điểm Elo xếp hạng';
+                            }
                         }
                     }
 
                     var elWinRate = document.getElementById('kpiWinRateValue');
                     var elWinRateSub = document.getElementById('kpiWinRateSub');
+                    var elWinRateTitle = document.getElementById('kpiWinRateTitle');
                     var kpiWinRate = Number(kpi.winRate !== undefined ? kpi.winRate : (kpi.WinRate || 0));
                     if (elWinRate) {
                         elWinRate.textContent = kpiWinRate.toFixed(1) + '%';
-                        if (elWinRateSub) elWinRateSub.textContent = kpiSelectedCount > 1 ? 'Tỉ lệ thắng gộp của nhóm' : 'Ván hoàn tất';
+                        if (elWinRateTitle) elWinRateTitle.textContent = 'TỈ LỆ THẮNG';
+                        if (elWinRateSub) {
+                            elWinRateSub.textContent = kpiSelectedCount > 1 ? ('Tính trên ' + kpiSelectedCount + ' tài khoản') : 'Ván hoàn tất';
+                        }
                     }
 
                     var elGames = document.getElementById('kpiGamesValue');
                     var elGamesSub = document.getElementById('kpiGamesSub');
+                    var elGamesTitle = document.getElementById('kpiGamesTitle');
                     var kpiGames = kpi.totalGames !== undefined ? kpi.totalGames : (kpi.TotalGames || 0);
                     if (elGames) {
                         elGames.textContent = kpiGames;
-                        if (elGamesSub) elGamesSub.textContent = kpiSelectedCount > 1 ? ('Tổng ván đấu của ' + kpiSelectedCount + ' tài khoản') : 'Tổng ván đã tham gia';
+                        if (elGamesTitle) elGamesTitle.textContent = 'TỔNG SỐ TRẬN';
+                        if (elGamesSub) {
+                            elGamesSub.textContent = kpiSelectedCount > 1 ? ('Của ' + kpiSelectedCount + ' tài khoản') : 'Tổng ván đã tham gia';
+                        }
                     }
 
                     var elPuzzles = document.getElementById('kpiPuzzlesValue');
                     var elPuzzlesSub = document.getElementById('kpiPuzzlesSub');
+                    var elPuzzlesTitle = document.getElementById('kpiPuzzlesTitle');
                     var kpiPuzzles = kpi.puzzlesSolved !== undefined ? kpi.puzzlesSolved : (kpi.PuzzlesSolved || 0);
                     if (elPuzzles) {
                         elPuzzles.textContent = kpiPuzzles;
-                        if (elPuzzlesSub) elPuzzlesSub.textContent = kpiSelectedCount > 1 ? 'Tổng cờ thế giải thành công' : 'Bài thế giải thành công';
+                        if (elPuzzlesTitle) elPuzzlesTitle.textContent = 'CỜ THẾ ĐÃ GIẢI';
+                        if (elPuzzlesSub) {
+                            elPuzzlesSub.textContent = kpiSelectedCount > 1 ? ('Của ' + kpiSelectedCount + ' tài khoản') : 'Bài thế giải thành công';
+                        }
                     }
 
                     // 2. Cập nhật bảng Mode Stats
@@ -1570,13 +1593,27 @@
 
                 function renderEmptyStats() {
                     var elElo = document.getElementById('kpiEloValue');
+                    var elEloTitle = document.getElementById('kpiEloTitle');
+                    var elEloSub = document.getElementById('kpiEloSub');
                     var elWinRate = document.getElementById('kpiWinRateValue');
+                    var elWinRateSub = document.getElementById('kpiWinRateSub');
                     var elGames = document.getElementById('kpiGamesValue');
+                    var elGamesSub = document.getElementById('kpiGamesSub');
                     var elPuzzles = document.getElementById('kpiPuzzlesValue');
+                    var elPuzzlesSub = document.getElementById('kpiPuzzlesSub');
+
                     if (elElo) elElo.textContent = '0';
+                    if (elEloTitle) elEloTitle.textContent = 'ĐIỂM ELO';
+                    if (elEloSub) elEloSub.textContent = 'Chưa chọn tài khoản';
+
                     if (elWinRate) elWinRate.textContent = '0.0%';
+                    if (elWinRateSub) elWinRateSub.textContent = 'Chưa chọn tài khoản';
+
                     if (elGames) elGames.textContent = '0';
+                    if (elGamesSub) elGamesSub.textContent = 'Chưa chọn tài khoản';
+
                     if (elPuzzles) elPuzzles.textContent = '0';
+                    if (elPuzzlesSub) elPuzzlesSub.textContent = 'Chưa chọn tài khoản';
 
                     var panel = document.getElementById('selectedUsersComparisonPanel');
                     if (panel) panel.style.display = 'none';

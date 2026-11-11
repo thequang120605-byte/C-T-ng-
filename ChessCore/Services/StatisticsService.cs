@@ -237,10 +237,11 @@ public sealed class StatisticsService(AppDbContext db)
         int totalPuzzlesSum = userDtos.Sum(u => u.PuzzlesSolved);
         double avgElo = userDtos.Count > 0 ? Math.Round(userDtos.Average(u => u.Elo), 0) : 1200;
         int maxElo = userDtos.Count > 0 ? userDtos.Max(u => u.Elo) : 1200;
+        int minElo = userDtos.Count > 0 ? userDtos.Min(u => u.Elo) : 1200;
 
         string displayEloText = userDtos.Count == 1 
             ? userDtos[0].Elo.ToString()
-            : $"{avgElo:0} (Cao nhất: {maxElo})";
+            : $"{avgElo:0}";
 
         var modeDist = modeStats.ToDictionary(m => m.Mode, m => m.Created);
 
@@ -252,6 +253,7 @@ public sealed class StatisticsService(AppDbContext db)
                 WinRate = avgWinRate,
                 AvgElo = avgElo,
                 MaxElo = maxElo,
+                MinElo = minElo,
                 PuzzlesSolved = totalPuzzlesSum,
                 SelectedCount = userDtos.Count,
                 DisplayEloText = displayEloText
