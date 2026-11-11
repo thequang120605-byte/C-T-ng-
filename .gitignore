@@ -21,4 +21,7 @@ all_mcqs.txt
 questions.txt
 potential_multi.txt
 
+*.db
+__pycache__/
+
 docs/~$*
