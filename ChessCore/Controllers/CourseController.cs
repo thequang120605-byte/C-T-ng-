@@ -183,6 +183,12 @@ namespace ChessCore.Controllers
                     calculatedScore = (int)Math.Round(100.0 * correctCount / questions.Count);
                     calculatedPassed = calculatedScore >= 70; // Đạt từ 70% trở lên
                 }
+                else if (request.IsCompleted && request.QuizScore >= 70)
+                {
+                    // Tuong thich nguoc: Khi client hoac ben thu ba da kiem tra bai trac nghiem
+                    calculatedScore = Math.Clamp(request.QuizScore, 0, 100);
+                    calculatedPassed = true;
+                }
                 else
                 {
                     calculatedScore = 0;
@@ -194,7 +200,13 @@ namespace ChessCore.Controllers
             var userId = GetUserId();
             if (userId is null)
             {
-                return Ok(new { progress = new { isCompleted = calculatedPassed, bestQuizScore = clampedQuizScore }, isGuest = true });
+                return Ok(new
+                {
+                    progress = new { isCompleted = calculatedPassed, bestQuizScore = clampedQuizScore },
+                    isGuest = true,
+                    isCompleted = calculatedPassed,
+                    bestQuizScore = clampedQuizScore
+                });
             }
 
             var progress = await _context.UserCourseProgresses
@@ -219,7 +231,13 @@ namespace ChessCore.Controllers
                 progress.CompletedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return Ok(new { progress.IsCompleted, progress.BestQuizScore });
+            return Ok(new
+            {
+                progress = new { isCompleted = progress.IsCompleted, bestQuizScore = progress.BestQuizScore },
+                isGuest = false,
+                isCompleted = progress.IsCompleted,
+                bestQuizScore = progress.BestQuizScore
+            });
         }
 
         // =========================================================

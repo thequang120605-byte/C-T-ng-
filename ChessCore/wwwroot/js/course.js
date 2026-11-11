@@ -3,12 +3,43 @@
     const token = document.querySelector('#course-antiforgery input[name="__RequestVerificationToken"]')?.value;
     let currentLessonId = 0;
     let attempts = 0;
+    let hasCompletedLessonInSession = false;
 
-    function saveProgress(completed, score) {
+    function markLessonCompletedInUI(lessonId, score) {
+        const card = document.getElementById(`lesson-${lessonId}`);
+        if (!card) return;
+        card.classList.add('completed');
+        const label = card.querySelector('.lesson-label');
+        if (label) {
+            label.innerHTML = '<i class="fa-solid fa-circle-check"></i> Đã hoàn thành';
+        }
+        const openBtn = card.querySelector('.lesson-open');
+        if (openBtn) {
+            openBtn.innerHTML = '<i class="fa-solid fa-play"></i> Ôn lại bài';
+        }
+        let scoreEl = card.querySelector('.lesson-score');
+        if (!scoreEl && score > 0) {
+            scoreEl = document.createElement('span');
+            scoreEl.className = 'lesson-score';
+            card.querySelector('.lesson-actions')?.appendChild(scoreEl);
+        }
+        if (scoreEl && score > 0) {
+            scoreEl.textContent = `Quiz: ${score}%`;
+        }
+    }
+
+    function saveProgress(completed, score, answers) {
         return fetch('/Course/SaveProgress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
-            body: JSON.stringify({ lessonId: currentLessonId, isCompleted: completed, quizScore: score || 0, quizAttempts: attempts, lastPosition: 0 })
+            body: JSON.stringify({
+                lessonId: currentLessonId,
+                isCompleted: completed,
+                quizScore: score || 0,
+                quizAttempts: attempts,
+                lastPosition: 0,
+                answers: answers || null
+            })
         });
     }
 
@@ -281,6 +312,9 @@
         if (studyView) studyView.hidden = true;
         if (courseLessons) courseLessons.hidden = false;
         host.replaceChildren();
+        if (hasCompletedLessonInSession) {
+            window.location.reload();
+        }
     }
 
     if (btnBackToModules) {
@@ -327,8 +361,15 @@
         attempts++;
         let correct = 0;
         const questions = host.querySelectorAll('.quiz-question');
+        const userAnswers = {};
+
         questions.forEach(question => {
             const answer = question.querySelector('.selected');
+            const qId = question.dataset.questionId ? Number(question.dataset.questionId) : 0;
+            const userOption = answer ? Number(answer.dataset.option) : -1;
+            if (qId > 0 && userOption >= 0) {
+                userAnswers[qId] = userOption;
+            }
             const isCorrect = answer && Number(answer.dataset.option) === Number(question.dataset.answer);
             if (isCorrect) correct++;
             question.classList.add('answered');
@@ -337,21 +378,49 @@
                 option.classList.toggle('wrong', option.classList.contains('selected') && !isCorrect);
             });
         });
+
         const score = questions.length ? Math.round(correct * 100 / questions.length) : 0;
         const result = host.querySelector('.quiz-result');
-        if (result) { result.textContent = `Kết quả: ${correct}/${questions.length} (${score}%)`; result.dataset.score = score; }
-        saveProgress(score === 100, score).then(async response => {
-            if (score === 100 && response.ok) {
+        if (result) {
+            result.textContent = `Kết quả: ${correct}/${questions.length} (${score}%)`;
+            result.dataset.score = score;
+        }
+
+        const isPassed = score === 100;
+        saveProgress(isPassed, score, userAnswers).then(async response => {
+            if (response.ok) {
                 const data = await response.json().catch(() => ({}));
-                if (data.isGuest) {
-                    result.textContent += ' - Xuất sắc! (Đăng nhập để lưu huy hiệu này)';
-                    result.classList.add('success');
-                } else {
-                    result.textContent += ' - Bài học đã hoàn thành!';
-                    result.classList.add('success');
-                    setTimeout(() => window.location.reload(), 900);
+                const serverCompleted = data.isCompleted || (data.progress && data.progress.isCompleted) || isPassed;
+                if (serverCompleted && isPassed) {
+                    hasCompletedLessonInSession = true;
+                    markLessonCompletedInUI(currentLessonId, score);
+
+                    if (data.isGuest) {
+                        try {
+                            const guestCache = JSON.parse(localStorage.getItem('course.guestProgress') || '{}');
+                            guestCache[currentLessonId] = { completed: true, score: score };
+                            localStorage.setItem('course.guestProgress', JSON.stringify(guestCache));
+                        } catch (e) {}
+
+                        result.textContent += ' - Xuất sắc! (Đăng nhập để lưu vĩnh viễn tiến độ này)';
+                        result.classList.add('success');
+                    } else {
+                        result.textContent += ' - Bài học đã hoàn thành!';
+                        result.classList.add('success');
+                        setTimeout(() => window.location.reload(), 1000);
+                    }
                 }
             }
         });
     }
+
+    try {
+        const guestCache = JSON.parse(localStorage.getItem('course.guestProgress') || '{}');
+        Object.keys(guestCache).forEach(id => {
+            const item = guestCache[id];
+            if (item && item.completed) {
+                markLessonCompletedInUI(Number(id), item.score);
+            }
+        });
+    } catch (e) {}
 })();

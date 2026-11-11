@@ -195,7 +195,7 @@
                                             @foreach (var question in lesson.Questions)
                                             {
                                                 var questionOptions = JsonSerializer.Deserialize<List<string>>(question.OptionsJson) ?? [];
-                                                <div class="quiz-question" data-answer="@question.CorrectAnswer">
+                                                <div class="quiz-question" data-question-id="@question.Id" data-answer="@question.CorrectAnswer">
                                                     <div class="quiz-question-title">@question.Question</div>
                                                     <div class="quiz-options">
                                                         @for (var i = 0; i < questionOptions.Count; i++) { <button type="button" class="quiz-option-btn" data-option="@i">@questionOptions[i]</button> }
