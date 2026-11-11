@@ -138,7 +138,7 @@ namespace ChessCore.Engine
                 : new Board();
 
             var fenHistory = new List<(string Fen, bool IsCheck, PieceColor ColorJustMoved)>();
-            fenHistory.Add((simBoard.ToFen().Split(' ')[0], false, PieceColor.Black));
+            fenHistory.Add((GetPositionKey(simBoard), false, PieceColor.Black));
 
             foreach (var m in orderedMoves)
             {
@@ -149,7 +149,7 @@ namespace ChessCore.Engine
                     simBoard.Grid[m.FromX, m.FromY] = null;
                     simBoard.SwitchTurn();
                     bool check = MoveGenerator.CheckIfInCheck(simBoard, simBoard.CurrentTurn);
-                    fenHistory.Add((simBoard.ToFen().Split(' ')[0], check, m.PieceColor));
+                    fenHistory.Add((GetPositionKey(simBoard), check, m.PieceColor));
                 }
             }
 
@@ -165,24 +165,30 @@ namespace ChessCore.Engine
                 }
             }
 
-            // Nếu lặp lại từ 3 lần trở lên
+            // Nếu lặp lại đúng cùng thế cờ và cùng bên đi lượt từ 3 lần trở lên
             if (matchIndices.Count >= 3)
             {
-                // Kiểm tra xem bên vừa đi có phải đang chiếu tướng liên tục để ép lặp không
+                // Kiểm tra xem bên vừa đi có chiếu tướng liên tục xuyên suốt các lần lặp gần nhất không
                 var lastMover = orderedMoves[^1].PieceColor;
-                int consecutiveChecks = 0;
-                for (int i = orderedMoves.Count - 1; i >= Math.Max(0, orderedMoves.Count - 6); i--)
+                int cycleStart = matchIndices[^2];
+                bool allLastMoverMovesWereChecks = true;
+                int moverChecksInCycle = 0;
+
+                for (int i = cycleStart + 1; i < fenHistory.Count; i++)
                 {
-                    if (orderedMoves[i].PieceColor == lastMover)
+                    if (fenHistory[i].ColorJustMoved == lastMover)
                     {
-                        if (fenHistory[i + 1].IsCheck)
+                        if (fenHistory[i].IsCheck)
+                            moverChecksInCycle++;
+                        else
                         {
-                            consecutiveChecks++;
+                            allLastMoverMovesWereChecks = false;
+                            break;
                         }
                     }
                 }
 
-                if (consecutiveChecks >= 3)
+                if (allLastMoverMovesWereChecks && moverChecksInCycle >= 1 && fenHistory[^1].IsCheck)
                 {
                     // Phạm luật Chiếu dai: Bên chiếu bị xử thua
                     GameStatus loserStatus = lastMover == PieceColor.Red ? GameStatus.BlackWins : GameStatus.RedWins;
@@ -195,6 +201,12 @@ namespace ChessCore.Engine
             }
 
             return (false, GameStatus.InProgress, "");
+        }
+
+        private static string GetPositionKey(Board b)
+        {
+            var parts = b.ToFen().Split(' ');
+            return parts.Length >= 2 ? parts[0] + " " + parts[1] : parts[0];
         }
     }
 }

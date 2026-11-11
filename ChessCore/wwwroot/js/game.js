@@ -676,6 +676,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     VS_COMPUTER = false;
 
+    isOnlineMode = false;
+
+    isMakingMove = false;
+
+    isHandlingTimeout = false;
+
     gameId = null;
 
     currentTurn = null;
@@ -699,6 +705,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     localStorage.removeItem("xiangqiGameId");
     localStorage.removeItem("manualBoardFlipped");
+    localStorage.removeItem("isOnlineMode");
+    localStorage.removeItem("onlinePlayerColor");
+    localStorage.removeItem("onlineOpponentName");
     updateBoardOrientation();
 
     if (playerVsPlayerButton) {
@@ -882,6 +891,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // UPDATE GAME
   // =====================================================
 
+  function getCurrentDbUserId() {
+    const el = document.querySelector(".game-view-container");
+    const raw = el ? el.getAttribute("data-current-user-id") : "";
+    const parsed = raw ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
   function updateGameFromApi(data) {
     if (!data) {
       return;
@@ -902,6 +918,32 @@ document.addEventListener("DOMContentLoaded", function () {
       } else if (data.status === "WaitingForPlayers") {
         cancelWaitBtn.style.display = "";
       }
+    }
+
+    // Đồng bộ chính xác chế độ chơi & màu quân cầm từ server để không bị kẹt/sai lệch localStorage
+    const apiMode = (data.gameMode || "").toLowerCase();
+    if (apiMode.startsWith("online")) {
+      isOnlineMode = true;
+      VS_COMPUTER = false;
+      IS_AI_VS_AI = false;
+      localStorage.setItem("isOnlineMode", "true");
+
+      const myDbUserId = getCurrentDbUserId();
+      if (myDbUserId) {
+        if (data.redPlayerId === myDbUserId && data.blackPlayerId !== myDbUserId) {
+          localStorage.setItem("onlinePlayerColor", "Red");
+        } else if (data.blackPlayerId === myDbUserId && data.redPlayerId !== myDbUserId) {
+          localStorage.setItem("onlinePlayerColor", "Black");
+        }
+      }
+    } else if (apiMode) {
+      isOnlineMode = false;
+      localStorage.removeItem("isOnlineMode");
+      localStorage.removeItem("onlinePlayerColor");
+    }
+
+    if (data.status === "InProgress") {
+      isHandlingTimeout = false;
     }
 
     currentTurn = data.currentTurn;
@@ -1095,7 +1137,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (typeof data.remainingSeconds === "number") {
       remainingSeconds = data.remainingSeconds;
     } else if (data.lastMoveAt) {
-      const elapsed = Math.floor((Date.now() - new Date(data.lastMoveAt).getTime()) / 1000);
+      const isoStr = (typeof data.lastMoveAt === "string" && !data.lastMoveAt.endsWith("Z") && !data.lastMoveAt.includes("+"))
+        ? data.lastMoveAt + "Z"
+        : data.lastMoveAt;
+      const elapsed = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
       remainingSeconds = Math.max(0, 180 - elapsed);
     } else {
       remainingSeconds = 180;
@@ -1996,6 +2041,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (gameStatus !== "InProgress") {
+        checkGameResult();
         return;
       }
 
@@ -2007,11 +2053,12 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const isOnlineMode = localStorage.getItem("isOnlineMode") === "true";
-      if (isOnlineMode) {
+      const onlineActive = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+      if (onlineActive) {
           const myColor = localStorage.getItem("onlinePlayerColor");
-          if (currentTurn !== myColor) {
-              return; 
+          if (myColor && currentTurn !== myColor) {
+              showToast(`Đang là lượt của ${currentTurn === "Red" ? "Quân Đỏ" : "Quân Đen"}!`, "info");
+              return;
           }
       }
 
@@ -2086,7 +2133,14 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error("Không thể lấy nước đi");
+        const errData = await response.json().catch(() => null);
+        if (errData?.message) {
+          showToast(errData.message, "warning");
+        }
+        if (response.status === 400 || response.status === 403) {
+          await loadGame();
+        }
+        throw new Error(errData?.message || "Không thể lấy nước đi");
       }
 
       const data = await response.json();
@@ -4842,11 +4896,17 @@ document.addEventListener("DOMContentLoaded", function () {
   async function requestOnlineRematch() {
     if (!gameId) return;
     try {
-      showToast("Đang tạo ván mới và hoán đổi màu quân...", "info");
       const response = await fetch(`${API_BASE_URL}/${gameId}/rematch`, { method: "POST" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         showToast(data.message || "Không thể khởi tạo ván đấu mới.", "warning");
+        return;
+      }
+      if (data.isOffer) {
+        showToast(data.message || "Đã gửi lời mời tái đấu tới đối thủ. Vui lòng chờ đối thủ đồng ý!", "info");
+        return;
+      }
+      if (!data.id) {
         return;
       }
       closeGameResult();

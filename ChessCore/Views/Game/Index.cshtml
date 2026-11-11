@@ -1,10 +1,11 @@
 @{
     ViewData["Title"] = "Chơi Cờ";
+    var currentUserIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
 }
 
 <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" />
 
-<div class="game-view-container">
+<div class="game-view-container" data-current-user-id="@currentUserIdClaim">
 
     <!-- ===================================================== -->
     <!-- MÀN HÌNH CHỌN CHẾ ĐỘ (MODE SELECTION) -->

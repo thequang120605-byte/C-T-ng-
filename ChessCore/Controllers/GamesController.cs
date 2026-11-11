@@ -983,7 +983,18 @@ namespace ChessCore.Controllers
             board.SetCurrentTurn(nextTurn);
             GameStatus newStatus = GameRules.StatusAfterMove(board);
 
-            var repCheck = GameRules.CheckRepetitionRule(game.InitialFen, game.Moves);
+            var movesWithCurrent = (game.Moves ?? new List<Move>()).ToList();
+            movesWithCurrent.Add(new Move
+            {
+                MoveOrder = movesWithCurrent.Any() ? movesWithCurrent.Max(m => m.MoveOrder) + 1 : 0,
+                FromX = request.FromX,
+                FromY = request.FromY,
+                ToX = request.ToX,
+                ToY = request.ToY,
+                PieceType = movingPiece.Type,
+                PieceColor = movingPiece.Color
+            });
+            var repCheck = GameRules.CheckRepetitionRule(game.InitialFen, movesWithCurrent);
             if (repCheck.HasViolation)
             {
                 newStatus = repCheck.ResultStatus;
@@ -1843,10 +1854,10 @@ namespace ChessCore.Controllers
             // TRẢ RESPONSE
             // =================================================
 
-            var lastAction = game.LastMoveAt ?? game.CreatedAt;
+            var lastActionUtc = DateTime.SpecifyKind(game.LastMoveAt ?? game.CreatedAt, DateTimeKind.Utc);
             int limitSec = (game.TimeControlMinutes > 0 ? game.TimeControlMinutes : 3) * 60;
             var remainingSeconds = game.Status == GameStatus.InProgress
-                ? Math.Max(0, limitSec - (int)(DateTime.UtcNow - lastAction).TotalSeconds)
+                ? Math.Max(0, limitSec - (int)(DateTime.UtcNow - lastActionUtc).TotalSeconds)
                 : 0;
             var neuralScore = NeuralNetworkEvaluator.EvaluateNeural(board, PieceColor.Red);
 
@@ -1882,10 +1893,12 @@ namespace ChessCore.Controllers
                     LastMoveEval = lastMoveEval,
 
                 CreatedAt =
-                    game.CreatedAt,
+                    DateTime.SpecifyKind(game.CreatedAt, DateTimeKind.Utc),
 
                 LastMoveAt =
-                    game.LastMoveAt,
+                    game.LastMoveAt.HasValue
+                        ? DateTime.SpecifyKind(game.LastMoveAt.Value, DateTimeKind.Utc)
+                        : null,
 
                 RemainingSeconds =
                     remainingSeconds,
