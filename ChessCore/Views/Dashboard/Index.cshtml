@@ -242,7 +242,7 @@
                             pSumInProgress += r.InProgress;
                             pSumWaiting += r.Waiting;
                             pSumFinished += r.Finished;
-                            if (r.Mode == "Online" || r.Mode == "PvE")
+                            if (r.Mode != "AiVsAi")
                             {
                                 pSumWins += r.Wins;
                                 pSumLosses += r.Losses;
@@ -261,15 +261,15 @@
                                 <td class="col-inprogress" style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.InProgress</td>
                                 <td class="col-waiting" style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.Waiting</td>
                                 <td class="col-finished" style="padding: 12px 14px; text-align: center; font-weight: 700; color: var(--text-main);">@r.Finished</td>
-                                <td class="col-wins" style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;">@((r.Mode == "Online" || r.Mode == "PvE") ? r.Wins.ToString() : "—")</td>
-                                <td class="col-losses" style="padding: 12px 14px; text-align: center; font-weight: 700; color: #ef4444;">@((r.Mode == "Online" || r.Mode == "PvE") ? r.Losses.ToString() : "—")</td>
+                                <td class="col-wins" style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;">@((r.Mode != "AiVsAi") ? r.Wins.ToString() : "—")</td>
+                                <td class="col-losses" style="padding: 12px 14px; text-align: center; font-weight: 700; color: #ef4444;">@((r.Mode != "AiVsAi") ? r.Losses.ToString() : "—")</td>
                                 <td class="col-draws" style="padding: 12px 14px; text-align: center; font-weight: 600; color: #f59e0b;">@r.Draws</td>
                                 <td class="col-winrate" style="padding: 12px 18px; text-align: right; font-weight: 800; color: var(--accent-gold);">
-                                    @((r.Mode == "Online" || r.Mode == "PvE") ? r.WinRate.ToString("0.0") + "%" : "—")
+                                    @((r.Mode != "AiVsAi") ? r.WinRate.ToString("0.0") + "%" : "—")
                                 </td>
                             </tr>
                         }
-                        int pFinishedRanked = Model.ModeStats.Where(m => m.Mode == "Online" || m.Mode == "PvE").Sum(m => m.Finished);
+                        int pFinishedRanked = Model.ModeStats.Where(m => m.Mode != "AiVsAi").Sum(m => m.Finished);
                         double pAvgWinRate = pFinishedRanked > 0 ? Math.Round((double)pSumWins * 100.0 / pFinishedRanked, 1) : 0;
                         <tr id="mode-row-total" style="background: rgba(217, 119, 6, 0.08); font-weight: 700; border-top: 2px solid var(--border-color);">
                             <td style="padding: 14px 18px; color: var(--text-main);">
@@ -1415,7 +1415,7 @@
                             sInProgress += mInProgress;
                             sWaiting += mWaiting;
                             sFinished += mFinished;
-                            if (mode === 'Online' || mode === 'PvE') {
+                            if (mode !== 'AiVsAi') {
                                 sWins += mWins;
                                 sLosses += mLosses;
                             }
@@ -1436,10 +1436,10 @@
                                 if (cInProgress) cInProgress.textContent = mInProgress;
                                 if (cWaiting) cWaiting.textContent = mWaiting;
                                 if (cFinished) cFinished.textContent = mFinished;
-                                if (cWins) cWins.textContent = (mode === 'Online' || mode === 'PvE') ? mWins : '—';
-                                if (cLosses) cLosses.textContent = (mode === 'Online' || mode === 'PvE') ? mLosses : '—';
+                                if (cWins) cWins.textContent = (mode !== 'AiVsAi') ? mWins : '—';
+                                if (cLosses) cLosses.textContent = (mode !== 'AiVsAi') ? mLosses : '—';
                                 if (cDraws) cDraws.textContent = mDraws;
-                                if (cWinRate) cWinRate.textContent = (mode === 'Online' || mode === 'PvE') ? (mWinRate.toFixed(1) + '%') : '—';
+                                if (cWinRate) cWinRate.textContent = (mode !== 'AiVsAi') ? (mWinRate.toFixed(1) + '%') : '—';
                             }
                         });
 
@@ -1463,7 +1463,7 @@
 
                         var rankedFinished = mList.filter(function(m) { 
                             var mode = m.mode || m.Mode; 
-                            return mode === 'Online' || mode === 'PvE'; 
+                            return mode !== 'AiVsAi'; 
                         }).reduce(function(a, b) { 
                             var f = b.finished !== undefined ? b.finished : (b.Finished || 0);
                             return a + f; 

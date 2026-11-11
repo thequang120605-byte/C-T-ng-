@@ -32,6 +32,9 @@ namespace ChessCore.Data
             // 3. Seed tài khoản Quản trị viên mặc định (admin / Admin@123)
             await EnsureAdminUserAsync(dbContext, logger);
 
+            // 3.1 Tự động nạp tài khoản kiểm thử QuocTrung (chuquoctrung0607@gmail.com)
+            await EnsureTestingUserQuocTrungAsync(dbContext, logger);
+
             // 4. Seed dữ liệu 12 ván cờ Kỳ phổ Danh thủ kinh điển
             await EnsureMasterGamesAsync(dbContext, logger);
 
@@ -63,6 +66,8 @@ namespace ChessCore.Data
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `TimeControlMinutes` INT NOT NULL DEFAULT 3;", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `Version` BIGINT NOT NULL DEFAULT 0;", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `AiColor` VARCHAR(10) NULL DEFAULT 'Black';", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `GameType` VARCHAR(20) NOT NULL DEFAULT '';", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `Winner` VARCHAR(20) NULL;", logger);
             await ExecuteRawSqlSafely(dbContext, "CREATE UNIQUE INDEX `IX_Moves_GameId_MoveOrder` ON `Moves` (`GameId`, `MoveOrder`);", logger);
 
             // --- 3. BẢNG Moves (Sửa lỗi các trường đánh giá AI) ---
@@ -168,6 +173,40 @@ namespace ChessCore.Data
             catch
             {
                 // Bỏ qua ngoại lệ nếu cột hoặc bảng đã tồn tại sẵn
+            }
+        }
+
+        private static async Task EnsureTestingUserQuocTrungAsync(AppDbContext dbContext, ILogger logger)
+        {
+            try
+            {
+                var quocTrung = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == "chuquoctrung0607@gmail.com" || u.Username == "QuocTrung");
+                if (quocTrung == null)
+                {
+                    quocTrung = new User
+                    {
+                        Username = "QuocTrung",
+                        Email = "chuquoctrung0607@gmail.com",
+                        PasswordHash = "GOcf87qa1xwqQ0NrhrOg+eY+HivTYIoUnloFBybBpus=",
+                        PlayerId = "CT-84428",
+                        Role = "Player",
+                        Elo = 1200,
+                        GamesPlayed = 35,
+                        Wins = 4,
+                        Losses = 31,
+                        Draws = 0,
+                        PuzzleScore = 500,
+                        IsLocked = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    dbContext.Users.Add(quocTrung);
+                    await dbContext.SaveChangesAsync();
+                    logger.LogInformation(">>> Đã khởi tạo thành công tài khoản kiểm thử QuocTrung (chuquoctrung0607@gmail.com).");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(">>> Cảnh báo khi nạp tài khoản QuocTrung: {Message}", ex.Message);
             }
         }
 

@@ -226,7 +226,7 @@ public sealed class StatisticsService(AppDbContext db)
         var modeStats = await ModesForUsersAsync(selectedIds, ct);
         var learning = await LearningForUsersAsync(selectedIds, ct);
 
-        var rankedModes = modeStats.Where(m => m.Mode == "Online" || m.Mode == "PvE").ToList();
+        var rankedModes = modeStats.Where(m => m.Mode != "AiVsAi").ToList();
         int totalWins = rankedModes.Sum(m => m.Wins);
         int totalLosses = rankedModes.Sum(m => m.Losses);
         int totalDraws = modeStats.Sum(m => m.Draws);
@@ -293,7 +293,7 @@ public sealed class StatisticsService(AppDbContext db)
         var ids = users.Select(u => u.Id).ToArray();
         var games = db.Games.AsNoTracking().Where(g =>
             !(g.GameMode == "OnlinePublic" && g.BlackPlayerId == null && g.Status == GameStatus.Resigned) &&
-            (g.GameMode.StartsWith("Online") || g.GameMode == GameModes.PvE) &&
+            (g.GameMode.StartsWith("Online") || g.GameMode == GameModes.PvE || g.GameMode == "PvP" || g.GameMode == "Local") &&
             (g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw));
         var red = await games.Where(g => g.RedPlayerId.HasValue && ids.Contains(g.RedPlayerId.Value))
             .GroupBy(g => g.RedPlayerId!.Value).Select(g => new { Id = g.Key, Played = g.Count(),

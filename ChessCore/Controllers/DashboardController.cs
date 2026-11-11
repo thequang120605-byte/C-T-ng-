@@ -142,7 +142,7 @@ namespace ChessCore.Controllers
             vm.Learning = await _statistics.LearningAsync(userId, HttpContext.RequestAborted);
             await _statistics.ApplyDisplayCountersAsync(new[] { currentUser });
 
-            var rankedModes = vm.ModeStats.Where(m => m.Mode == "Online" || m.Mode == "PvE").ToList();
+            var rankedModes = vm.ModeStats.Where(m => m.Mode != "AiVsAi").ToList();
             int rankedFinished = rankedModes.Sum(m => m.Finished);
             int rankedWins = rankedModes.Sum(m => m.Wins);
             vm.WinRate = rankedFinished > 0 
