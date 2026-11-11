@@ -122,17 +122,25 @@ namespace ChessCore.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (await _context.Users.AnyAsync(u => u.Username == model.Username))
+                var normalizedUsername = (model.Username ?? "").Trim();
+                var normalizedEmail = (model.Email ?? "").Trim();
+                var usernameLower = normalizedUsername.ToLowerInvariant();
+                var emailLower = normalizedEmail.ToLowerInvariant();
+
+                if (await _context.Users.AnyAsync(u => u.Username.ToLower() == usernameLower))
                 {
                     ModelState.AddModelError("Username", "Tên đăng nhập đã được sử dụng.");
                     return View(model);
                 }
 
-                if (await _context.Users.AnyAsync(u => u.Email == model.Email))
+                if (await _context.Users.AnyAsync(u => u.Email.ToLower() == emailLower))
                 {
                     ModelState.AddModelError("Email", "Email đã được sử dụng.");
                     return View(model);
                 }
+
+                model.Username = normalizedUsername;
+                model.Email = normalizedEmail;
 
                 // Sinh OTP ngẫu nhiên (6 số)
                 string otp = Random.Shared.Next(100000, 999999).ToString();
@@ -141,18 +149,18 @@ namespace ChessCore.Controllers
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
                 
-                _cache.Set($"OTP_{model.Email}", new { Model = model, Otp = otp }, cacheEntryOptions);
+                _cache.Set($"OTP_{emailLower}", new { Model = model, Otp = otp }, cacheEntryOptions);
 
-                // Gửi Email qua Gmail
-                bool emailSent = await SendOtpEmailAsync(model.Email, otp);
+                // Gửi Email qua Gmail (tối đa 4s; nếu server chặn SMTP sẽ tự fallback hiển thị mã OTP dự phòng)
+                bool emailSent = await SendOtpEmailAsync(normalizedEmail, otp);
 
                 if (emailSent)
                 {
-                    TempData["OtpMessage"] = $"Mã OTP đã được gửi đến {model.Email}. Vui lòng kiểm tra hộp thư (bao gồm cả thư rác).";
+                    TempData["OtpMessage"] = $"Mã OTP đã được gửi đến {normalizedEmail}. Vui lòng kiểm tra hộp thư (bao gồm cả thư rác).";
                 }
                 else
                 {
-                    TempData["OtpMessage"] = "Không thể gửi email xác thực lúc này do lỗi máy chủ thư. Vui lòng thử lại sau hoặc liên hệ quản trị viên.";
+                    TempData["OtpMessage"] = "Máy chủ không thể gửi email lúc này (hoặc cổng SMTP bị hạn chế). Vui lòng dùng mã OTP dự phòng hiển thị bên dưới để hoàn tất đăng ký!";
                 }
 
                 if (_env.IsDevelopment() || !emailSent)
@@ -160,7 +168,7 @@ namespace ChessCore.Controllers
                     TempData["DevOtp"] = otp;
                 }
 
-                return RedirectToAction("VerifyOtp", new { email = model.Email });
+                return RedirectToAction("VerifyOtp", new { email = normalizedEmail });
             }
 
             return View(model);
@@ -170,7 +178,7 @@ namespace ChessCore.Controllers
         public IActionResult VerifyOtp(string email)
         {
             if (string.IsNullOrEmpty(email)) return RedirectToAction("Register");
-            return View(new VerifyOtpViewModel { Email = email });
+            return View(new VerifyOtpViewModel { Email = email.Trim() });
         }
 
         [HttpPost]
@@ -179,13 +187,14 @@ namespace ChessCore.Controllers
         {
             if (ModelState.IsValid)
             {
+                var emailLower = (model.Email ?? "").Trim().ToLowerInvariant();
                 // Kiểm tra cache xem có thông tin OTP của email này không
-                if (_cache.TryGetValue($"OTP_{model.Email}", out dynamic? cachedData) && cachedData != null)
+                if (_cache.TryGetValue($"OTP_{emailLower}", out dynamic? cachedData) && cachedData != null)
                 {
                     string cachedOtp = (string)cachedData.GetType().GetProperty("Otp").GetValue(cachedData, null);
                     RegisterViewModel regModel = (RegisterViewModel)cachedData.GetType().GetProperty("Model").GetValue(cachedData, null);
 
-                    if (model.Otp == cachedOtp)
+                    if ((model.Otp ?? "").Trim() == cachedOtp)
                     {
                         var random = new Random();
                         string playerId;
@@ -208,7 +217,7 @@ namespace ChessCore.Controllers
                         _context.Users.Add(newUser);
                         await _context.SaveChangesAsync();
 
-                        _cache.Remove($"OTP_{model.Email}");
+                        _cache.Remove($"OTP_{emailLower}");
 
                         var claims = new[]
                         {
@@ -245,23 +254,27 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResendOtp(string email)
         {
-            if (_cache.TryGetValue($"OTP_{email}", out dynamic? cachedData) && cachedData != null)
+            var normalizedEmail = (email ?? "").Trim();
+            var emailLower = normalizedEmail.ToLowerInvariant();
+            if (_cache.TryGetValue($"OTP_{emailLower}", out dynamic? cachedData) && cachedData != null)
             {
                 RegisterViewModel regModel = (RegisterViewModel)cachedData.GetType().GetProperty("Model").GetValue(cachedData, null);
                 
                 string newOtp = Random.Shared.Next(100000, 999999).ToString();
                 var cacheEntryOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
                 
-                _cache.Set($"OTP_{email}", new { Model = regModel, Otp = newOtp }, cacheEntryOptions);
+                _cache.Set($"OTP_{emailLower}", new { Model = regModel, Otp = newOtp }, cacheEntryOptions);
                 
-                bool resendSuccess = await SendOtpEmailAsync(email, newOtp);
+                bool resendSuccess = await SendOtpEmailAsync(normalizedEmail, newOtp);
                 if (_env.IsDevelopment() || !resendSuccess)
                 {
                     TempData["DevOtp"] = newOtp;
                 }
                 
-                TempData["OtpMessage"] = $"Đã gửi lại mã OTP mới đến {email}.";
-                return RedirectToAction("VerifyOtp", new { email = email });
+                TempData["OtpMessage"] = resendSuccess
+                    ? $"Đã gửi lại mã OTP mới đến {normalizedEmail}."
+                    : "Máy chủ không thể gửi email lúc này. Vui lòng dùng mã OTP dự phòng hiển thị bên dưới!";
+                return RedirectToAction("VerifyOtp", new { email = normalizedEmail });
             }
 
             TempData["OtpMessage"] = "Phiên đăng ký đã hết hạn. Vui lòng điền lại thông tin.";
@@ -284,7 +297,9 @@ namespace ChessCore.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+                var normalizedEmail = (model.Email ?? "").Trim();
+                var emailLower = normalizedEmail.ToLowerInvariant();
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower);
                 if (user == null)
                 {
                     ModelState.AddModelError("Email", "Email này chưa được đăng ký trong hệ thống.");
@@ -298,19 +313,18 @@ namespace ChessCore.Controllers
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
                 
-                _cache.Set($"RESET_OTP_{model.Email}", otp, cacheEntryOptions);
+                _cache.Set($"RESET_OTP_{emailLower}", otp, cacheEntryOptions);
 
                 // Gửi Email qua Gmail
-                bool emailSent = await SendOtpEmailAsync(model.Email, otp);
+                bool emailSent = await SendOtpEmailAsync(normalizedEmail, otp);
 
                 if (emailSent)
                 {
-                    TempData["OtpMessage"] = $"Mã OTP đặt lại mật khẩu đã được gửi đến {model.Email}. Vui lòng kiểm tra hộp thư.";
+                    TempData["OtpMessage"] = $"Mã OTP đặt lại mật khẩu đã được gửi đến {normalizedEmail}. Vui lòng kiểm tra hộp thư.";
                 }
                 else
                 {
-                    TempData["OtpMessage"] = "Không thể gửi email OTP lúc này. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.";
-                    // FIX BUG_008: Bảo mật an toàn - Tuyệt đối không làm lộ mã OTP bí mật ra giao diện web
+                    TempData["OtpMessage"] = "Máy chủ không thể gửi email lúc này (hoặc cổng SMTP bị hạn chế). Vui lòng dùng mã OTP dự phòng hiển thị bên dưới!";
                 }
 
                 if (_env.IsDevelopment() || !emailSent)
@@ -318,7 +332,7 @@ namespace ChessCore.Controllers
                     TempData["DevOtp"] = otp;
                 }
 
-                return RedirectToAction("ResetPassword", new { email = model.Email });
+                return RedirectToAction("ResetPassword", new { email = normalizedEmail });
             }
 
             return View(model);
@@ -328,7 +342,7 @@ namespace ChessCore.Controllers
         public IActionResult ResetPassword(string email)
         {
             if (string.IsNullOrEmpty(email)) return RedirectToAction("ForgotPassword");
-            return View(new ResetPasswordViewModel { Email = email });
+            return View(new ResetPasswordViewModel { Email = email.Trim() });
         }
 
         [HttpPost]
@@ -337,17 +351,18 @@ namespace ChessCore.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (_cache.TryGetValue($"RESET_OTP_{model.Email}", out string? cachedOtp) && !string.IsNullOrEmpty(cachedOtp))
+                var emailLower = (model.Email ?? "").Trim().ToLowerInvariant();
+                if (_cache.TryGetValue($"RESET_OTP_{emailLower}", out string? cachedOtp) && !string.IsNullOrEmpty(cachedOtp))
                 {
-                    if (model.Otp.Trim() == cachedOtp.Trim())
+                    if ((model.Otp ?? "").Trim() == cachedOtp.Trim())
                     {
-                        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+                        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower);
                         if (user != null)
                         {
                             user.PasswordHash = HashPassword(model.NewPassword);
                             await _context.SaveChangesAsync();
 
-                            _cache.Remove($"RESET_OTP_{model.Email}");
+                            _cache.Remove($"RESET_OTP_{emailLower}");
                             TempData["SuccessMessage"] = "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.";
                             return RedirectToAction("Login");
                         }
@@ -374,22 +389,23 @@ namespace ChessCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResendResetOtp(string email)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var normalizedEmail = (email ?? "").Trim();
+            var emailLower = normalizedEmail.ToLowerInvariant();
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower);
             if (user != null)
             {
                 string newOtp = Random.Shared.Next(100000, 999999).ToString();
                 var cacheEntryOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
-                _cache.Set($"RESET_OTP_{email}", newOtp, cacheEntryOptions);
+                _cache.Set($"RESET_OTP_{emailLower}", newOtp, cacheEntryOptions);
 
-                bool emailSent = await SendOtpEmailAsync(email, newOtp);
+                bool emailSent = await SendOtpEmailAsync(normalizedEmail, newOtp);
                 if (emailSent)
                 {
-                    TempData["OtpMessage"] = $"Đã gửi lại mã OTP mới đến {email}.";
+                    TempData["OtpMessage"] = $"Đã gửi lại mã OTP mới đến {normalizedEmail}.";
                 }
                 else
                 {
-                    TempData["OtpMessage"] = "Không thể gửi lại mã OTP lúc này do lỗi kết nối máy chủ thư. Vui lòng thử lại sau.";
-                    // OTP leak removed for security
+                    TempData["OtpMessage"] = "Máy chủ không thể gửi email lúc này. Vui lòng dùng mã OTP dự phòng hiển thị bên dưới!";
                 }
 
                 if (_env.IsDevelopment() || !emailSent)
@@ -397,7 +413,7 @@ namespace ChessCore.Controllers
                     TempData["DevOtp"] = newOtp;
                 }
 
-                return RedirectToAction("ResetPassword", new { email = email });
+                return RedirectToAction("ResetPassword", new { email = normalizedEmail });
             }
 
             TempData["OtpMessage"] = "Email không hợp lệ. Vui lòng thử lại.";
@@ -602,7 +618,7 @@ namespace ChessCore.Controllers
                     Host = _configuration["Smtp:Host"] ?? "smtp.gmail.com",
                     Port = int.TryParse(_configuration["Smtp:Port"], out int p) ? p : 587,
                     EnableSsl = true,
-                    Timeout = 10000,
+                    Timeout = 4000,
                     DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = false,
                     Credentials = new System.Net.NetworkCredential(fromAddress.Address, senderPassword)
@@ -615,7 +631,17 @@ namespace ChessCore.Controllers
                     IsBodyHtml = true
                 };
 
-                await smtp.SendMailAsync(message);
+                // Giới hạn cứng tối đa 4 giây để tránh treo request đăng ký khi Render chặn cổng SMTP 587
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(4));
+                var sendTask = smtp.SendMailAsync(message, cts.Token);
+                var completed = await Task.WhenAny(sendTask, Task.Delay(4200));
+                if (completed != sendTask)
+                {
+                    cts.Cancel();
+                    Console.WriteLine("[SMTP TIMEOUT] Quá thời gian kết nối SMTP (4s), chuyển sang mã OTP dự phòng.");
+                    return false;
+                }
+                await sendTask;
                 return true;
             }
             catch (Exception ex)
