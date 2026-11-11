@@ -25,7 +25,7 @@
                         <label asp-for="Username">Tên đăng nhập</label>
                         <div class="input-icon-wrapper">
                             <i class="fa-solid fa-user"></i>
-                            <input asp-for="Username" placeholder="Chọn tên hiển thị của bạn" />
+                            <input asp-for="Username" placeholder="Tên đăng nhập (viết liền không dấu)" pattern="^[a-zA-Z0-9_-]{3,30}$" title="Từ 3 đến 30 ký tự, viết liền không dấu, chỉ gồm chữ cái, chữ số, _ hoặc -" />
                         </div>
                         <span asp-validation-for="Username" class="text-danger"></span>
                     </div>

@@ -175,17 +175,17 @@
                 </div>
             </div>
 
-            <!-- Form Cập nhật Tên hiển thị -->
+            <!-- Form Cập nhật Tên tài khoản -->
             <form asp-controller="Account" asp-action="UpdateUsername" method="post" class="acc-flex-form">
                 @Html.AntiForgeryToken()
                 <div class="form-group-acc">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <label for="acc-username-input" style="margin-bottom: 0;">Tên hiển thị kỳ thủ</label>
+                        <label for="acc-username-input" style="margin-bottom: 0;">Tên tài khoản (Tên đăng nhập)</label>
                         <span class="char-count-badge" id="username-char-count">@Model.Username.Length/30 ký tự</span>
                     </div>
                     <div class="acc-input-icon-wrap">
                         <i class="fa-solid fa-user-pen acc-input-icon"></i>
-                        <input type="text" id="acc-username-input" name="Username" class="form-control-acc" value="@Model.Username" required minlength="3" maxlength="30" placeholder="Nhập tên hiển thị mới" />
+                        <input type="text" id="acc-username-input" name="Username" class="form-control-acc" value="@Model.Username" required minlength="3" maxlength="30" pattern="^[a-zA-Z0-9_-]{3,30}$" placeholder="Nhập tên tài khoản mới" title="Từ 3 đến 30 ký tự, viết liền không dấu, chỉ gồm chữ cái, chữ số, gạch dưới (_) hoặc gạch ngang (-)" />
                     </div>
                 </div>
 
@@ -193,26 +193,26 @@
                 <div class="acc-guideline-box">
                     <div class="guideline-header">
                         <i class="fa-solid fa-scroll text-gold"></i>
-                        <span>Quy Chuẩn Danh Xưng Kỳ Đạo</span>
+                        <span>Quy Chuẩn Tên Tài Khoản & Danh Xưng Kỳ Đạo</span>
                     </div>
                     <ul class="guideline-list">
                         <li>
                             <i class="fa-solid fa-circle-check"></i>
-                            <span>Tên hiển thị xuất hiện trên bàn cờ, bảng xếp hạng Elo và chứng chỉ khóa học.</span>
+                            <span>Tên tài khoản vừa là định danh hiển thị trên bàn cờ, bảng xếp hạng, vừa dùng để <strong>đăng nhập</strong> vào hệ thống.</span>
                         </li>
                         <li>
                             <i class="fa-solid fa-circle-check"></i>
-                            <span>Độ dài từ <strong>3 đến 30 ký tự</strong>, cho phép chữ cái tiếng Việt có dấu và chữ số.</span>
+                            <span>Độ dài từ <strong>3 đến 30 ký tự</strong>, viết liền không dấu, <strong>không chứa khoảng trắng</strong>.</span>
                         </li>
                         <li>
                             <i class="fa-solid fa-circle-check"></i>
-                            <span>Khuyến khích danh xưng chuẩn mực, thể hiện phong thái và tinh thần kỳ đạo.</span>
+                            <span>Chỉ chấp nhận các ký tự hợp lệ: chữ cái tiếng Anh (<code>a-z</code>, <code>A-Z</code>), chữ số (<code>0-9</code>), gạch dưới (<code>_</code>) và gạch ngang (<code>-</code>).</span>
                         </li>
                     </ul>
                 </div>
 
                 <button type="submit" class="btn-acc-primary btn-acc-full">
-                    <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi danh tính
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi tên tài khoản
                 </button>
             </form>
         </div>

@@ -5,7 +5,8 @@ namespace ChessCore.ViewModels
     public class RegisterViewModel
     {
         [Required(ErrorMessage = "Vui lòng nhập tên đăng nhập")]
-        [StringLength(50, MinimumLength = 3, ErrorMessage = "Tên đăng nhập từ 3 đến 50 ký tự")]
+        [StringLength(30, MinimumLength = 3, ErrorMessage = "Tên đăng nhập từ 3 đến 30 ký tự")]
+        [RegularExpression(@"^[a-zA-Z0-9_-]{3,30}$", ErrorMessage = "Tên đăng nhập chỉ gồm chữ cái, chữ số, gạch dưới (_) hoặc gạch ngang (-), viết liền không dấu")]
         public string Username { get; set; }
 
         [Required(ErrorMessage = "Vui lòng nhập email")]

@@ -175,14 +175,15 @@ namespace ChessCore.Controllers
 
             if (!ModelState.IsValid)
             {
-                TempData["AccountError"] = "Tên hiển thị không hợp lệ (từ 3 đến 30 ký tự, không chứa ký tự đặc biệt).";
+                var firstErr = ModelState.Values.SelectMany(v => v.Errors).FirstOrDefault()?.ErrorMessage;
+                TempData["AccountError"] = firstErr ?? "Tên tài khoản không hợp lệ (từ 3 đến 30 ký tự, viết liền không dấu, chỉ gồm a-z, 0-9, _ hoặc -).";
                 return RedirectToAction("Index");
             }
 
             var newUsername = model.Username.Trim();
             if (string.Equals(user.Username, newUsername, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["AccountInfo"] = "Tên hiển thị không thay đổi.";
+                TempData["AccountInfo"] = "Tên tài khoản không thay đổi.";
                 return RedirectToAction("Index");
             }
 
@@ -190,7 +191,7 @@ namespace ChessCore.Controllers
             bool exists = await _context.Users.AnyAsync(u => u.Id != user.Id && u.Username == newUsername);
             if (exists)
             {
-                TempData["AccountError"] = "Tên hiển thị này đã được người khác sử dụng. Vui lòng chọn tên khác.";
+                TempData["AccountError"] = "Tên tài khoản này đã được người khác sử dụng. Vui lòng chọn tên khác.";
                 return RedirectToAction("Index");
             }
 
@@ -200,7 +201,7 @@ namespace ChessCore.Controllers
             // Làm mới Cookie Authentication với Username mới
             await RefreshSignInCookieAsync(user);
 
-            TempData["AccountSuccess"] = "Cập nhật tên hiển thị thành công!";
+            TempData["AccountSuccess"] = "Cập nhật tên tài khoản thành công!";
             return RedirectToAction("Index");
         }
 

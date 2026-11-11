@@ -34,10 +34,10 @@ namespace ChessCore.ViewModels
 
     public class UpdateProfileViewModel
     {
-        [Required(ErrorMessage = "Tên hiển thị không được để trống")]
-        [StringLength(30, MinimumLength = 3, ErrorMessage = "Tên hiển thị từ 3 đến 30 ký tự")]
-        [RegularExpression(@"^[a-zA-Z0-9_\.\s\p{L}]+$", ErrorMessage = "Tên không chứa ký tự đặc biệt")]
-        [Display(Name = "Tên hiển thị mới")]
+        [Required(ErrorMessage = "Tên tài khoản không được để trống")]
+        [StringLength(30, MinimumLength = 3, ErrorMessage = "Tên tài khoản từ 3 đến 30 ký tự")]
+        [RegularExpression(@"^[a-zA-Z0-9_-]{3,30}$", ErrorMessage = "Tên tài khoản chỉ gồm chữ cái tiếng Anh, số, gạch dưới (_) hoặc gạch ngang (-), viết liền không dấu và không chứa khoảng trắng")]
+        [Display(Name = "Tên tài khoản mới")]
         public string Username { get; set; } = "";
     }
 
