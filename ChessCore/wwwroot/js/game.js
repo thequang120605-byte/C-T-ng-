@@ -1731,11 +1731,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (piece.type === "Rook") {
       type = "Xe";
 
-      text = "車";
+      text = color === "red" ? "俥" : "車";
     } else if (piece.type === "Horse") {
       type = "Mã";
 
-      text = "馬";
+      text = color === "red" ? "傌" : "馬";
     } else if (piece.type === "Elephant") {
       type = "Tượng";
 

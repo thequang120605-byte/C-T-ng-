@@ -191,8 +191,8 @@
   }
 
   const PIECE_TEXT = {
-    Rook: () => "車",
-    Horse: () => "馬",
+    Rook: (c) => (c === "red" ? "俥" : "車"),
+    Horse: (c) => (c === "red" ? "傌" : "馬"),
     Elephant: (c) => (c === "red" ? "相" : "象"),
     Advisor: (c) => (c === "red" ? "仕" : "士"),
     King: (c) => (c === "red" ? "帥" : "將"),

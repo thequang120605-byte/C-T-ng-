@@ -40,6 +40,20 @@ public class MinimaxEngine
 
     public MinimaxEngine(int depth = 2) => _depth = Math.Clamp(depth, 1, 4);
 
+    private int EffectiveQuiescenceCaptureDepth => _depth switch
+    {
+        <= 1 => 0,
+        2 => 2,
+        _ => QuiescenceCaptureDepth
+    };
+
+    private int EffectiveMaxQuiescencePly => _depth switch
+    {
+        <= 1 => 0,
+        2 => 4,
+        _ => MaxQuiescencePly
+    };
+
     private void CheckSearchBudget()
     {
         _searchToken.ThrowIfCancellationRequested();
@@ -65,6 +79,14 @@ public class MinimaxEngine
         var moves = GameRules.GetAllLegalMoves(searchBoard, computerColor);
         if (moves.Count == 0) return null;
 
+        // Cấp độ 1 (Dễ / Làm quen): Không tìm ăn quân sâu (Quiescence = 0),
+        // chấm điểm bề mặt 1 lớp và lựa chọn ngẫu nhiên nhẹ trong nhóm nước hợp lý
+        // để AI chơi tự nhiên, dễ thở cho người mới làm quen.
+        if (_depth == 1)
+        {
+            return FindBeginnerMove(searchBoard, moves, computerColor);
+        }
+
         EngineMove? bestMove = null;
 
         for (int depth = 1; depth <= _depth && moves.Count > 0; depth++)
@@ -81,7 +103,7 @@ public class MinimaxEngine
                     CheckSearchBudget();
                     var captured = MakeMove(searchBoard, move);
                     int score;
-                    try { score = Search(searchBoard, depth - 1, alpha, MateScore * 2, computerColor, 1); }
+                    try { score = Search(searchBoard, depth - 1, alpha, MateScore * 2, computerColor, 1, allowNullMove: true); }
                     finally { UndoMove(searchBoard, move, captured); }
                     if (score > best) { best = score; iterationBest = move; }
                     alpha = Math.Max(alpha, best);
@@ -100,9 +122,78 @@ public class MinimaxEngine
         _searchWatch.Stop();
         LastStats.ElapsedMilliseconds = _searchWatch.Elapsed.TotalMilliseconds;
         Console.WriteLine($"AI depth={_depth}, ms={LastStats.ElapsedMilliseconds:F0}, nodes={NodesSearched}, cutoffs={Cutoffs}, ttHits={LastStats.TranspositionHits}, qNodes={LastStats.QuiescenceNodes}, completed={LastStats.CompletedDepth}");
-        
+
         // Luôn có nước đi hợp lệ dự phòng nếu bị ngắt trước khi depth 1 kịp hoàn tất
         return bestMove ?? moves.FirstOrDefault();
+    }
+
+    private EngineMove? FindBeginnerMove(Board searchBoard, List<EngineMove> moves, PieceColor computerColor)
+    {
+        var opponentColor = computerColor == PieceColor.Red ? PieceColor.Black : PieceColor.Red;
+        var scoredMoves = new List<(EngineMove Move, int Score)>(moves.Count);
+        int bestScore = int.MinValue;
+
+        foreach (var move in moves)
+        {
+            CheckSearchBudget();
+            LastStats.NodesEvaluated++;
+
+            var captured = MakeMove(searchBoard, move);
+            int score;
+            try
+            {
+                // Chiếu bí ngay trong 1 nước thì vẫn đi
+                if (!GameRules.HasLegalMove(searchBoard, searchBoard.CurrentTurn))
+                {
+                    score = MateScore - 1;
+                }
+                else
+                {
+                    // Cấp độ 1 (Làm quen / Dễ): Chỉ nhìn thuần vật chất (H1) ở 1 nước hiện tại,
+                    // hoàn toàn KHÔNG tính H2/H3 (không biết chạy quân bị treo, không biết ô nguy hiểm,
+                    // không ra quân chuẩn sách) + thêm độ ngẫu nhiên lớn để đánh dở tự nhiên như người mới.
+                    int myH1 = BoardEvaluator.GetSideScores(searchBoard, computerColor).H1;
+                    int oppH1 = BoardEvaluator.GetSideScores(searchBoard, opponentColor).H1;
+                    int materialDiff = myH1 - oppH1;
+
+                    // Cộng nhiễu ngẫu nhiên để tạo sai số khai cuộc & trung cuộc tự nhiên
+                    score = materialDiff + Random.Shared.Next(-120, 121);
+                }
+            }
+            finally
+            {
+                UndoMove(searchBoard, move, captured);
+            }
+
+            if (score > bestScore) bestScore = score;
+            scoredMoves.Add((move, score));
+        }
+
+        LastStats.CompletedDepth = 1;
+        _searchWatch.Stop();
+        LastStats.ElapsedMilliseconds = _searchWatch.Elapsed.TotalMilliseconds;
+
+        // Nếu thấy nước chiếu bí ngay trong 1 nước thì đi luôn
+        if (bestScore >= MateScore - 100)
+        {
+            var mateMove = scoredMoves.First(x => x.Score == bestScore).Move;
+            Console.WriteLine($"AI depth=1 (Làm quen), ms={LastStats.ElapsedMilliseconds:F0}, nodes={NodesSearched}, mate=true");
+            return mateMove;
+        }
+
+        // Chọn ngẫu nhiên trong nhóm top 6 nước gần nhau để AI không đánh bài bản
+        var topMoves = scoredMoves
+            .Where(x => x.Score >= bestScore - 150)
+            .OrderByDescending(x => x.Score)
+            .Take(6)
+            .ToList();
+
+        var selected = topMoves.Count > 0
+            ? topMoves[Random.Shared.Next(topMoves.Count)].Move
+            : moves[Random.Shared.Next(moves.Count)];
+
+        Console.WriteLine($"AI depth=1 (Làm quen), ms={LastStats.ElapsedMilliseconds:F0}, nodes={NodesSearched}, pool={topMoves.Count}, completed=1");
+        return selected;
     }
 
     public int EvaluatePosition(Board board, PieceColor perspective)
@@ -115,18 +206,30 @@ public class MinimaxEngine
         _searchWatch.Restart();
         _timeBudgetMs = 5000;
 
-        int score = Search(board.Clone(), _depth, -MateScore * 2, MateScore * 2, perspective, 0);
+        int score = Search(board.Clone(), _depth, -MateScore * 2, MateScore * 2, perspective, 0, allowNullMove: false);
         _searchWatch.Stop();
         LastStats.CompletedDepth = _depth;
         LastStats.ElapsedMilliseconds = _searchWatch.Elapsed.TotalMilliseconds;
         return score;
     }
 
-    private int Search(Board board, int depth, int alpha, int beta, PieceColor perspective, int ply)
+    private int Search(Board board, int depth, int alpha, int beta, PieceColor perspective, int ply, bool allowNullMove)
     {
         if ((LastStats.NodesEvaluated & 127) == 0) CheckSearchBudget();
 
-        if (depth == 0) return Quiescence(board, alpha, beta, perspective, ply, 0);
+        if (depth <= 0)
+        {
+            if (_depth <= 1)
+            {
+                LastStats.NodesEvaluated++;
+                var terminalMoves = GameRules.GetAllLegalMoves(board, board.CurrentTurn);
+                if (terminalMoves.Count == 0)
+                    return board.CurrentTurn == perspective ? -MateScore + ply : MateScore - ply;
+                return BoardEvaluator.Evaluate(board, perspective);
+            }
+            return Quiescence(board, alpha, beta, perspective, ply, 0);
+        }
+
         LastStats.NodesEvaluated++;
         var side = board.CurrentTurn;
 
@@ -150,6 +253,37 @@ public class MinimaxEngine
         }
 
         bool maximizing = side == perspective;
+
+        // Null-Move Pruning cho Depth >= 3 (tránh cắt khi đang bị chiếu hoặc tàn cuộc không còn quân lớn)
+        if (allowNullMove && _depth >= 3 && depth >= 3 && ply > 0 && HasMajorPiece(board, side) && !MoveGenerator.CheckIfInCheck(board, side))
+        {
+            const int reduction = 2;
+            board.SwitchTurn();
+            int nullScore;
+            try
+            {
+                if (maximizing)
+                    nullScore = Search(board, depth - 1 - reduction, beta - 1, beta, perspective, ply + 1, allowNullMove: false);
+                else
+                    nullScore = Search(board, depth - 1 - reduction, alpha, alpha + 1, perspective, ply + 1, allowNullMove: false);
+            }
+            finally
+            {
+                board.SwitchTurn();
+            }
+
+            if (maximizing && nullScore >= beta)
+            {
+                LastStats.BetaCutoffs++;
+                return beta;
+            }
+            if (!maximizing && nullScore <= alpha)
+            {
+                LastStats.BetaCutoffs++;
+                return alpha;
+            }
+        }
+
         int best = maximizing ? -MateScore * 2 : MateScore * 2;
         OrderMoves(board, moves, preferred, ply);
         EngineMove? bestMove = null;
@@ -158,7 +292,7 @@ public class MinimaxEngine
         {
             var captured = MakeMove(board, move);
             int score;
-            try { score = Search(board, depth - 1, alpha, beta, perspective, ply + 1); }
+            try { score = Search(board, depth - 1, alpha, beta, perspective, ply + 1, allowNullMove: true); }
             finally { UndoMove(board, move, captured); }
             if ((maximizing && score > best) || (!maximizing && score < best))
             { best = score; bestMove = move; }
@@ -173,6 +307,23 @@ public class MinimaxEngine
         if (_table.Count < 250000)
             _table[key] = new(ToTableScore(best, ply), best <= originalAlpha ? 2 : best >= originalBeta ? 1 : 0, bestMove);
         return best;
+    }
+
+    private static bool HasMajorPiece(Board board, PieceColor side)
+    {
+        for (int r = 0; r < 10; r++)
+        {
+            for (int c = 0; c < 9; c++)
+            {
+                var p = board.Grid[r, c];
+                if (p != null && p.Color == side &&
+                    (p.Type == PieceType.Rook || p.Type == PieceType.Cannon || p.Type == PieceType.Horse))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static Piece? MakeMove(Board board, EngineMove move)
@@ -203,19 +354,42 @@ public class MinimaxEngine
         if (moves.Count == 0) return maximizing ? -MateScore + ply : MateScore - ply;
         int standPat = BoardEvaluator.Evaluate(board, perspective);
 
-        if (qPly >= MaxQuiescencePly) return standPat;
+        int maxQPly = EffectiveMaxQuiescencePly;
+        int captureDepth = EffectiveQuiescenceCaptureDepth;
+
+        if (qPly >= maxQPly) return standPat;
         int best = maximizing ? -MateScore * 2 : MateScore * 2;
         if (!inCheck)
         {
             best = standPat;
-            if (maximizing) { if (best >= beta) return best; alpha = Math.Max(alpha, best); }
-            else { if (best <= alpha) return best; beta = Math.Min(beta, best); }
-            if (qPly >= QuiescenceCaptureDepth) return best;
+            if (maximizing)
+            {
+                if (best >= beta) return best;
+                // Delta Pruning: Nếu đang kém quá 1 Xe (+1000 biên an toàn), không mở rộng các nước ăn quân nhỏ vô vọng
+                if (best + 1000 < alpha) return best;
+                alpha = Math.Max(alpha, best);
+            }
+            else
+            {
+                if (best <= alpha) return best;
+                if (best - 1000 > beta) return best;
+                beta = Math.Min(beta, best);
+            }
+            if (qPly >= captureDepth) return best;
             moves.RemoveAll(m => board.Grid[m.To.Row, m.To.Col] == null);
         }
         OrderMoves(board, moves, null, ply);
         foreach (var move in moves)
         {
+            var targetPiece = board.Grid[move.To.Row, move.To.Col];
+            // Per-move Delta Pruning khi không bị chiếu ở tầng Quiescence sâu hơn
+            if (!inCheck && qPly >= 1 && targetPiece != null)
+            {
+                int capVal = PieceValue(targetPiece.Type);
+                if (maximizing && standPat + capVal + 250 < alpha) continue;
+                if (!maximizing && standPat - capVal - 250 > beta) continue;
+            }
+
             var captured = MakeMove(board, move);
             int score;
             try { score = Quiescence(board, alpha, beta, perspective, ply + 1, qPly + 1); }
