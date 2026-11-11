@@ -40,6 +40,9 @@ namespace ChessCore.Data
 
             // 6. Dọn dẹp phòng trống bỏ rơi và chuẩn hóa đồng bộ thống kê người dùng
             await SynchronizeUserStatsAndCleanupAsync(dbContext, logger);
+
+            // 7. Chuẩn hóa tên gọi quân Tốt trong Khóa học và Quiz
+            await NormalizeCourseTermsAsync(dbContext, logger);
         }
 
         public static async Task EnsureSchemaColumnsAndTablesAsync(AppDbContext dbContext, ILogger? logger = null)
@@ -230,6 +233,100 @@ namespace ChessCore.Data
             catch (Exception ex)
             {
                 logger?.LogWarning(">>> Cảnh báo khi chuẩn hóa tiêu đề cờ thế: {Message}", ex.Message);
+            }
+        }
+
+        public static async Task NormalizeCourseTermsAsync(AppDbContext dbContext, ILogger? logger = null)
+        {
+            try
+            {
+                var lesson13 = await dbContext.CourseLessons.FindAsync(13);
+                if (lesson13 != null && lesson13.Title.Contains("Binh"))
+                {
+                    lesson13.Title = "Tốt: qua sông đổi cách đi";
+                    lesson13.Description = "Thực hành Tốt trước và sau khi qua sông.";
+                    lesson13.Content = "Tốt đi thẳng một ô trước khi qua sông. Sau khi qua sông, Tốt được đi ngang nhưng không đi lùi.";
+                }
+
+                var lesson2 = await dbContext.CourseLessons.FindAsync(2);
+                if (lesson2 != null && !lesson2.Content.Contains("quân Đỏ mang chữ Binh"))
+                {
+                    lesson2.Content = "Bảy loại quân gồm Tướng, Sĩ, Tượng, Xe, Pháo, Mã và Tốt (quân Đỏ mang chữ Binh 兵, quân Đen mang chữ Tốt 卒). Quân Đỏ và quân Đen có mặt chữ khác nhau nhưng cách đi tương ứng.";
+                }
+
+                var lesson19 = await dbContext.CourseLessons.FindAsync(19);
+                if (lesson19 != null && lesson19.Content.Contains("và Binh"))
+                {
+                    lesson19.Content = "Bài tổng kết mở sau khi hoàn thành ba bài tổng hợp. Bàn cờ hiển thị đầy đủ 32 quân ở vị trí khai cuộc; bạn có thể chọn quân Đỏ để xem và thực hành các nước đi hợp lệ của Xe, Pháo, Mã, Tượng, Sĩ, Tướng và Tốt.";
+                }
+
+                var q14 = await dbContext.CourseQuizQuestions.FindAsync(14);
+                if (q14 != null && q14.Question.Contains("Binh"))
+                {
+                    q14.Question = "Tốt sau khi qua sông được đi thêm hướng nào?";
+                    q14.Explanation = "Sau khi qua sông, Tốt được đi ngang nhưng không được đi lùi.";
+                }
+
+                var q22 = await dbContext.CourseQuizQuestions.FindAsync(22);
+                if (q22 != null && q22.Question.Contains("Binh"))
+                {
+                    q22.Question = "Tốt sau khi qua sông được đi ngang không?";
+                    q22.Explanation = "Tốt được đi ngang sau khi qua sông.";
+                }
+
+                var q29 = await dbContext.CourseQuizQuestions.FindAsync(29);
+                if (q29 != null && q29.Question.Contains("Binh"))
+                {
+                    q29.Question = "Tốt có được đi lùi không?";
+                    q29.Explanation = "Tốt không bao giờ được đi lùi.";
+                }
+
+                var q57 = await dbContext.CourseQuizQuestions.FindAsync(57);
+                if (q57 != null && q57.OptionsJson.Contains("Binh"))
+                {
+                    q57.OptionsJson = "[\"Tượng\",\"Mã\",\"Tốt\"]";
+                }
+
+                var q58 = await dbContext.CourseQuizQuestions.FindAsync(58);
+                if (q58 != null && (q58.OptionsJson.Contains("Binh") || q58.Explanation.Contains("Binh")))
+                {
+                    q58.Question = "Quân nào đi thẳng trước khi qua sông?";
+                    q58.OptionsJson = "[\"Tốt\",\"Tướng\",\"Sĩ\"]";
+                    q58.Explanation = "Tốt đi thẳng một ô trước khi qua sông.";
+                }
+
+                var q62 = await dbContext.CourseQuizQuestions.FindAsync(62);
+                if (q62 != null && q62.Question.Contains("Binh"))
+                {
+                    q62.Question = "Tốt sau khi qua sông được đi ngang mấy ô mỗi nước?";
+                    q62.Explanation = "Tốt chỉ được đi ngang một ô mỗi nước.";
+                }
+
+                var q50 = await dbContext.CourseQuizQuestions.FindAsync(50);
+                if (q50 != null && q50.Question.Contains("Binh"))
+                {
+                    q50.Question = "Tốt trước khi qua sông được đi thế nào?";
+                    q50.Explanation = "Tốt chỉ đi thẳng về phía trước trước khi qua sông.";
+                }
+
+                var q51 = await dbContext.CourseQuizQuestions.FindAsync(51);
+                if (q51 != null && q51.Question.Contains("Binh"))
+                {
+                    q51.Question = "Tốt sau khi qua sông được thêm nước đi nào?";
+                    q51.Explanation = "Sau khi qua sông, Tốt được đi ngang nhưng không được đi lùi.";
+                }
+
+                var move5 = await dbContext.OpeningBookMoves.FindAsync(5);
+                if (move5 != null && move5.MoveNotation.Contains("Binh 7"))
+                {
+                    move5.MoveNotation = "Tốt 7 tiến 1 (B7.1)";
+                }
+
+                await dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(">>> Cảnh báo khi chuẩn hóa tên quân Tốt: {Message}", ex.Message);
             }
         }
 

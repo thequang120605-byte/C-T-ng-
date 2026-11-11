@@ -121,7 +121,7 @@
                                     @if (lesson.Lesson.LessonType == "board")
                                     {
                                         <div class="piece-guide">
-                                            <span><b class="red-piece">帥</b> Tướng</span><span><b class="red-piece">仕</b> Sĩ</span><span><b class="red-piece">相</b> Tượng</span><span><b class="red-piece">俥</b> Xe</span><span><b class="red-piece">炮</b> Pháo</span><span><b class="red-piece">傌</b> Mã</span><span><b class="red-piece">兵</b> Binh</span>
+                                            <span><b class="red-piece">帥</b> Tướng</span><span><b class="red-piece">仕</b> Sĩ</span><span><b class="red-piece">相</b> Tượng</span><span><b class="red-piece">俥</b> Xe</span><span><b class="red-piece">炮</b> Pháo</span><span><b class="red-piece">傌</b> Mã</span><span><b class="red-piece">兵</b> Tốt</span>
                                         </div>
                                         <div class="course-board @(lesson.Lesson.Id == 1 ? "course-board-static" : "")" data-visual-lesson="@lesson.Lesson.Id" aria-label="Bàn cờ minh họa">
                                             <svg class="course-board-svg" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMid meet">
@@ -179,7 +179,7 @@
                                             <div><b class="red-piece">俥</b><b class="black-piece">車</b><span>Xe</span><small>Ngang/dọc tự do</small></div>
                                             <div><b class="red-piece">砲</b><b class="black-piece">炮</b><span>Pháo</span><small>Ăn qua đúng 1 ngòi</small></div>
                                             <div><b class="red-piece">傌</b><b class="black-piece">馬</b><span>Mã</span><small>Chữ L, vướng chân</small></div>
-                                            <div><b class="red-piece">兵</b><b class="black-piece">卒</b><span>Binh</span><small>Qua sông được đi ngang</small></div>
+                                            <div><b class="red-piece">兵</b><b class="black-piece">卒</b><span>Tốt</span><small>Qua sông được đi ngang</small></div>
                                         </div>
                                     }
                                     @if (lesson.Questions.Count > 0)
