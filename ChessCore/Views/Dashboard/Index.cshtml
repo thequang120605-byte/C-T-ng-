@@ -1325,58 +1325,78 @@
                     if (!data) return;
 
                     // 1. Cập nhật 4 thẻ KPI
+                    var kpi = data.kpis || data.Kpis || {};
                     var elElo = document.getElementById('kpiEloValue');
                     var elEloSub = document.getElementById('kpiEloSub');
                     var elEloTitle = document.getElementById('kpiEloTitle');
-                    if (elElo && data.kpis) {
-                        elElo.textContent = data.kpis.displayEloText || (data.kpis.avgElo + '');
+                    var kpiAvgElo = kpi.avgElo !== undefined ? kpi.avgElo : (kpi.AvgElo || 0);
+                    var kpiMaxElo = kpi.maxElo !== undefined ? kpi.maxElo : (kpi.MaxElo || 0);
+                    var kpiSelectedCount = kpi.selectedCount !== undefined ? kpi.selectedCount : (kpi.SelectedCount || 0);
+                    var kpiDisplayElo = kpi.displayEloText || kpi.DisplayEloText || (kpiAvgElo + '');
+
+                    if (elElo) {
+                        elElo.textContent = kpiDisplayElo;
                         if (elEloSub) {
-                            elEloSub.textContent = data.kpis.selectedCount > 1 
-                                ? ('Trung bình: ' + data.kpis.avgElo + ' · Cao nhất: ' + data.kpis.maxElo)
+                            elEloSub.textContent = kpiSelectedCount > 1 
+                                ? ('Trung bình: ' + kpiAvgElo + ' · Cao nhất: ' + kpiMaxElo)
                                 : 'Điểm Elo xếp hạng';
                         }
                         if (elEloTitle) {
-                            elEloTitle.textContent = data.kpis.selectedCount > 1 ? 'ĐIỂM ELO (NHÓM)' : 'ĐIỂM ELO';
+                            elEloTitle.textContent = kpiSelectedCount > 1 ? 'ĐIỂM ELO (NHÓM)' : 'ĐIỂM ELO';
                         }
                     }
 
                     var elWinRate = document.getElementById('kpiWinRateValue');
                     var elWinRateSub = document.getElementById('kpiWinRateSub');
-                    if (elWinRate && data.kpis) {
-                        elWinRate.textContent = (data.kpis.winRate || 0).toFixed(1) + '%';
-                        if (elWinRateSub) elWinRateSub.textContent = 'Tỉ lệ thắng gộp của nhóm';
+                    var kpiWinRate = Number(kpi.winRate !== undefined ? kpi.winRate : (kpi.WinRate || 0));
+                    if (elWinRate) {
+                        elWinRate.textContent = kpiWinRate.toFixed(1) + '%';
+                        if (elWinRateSub) elWinRateSub.textContent = kpiSelectedCount > 1 ? 'Tỉ lệ thắng gộp của nhóm' : 'Ván hoàn tất';
                     }
 
                     var elGames = document.getElementById('kpiGamesValue');
                     var elGamesSub = document.getElementById('kpiGamesSub');
-                    if (elGames && data.kpis) {
-                        elGames.textContent = data.kpis.totalGames || 0;
-                        if (elGamesSub) elGamesSub.textContent = 'Tổng ván đấu của ' + data.kpis.selectedCount + ' tài khoản';
+                    var kpiGames = kpi.totalGames !== undefined ? kpi.totalGames : (kpi.TotalGames || 0);
+                    if (elGames) {
+                        elGames.textContent = kpiGames;
+                        if (elGamesSub) elGamesSub.textContent = kpiSelectedCount > 1 ? ('Tổng ván đấu của ' + kpiSelectedCount + ' tài khoản') : 'Tổng ván đã tham gia';
                     }
 
                     var elPuzzles = document.getElementById('kpiPuzzlesValue');
                     var elPuzzlesSub = document.getElementById('kpiPuzzlesSub');
-                    if (elPuzzles && data.kpis) {
-                        elPuzzles.textContent = data.kpis.puzzlesSolved || 0;
-                        if (elPuzzlesSub) elPuzzlesSub.textContent = 'Tổng cờ thế giải thành công';
+                    var kpiPuzzles = kpi.puzzlesSolved !== undefined ? kpi.puzzlesSolved : (kpi.PuzzlesSolved || 0);
+                    if (elPuzzles) {
+                        elPuzzles.textContent = kpiPuzzles;
+                        if (elPuzzlesSub) elPuzzlesSub.textContent = kpiSelectedCount > 1 ? 'Tổng cờ thế giải thành công' : 'Bài thế giải thành công';
                     }
 
                     // 2. Cập nhật bảng Mode Stats
-                    if (data.modeStats && data.modeStats.length > 0) {
-                        modeStatsList = data.modeStats;
+                    var mList = data.modeStats || data.ModeStats;
+                    if (mList && mList.length > 0) {
+                        modeStatsList = mList;
                         var sCreated = 0, sInProgress = 0, sWaiting = 0, sFinished = 0, sWins = 0, sLosses = 0, sDraws = 0;
-                        data.modeStats.forEach(function(m) {
-                            sCreated += m.Created || 0;
-                            sInProgress += m.InProgress || 0;
-                            sWaiting += m.Waiting || 0;
-                            sFinished += m.Finished || 0;
-                            if (m.Mode === 'Online' || m.Mode === 'PvE') {
-                                sWins += m.Wins || 0;
-                                sLosses += m.Losses || 0;
-                            }
-                            sDraws += m.Draws || 0;
+                        mList.forEach(function(m) {
+                            var mode = m.mode || m.Mode || '';
+                            var mCreated = m.created !== undefined ? m.created : (m.Created || 0);
+                            var mInProgress = m.inProgress !== undefined ? m.inProgress : (m.InProgress || 0);
+                            var mWaiting = m.waiting !== undefined ? m.waiting : (m.Waiting || 0);
+                            var mFinished = m.finished !== undefined ? m.finished : (m.Finished || 0);
+                            var mWins = m.wins !== undefined ? m.wins : (m.Wins || 0);
+                            var mLosses = m.losses !== undefined ? m.losses : (m.Losses || 0);
+                            var mDraws = m.draws !== undefined ? m.draws : (m.Draws || 0);
+                            var mWinRate = Number(m.winRate !== undefined ? m.winRate : (m.WinRate || 0));
 
-                            var row = document.getElementById('mode-row-' + m.Mode);
+                            sCreated += mCreated;
+                            sInProgress += mInProgress;
+                            sWaiting += mWaiting;
+                            sFinished += mFinished;
+                            if (mode === 'Online' || mode === 'PvE') {
+                                sWins += mWins;
+                                sLosses += mLosses;
+                            }
+                            sDraws += mDraws;
+
+                            var row = document.getElementById('mode-row-' + mode);
                             if (row) {
                                 var cCreated = row.querySelector('.col-created');
                                 var cInProgress = row.querySelector('.col-inprogress');
@@ -1387,14 +1407,14 @@
                                 var cDraws = row.querySelector('.col-draws');
                                 var cWinRate = row.querySelector('.col-winrate');
 
-                                if (cCreated) cCreated.textContent = m.Created;
-                                if (cInProgress) cInProgress.textContent = m.InProgress;
-                                if (cWaiting) cWaiting.textContent = m.Waiting;
-                                if (cFinished) cFinished.textContent = m.Finished;
-                                if (cWins) cWins.textContent = (m.Mode === 'Online' || m.Mode === 'PvE') ? m.Wins : '—';
-                                if (cLosses) cLosses.textContent = (m.Mode === 'Online' || m.Mode === 'PvE') ? m.Losses : '—';
-                                if (cDraws) cDraws.textContent = m.Draws;
-                                if (cWinRate) cWinRate.textContent = (m.Mode === 'Online' || m.Mode === 'PvE') ? (m.WinRate.toFixed(1) + '%') : '—';
+                                if (cCreated) cCreated.textContent = mCreated;
+                                if (cInProgress) cInProgress.textContent = mInProgress;
+                                if (cWaiting) cWaiting.textContent = mWaiting;
+                                if (cFinished) cFinished.textContent = mFinished;
+                                if (cWins) cWins.textContent = (mode === 'Online' || mode === 'PvE') ? mWins : '—';
+                                if (cLosses) cLosses.textContent = (mode === 'Online' || mode === 'PvE') ? mLosses : '—';
+                                if (cDraws) cDraws.textContent = mDraws;
+                                if (cWinRate) cWinRate.textContent = (mode === 'Online' || mode === 'PvE') ? (mWinRate.toFixed(1) + '%') : '—';
                             }
                         });
 
@@ -1416,29 +1436,45 @@
                         if (tLosses) tLosses.textContent = sLosses;
                         if (tDraws) tDraws.textContent = sDraws;
 
-                        var rankedFinished = data.modeStats.filter(function(m) { return m.Mode === 'Online' || m.Mode === 'PvE'; }).reduce(function(a, b) { return a + b.Finished; }, 0);
+                        var rankedFinished = mList.filter(function(m) { 
+                            var mode = m.mode || m.Mode; 
+                            return mode === 'Online' || mode === 'PvE'; 
+                        }).reduce(function(a, b) { 
+                            var f = b.finished !== undefined ? b.finished : (b.Finished || 0);
+                            return a + f; 
+                        }, 0);
                         var avgWr = rankedFinished > 0 ? (sWins * 100.0 / rankedFinished).toFixed(1) + '%' : '0.0%';
                         if (tWinRate) tWinRate.textContent = avgWr;
                     }
 
                     // 3. Cập nhật thẻ Học tập & Cờ thế
-                    if (data.learning) {
+                    var learning = data.learning || data.Learning;
+                    if (learning) {
                         var lLessons = document.getElementById('learningCompletedLessons');
                         var lQuiz = document.getElementById('learningQuizDetails');
                         var lPuzzles = document.getElementById('learningPuzzlesSolved');
                         var lAttempts = document.getElementById('learningPuzzleAttempts');
 
-                        if (lLessons) lLessons.textContent = data.learning.CompletedLessonRecords + ' / ' + data.learning.TotalLessons + ' bài hoàn thành';
-                        if (lQuiz) lQuiz.innerHTML = data.learning.QuizAttempts + ' lượt làm Quiz · Điểm trung bình: <strong style="color: #10b981;">' + (data.learning.AverageBestQuizScore || 0).toFixed(1) + '%</strong>';
-                        if (lPuzzles) lPuzzles.textContent = data.learning.PuzzlesSolved + ' bài giải thành công';
-                        if (lAttempts) lAttempts.textContent = 'Tổng ' + data.learning.PuzzleAttempts + ' lượt gửi lời giải · Điểm phiên rèn luyện';
+                        var lCompleted = learning.completedLessonRecords !== undefined ? learning.completedLessonRecords : (learning.CompletedLessonRecords || 0);
+                        var lTotal = learning.totalLessons !== undefined ? learning.totalLessons : (learning.TotalLessons || 0);
+                        var lQuizCount = learning.quizAttempts !== undefined ? learning.quizAttempts : (learning.QuizAttempts || 0);
+                        var lAvgQuiz = Number(learning.averageBestQuizScore !== undefined ? learning.averageBestQuizScore : (learning.AverageBestQuizScore || 0));
+                        var lPuzSolved = learning.puzzlesSolved !== undefined ? learning.puzzlesSolved : (learning.PuzzlesSolved || 0);
+                        var lPuzAttempts = learning.puzzleAttempts !== undefined ? learning.puzzleAttempts : (learning.PuzzleAttempts || 0);
+
+                        if (lLessons) lLessons.textContent = lCompleted + ' / ' + lTotal + ' bài hoàn thành';
+                        if (lQuiz) lQuiz.innerHTML = lQuizCount + ' lượt làm Quiz · Điểm trung bình: <strong style="color: #10b981;">' + lAvgQuiz.toFixed(1) + '%</strong>';
+                        if (lPuzzles) lPuzzles.textContent = lPuzSolved + ' bài giải thành công';
+                        if (lAttempts) lAttempts.textContent = 'Tổng ' + lPuzAttempts + ' lượt gửi lời giải · Điểm phiên rèn luyện';
                     }
 
                     // 4. Cập nhật Biểu đồ Doughnut & Bar Chart
-                    if (data.donut) {
-                        var wins = data.donut.Wins || 0;
-                        var draws = data.donut.Draws || 0;
-                        var losses = data.donut.Losses || 0;
+                    var donut = data.donut || data.Donut;
+                    if (donut) {
+                        var wins = donut.wins !== undefined ? donut.wins : (donut.Wins || 0);
+                        var draws = donut.draws !== undefined ? donut.draws : (donut.Draws || 0);
+                        var losses = donut.losses !== undefined ? donut.losses : (donut.Losses || 0);
+                        var donutWr = Number(donut.winRate !== undefined ? donut.winRate : (donut.WinRate || 0));
                         var total = wins + draws + losses;
 
                         var dWinRateVal = document.getElementById('donutWinRateValue');
@@ -1446,7 +1482,7 @@
                         var dDraws = document.getElementById('donutDrawsCount');
                         var dLosses = document.getElementById('donutLossesCount');
 
-                        if (dWinRateVal) dWinRateVal.textContent = (data.donut.WinRate || 0).toFixed(1) + '%';
+                        if (dWinRateVal) dWinRateVal.textContent = donutWr.toFixed(1) + '%';
                         if (dWins) dWins.textContent = wins;
                         if (dDraws) dDraws.textContent = draws;
                         if (dLosses) dLosses.textContent = losses;
@@ -1458,16 +1494,16 @@
                         }
                     }
 
-                    if (modeCompareChartInstance && data.modeStats) {
-                        var finishedData = data.modeStats.map(function(m) { return m.Finished; });
-                        var winsData = data.modeStats.map(function(m) { return m.Wins; });
+                    if (modeCompareChartInstance && mList) {
+                        var finishedData = mList.map(function(m) { return m.finished !== undefined ? m.finished : (m.Finished || 0); });
+                        var winsData = mList.map(function(m) { return m.wins !== undefined ? m.wins : (m.Wins || 0); });
                         modeCompareChartInstance.data.datasets[0].data = finishedData;
                         modeCompareChartInstance.data.datasets[1].data = winsData;
                         modeCompareChartInstance.update();
                     }
 
                     // 5. Cập nhật Bảng so sánh chi tiết kỳ thủ đã chọn
-                    renderComparisonTable(data.users || []);
+                    renderComparisonTable(data.users || data.Users || []);
                 }
 
                 function renderComparisonTable(users) {
@@ -1486,33 +1522,47 @@
                     if (sub) sub.textContent = 'Bảng đối chiếu thành tích trực tiếp giữa ' + users.length + ' tài khoản được chọn';
 
                     var html = '';
-                    users.forEach(function(u) {
-                        var medal = u.Rank === 1 ? '🥇' : (u.Rank === 2 ? '🥈' : (u.Rank === 3 ? '🥉' : '#' + u.Rank));
-                        var isCurrent = (u.Id === myUserId);
-                        var tierClass = u.Elo >= 1500 ? '#ec4899' : (u.Elo >= 1400 ? '#8b5cf6' : (u.Elo >= 1250 ? '#3b82f6' : (u.Elo >= 1150 ? '#10b981' : '#f59e0b')));
-                        var bgRow = isCurrent ? 'background: rgba(217, 119, 6, 0.05); border-left: 3px solid var(--accent-gold);' : '';
+                    users.forEach(function(u, idx) {
+                        var uRank = u.rank !== undefined ? u.rank : (u.Rank !== undefined ? u.Rank : (idx + 1));
+                        var medal = uRank === 1 ? '🥇' : (uRank === 2 ? '🥈' : (uRank === 3 ? '🥉' : '#' + uRank));
+                        var uId = u.id !== undefined ? u.id : (u.Id !== undefined ? u.Id : 0);
+                        var isCurrent = (uId === myUserId) || Boolean(u.isCurrentUser !== undefined ? u.isCurrentUser : u.IsCurrentUser);
+                        var uName = u.username || u.Username || 'Kỳ thủ';
+                        var uPlayerId = u.playerId || u.PlayerId || ('CT-' + uId);
+                        var uElo = u.elo !== undefined ? u.elo : (u.Elo !== undefined ? u.Elo : 0);
+                        var uTitle = u.title || u.Title || 'Kỳ thủ';
+                        var uGames = u.gamesPlayed !== undefined ? u.gamesPlayed : (u.GamesPlayed || 0);
+                        var uWins = u.wins !== undefined ? u.wins : (u.Wins || 0);
+                        var uDraws = u.draws !== undefined ? u.draws : (u.Draws || 0);
+                        var uLosses = u.losses !== undefined ? u.losses : (u.Losses || 0);
+                        var uWinRate = Number(u.winRate !== undefined ? u.winRate : (u.WinRate !== undefined ? u.WinRate : 0));
+                        var uPuzzles = u.puzzlesSolved !== undefined ? u.puzzlesSolved : (u.PuzzlesSolved || 0);
+                        var uLessons = u.lessonsCompleted !== undefined ? u.lessonsCompleted : (u.LessonsCompleted || 0);
+
+                        var tierClass = uElo >= 1500 ? '#ec4899' : (uElo >= 1400 ? '#8b5cf6' : (uElo >= 1250 ? '#3b82f6' : (uElo >= 1150 ? '#10b981' : '#f59e0b')));
+                        var bgRow = isCurrent ? 'background: rgba(217, 119, 6, 0.08); border-left: 4px solid var(--accent-gold);' : '';
 
                         html += '<tr style="border-bottom: 1px solid var(--border-color); ' + bgRow + '">';
                         html += '<td style="padding: 12px 14px; text-align: center; font-weight: 800; font-size: 14px;">' + medal + '</td>';
                         html += '<td style="padding: 12px 18px;">';
-                        html += '  <div style="font-weight: 700; color: var(--text-main); font-size: 13.5px;">' + u.Username + (isCurrent ? ' <span style="color: var(--accent-gold); font-size: 12px;">(Bạn)</span>' : '') + '</div>';
-                        html += '  <div style="font-size: 11px; color: var(--text-muted);">Mã: ' + (u.PlayerId || ('CT-' + u.Id)) + '</div>';
+                        html += '  <div style="font-weight: 700; color: var(--text-main); font-size: 13.5px;">' + uName + (isCurrent ? ' <span style="color: var(--accent-gold); font-size: 12px; font-weight: 800;">(Bạn)</span>' : '') + '</div>';
+                        html += '  <div style="font-size: 11px; color: var(--text-muted);">Mã: ' + uPlayerId + '</div>';
                         html += '</td>';
                         html += '<td style="padding: 12px 14px; text-align: center;">';
-                        html += '  <div style="font-weight: 800; color: var(--accent-gold); font-size: 13.5px;"><i class="fa-solid fa-star" style="font-size: 10px;"></i> ' + u.Elo + '</div>';
-                        html += '  <div style="font-size: 11px; font-weight: 600; color: ' + tierClass + ';">' + (u.Title || 'Kỳ thủ') + '</div>';
+                        html += '  <div style="font-weight: 800; color: var(--accent-gold); font-size: 13.5px;"><i class="fa-solid fa-star" style="font-size: 10px;"></i> ' + uElo + '</div>';
+                        html += '  <div style="font-size: 11px; font-weight: 600; color: ' + tierClass + ';">' + uTitle + '</div>';
                         html += '</td>';
-                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 700;">' + u.GamesPlayed + '</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 700; color: var(--text-main);">' + uGames + '</td>';
                         html += '<td style="padding: 12px 14px; text-align: center;">';
                         html += '  <span class="stat-wdl-pill">';
-                        html += '    <span class="wdl-w"><i class="fa-solid fa-check"></i> ' + u.Wins + '</span> - ';
-                        html += '    <span class="wdl-d">' + u.Draws + '</span> - ';
-                        html += '    <span class="wdl-l"><i class="fa-solid fa-xmark"></i> ' + u.Losses + '</span>';
+                        html += '    <span class="wdl-w" style="color: #10b981; font-weight: 700;"><i class="fa-solid fa-check"></i> ' + uWins + '</span> - ';
+                        html += '    <span class="wdl-d" style="color: #f59e0b; font-weight: 700;">' + uDraws + '</span> - ';
+                        html += '    <span class="wdl-l" style="color: #ef4444; font-weight: 700;"><i class="fa-solid fa-xmark"></i> ' + uLosses + '</span>';
                         html += '  </span>';
                         html += '</td>';
-                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 800; color: ' + (u.WinRate >= 50 ? '#10b981' : '#f59e0b') + ';">' + u.WinRate.toFixed(1) + '%</td>';
-                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #f59e0b;"><i class="fa-solid fa-puzzle-piece"></i> ' + u.PuzzlesSolved + '</td>';
-                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;"><i class="fa-solid fa-graduation-cap"></i> ' + u.LessonsCompleted + '</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 800; color: ' + (uWinRate >= 50 ? '#10b981' : '#f59e0b') + ';">' + uWinRate.toFixed(1) + '%</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #f59e0b;"><i class="fa-solid fa-puzzle-piece"></i> ' + uPuzzles + '</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;"><i class="fa-solid fa-graduation-cap"></i> ' + uLessons + '</td>';
                         html += '</tr>';
                     });
                     tbody.innerHTML = html;
@@ -1531,6 +1581,30 @@
                     var panel = document.getElementById('selectedUsersComparisonPanel');
                     if (panel) panel.style.display = 'none';
                 }
+
+                // Xử lý nạp ban đầu nếu có URL query string ?userIds=... hoặc có sẵn nhiều checkbox
+                (function initSelectedState() {
+                    try {
+                        var urlParams = new URLSearchParams(window.location.search);
+                        var qUserIds = urlParams.get('userIds');
+                        if (qUserIds) {
+                            var targetIds = qUserIds.split(',').map(function(s) { return Number(s.trim()); });
+                            var checkboxes = document.querySelectorAll('.acc-checkbox');
+                            checkboxes.forEach(function(cb) {
+                                cb.checked = targetIds.includes(Number(cb.value));
+                                updateCardHighlight(cb);
+                            });
+                            onAccountCheckChange();
+                        } else {
+                            var checkedBoxes = Array.from(document.querySelectorAll('.acc-checkbox:checked'));
+                            if (checkedBoxes.length > 1) {
+                                onAccountCheckChange();
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Lỗi khởi tạo trạng thái lọc:', e);
+                    }
+                })();
 
                 if (window.Chart) {
                     initAllCharts();
