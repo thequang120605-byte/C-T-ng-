@@ -390,6 +390,9 @@ namespace ChessCore.Controllers
             game.LastMoveAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
 
+            await _dbContext.Entry(game).Reference(g => g.BlackPlayer).LoadAsync();
+            await _dbContext.Entry(game).Reference(g => g.RedPlayer).LoadAsync();
+
             // Ràng buộc phòng kín khi đủ 2 người: Phát tín hiệu ẩn/khóa phòng khỏi sảnh chờ công khai
             await _hubContext.Clients.Group("lobby").SendAsync("RoomLocked", new
             {
@@ -994,6 +997,8 @@ namespace ChessCore.Controllers
                 {
                     var freshGame = await _dbContext.Games
                         .Include(g => g.Moves)
+                        .Include(g => g.RedPlayer)
+                        .Include(g => g.BlackPlayer)
                         .FirstOrDefaultAsync(g => g.Id == id, HttpContext.RequestAborted);
 
                     if (freshGame == null || freshGame.Status != GameStatus.InProgress) return false;
@@ -1887,6 +1892,10 @@ namespace ChessCore.Controllers
                 GameMode = game.GameMode,
                 RedPlayerId = game.RedPlayerId,
                 BlackPlayerId = game.BlackPlayerId,
+                RedPlayerUsername = game.RedPlayer?.Username,
+                BlackPlayerUsername = game.BlackPlayer?.Username,
+                RedPlayerElo = game.RedPlayer?.Elo,
+                BlackPlayerElo = game.BlackPlayer?.Elo,
 
                 BoardPieces =
                     pieces,

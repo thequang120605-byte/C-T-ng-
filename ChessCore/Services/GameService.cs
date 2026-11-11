@@ -70,6 +70,8 @@ namespace ChessCore.Services
         {
             return await _context.Games
                 .Include(g => g.Moves)
+                .Include(g => g.RedPlayer)
+                .Include(g => g.BlackPlayer)
                 .FirstOrDefaultAsync(g => g.Id == gameId);
         }
 

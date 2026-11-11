@@ -275,6 +275,12 @@ app.UseAuthorization();
 
 app.UseStaticFiles();
 
+// Bật hỗ trợ WebSockets cho SignalR real-time độ trễ thấp (<50ms)
+app.UseWebSockets(new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromSeconds(15)
+});
+
 app.MapControllers();
 app.MapHub<ChessCore.Hubs.GameHub>("/gameHub");
 

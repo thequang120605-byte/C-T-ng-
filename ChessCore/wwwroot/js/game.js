@@ -37,6 +37,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // SIGNALR (SAFE INITIALIZATION & REALTIME GROUP)
   // =====================================================
   let connection = null;
+  let currentGameRedPlayer = "";
+  let currentGameBlackPlayer = "";
+  let currentGameRedElo = null;
+  let currentGameBlackElo = null;
 
   function joinSignalRGroup(gid) {
     if (!gid || !connection || typeof signalR === "undefined") return;
@@ -48,8 +52,10 @@ document.addEventListener("DOMContentLoaded", function () {
   if (typeof signalR !== "undefined") {
     try {
       connection = new signalR.HubConnectionBuilder()
-          .withUrl("/gameHub")
-          .withAutomaticReconnect()
+          .withUrl("/gameHub", {
+              transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
+          })
+          .withAutomaticReconnect([0, 1000, 2000, 5000])
           .build();
 
       connection.on("GameUpdated", function (data) {
@@ -884,6 +890,20 @@ document.addEventListener("DOMContentLoaded", function () {
     gameId = data.id;
     joinSignalRGroup(gameId);
 
+    if (data.redPlayerUsername) currentGameRedPlayer = data.redPlayerUsername;
+    if (data.blackPlayerUsername) currentGameBlackPlayer = data.blackPlayerUsername;
+    if (data.redPlayerElo !== undefined && data.redPlayerElo !== null) currentGameRedElo = data.redPlayerElo;
+    if (data.blackPlayerElo !== undefined && data.blackPlayerElo !== null) currentGameBlackElo = data.blackPlayerElo;
+
+    const cancelWaitBtn = document.getElementById("cancel-room-wait-btn");
+    if (cancelWaitBtn) {
+      if (data.status === "InProgress") {
+        cancelWaitBtn.style.display = "none";
+      } else if (data.status === "WaitingForPlayers") {
+        cancelWaitBtn.style.display = "";
+      }
+    }
+
     currentTurn = data.currentTurn;
 
     gameStatus = data.status;
@@ -1133,18 +1153,31 @@ document.addEventListener("DOMContentLoaded", function () {
     const blackPlayerName = document.getElementById("black-player-name");
 
     if (isOnlineMode) {
-      const currentPlayerName = "Bạn";
-      let opponentName = localStorage.getItem("onlineOpponentName");
-      if (!opponentName) {
-        opponentName = (gameStatus === "WaitingForPlayers") ? "Đang chờ đối thủ" : "Đối thủ";
+      const myUsername = window.currentUserName || document.querySelector(".user-display-name")?.textContent?.trim() || "";
+      const playerColor = localStorage.getItem("onlinePlayerColor") || "Red";
+
+      // 1. Tên hiển thị bên Đỏ
+      let redDisplay = currentGameRedPlayer;
+      if (!redDisplay) {
+        redDisplay = (playerColor === "Red" && myUsername) ? myUsername : "Quân Đỏ";
       }
-      const playerColor = localStorage.getItem("onlinePlayerColor");
+      if (currentGameRedElo && currentGameRedPlayer) {
+        redDisplay += ` (${currentGameRedElo})`;
+      }
+
+      // 2. Tên hiển thị bên Đen
+      let blackDisplay = currentGameBlackPlayer;
+      if (!blackDisplay) {
+        blackDisplay = (gameStatus === "WaitingForPlayers") ? "Đang chờ đối thủ..." : ((playerColor === "Black" && myUsername) ? myUsername : "Đối thủ");
+      } else if (currentGameBlackElo) {
+        blackDisplay += ` (${currentGameBlackElo})`;
+      }
 
       if (redPlayerName) {
-        redPlayerName.textContent = playerColor === "Black" ? opponentName : currentPlayerName;
+        redPlayerName.textContent = redDisplay;
       }
       if (blackPlayerName) {
-        blackPlayerName.textContent = playerColor === "Black" ? currentPlayerName : opponentName;
+        blackPlayerName.textContent = blackDisplay;
       }
       return;
     }
@@ -2256,29 +2289,61 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
+      const fromRow = selectedPieceData.row;
+      const fromCol = selectedPieceData.col;
+
+      // OPTIMISTIC MOVE: Di chuyển quân cờ tức thì trên giao diện (giảm độ trễ về 0ms)
+      const backupPieces = JSON.parse(JSON.stringify(initialPieces));
+      const backupTurn = currentTurn;
+      const backupStatus = gameStatus;
+
+      try {
+        initialPieces = initialPieces.filter(p => !(p.row === toRow && p.col === toCol));
+        const moving = initialPieces.find(p => p.row === fromRow && p.col === fromCol);
+        if (moving) {
+          moving.row = toRow;
+          moving.col = toCol;
+        }
+        currentTurn = currentTurn === "Red" ? "Black" : "Red";
+        selectedPieceElement = null;
+        selectedPieceData = null;
+        currentValidMoves = [];
+        clearMoveHighlights();
+        renderPieces();
+        renderLastMoveHighlight(fromRow, fromCol, toRow, toCol);
+        updateTurnStatus();
+        updatePlayerStatus();
+        playSound('move');
+      } catch (optErr) {
+        console.warn("Optimistic move render warning:", optErr);
+      }
+
       isMakingMove = true;
 
       const requestData = {
-        fromX: selectedPieceData.row,
-
-        fromY: selectedPieceData.col,
-
+        fromX: fromRow,
+        fromY: fromCol,
         toX: toRow,
-
         toY: toCol,
       };
 
       const response = await fetch(`${API_BASE_URL}/${gameId}/moves`, {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
+        // Rollback lại bàn cờ cũ nếu server từ chối nước đi
+        initialPieces = backupPieces;
+        currentTurn = backupTurn;
+        gameStatus = backupStatus;
+        renderPieces();
+        updateTurnStatus();
+        updatePlayerStatus();
+
         const errorData = await response.json().catch(() => null);
         if (errorData?.game) {
           updateGameFromApi(errorData.game);

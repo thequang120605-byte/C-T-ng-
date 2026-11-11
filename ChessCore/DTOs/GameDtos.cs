@@ -90,6 +90,10 @@ namespace ChessCore.DTOs
         public string GameMode { get; set; } = string.Empty;
         public int? RedPlayerId { get; set; }
         public int? BlackPlayerId { get; set; }
+        public string? RedPlayerUsername { get; set; }
+        public string? BlackPlayerUsername { get; set; }
+        public int? RedPlayerElo { get; set; }
+        public int? BlackPlayerElo { get; set; }
 
         public List<PieceDto> BoardPieces { get; set; }
             = new();
