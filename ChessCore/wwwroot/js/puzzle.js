@@ -703,14 +703,14 @@
         const srcCircle = document.createElementNS(SVG_NS, "circle");
         srcCircle.setAttribute("cx", fromPos.x);
         srcCircle.setAttribute("cy", fromPos.y);
-        srcCircle.setAttribute("r", 32);
+        srcCircle.setAttribute("r", 44);
         srcCircle.setAttribute("class", "counter-source-circle");
         targetLayer.appendChild(srcCircle);
 
         const destCircle = document.createElementNS(SVG_NS, "circle");
         destCircle.setAttribute("cx", toPos.x);
         destCircle.setAttribute("cy", toPos.y);
-        destCircle.setAttribute("r", 32);
+        destCircle.setAttribute("r", 44);
         destCircle.setAttribute("class", "counter-target-circle");
         targetLayer.appendChild(destCircle);
       }

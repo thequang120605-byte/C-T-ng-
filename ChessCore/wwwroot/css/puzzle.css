@@ -1181,24 +1181,61 @@
 }
 
 .counter-target-circle {
-    fill: rgba(239, 68, 68, 0.28);
+    fill: rgba(239, 68, 68, 0.22);
     stroke: #dc2626;
     stroke-width: 3.5;
     stroke-dasharray: 6 3;
-    animation: counterPulse 1s ease-in-out infinite;
+    pointer-events: none;
+    animation: counterTargetBreathe 1.5s ease-in-out infinite;
 }
 
 .counter-source-circle {
-    fill: none;
+    fill: rgba(239, 68, 68, 0.08);
     stroke: #f87171;
     stroke-width: 2.5;
-    animation: counterPulse 1.2s ease-in-out infinite;
+    pointer-events: none;
+    animation: counterSourceBreathe 1.5s ease-in-out infinite;
 }
 
-@keyframes counterPulse {
-    0% { transform: scale(0.95); opacity: 0.7; }
-    50% { transform: scale(1.05); opacity: 1; }
-    100% { transform: scale(0.95); opacity: 0.7; }
+@keyframes counterTargetBreathe {
+    0%, 100% {
+        stroke-opacity: 0.55;
+        fill-opacity: 0.15;
+    }
+    50% {
+        stroke-opacity: 1;
+        fill-opacity: 0.35;
+    }
+}
+
+@keyframes counterSourceBreathe {
+    0%, 100% {
+        stroke-opacity: 0.45;
+        fill-opacity: 0.04;
+    }
+    50% {
+        stroke-opacity: 0.95;
+        fill-opacity: 0.18;
+    }
+}
+
+.hint-target-circle {
+    fill: rgba(245, 158, 11, 0.3);
+    stroke: #f59e0b;
+    stroke-width: 3.5;
+    cursor: pointer;
+    animation: hintTargetBreathe 1.5s ease-in-out infinite;
+}
+
+@keyframes hintTargetBreathe {
+    0%, 100% {
+        stroke-opacity: 0.6;
+        fill-opacity: 0.18;
+    }
+    50% {
+        stroke-opacity: 1;
+        fill-opacity: 0.45;
+    }
 }
 
 @keyframes counterDash {
