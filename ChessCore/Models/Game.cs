@@ -25,6 +25,7 @@ namespace ChessCore.Models
         public User BlackPlayer { get; set; }
 
         public bool IsRated { get; set; }
+        public bool IsGuestReady { get; set; } = false;
         public DateTime? ResultsProcessedAt { get; set; }
         public string GameMode { get; set; } = "PvP"; // PvP, PvE, Online, AiVsAi
         public int? AiDepth { get; set; }             // AI search depth (1..4) for PvE matches

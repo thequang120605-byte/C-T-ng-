@@ -59,6 +59,7 @@ namespace ChessCore.Data
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `GameMode` VARCHAR(20) NOT NULL DEFAULT 'PvP';", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `OpeningId` INT NULL;", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `IsRated` TINYINT(1) NOT NULL DEFAULT 0;", logger);
+            await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `IsGuestReady` TINYINT(1) NOT NULL DEFAULT 0;", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `ResultsProcessedAt` DATETIME(6) NULL;", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `RoomCode` VARCHAR(50) NOT NULL DEFAULT '';", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `InitialFen` VARCHAR(255) NULL;", logger);
