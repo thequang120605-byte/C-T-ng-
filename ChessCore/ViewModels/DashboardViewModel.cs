@@ -18,6 +18,7 @@ namespace ChessCore.ViewModels
         public List<LeaderboardItem> Leaderboard { get; set; } = new List<LeaderboardItem>();
         public List<PuzzleLeaderboardItem> PuzzleLeaderboard { get; set; } = new List<PuzzleLeaderboardItem>();
         public List<EloPointDto> EloHistory { get; set; } = new List<EloPointDto>();
+        public List<UserAccountOptionDto> AllAccounts { get; set; } = new();
     }
 
     public class EloPointDto
@@ -64,5 +65,57 @@ namespace ChessCore.ViewModels
         public string Username { get; set; }
         public int Elo { get; set; }
         public bool IsCurrentUser { get; set; }
+    }
+
+    public class UserAccountOptionDto
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string PlayerId { get; set; } = string.Empty;
+        public int Elo { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public int GamesPlayed { get; set; }
+        public int Wins { get; set; }
+        public int Losses { get; set; }
+        public int Draws { get; set; }
+        public double WinRate { get; set; }
+        public int PuzzlesSolved { get; set; }
+        public int LessonsCompleted { get; set; }
+        public bool IsCurrentUser { get; set; }
+        public int Rank { get; set; }
+    }
+
+    public class AdvancedStatsRequest
+    {
+        public List<int> UserIds { get; set; } = new();
+    }
+
+    public class AdvancedStatsResponseDto
+    {
+        public AdvancedKpiDto Kpis { get; set; } = new();
+        public List<ChessCore.Services.ModeStatistics> ModeStats { get; set; } = new();
+        public List<UserAccountOptionDto> Users { get; set; } = new();
+        public ChessCore.Services.LearningStatistics Learning { get; set; } = new();
+        public AdvancedDonutDto Donut { get; set; } = new();
+        public Dictionary<string, int> ModeDistribution { get; set; } = new();
+    }
+
+    public class AdvancedKpiDto
+    {
+        public int TotalGames { get; set; }
+        public double WinRate { get; set; }
+        public double AvgElo { get; set; }
+        public int MaxElo { get; set; }
+        public int PuzzlesSolved { get; set; }
+        public int SelectedCount { get; set; }
+        public string DisplayEloText { get; set; } = string.Empty;
+    }
+
+    public class AdvancedDonutDto
+    {
+        public int Wins { get; set; }
+        public int Losses { get; set; }
+        public int Draws { get; set; }
+        public double WinRate { get; set; }
     }
 }

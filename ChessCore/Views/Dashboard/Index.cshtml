@@ -21,6 +21,50 @@
             animation: pulseHighlight 1.2s ease-in-out 2 !important;
             border-color: var(--accent-gold) !important;
         }
+        .btn-adv-filter-action {
+            background: var(--bg-navy-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+        }
+        .btn-adv-filter-action:hover {
+            background: rgba(217, 119, 6, 0.15);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold-dark, #b45309);
+        }
+        .account-check-card {
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .account-check-card:hover {
+            border-color: var(--accent-gold) !important;
+            transform: translateY(-1px);
+        }
+        .account-check-card.checked-card {
+            border-color: var(--accent-gold) !important;
+            background: rgba(217, 119, 6, 0.08) !important;
+        }
+        .stat-wdl-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.04);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .wdl-w { color: #10b981; }
+        .wdl-d { color: #d97706; }
+        .wdl-l { color: #ef4444; }
     </style>
 }
 
@@ -32,34 +76,120 @@
         </div>
     </div>
 
+    <!-- KHU VỰC THỐNG KÊ NÂNG CAO (CHỌN TÀI KHOẢN ĐỂ XEM THỐNG KÊ) -->
+    <div class="panel-box advanced-stats-panel" style="margin-bottom: 24px; padding: 20px 24px; background: var(--bg-navy-panel); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(59, 130, 246, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                    <i class="fa-solid fa-users-viewfinder"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text-main);">
+                        Thống kê nâng cao theo tài khoản
+                    </h2>
+                    <span style="font-size: 12.5px; color: var(--text-muted);">
+                        Chọn các tài khoản bằng checkbox để xem thống kê tổng hợp và đối chiếu so sánh chi tiết
+                    </span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span id="advSelectedBadge" style="background: rgba(217, 119, 6, 0.12); color: var(--accent-gold-dark, #b45309); font-weight: 700; font-size: 12.5px; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(217, 119, 6, 0.3); display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-user-check"></i> Đang xem: <b id="advBadgeText">Cá nhân (@Model.CurrentUser.Username)</b>
+                </span>
+                <button type="button" id="btnToggleAccountList" onclick="toggleAccountList()" style="background: var(--bg-navy-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-chevron-down" id="toggleAccountListIcon"></i> <span id="toggleAccountListText">Danh sách tài khoản</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- DANH SÁCH CHECKBOX TÀI KHOẢN -->
+        <div id="accountListContainer" style="display: block;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                <div style="position: relative; flex: 1; min-width: 240px; max-width: 360px;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+                    <input type="text" id="accountSearchInput" oninput="filterAccountsList()" placeholder="Tìm tên kỳ thủ, ID..." style="width: 100%; padding: 7px 12px 7px 34px; font-size: 13px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-navy-dark); color: var(--text-main); outline: none;" />
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" onclick="selectOnlyMe()" class="btn-adv-filter-action" title="Chỉ xem thống kê tài khoản của bạn">
+                        <i class="fa-solid fa-user"></i> Chỉ tôi
+                    </button>
+                    <button type="button" onclick="selectTopAccounts(3)" class="btn-adv-filter-action" title="Chọn Top 3 kỳ thủ Elo cao nhất">
+                        <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> Top 3
+                    </button>
+                    <button type="button" onclick="selectTopAccounts(5)" class="btn-adv-filter-action" title="Chọn Top 5 kỳ thủ Elo cao nhất">
+                        <i class="fa-solid fa-ranking-star" style="color: #3b82f6;"></i> Top 5
+                    </button>
+                    <button type="button" onclick="selectAllAccounts()" class="btn-adv-filter-action" title="Chọn tất cả tài khoản">
+                        <i class="fa-solid fa-check-double"></i> Chọn tất cả
+                    </button>
+                    <button type="button" onclick="clearAllAccounts()" class="btn-adv-filter-action" title="Bỏ chọn toàn bộ">
+                        <i class="fa-solid fa-xmark"></i> Bỏ chọn
+                    </button>
+                </div>
+            </div>
+
+            <!-- GRID TÀI KHOẢN VỚI CHECKBOX -->
+            <div id="accountCheckboxGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; max-height: 220px; overflow-y: auto; padding: 6px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-navy-dark);">
+                @foreach (var acc in Model.AllAccounts)
+                {
+                    var isMe = acc.IsCurrentUser;
+                    var tierColor = acc.Elo >= 1500 ? "#ec4899" : (acc.Elo >= 1400 ? "#8b5cf6" : (acc.Elo >= 1250 ? "#3b82f6" : (acc.Elo >= 1150 ? "#10b981" : "#f59e0b")));
+                    <label class="account-check-card @(isMe ? "checked-card" : "")" id="acc-card-@acc.Id" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-navy-panel); cursor: pointer; transition: all 0.15s ease;">
+                        <input type="checkbox" class="acc-checkbox" value="@acc.Id" data-username="@acc.Username" data-elo="@acc.Elo" data-isme="@(isMe ? "true" : "false")" @(isMe ? "checked" : "") onchange="onAccountCheckChange()" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-gold);" />
+                        <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(212,175,55,0.1); color: var(--accent-gold); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px;">
+                            @(acc.Rank <= 3 ? (acc.Rank == 1 ? "🥇" : (acc.Rank == 2 ? "🥈" : "🥉")) : $"#{acc.Rank}")
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                @acc.Username @(isMe ? "(Bạn)" : "")
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                <span style="color: var(--accent-gold); font-weight: 700;"><i class="fa-solid fa-star" style="font-size: 9px;"></i> @acc.Elo</span>
+                                <span>•</span>
+                                <span style="color: @tierColor; font-weight: 600;">@acc.Title</span>
+                            </div>
+                        </div>
+                    </label>
+                }
+            </div>
+            <div id="advSearchEmpty" style="display: none; text-align: center; padding: 16px; color: var(--text-muted); font-size: 13px;">
+                Không tìm thấy tài khoản phù hợp với từ khóa.
+            </div>
+        </div>
+    </div>
+
     <!-- STATS GRID -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
             <div class="stat-info">
-                <h3>ĐIỂM ELO</h3>
-                <p class="stat-value">@Model.CurrentUser.Elo</p>
+                <h3 id="kpiEloTitle">ĐIỂM ELO</h3>
+                <p class="stat-value" id="kpiEloValue">@Model.CurrentUser.Elo</p>
+                <span id="kpiEloSub" style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 3px;">Hạng #@Model.RankIndex</span>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="color: #10b981; background: rgba(16,185,129,0.1);"><i class="fa-solid fa-medal"></i></div>
             <div class="stat-info">
-                <h3>TỈ LỆ THẮNG</h3>
-                <p class="stat-value">@Model.WinRate%</p>
+                <h3 id="kpiWinRateTitle">TỈ LỆ THẮNG</h3>
+                <p class="stat-value" id="kpiWinRateValue">@Model.WinRate%</p>
+                <span id="kpiWinRateSub" style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 3px;">Ván hoàn tất</span>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="color: #3b82f6; background: rgba(59,130,246,0.1);"><i class="fa-solid fa-chess"></i></div>
             <div class="stat-info">
-                <h3>TỔNG SỐ TRẬN</h3>
-                <p class="stat-value">@Model.CurrentUser.GamesPlayed</p>
+                <h3 id="kpiGamesTitle">TỔNG SỐ TRẬN</h3>
+                <p class="stat-value" id="kpiGamesValue">@Model.CurrentUser.GamesPlayed</p>
+                <span id="kpiGamesSub" style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 3px;">Tổng ván đã tham gia</span>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="color: #f59e0b; background: rgba(245,158,11,0.1);"><i class="fa-solid fa-puzzle-piece"></i></div>
             <div class="stat-info">
-                <h3>CỜ THẾ ĐÃ GIẢI</h3>
-                <p class="stat-value">@Model.PuzzlesSolved</p>
+                <h3 id="kpiPuzzlesTitle">CỜ THẾ ĐÃ GIẢI</h3>
+                <p class="stat-value" id="kpiPuzzlesValue">@Model.PuzzlesSolved</p>
+                <span id="kpiPuzzlesSub" style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 3px;">Bài thế giải thành công</span>
             </div>
         </div>
     </div>
@@ -77,10 +207,10 @@
                 </div>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <a href="/Dashboard/ExportExcel" style="padding: 9px 18px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25); transition: all 0.2s;" title="Tải file bảng tính Excel .xlsx định dạng chuẩn đẹp">
+                <a id="btnExportExcel" href="/Dashboard/ExportExcel" style="padding: 9px 18px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25); transition: all 0.2s;" title="Tải file bảng tính Excel .xlsx định dạng chuẩn đẹp">
                     <i class="fa-solid fa-file-excel" style="font-size: 15px;"></i> Tải báo cáo Excel
                 </a>
-                <a href="/Dashboard/Export" style="padding: 9px 14px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); color: #3b82f6; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" title="Tải file dữ liệu CSV">
+                <a id="btnExportCsv" href="/Dashboard/Export" style="padding: 9px 14px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); color: #3b82f6; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" title="Tải file dữ liệu CSV">
                     <i class="fa-solid fa-file-csv" style="font-size: 14px;"></i> CSV
                 </a>
             </div>
@@ -118,7 +248,7 @@
                                 pSumLosses += r.Losses;
                             }
                             pSumDraws += r.Draws;
-                            <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.15s ease;" onmouseover="this.style.background='var(--bg-navy-light)'" onmouseout="this.style.background='transparent'">
+                            <tr id="mode-row-@r.Mode" style="border-bottom: 1px solid var(--border-color); transition: background 0.15s ease;" onmouseover="this.style.background='var(--bg-navy-light)'" onmouseout="this.style.background='transparent'">
                                 <td style="padding: 12px 18px; font-weight: 700; color: var(--text-main);">
                                     @if (r.Mode == "Online") { <i class="fa-solid fa-earth-americas" style="color: #3b82f6; margin-right: 8px;" title="Online"></i> }
                                     else if (r.Mode == "PvE") { <i class="fa-solid fa-robot" style="color: #10b981; margin-right: 8px;" title="Chơi với máy"></i> }
@@ -127,32 +257,32 @@
                                     else { <i class="fa-solid fa-chess" style="color: var(--accent-gold); margin-right: 8px;"></i> }
                                     @r.Label
                                 </td>
-                                <td style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.Created</td>
-                                <td style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.InProgress</td>
-                                <td style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.Waiting</td>
-                                <td style="padding: 12px 14px; text-align: center; font-weight: 700; color: var(--text-main);">@r.Finished</td>
-                                <td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;">@((r.Mode == "Online" || r.Mode == "PvE") ? r.Wins.ToString() : "—")</td>
-                                <td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #ef4444;">@((r.Mode == "Online" || r.Mode == "PvE") ? r.Losses.ToString() : "—")</td>
-                                <td style="padding: 12px 14px; text-align: center; font-weight: 600; color: #f59e0b;">@r.Draws</td>
-                                <td style="padding: 12px 18px; text-align: right; font-weight: 800; color: var(--accent-gold);">
+                                <td class="col-created" style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.Created</td>
+                                <td class="col-inprogress" style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.InProgress</td>
+                                <td class="col-waiting" style="padding: 12px 14px; text-align: center; color: var(--text-muted);">@r.Waiting</td>
+                                <td class="col-finished" style="padding: 12px 14px; text-align: center; font-weight: 700; color: var(--text-main);">@r.Finished</td>
+                                <td class="col-wins" style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;">@((r.Mode == "Online" || r.Mode == "PvE") ? r.Wins.ToString() : "—")</td>
+                                <td class="col-losses" style="padding: 12px 14px; text-align: center; font-weight: 700; color: #ef4444;">@((r.Mode == "Online" || r.Mode == "PvE") ? r.Losses.ToString() : "—")</td>
+                                <td class="col-draws" style="padding: 12px 14px; text-align: center; font-weight: 600; color: #f59e0b;">@r.Draws</td>
+                                <td class="col-winrate" style="padding: 12px 18px; text-align: right; font-weight: 800; color: var(--accent-gold);">
                                     @((r.Mode == "Online" || r.Mode == "PvE") ? r.WinRate.ToString("0.0") + "%" : "—")
                                 </td>
                             </tr>
                         }
                         int pFinishedRanked = Model.ModeStats.Where(m => m.Mode == "Online" || m.Mode == "PvE").Sum(m => m.Finished);
                         double pAvgWinRate = pFinishedRanked > 0 ? Math.Round((double)pSumWins * 100.0 / pFinishedRanked, 1) : 0;
-                        <tr style="background: rgba(217, 119, 6, 0.08); font-weight: 700; border-top: 2px solid var(--border-color);">
+                        <tr id="mode-row-total" style="background: rgba(217, 119, 6, 0.08); font-weight: 700; border-top: 2px solid var(--border-color);">
                             <td style="padding: 14px 18px; color: var(--text-main);">
                                 <i class="fa-solid fa-calculator" style="color: var(--accent-gold); margin-right: 8px;"></i> TỔNG CỘNG THÀNH TÍCH
                             </td>
-                            <td style="padding: 14px 14px; text-align: center; color: var(--text-main);">@pSumCreated</td>
-                            <td style="padding: 14px 14px; text-align: center; color: var(--text-main);">@pSumInProgress</td>
-                            <td style="padding: 14px 14px; text-align: center; color: var(--text-main);">@pSumWaiting</td>
-                            <td style="padding: 14px 14px; text-align: center; color: var(--text-main); font-weight: 800;">@pSumFinished</td>
-                            <td style="padding: 14px 14px; text-align: center; color: #10b981; font-weight: 800;">@pSumWins</td>
-                            <td style="padding: 14px 14px; text-align: center; color: #ef4444; font-weight: 800;">@pSumLosses</td>
-                            <td style="padding: 14px 14px; text-align: center; color: #f59e0b; font-weight: 800;">@pSumDraws</td>
-                            <td style="padding: 14px 18px; text-align: right; color: var(--accent-gold-dark, #b45309); font-weight: 900; font-size: 14px;">
+                            <td id="tot-created" style="padding: 14px 14px; text-align: center; color: var(--text-main);">@pSumCreated</td>
+                            <td id="tot-inprogress" style="padding: 14px 14px; text-align: center; color: var(--text-main);">@pSumInProgress</td>
+                            <td id="tot-waiting" style="padding: 14px 14px; text-align: center; color: var(--text-main);">@pSumWaiting</td>
+                            <td id="tot-finished" style="padding: 14px 14px; text-align: center; color: var(--text-main); font-weight: 800;">@pSumFinished</td>
+                            <td id="tot-wins" style="padding: 14px 14px; text-align: center; color: #10b981; font-weight: 800;">@pSumWins</td>
+                            <td id="tot-losses" style="padding: 14px 14px; text-align: center; color: #ef4444; font-weight: 800;">@pSumLosses</td>
+                            <td id="tot-draws" style="padding: 14px 14px; text-align: center; color: #f59e0b; font-weight: 800;">@pSumDraws</td>
+                            <td id="tot-winrate" style="padding: 14px 18px; text-align: right; color: var(--accent-gold-dark, #b45309); font-weight: 900; font-size: 14px;">
                                 @pAvgWinRate.ToString("0.0")%
                             </td>
                         </tr>
@@ -174,10 +304,10 @@
                 </div>
                 <div>
                     <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tiến độ Khóa học</div>
-                    <div style="font-size: 15px; font-weight: 800; color: var(--text-main); margin-top: 2px;">
+                    <div id="learningCompletedLessons" style="font-size: 15px; font-weight: 800; color: var(--text-main); margin-top: 2px;">
                         @Model.Learning.CompletedLessonRecords / @Model.Learning.TotalLessons bài hoàn thành
                     </div>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                    <div id="learningQuizDetails" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
                         @Model.Learning.QuizAttempts lượt làm Quiz · Điểm trung bình: <strong style="color: #10b981;">@Model.Learning.AverageBestQuizScore%</strong>
                     </div>
                 </div>
@@ -189,14 +319,53 @@
                 </div>
                 <div>
                     <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tiến độ Cờ Thế</div>
-                    <div style="font-size: 15px; font-weight: 800; color: var(--text-main); margin-top: 2px;">
+                    <div id="learningPuzzlesSolved" style="font-size: 15px; font-weight: 800; color: var(--text-main); margin-top: 2px;">
                         @Model.Learning.PuzzlesSolved bài giải thành công
                     </div>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                    <div id="learningPuzzleAttempts" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
                         Tổng @Model.Learning.PuzzleAttempts lượt gửi lời giải · Điểm phiên rèn luyện
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- BẢNG SO SÁNH CHI TIẾT CÁC KỲ THỦ ĐƯỢC CHỌN (HEAD-TO-HEAD COMPARISON) -->
+    <div id="selectedUsersComparisonPanel" class="panel-box" style="display: none; margin-bottom: 24px; padding: 22px 24px; background: var(--bg-navy-panel); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                    <i class="fa-solid fa-code-compare"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text-main);">
+                        Đối chiếu & So sánh chi tiết các Kỳ thủ đã chọn
+                    </h2>
+                    <span id="comparisonTableSub" style="font-size: 12.5px; color: var(--text-muted);">
+                        Bảng phân tích trực quan phong độ giữa các tài khoản được chọn
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-navy-dark);">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px;">
+                <thead>
+                    <tr style="background: var(--bg-navy-panel); border-bottom: 2px solid var(--border-color); color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="padding: 12px 14px; text-align: center; width: 60px;">Hạng</th>
+                        <th style="padding: 12px 18px;">Kỳ thủ</th>
+                        <th style="padding: 12px 14px; text-align: center;">Elo & Kỳ lực</th>
+                        <th style="padding: 12px 14px; text-align: center;">Tổng ván</th>
+                        <th style="padding: 12px 14px; text-align: center;">Thắng - Hòa - Thua</th>
+                        <th style="padding: 12px 14px; text-align: center;">Tỉ lệ thắng</th>
+                        <th style="padding: 12px 14px; text-align: center;">Cờ thế</th>
+                        <th style="padding: 12px 14px; text-align: center;">Khóa học</th>
+                    </tr>
+                </thead>
+                <tbody id="selectedUsersTableBody">
+                    <!-- Được render tự động bằng JavaScript -->
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -832,7 +1001,9 @@
                 }
 
                 var outcomeChartInstance = null;
+                var modeCompareChartInstance = null;
                 var modeStatsList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ModeStats ?? new List<ChessCore.Services.ModeStatistics>()));
+                var myUserId = @Model.CurrentUser.Id;
 
                 window.onDonutFilterChange = function() {
                     var select = document.getElementById('donutModeFilter');
@@ -948,7 +1119,7 @@
                     var finishedData = modeStatsRaw.map(function(m) { return m.Finished; });
                     var winsData = modeStatsRaw.map(function(m) { return m.Wins; });
 
-                    new Chart(ctx, {
+                    modeCompareChartInstance = new Chart(ctx, {
                         type: 'bar',
                         data: {
                             labels: labels,
@@ -1014,6 +1185,351 @@
                             }
                         }
                     });
+                }
+
+                // =========================================================================
+                // THỐNG KÊ NÂNG CAO THEO NHÓM TÀI KHOẢN (ADVANCED MULTI-ACCOUNT STATS)
+                // =========================================================================
+                var advDebounceTimer = null;
+
+                window.toggleAccountList = function() {
+                    var container = document.getElementById('accountListContainer');
+                    var icon = document.getElementById('toggleAccountListIcon');
+                    var text = document.getElementById('toggleAccountListText');
+                    if (!container) return;
+                    if (container.style.display === 'none') {
+                        container.style.display = 'block';
+                        if (icon) icon.className = 'fa-solid fa-chevron-up';
+                        if (text) text.textContent = 'Thu gọn';
+                    } else {
+                        container.style.display = 'none';
+                        if (icon) icon.className = 'fa-solid fa-chevron-down';
+                        if (text) text.textContent = 'Chọn tài khoản';
+                    }
+                };
+
+                window.filterAccountsList = function() {
+                    var q = (document.getElementById('accountSearchInput')?.value || '').toLowerCase().trim();
+                    var cards = document.querySelectorAll('.account-check-card');
+                    var visibleCount = 0;
+                    cards.forEach(function(card) {
+                        var text = card.textContent.toLowerCase();
+                        var match = !q || text.includes(q);
+                        card.style.display = match ? 'flex' : 'none';
+                        if (match) visibleCount++;
+                    });
+                    var emptyEl = document.getElementById('advSearchEmpty');
+                    if (emptyEl) emptyEl.style.display = (visibleCount === 0) ? 'block' : 'none';
+                };
+
+                window.selectOnlyMe = function() {
+                    var checkboxes = document.querySelectorAll('.acc-checkbox');
+                    checkboxes.forEach(function(cb) {
+                        cb.checked = (Number(cb.value) === myUserId);
+                        updateCardHighlight(cb);
+                    });
+                    onAccountCheckChange();
+                };
+
+                window.selectAllAccounts = function() {
+                    var checkboxes = document.querySelectorAll('.acc-checkbox');
+                    checkboxes.forEach(function(cb) {
+                        cb.checked = true;
+                        updateCardHighlight(cb);
+                    });
+                    onAccountCheckChange();
+                };
+
+                window.clearAllAccounts = function() {
+                    var checkboxes = document.querySelectorAll('.acc-checkbox');
+                    checkboxes.forEach(function(cb) {
+                        cb.checked = false;
+                        updateCardHighlight(cb);
+                    });
+                    onAccountCheckChange();
+                };
+
+                window.selectTopAccounts = function(count) {
+                    var checkboxes = Array.from(document.querySelectorAll('.acc-checkbox'));
+                    checkboxes.forEach(function(cb, idx) {
+                        cb.checked = (idx < count);
+                        updateCardHighlight(cb);
+                    });
+                    onAccountCheckChange();
+                };
+
+                function updateCardHighlight(cb) {
+                    var card = cb.closest('.account-check-card');
+                    if (card) {
+                        card.classList.toggle('checked-card', cb.checked);
+                    }
+                }
+
+                window.onAccountCheckChange = function() {
+                    var checkboxes = Array.from(document.querySelectorAll('.acc-checkbox'));
+                    checkboxes.forEach(updateCardHighlight);
+
+                    var checkedBoxes = checkboxes.filter(function(cb) { return cb.checked; });
+                    var selectedIds = checkedBoxes.map(function(cb) { return Number(cb.value); });
+
+                    // Cập nhật nhãn badge
+                    var badgeText = document.getElementById('advBadgeText');
+                    if (badgeText) {
+                        if (selectedIds.length === 0) {
+                            badgeText.textContent = 'Chưa chọn tài khoản nào';
+                        } else if (selectedIds.length === 1) {
+                            var uName = checkedBoxes[0].dataset.username || 'Kỳ thủ';
+                            badgeText.textContent = (selectedIds[0] === myUserId) ? 'Cá nhân (Bạn)' : uName;
+                        } else if (selectedIds.length === checkboxes.length) {
+                            badgeText.textContent = 'Toàn bộ hệ thống (' + selectedIds.length + ' tài khoản)';
+                        } else {
+                            var names = checkedBoxes.slice(0, 3).map(function(cb) { return cb.dataset.username; }).join(', ');
+                            if (checkedBoxes.length > 3) names += ' +' + (checkedBoxes.length - 3);
+                            badgeText.textContent = selectedIds.length + ' tài khoản (' + names + ')';
+                        }
+                    }
+
+                    // Cập nhật link xuất file
+                    var qIds = selectedIds.join(',');
+                    var btnExcel = document.getElementById('btnExportExcel');
+                    var btnCsv = document.getElementById('btnExportCsv');
+                    if (btnExcel) btnExcel.href = '/Dashboard/ExportExcel' + (qIds ? '?userIds=' + qIds : '');
+                    if (btnCsv) btnCsv.href = '/Dashboard/Export' + (qIds ? '?userIds=' + qIds : '');
+
+                    // Debounce gọi API cập nhật số liệu
+                    clearTimeout(advDebounceTimer);
+                    advDebounceTimer = setTimeout(function() {
+                        fetchAdvancedStats(selectedIds);
+                    }, 250);
+                };
+
+                function fetchAdvancedStats(ids) {
+                    if (ids.length === 0) {
+                        // Bỏ chọn toàn bộ: reset về 0
+                        renderEmptyStats();
+                        return;
+                    }
+
+                    var url = '/Dashboard/AdvancedStats?userIds=' + ids.join(',');
+                    fetch(url)
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            applyAdvancedStatsData(data);
+                        })
+                        .catch(function(err) {
+                            console.error('Lỗi nạp thống kê nâng cao:', err);
+                        });
+                }
+
+                function applyAdvancedStatsData(data) {
+                    if (!data) return;
+
+                    // 1. Cập nhật 4 thẻ KPI
+                    var elElo = document.getElementById('kpiEloValue');
+                    var elEloSub = document.getElementById('kpiEloSub');
+                    var elEloTitle = document.getElementById('kpiEloTitle');
+                    if (elElo && data.kpis) {
+                        elElo.textContent = data.kpis.displayEloText || (data.kpis.avgElo + '');
+                        if (elEloSub) {
+                            elEloSub.textContent = data.kpis.selectedCount > 1 
+                                ? ('Trung bình: ' + data.kpis.avgElo + ' · Cao nhất: ' + data.kpis.maxElo)
+                                : 'Điểm Elo xếp hạng';
+                        }
+                        if (elEloTitle) {
+                            elEloTitle.textContent = data.kpis.selectedCount > 1 ? 'ĐIỂM ELO (NHÓM)' : 'ĐIỂM ELO';
+                        }
+                    }
+
+                    var elWinRate = document.getElementById('kpiWinRateValue');
+                    var elWinRateSub = document.getElementById('kpiWinRateSub');
+                    if (elWinRate && data.kpis) {
+                        elWinRate.textContent = (data.kpis.winRate || 0).toFixed(1) + '%';
+                        if (elWinRateSub) elWinRateSub.textContent = 'Tỉ lệ thắng gộp của nhóm';
+                    }
+
+                    var elGames = document.getElementById('kpiGamesValue');
+                    var elGamesSub = document.getElementById('kpiGamesSub');
+                    if (elGames && data.kpis) {
+                        elGames.textContent = data.kpis.totalGames || 0;
+                        if (elGamesSub) elGamesSub.textContent = 'Tổng ván đấu của ' + data.kpis.selectedCount + ' tài khoản';
+                    }
+
+                    var elPuzzles = document.getElementById('kpiPuzzlesValue');
+                    var elPuzzlesSub = document.getElementById('kpiPuzzlesSub');
+                    if (elPuzzles && data.kpis) {
+                        elPuzzles.textContent = data.kpis.puzzlesSolved || 0;
+                        if (elPuzzlesSub) elPuzzlesSub.textContent = 'Tổng cờ thế giải thành công';
+                    }
+
+                    // 2. Cập nhật bảng Mode Stats
+                    if (data.modeStats && data.modeStats.length > 0) {
+                        modeStatsList = data.modeStats;
+                        var sCreated = 0, sInProgress = 0, sWaiting = 0, sFinished = 0, sWins = 0, sLosses = 0, sDraws = 0;
+                        data.modeStats.forEach(function(m) {
+                            sCreated += m.Created || 0;
+                            sInProgress += m.InProgress || 0;
+                            sWaiting += m.Waiting || 0;
+                            sFinished += m.Finished || 0;
+                            if (m.Mode === 'Online' || m.Mode === 'PvE') {
+                                sWins += m.Wins || 0;
+                                sLosses += m.Losses || 0;
+                            }
+                            sDraws += m.Draws || 0;
+
+                            var row = document.getElementById('mode-row-' + m.Mode);
+                            if (row) {
+                                var cCreated = row.querySelector('.col-created');
+                                var cInProgress = row.querySelector('.col-inprogress');
+                                var cWaiting = row.querySelector('.col-waiting');
+                                var cFinished = row.querySelector('.col-finished');
+                                var cWins = row.querySelector('.col-wins');
+                                var cLosses = row.querySelector('.col-losses');
+                                var cDraws = row.querySelector('.col-draws');
+                                var cWinRate = row.querySelector('.col-winrate');
+
+                                if (cCreated) cCreated.textContent = m.Created;
+                                if (cInProgress) cInProgress.textContent = m.InProgress;
+                                if (cWaiting) cWaiting.textContent = m.Waiting;
+                                if (cFinished) cFinished.textContent = m.Finished;
+                                if (cWins) cWins.textContent = (m.Mode === 'Online' || m.Mode === 'PvE') ? m.Wins : '—';
+                                if (cLosses) cLosses.textContent = (m.Mode === 'Online' || m.Mode === 'PvE') ? m.Losses : '—';
+                                if (cDraws) cDraws.textContent = m.Draws;
+                                if (cWinRate) cWinRate.textContent = (m.Mode === 'Online' || m.Mode === 'PvE') ? (m.WinRate.toFixed(1) + '%') : '—';
+                            }
+                        });
+
+                        // Cập nhật dòng tổng cộng
+                        var tCreated = document.getElementById('tot-created');
+                        var tInProgress = document.getElementById('tot-inprogress');
+                        var tWaiting = document.getElementById('tot-waiting');
+                        var tFinished = document.getElementById('tot-finished');
+                        var tWins = document.getElementById('tot-wins');
+                        var tLosses = document.getElementById('tot-losses');
+                        var tDraws = document.getElementById('tot-draws');
+                        var tWinRate = document.getElementById('tot-winrate');
+
+                        if (tCreated) tCreated.textContent = sCreated;
+                        if (tInProgress) tInProgress.textContent = sInProgress;
+                        if (tWaiting) tWaiting.textContent = sWaiting;
+                        if (tFinished) tFinished.textContent = sFinished;
+                        if (tWins) tWins.textContent = sWins;
+                        if (tLosses) tLosses.textContent = sLosses;
+                        if (tDraws) tDraws.textContent = sDraws;
+
+                        var rankedFinished = data.modeStats.filter(function(m) { return m.Mode === 'Online' || m.Mode === 'PvE'; }).reduce(function(a, b) { return a + b.Finished; }, 0);
+                        var avgWr = rankedFinished > 0 ? (sWins * 100.0 / rankedFinished).toFixed(1) + '%' : '0.0%';
+                        if (tWinRate) tWinRate.textContent = avgWr;
+                    }
+
+                    // 3. Cập nhật thẻ Học tập & Cờ thế
+                    if (data.learning) {
+                        var lLessons = document.getElementById('learningCompletedLessons');
+                        var lQuiz = document.getElementById('learningQuizDetails');
+                        var lPuzzles = document.getElementById('learningPuzzlesSolved');
+                        var lAttempts = document.getElementById('learningPuzzleAttempts');
+
+                        if (lLessons) lLessons.textContent = data.learning.CompletedLessonRecords + ' / ' + data.learning.TotalLessons + ' bài hoàn thành';
+                        if (lQuiz) lQuiz.innerHTML = data.learning.QuizAttempts + ' lượt làm Quiz · Điểm trung bình: <strong style="color: #10b981;">' + (data.learning.AverageBestQuizScore || 0).toFixed(1) + '%</strong>';
+                        if (lPuzzles) lPuzzles.textContent = data.learning.PuzzlesSolved + ' bài giải thành công';
+                        if (lAttempts) lAttempts.textContent = 'Tổng ' + data.learning.PuzzleAttempts + ' lượt gửi lời giải · Điểm phiên rèn luyện';
+                    }
+
+                    // 4. Cập nhật Biểu đồ Doughnut & Bar Chart
+                    if (data.donut) {
+                        var wins = data.donut.Wins || 0;
+                        var draws = data.donut.Draws || 0;
+                        var losses = data.donut.Losses || 0;
+                        var total = wins + draws + losses;
+
+                        var dWinRateVal = document.getElementById('donutWinRateValue');
+                        var dWins = document.getElementById('donutWinsCount');
+                        var dDraws = document.getElementById('donutDrawsCount');
+                        var dLosses = document.getElementById('donutLossesCount');
+
+                        if (dWinRateVal) dWinRateVal.textContent = (data.donut.WinRate || 0).toFixed(1) + '%';
+                        if (dWins) dWins.textContent = wins;
+                        if (dDraws) dDraws.textContent = draws;
+                        if (dLosses) dLosses.textContent = losses;
+
+                        if (outcomeChartInstance) {
+                            outcomeChartInstance.data.datasets[0].data = total === 0 ? [1, 0, 0] : [wins, draws, losses];
+                            outcomeChartInstance.data.datasets[0].backgroundColor = total === 0 ? ['#94a3b8', '#94a3b8', '#94a3b8'] : ['#10b981', '#f59e0b', '#ef4444'];
+                            outcomeChartInstance.update();
+                        }
+                    }
+
+                    if (modeCompareChartInstance && data.modeStats) {
+                        var finishedData = data.modeStats.map(function(m) { return m.Finished; });
+                        var winsData = data.modeStats.map(function(m) { return m.Wins; });
+                        modeCompareChartInstance.data.datasets[0].data = finishedData;
+                        modeCompareChartInstance.data.datasets[1].data = winsData;
+                        modeCompareChartInstance.update();
+                    }
+
+                    // 5. Cập nhật Bảng so sánh chi tiết kỳ thủ đã chọn
+                    renderComparisonTable(data.users || []);
+                }
+
+                function renderComparisonTable(users) {
+                    var panel = document.getElementById('selectedUsersComparisonPanel');
+                    var tbody = document.getElementById('selectedUsersTableBody');
+                    var sub = document.getElementById('comparisonTableSub');
+                    if (!panel || !tbody) return;
+
+                    if (!users || users.length <= 1) {
+                        panel.style.display = 'none';
+                        tbody.innerHTML = '';
+                        return;
+                    }
+
+                    panel.style.display = 'block';
+                    if (sub) sub.textContent = 'Bảng đối chiếu thành tích trực tiếp giữa ' + users.length + ' tài khoản được chọn';
+
+                    var html = '';
+                    users.forEach(function(u) {
+                        var medal = u.Rank === 1 ? '🥇' : (u.Rank === 2 ? '🥈' : (u.Rank === 3 ? '🥉' : '#' + u.Rank));
+                        var isCurrent = (u.Id === myUserId);
+                        var tierClass = u.Elo >= 1500 ? '#ec4899' : (u.Elo >= 1400 ? '#8b5cf6' : (u.Elo >= 1250 ? '#3b82f6' : (u.Elo >= 1150 ? '#10b981' : '#f59e0b')));
+                        var bgRow = isCurrent ? 'background: rgba(217, 119, 6, 0.05); border-left: 3px solid var(--accent-gold);' : '';
+
+                        html += '<tr style="border-bottom: 1px solid var(--border-color); ' + bgRow + '">';
+                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 800; font-size: 14px;">' + medal + '</td>';
+                        html += '<td style="padding: 12px 18px;">';
+                        html += '  <div style="font-weight: 700; color: var(--text-main); font-size: 13.5px;">' + u.Username + (isCurrent ? ' <span style="color: var(--accent-gold); font-size: 12px;">(Bạn)</span>' : '') + '</div>';
+                        html += '  <div style="font-size: 11px; color: var(--text-muted);">Mã: ' + (u.PlayerId || ('CT-' + u.Id)) + '</div>';
+                        html += '</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center;">';
+                        html += '  <div style="font-weight: 800; color: var(--accent-gold); font-size: 13.5px;"><i class="fa-solid fa-star" style="font-size: 10px;"></i> ' + u.Elo + '</div>';
+                        html += '  <div style="font-size: 11px; font-weight: 600; color: ' + tierClass + ';">' + (u.Title || 'Kỳ thủ') + '</div>';
+                        html += '</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 700;">' + u.GamesPlayed + '</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center;">';
+                        html += '  <span class="stat-wdl-pill">';
+                        html += '    <span class="wdl-w"><i class="fa-solid fa-check"></i> ' + u.Wins + '</span> - ';
+                        html += '    <span class="wdl-d">' + u.Draws + '</span> - ';
+                        html += '    <span class="wdl-l"><i class="fa-solid fa-xmark"></i> ' + u.Losses + '</span>';
+                        html += '  </span>';
+                        html += '</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 800; color: ' + (u.WinRate >= 50 ? '#10b981' : '#f59e0b') + ';">' + u.WinRate.toFixed(1) + '%</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #f59e0b;"><i class="fa-solid fa-puzzle-piece"></i> ' + u.PuzzlesSolved + '</td>';
+                        html += '<td style="padding: 12px 14px; text-align: center; font-weight: 700; color: #10b981;"><i class="fa-solid fa-graduation-cap"></i> ' + u.LessonsCompleted + '</td>';
+                        html += '</tr>';
+                    });
+                    tbody.innerHTML = html;
+                }
+
+                function renderEmptyStats() {
+                    var elElo = document.getElementById('kpiEloValue');
+                    var elWinRate = document.getElementById('kpiWinRateValue');
+                    var elGames = document.getElementById('kpiGamesValue');
+                    var elPuzzles = document.getElementById('kpiPuzzlesValue');
+                    if (elElo) elElo.textContent = '0';
+                    if (elWinRate) elWinRate.textContent = '0.0%';
+                    if (elGames) elGames.textContent = '0';
+                    if (elPuzzles) elPuzzles.textContent = '0';
+
+                    var panel = document.getElementById('selectedUsersComparisonPanel');
+                    if (panel) panel.style.display = 'none';
                 }
 
                 if (window.Chart) {

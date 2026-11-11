@@ -88,6 +88,187 @@ public sealed class StatisticsService(AppDbContext db)
 
         return rows;
     }
+
+    public async Task<List<ModeStatistics>> ModesForUsersAsync(IReadOnlyCollection<int> userIds, CancellationToken ct = default)
+    {
+        if (userIds == null || userIds.Count == 0) return await ModesAsync(null, ct);
+        if (userIds.Count == 1) return await ModesAsync(userIds.First(), ct);
+
+        var query = db.Games.AsNoTracking()
+            .Where(g => (g.RedPlayerId.HasValue && userIds.Contains(g.RedPlayerId.Value)) 
+                     || (g.BlackPlayerId.HasValue && userIds.Contains(g.BlackPlayerId.Value)));
+
+        var rawGames = await query
+            .Where(g => !(g.GameMode == "OnlinePublic" && g.BlackPlayerId == null && g.Status == GameStatus.Resigned))
+            .Select(g => new {
+                g.GameMode,
+                g.Status,
+                g.RedPlayerId,
+                g.BlackPlayerId,
+                g.IsRated,
+                g.InitialFen
+            }).ToListAsync(ct);
+
+        var grouped = rawGames
+            .GroupBy(g => GameModes.Normalize(g.GameMode, g.RedPlayerId, g.BlackPlayerId))
+            .ToDictionary(
+                grp => grp.Key,
+                grp => new ModeStatistics
+                {
+                    Mode = grp.Key,
+                    Created = grp.Count(),
+                    Finished = grp.Count(g => g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw),
+                    Waiting = grp.Count(g => g.Status == GameStatus.WaitingForPlayers),
+                    InProgress = grp.Count(g => g.Status == GameStatus.InProgress),
+                    Draws = grp.Count(g => g.Status == GameStatus.Draw),
+                    RedWins = grp.Count(g => g.Status == GameStatus.RedWins),
+                    BlackWins = grp.Count(g => g.Status == GameStatus.BlackWins),
+                    Wins = grp.Count(g => (g.RedPlayerId.HasValue && userIds.Contains(g.RedPlayerId.Value) && g.Status == GameStatus.RedWins)
+                                       || (g.BlackPlayerId.HasValue && userIds.Contains(g.BlackPlayerId.Value) && g.Status == GameStatus.BlackWins)),
+                    Losses = grp.Count(g => (g.RedPlayerId.HasValue && userIds.Contains(g.RedPlayerId.Value) && g.Status == GameStatus.BlackWins)
+                                         || (g.BlackPlayerId.HasValue && userIds.Contains(g.BlackPlayerId.Value) && g.Status == GameStatus.RedWins)),
+                    RatedFinished = grp.Count(g => GameModes.Normalize(g.GameMode) == GameModes.Online 
+                        && g.InitialFen == null && g.IsRated 
+                        && (g.Status == GameStatus.RedWins || g.Status == GameStatus.BlackWins || g.Status == GameStatus.Draw))
+                }
+            );
+
+        var rows = new List<ModeStatistics>();
+        foreach (var mode in GameModes.StandardModes)
+        {
+            if (grouped.TryGetValue(mode, out var stat))
+            {
+                rows.Add(stat);
+            }
+            else
+            {
+                rows.Add(new ModeStatistics { Mode = mode });
+            }
+        }
+
+        return rows;
+    }
+
+    public async Task<LearningStatistics> LearningForUsersAsync(IReadOnlyCollection<int> userIds, CancellationToken ct = default)
+    {
+        var lessons = db.UserCourseProgresses.AsNoTracking();
+        var puzzles = db.PuzzleProgresses.AsNoTracking();
+        if (userIds != null && userIds.Count > 0)
+        {
+            lessons = lessons.Where(p => userIds.Contains(p.UserId));
+            puzzles = puzzles.Where(p => userIds.Contains(p.UserId));
+        }
+        return new LearningStatistics {
+            TotalLessons = await db.CourseLessons.CountAsync(ct),
+            CompletedLessonRecords = await lessons.CountAsync(p => p.IsCompleted, ct),
+            QuizAttempts = await lessons.SumAsync(p => (int?)p.QuizAttempts, ct) ?? 0,
+            AverageBestQuizScore = Math.Round(await lessons.Where(p => p.QuizAttempts > 0)
+                .AverageAsync(p => (double?)p.BestQuizScore, ct) ?? 0, 1),
+            PuzzlesSolved = await puzzles.CountAsync(p => p.CompletedAt != null, ct),
+            PuzzleAttempts = await puzzles.SumAsync(p => (int?)p.Attempts, ct) ?? 0
+        };
+    }
+
+    public async Task<ChessCore.ViewModels.AdvancedStatsResponseDto> GetAdvancedStatsAsync(IReadOnlyCollection<int> userIds, CancellationToken ct = default)
+    {
+        var selectedIds = userIds.Distinct().ToList();
+        var users = await db.Users.AsNoTracking()
+            .Where(u => selectedIds.Contains(u.Id))
+            .OrderByDescending(u => u.Elo)
+            .ThenBy(u => u.Id)
+            .ToListAsync(ct);
+
+        await ApplyDisplayCountersAsync(users);
+
+        var puzzleSolvedCounts = await db.PuzzleProgresses.AsNoTracking()
+            .Where(p => p.CompletedAt != null && selectedIds.Contains(p.UserId))
+            .GroupBy(p => p.UserId)
+            .Select(g => new { UserId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.UserId, x => x.Count, ct);
+
+        var lessonCompletedCounts = await db.UserCourseProgresses.AsNoTracking()
+            .Where(p => p.IsCompleted && selectedIds.Contains(p.UserId))
+            .GroupBy(p => p.UserId)
+            .Select(g => new { UserId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.UserId, x => x.Count, ct);
+
+        int rankIdx = 1;
+        var userDtos = users.Select(u =>
+        {
+            double uWinRate = u.GamesPlayed > 0 ? Math.Round((double)u.Wins * 100.0 / u.GamesPlayed, 1) : 0;
+            string rankTitle = u.Elo switch
+            {
+                >= 1500 => "Đặc cấp Đại sư",
+                >= 1400 => "Kiện tướng",
+                >= 1250 => "Kỳ thủ Giỏi",
+                >= 1150 => "Kỳ thủ Nghiệp dư",
+                >= 1050 => "Người mới chơi",
+                _ => "Tập sự"
+            };
+            return new ChessCore.ViewModels.UserAccountOptionDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                PlayerId = u.PlayerId,
+                Elo = u.Elo,
+                Title = rankTitle,
+                GamesPlayed = u.GamesPlayed,
+                Wins = u.Wins,
+                Losses = u.Losses,
+                Draws = u.Draws,
+                WinRate = uWinRate,
+                PuzzlesSolved = puzzleSolvedCounts.TryGetValue(u.Id, out int pCount) ? pCount : 0,
+                LessonsCompleted = lessonCompletedCounts.TryGetValue(u.Id, out int lCount) ? lCount : 0,
+                Rank = rankIdx++
+            };
+        }).ToList();
+
+        var modeStats = await ModesForUsersAsync(selectedIds, ct);
+        var learning = await LearningForUsersAsync(selectedIds, ct);
+
+        var rankedModes = modeStats.Where(m => m.Mode == "Online" || m.Mode == "PvE").ToList();
+        int totalWins = rankedModes.Sum(m => m.Wins);
+        int totalLosses = rankedModes.Sum(m => m.Losses);
+        int totalDraws = modeStats.Sum(m => m.Draws);
+        int totalFinished = rankedModes.Sum(m => m.Finished);
+        double avgWinRate = totalFinished > 0 ? Math.Round((double)totalWins * 100.0 / totalFinished, 1) : 0;
+
+        int totalGamesSum = userDtos.Sum(u => u.GamesPlayed);
+        int totalPuzzlesSum = userDtos.Sum(u => u.PuzzlesSolved);
+        double avgElo = userDtos.Count > 0 ? Math.Round(userDtos.Average(u => u.Elo), 0) : 1200;
+        int maxElo = userDtos.Count > 0 ? userDtos.Max(u => u.Elo) : 1200;
+
+        string displayEloText = userDtos.Count == 1 
+            ? userDtos[0].Elo.ToString()
+            : $"{avgElo:0} (Cao nhất: {maxElo})";
+
+        var modeDist = modeStats.ToDictionary(m => m.Mode, m => m.Created);
+
+        return new ChessCore.ViewModels.AdvancedStatsResponseDto
+        {
+            Kpis = new ChessCore.ViewModels.AdvancedKpiDto
+            {
+                TotalGames = totalGamesSum,
+                WinRate = avgWinRate,
+                AvgElo = avgElo,
+                MaxElo = maxElo,
+                PuzzlesSolved = totalPuzzlesSum,
+                SelectedCount = userDtos.Count,
+                DisplayEloText = displayEloText
+            },
+            ModeStats = modeStats,
+            Users = userDtos,
+            Learning = learning,
+            Donut = new ChessCore.ViewModels.AdvancedDonutDto
+            {
+                Wins = totalWins,
+                Losses = totalLosses,
+                Draws = totalDraws,
+                WinRate = avgWinRate
+            },
+            ModeDistribution = modeDist
+        };
+    }
     public async Task<LearningStatistics> LearningAsync(int? userId = null, CancellationToken ct = default)
     {
         var lessons = db.UserCourseProgresses.AsNoTracking();

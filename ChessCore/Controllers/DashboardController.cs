@@ -25,29 +25,101 @@ namespace ChessCore.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Export()
+        [AllowAnonymous]
+        public async Task<IActionResult> Export([FromQuery] string? userIds = null)
         {
-            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Unauthorized();
-            return File(StatisticsService.Csv(await _statistics.ModesAsync(userId), false, await _statistics.LearningAsync(userId)),
-                "text/csv; charset=utf-8", "thong-ke-ca-nhan.csv");
+            var ids = (userIds ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out int v) ? v : 0)
+                .Where(v => v > 0)
+                .Distinct()
+                .ToList();
+
+            if (ids.Count <= 1)
+            {
+                int targetId = ids.Count == 1 ? ids[0] : 0;
+                if (targetId == 0)
+                {
+                    if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out targetId)) return Unauthorized();
+                }
+                return File(StatisticsService.Csv(await _statistics.ModesAsync(targetId), false, await _statistics.LearningAsync(targetId)),
+                    "text/csv; charset=utf-8", "thong-ke-ca-nhan.csv");
+            }
+
+            var modes = await _statistics.ModesForUsersAsync(ids);
+            var learning = await _statistics.LearningForUsersAsync(ids);
+            return File(StatisticsService.Csv(modes, true, learning), "text/csv; charset=utf-8", $"thong-ke-nhom-{ids.Count}-tai-khoan.csv");
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportExcel()
+        [AllowAnonymous]
+        public async Task<IActionResult> ExportExcel([FromQuery] string? userIds = null)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId)) return Unauthorized();
+            var ids = (userIds ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out int v) ? v : 0)
+                .Where(v => v > 0)
+                .Distinct()
+                .ToList();
 
-            var user = await _context.Users.FindAsync(userId);
-            var username = user?.Username ?? User.Identity?.Name ?? "Player";
-            int elo = user?.Elo ?? 1200;
+            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId);
+            var user = userId > 0 ? await _context.Users.FindAsync(userId) : null;
+            var username = user?.Username ?? User.Identity?.Name ?? "Admin";
 
-            var modes = await _statistics.ModesAsync(userId);
-            var learning = await _statistics.LearningAsync(userId);
+            if (ids.Count <= 1)
+            {
+                int targetId = ids.Count == 1 ? ids[0] : userId;
+                if (targetId <= 0) return Unauthorized();
+                var targetUser = targetId == userId ? user : await _context.Users.FindAsync(targetId);
+                var targetName = targetUser?.Username ?? username;
+                int elo = targetUser?.Elo ?? 1200;
 
-            var fileBytes = ExcelExportService.ExportPersonalReport(modes, learning, username, elo);
-            var fileName = $"Bao-Cao-Thanh-Tich-{username}-{DateTime.Now:yyyyMMdd-HHmm}.xlsx";
-            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+                var modes = await _statistics.ModesAsync(targetId);
+                var learning = await _statistics.LearningAsync(targetId);
+
+                var fileBytes = ExcelExportService.ExportPersonalReport(modes, learning, targetName, elo);
+                var fileName = $"Bao-Cao-Thanh-Tich-{targetName}-{DateTime.Now:yyyyMMdd-HHmm}.xlsx";
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            else
+            {
+                var advStats = await _statistics.GetAdvancedStatsAsync(ids);
+                var fileBytes = ExcelExportService.ExportAdvancedReport(advStats.ModeStats, advStats.Learning, advStats.Users, username);
+                var fileName = $"Bao-Cao-Nhom-{ids.Count}-TaiKhoan-{DateTime.Now:yyyyMMdd-HHmm}.xlsx";
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> AdvancedStats([FromBody] AdvancedStatsRequest request)
+        {
+            var userIds = request?.UserIds ?? new List<int>();
+            if (userIds.Count == 0 && int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var curId))
+            {
+                userIds.Add(curId);
+            }
+            var stats = await _statistics.GetAdvancedStatsAsync(userIds, HttpContext.RequestAborted);
+            return Ok(stats);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> AdvancedStats([FromQuery] string? userIds)
+        {
+            var ids = (userIds ?? "")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out int v) ? v : 0)
+                .Where(v => v > 0)
+                .Distinct()
+                .ToList();
+            if (ids.Count == 0 && int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var curId))
+            {
+                ids.Add(curId);
+            }
+            var stats = await _statistics.GetAdvancedStatsAsync(ids, HttpContext.RequestAborted);
+            return Ok(stats);
         }
 
         public async Task<IActionResult> Index()
@@ -106,6 +178,58 @@ namespace ChessCore.Controllers
                 }
                 rank++;
             }
+
+            // Nạp danh sách toàn bộ tài khoản phục vụ Thống kê nâng cao
+            var allUsers = await _context.Users.AsNoTracking()
+                .OrderByDescending(u => u.Elo)
+                .ThenBy(u => u.Id)
+                .ToListAsync();
+
+            await _statistics.ApplyDisplayCountersAsync(allUsers);
+
+            var puzzleSolvedCounts = await _context.PuzzleProgresses.AsNoTracking()
+                .Where(p => p.CompletedAt != null)
+                .GroupBy(p => p.UserId)
+                .Select(g => new { UserId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Count);
+
+            var lessonCompletedCounts = await _context.UserCourseProgresses.AsNoTracking()
+                .Where(p => p.IsCompleted)
+                .GroupBy(p => p.UserId)
+                .Select(g => new { UserId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.UserId, x => x.Count);
+
+            int allRankCounter = 1;
+            vm.AllAccounts = allUsers.Select(u =>
+            {
+                double uWinRate = u.GamesPlayed > 0 ? Math.Round((double)u.Wins * 100.0 / u.GamesPlayed, 1) : 0;
+                string rankTitle = u.Elo switch
+                {
+                    >= 1500 => "Đặc cấp Đại sư",
+                    >= 1400 => "Kiện tướng",
+                    >= 1250 => "Kỳ thủ Giỏi",
+                    >= 1150 => "Kỳ thủ Nghiệp dư",
+                    >= 1050 => "Người mới chơi",
+                    _ => "Tập sự"
+                };
+                return new UserAccountOptionDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    PlayerId = u.PlayerId,
+                    Elo = u.Elo,
+                    Title = rankTitle,
+                    GamesPlayed = u.GamesPlayed,
+                    Wins = u.Wins,
+                    Losses = u.Losses,
+                    Draws = u.Draws,
+                    WinRate = uWinRate,
+                    PuzzlesSolved = puzzleSolvedCounts.TryGetValue(u.Id, out int pCount) ? pCount : 0,
+                    LessonsCompleted = lessonCompletedCounts.TryGetValue(u.Id, out int lCount) ? lCount : 0,
+                    IsCurrentUser = (u.Id == userId),
+                    Rank = allRankCounter++
+                };
+            }).ToList();
 
             // If user is not in top 10, find their actual rank
             if (!userInTop)

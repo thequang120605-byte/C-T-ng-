@@ -685,5 +685,168 @@ namespace ChessCore.Services
             workbook.SaveAs(ms);
             return ms.ToArray();
         }
+    
+        // =========================================================================
+        // 3. XUẤT BÁO CÁO EXCEL THỐNG KÊ NÂNG CAO (NHÓM TÀI KHOẢN ĐƯỢC CHỌN)
+        // =========================================================================
+        public static byte[] ExportAdvancedReport(
+            List<ModeStatistics> modeStats,
+            LearningStatistics learning,
+            List<ChessCore.ViewModels.UserAccountOptionDto> selectedUsers,
+            string requesterUsername)
+        {
+            using var workbook = new XLWorkbook();
+            workbook.Author = "Cờ Tướng Pro";
+            workbook.Properties.Title = "Báo cáo Thống kê Nâng cao Nhóm Kỳ thủ";
+            workbook.Properties.Subject = "Báo cáo Phân tích Nhóm Tài khoản";
+
+            // SHEET 1: THỐNG KÊ VÁN ĐẤU THEO CHẾ ĐỘ CỦA NHÓM
+            var wsModes = workbook.Worksheets.Add("Ván đấu theo chế độ");
+            wsModes.ShowGridLines = true;
+
+            wsModes.Row(1).Height = 10;
+            var titleRange = wsModes.Range(2, 1, 2, 9);
+            titleRange.Merge();
+            titleRange.Value = "CỜ TƯỚNG PRO - BÁO CÁO THỐNG KÊ NHÓM KỲ THỦ (NÂNG CAO)";
+            titleRange.Style.Font.Bold = true;
+            titleRange.Style.Font.FontSize = 14;
+            titleRange.Style.Font.FontColor = XLColor.FromHtml("#0F172A");
+            titleRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            titleRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            wsModes.Row(2).Height = 28;
+
+            var metaRange = wsModes.Range(3, 1, 3, 9);
+            metaRange.Merge();
+            metaRange.Value = $"Người xuất: {requesterUsername} | Số lượng tài khoản: {selectedUsers.Count} | Xuất lúc: {DateTime.Now:dd/MM/yyyy HH:mm:ss}";
+            metaRange.Style.Font.Bold = true;
+            metaRange.Style.Font.FontSize = 11;
+            metaRange.Style.Font.FontColor = XLColor.FromHtml("#B45309");
+            metaRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            metaRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            wsModes.Row(3).Height = 22;
+
+            string[] modeHeaders = { "STT", "Chế độ thi đấu", "Đã tạo", "Đang chơi", "Chờ đấu", "Kết thúc", "Thắng", "Thua", "Hòa" };
+            for (int i = 0; i < modeHeaders.Length; i++)
+            {
+                var cell = wsModes.Cell(5, i + 1);
+                cell.Value = modeHeaders[i];
+                cell.Style.Font.Bold = true;
+                cell.Style.Font.FontColor = XLColor.White;
+                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#0F172A");
+                cell.Style.Alignment.Horizontal = (i <= 1) ? XLAlignmentHorizontalValues.Left : XLAlignmentHorizontalValues.Center;
+            }
+            wsModes.Row(5).Height = 24;
+
+            int rowIdx = 6;
+            int stt = 1;
+            int sumCreated = 0, sumInProgress = 0, sumWaiting = 0, sumFinished = 0, sumWins = 0, sumLosses = 0, sumDraws = 0;
+            foreach (var m in modeStats)
+            {
+                sumCreated += m.Created;
+                sumInProgress += m.InProgress;
+                sumWaiting += m.Waiting;
+                sumFinished += m.Finished;
+                sumWins += m.Wins;
+                sumLosses += m.Losses;
+                sumDraws += m.Draws;
+
+                wsModes.Cell(rowIdx, 1).SetValue(stt++);
+                wsModes.Cell(rowIdx, 2).SetValue(m.Label);
+                wsModes.Cell(rowIdx, 3).SetValue(m.Created);
+                wsModes.Cell(rowIdx, 4).SetValue(m.InProgress);
+                wsModes.Cell(rowIdx, 5).SetValue(m.Waiting);
+                wsModes.Cell(rowIdx, 6).SetValue(m.Finished);
+                wsModes.Cell(rowIdx, 7).SetValue(m.Wins);
+                wsModes.Cell(rowIdx, 8).SetValue(m.Losses);
+                wsModes.Cell(rowIdx, 9).SetValue(m.Draws);
+
+                var r = wsModes.Range(rowIdx, 1, rowIdx, 9);
+                r.Style.Fill.BackgroundColor = (rowIdx % 2 == 1) ? XLColor.FromHtml("#F8FAFC") : XLColor.White;
+                r.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                r.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+                r.Style.Border.OutsideBorderColor = XLColor.FromHtml("#E2E8F0");
+                r.Style.Border.InsideBorderColor = XLColor.FromHtml("#E2E8F0");
+                wsModes.Row(rowIdx).Height = 20;
+                rowIdx++;
+            }
+
+            // Total row
+            wsModes.Cell(rowIdx, 1).SetValue("");
+            wsModes.Cell(rowIdx, 2).SetValue("TỔNG CỘNG");
+            wsModes.Cell(rowIdx, 3).SetValue(sumCreated);
+            wsModes.Cell(rowIdx, 4).SetValue(sumInProgress);
+            wsModes.Cell(rowIdx, 5).SetValue(sumWaiting);
+            wsModes.Cell(rowIdx, 6).SetValue(sumFinished);
+            wsModes.Cell(rowIdx, 7).SetValue(sumWins);
+            wsModes.Cell(rowIdx, 8).SetValue(sumLosses);
+            wsModes.Cell(rowIdx, 9).SetValue(sumDraws);
+
+            var totR = wsModes.Range(rowIdx, 1, rowIdx, 9);
+            totR.Style.Font.Bold = true;
+            totR.Style.Fill.BackgroundColor = XLColor.FromHtml("#FEF3C7");
+            totR.Style.Font.FontColor = XLColor.FromHtml("#92400E");
+            totR.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+            totR.Style.Border.OutsideBorderColor = XLColor.FromHtml("#F59E0B");
+            wsModes.Row(rowIdx).Height = 22;
+
+            wsModes.Columns().AdjustToContents();
+
+            // SHEET 2: SO SÁNH CHI TIẾT TỪNG KỲ THỦ TRONG NHÓM
+            var wsUsers = workbook.Worksheets.Add("So sánh Kỳ thủ");
+            wsUsers.ShowGridLines = true;
+
+            wsUsers.Row(1).Height = 10;
+            var uTitle = wsUsers.Range(2, 1, 2, 10);
+            uTitle.Merge();
+            uTitle.Value = "BẢNG ĐỐI CHIẾU THÀNH TÍCH TỪNG KỲ THỦ ĐƯỢC CHỌN";
+            uTitle.Style.Font.Bold = true;
+            uTitle.Style.Font.FontSize = 14;
+            uTitle.Style.Font.FontColor = XLColor.FromHtml("#0F172A");
+            uTitle.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            uTitle.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            wsUsers.Row(2).Height = 28;
+
+            string[] uHeaders = { "Hạng", "Kỳ thủ", "Mã ID", "Elo", "Danh hiệu", "Tổng ván", "Thắng - Hòa - Thua", "Tỉ lệ thắng (%)", "Cờ thế đã giải", "Khóa học" };
+            for (int i = 0; i < uHeaders.Length; i++)
+            {
+                var cell = wsUsers.Cell(4, i + 1);
+                cell.Value = uHeaders[i];
+                cell.Style.Font.Bold = true;
+                cell.Style.Font.FontColor = XLColor.White;
+                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#1E293B");
+                cell.Style.Alignment.Horizontal = (i == 1 || i == 4) ? XLAlignmentHorizontalValues.Left : XLAlignmentHorizontalValues.Center;
+            }
+            wsUsers.Row(4).Height = 24;
+
+            int uRow = 5;
+            foreach (var u in selectedUsers)
+            {
+                wsUsers.Cell(uRow, 1).SetValue(u.Rank);
+                wsUsers.Cell(uRow, 2).SetValue(u.Username);
+                wsUsers.Cell(uRow, 3).SetValue(u.PlayerId);
+                wsUsers.Cell(uRow, 4).SetValue(u.Elo);
+                wsUsers.Cell(uRow, 5).SetValue(u.Title);
+                wsUsers.Cell(uRow, 6).SetValue(u.GamesPlayed);
+                wsUsers.Cell(uRow, 7).SetValue($"{u.Wins} - {u.Draws} - {u.Losses}");
+                wsUsers.Cell(uRow, 8).SetValue($"{u.WinRate:0.0}%");
+                wsUsers.Cell(uRow, 9).SetValue(u.PuzzlesSolved);
+                wsUsers.Cell(uRow, 10).SetValue($"{u.LessonsCompleted} bài");
+
+                var r = wsUsers.Range(uRow, 1, uRow, 10);
+                r.Style.Fill.BackgroundColor = (uRow % 2 == 1) ? XLColor.FromHtml("#F8FAFC") : XLColor.White;
+                r.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                r.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+                r.Style.Border.OutsideBorderColor = XLColor.FromHtml("#E2E8F0");
+                r.Style.Border.InsideBorderColor = XLColor.FromHtml("#E2E8F0");
+                wsUsers.Row(uRow).Height = 20;
+                uRow++;
+            }
+
+            wsUsers.Columns().AdjustToContents();
+
+            using var ms = new MemoryStream();
+            workbook.SaveAs(ms);
+            return ms.ToArray();
+        }
     }
 }
