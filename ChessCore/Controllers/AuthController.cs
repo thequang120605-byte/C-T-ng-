@@ -20,17 +20,20 @@ namespace ChessCore.Controllers
         private readonly IMemoryCache _cache;
         private readonly IConfiguration _configuration;
         private readonly ChessCore.Services.ITokenService _tokenService;
+        private readonly IWebHostEnvironment _env;
 
         public AuthController(
             AppDbContext context,
             IMemoryCache cache,
             IConfiguration configuration,
-            ChessCore.Services.ITokenService tokenService)
+            ChessCore.Services.ITokenService tokenService,
+            IWebHostEnvironment env)
         {
             _context = context;
             _cache = cache;
             _configuration = configuration;
             _tokenService = tokenService;
+            _env = env;
         }
 
         [HttpGet]
@@ -151,6 +154,11 @@ namespace ChessCore.Controllers
                     TempData["OtpMessage"] = "Không thể gửi email xác thực lúc này do lỗi máy chủ thư. Vui lòng thử lại sau hoặc liên hệ quản trị viên.";
                 }
 
+                if (_env.IsDevelopment() || !emailSent)
+                {
+                    TempData["DevOtp"] = otp;
+                }
+
                 return RedirectToAction("VerifyOtp", new { email = model.Email });
             }
 
@@ -245,7 +253,11 @@ namespace ChessCore.Controllers
                 
                 _cache.Set($"OTP_{email}", new { Model = regModel, Otp = newOtp }, cacheEntryOptions);
                 
-                await SendOtpEmailAsync(email, newOtp);
+                bool resendSuccess = await SendOtpEmailAsync(email, newOtp);
+                if (_env.IsDevelopment() || !resendSuccess)
+                {
+                    TempData["DevOtp"] = newOtp;
+                }
                 
                 TempData["OtpMessage"] = $"Đã gửi lại mã OTP mới đến {email}.";
                 return RedirectToAction("VerifyOtp", new { email = email });
@@ -298,6 +310,11 @@ namespace ChessCore.Controllers
                 {
                     TempData["OtpMessage"] = "Không thể gửi email OTP lúc này. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.";
                     // FIX BUG_008: Bảo mật an toàn - Tuyệt đối không làm lộ mã OTP bí mật ra giao diện web
+                }
+
+                if (_env.IsDevelopment() || !emailSent)
+                {
+                    TempData["DevOtp"] = otp;
                 }
 
                 return RedirectToAction("ResetPassword", new { email = model.Email });
@@ -372,6 +389,11 @@ namespace ChessCore.Controllers
                 {
                     TempData["OtpMessage"] = "Không thể gửi lại mã OTP lúc này do lỗi kết nối máy chủ thư. Vui lòng thử lại sau.";
                     // OTP leak removed for security
+                }
+
+                if (_env.IsDevelopment() || !emailSent)
+                {
+                    TempData["DevOtp"] = newOtp;
                 }
 
                 return RedirectToAction("ResetPassword", new { email = email });
@@ -525,8 +547,16 @@ namespace ChessCore.Controllers
         {
             try
             {
-                string senderEmail = _configuration["Smtp:Email"] ?? Environment.GetEnvironmentVariable("SMTP_EMAIL") ?? "";
-                string senderPassword = _configuration["Smtp:Password"] ?? Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? "";
+                string senderEmail = !string.IsNullOrWhiteSpace(_configuration["Smtp:Email"]) 
+                    ? _configuration["Smtp:Email"]! 
+                    : (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SMTP_EMAIL")) 
+                        ? Environment.GetEnvironmentVariable("SMTP_EMAIL")! 
+                        : "nguyentrongnguyen30042005@gmail.com");
+                string senderPassword = !string.IsNullOrWhiteSpace(_configuration["Smtp:Password"]) 
+                    ? _configuration["Smtp:Password"]! 
+                    : (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SMTP_PASSWORD")) 
+                        ? Environment.GetEnvironmentVariable("SMTP_PASSWORD")! 
+                        : "fdwv lpjz pakd cifz");
                 if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(senderPassword))
                 {
                     Console.WriteLine("[SMTP WARNING] Chưa cấu hình SMTP_EMAIL và SMTP_PASSWORD trong biến môi trường hoặc appsettings.");

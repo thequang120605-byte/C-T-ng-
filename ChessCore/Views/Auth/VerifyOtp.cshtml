@@ -31,7 +31,7 @@
                 <label asp-for="Otp" style="color: var(--text-main); display: block; margin-bottom: 8px;">Nhập mã OTP 6 số</label>
                 <div class="input-icon-wrapper" style="position: relative;">
                     <i class="fa-solid fa-key" style="position: absolute; left: 14px; top: 15px; color: var(--text-muted);"></i>
-                    <input asp-for="Otp" placeholder="123456" maxlength="6" style="width: 100%; padding: 12px 12px 12px 40px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); font-size: 18px; letter-spacing: 2px; text-align: center;" />
+                    <input asp-for="Otp" placeholder="· · · · · ·" maxlength="6" autocomplete="one-time-code" autofocus style="width: 100%; padding: 12px 12px 12px 40px; background: var(--bg-navy-dark); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); font-size: 18px; letter-spacing: 4px; text-align: center;" />
                 </div>
                 <span asp-validation-for="Otp" class="text-danger" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: block;"></span>
             </div>
