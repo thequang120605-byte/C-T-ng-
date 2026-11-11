@@ -1342,11 +1342,13 @@
                         }
                         if (elEloSub) {
                             if (kpiSelectedCount > 1) {
-                                var subHtml = 'Cao nhất: <b style="color: var(--accent-gold);">' + kpiMaxElo + '</b>';
                                 if (kpiMinElo && kpiMinElo !== kpiMaxElo) {
-                                    subHtml += ' · Thấp nhất: <b>' + kpiMinElo + '</b>';
+                                    elEloSub.innerHTML = 'Cao: <b style="color: var(--accent-gold);">' + kpiMaxElo + '</b> · Thấp: <b>' + kpiMinElo + '</b>';
+                                    elEloSub.title = 'Điểm cao nhất: ' + kpiMaxElo + ' · Thấp nhất: ' + kpiMinElo;
+                                } else {
+                                    elEloSub.innerHTML = 'Cao nhất: <b style="color: var(--accent-gold);">' + kpiMaxElo + '</b>';
+                                    elEloSub.title = 'Điểm cao nhất: ' + kpiMaxElo;
                                 }
-                                elEloSub.innerHTML = subHtml;
                             } else if (kpiSelectedCount === 1 && userList.length > 0) {
                                 var singleUser = userList[0];
                                 var rankVal = singleUser.rank || singleUser.Rank;
