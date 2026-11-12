@@ -466,15 +466,9 @@ namespace ChessCore.Data
                 // TheQuang: 43 thế (attempts 65)
                 // TrongNguyen: 87 thế (attempts 131)
                 // QuocTrung: 76 thế (attempts 152)
-                var puzKeys = await dbContext.PuzzleProgresses.Select(p => p.PuzzleKey).Distinct().ToListAsync();
-                if (puzKeys.Count < 100)
-                {
-                    for (int k = 1; k <= 100; k++)
-                    {
-                        string candidate = $"basic:{k}";
-                        if (!puzKeys.Contains(candidate)) puzKeys.Add(candidate);
-                    }
-                }
+                // Sử dụng danh sách key thực tế từ Cấp 1 của Chiến dịch cờ thế để đảm bảo
+                // số lượng bài thế hiển thị trên trang Cờ thế (/Puzzle) và trang Dashboard khớp nhau 100%
+                var puzKeys = CampaignLevel1Keys.ToList();
 
                 var puzzlesToAdd = new List<PuzzleProgress>();
 
@@ -545,73 +539,63 @@ namespace ChessCore.Data
             {
                 0 => new (int fx, int fy, int tx, int ty, PieceType pt, PieceColor pc)[]
                 {
-                    (1, 2, 4, 2, PieceType.Cannon, PieceColor.Red),   // C2.5
-                    (7, 9, 6, 7, PieceType.Horse, PieceColor.Black),  // H8.7
-                    (1, 0, 2, 2, PieceType.Horse, PieceColor.Red),    // H2.3
-                    (8, 9, 8, 8, PieceType.Rook, PieceColor.Black),   // R9.1
-                    (0, 0, 1, 0, PieceType.Rook, PieceColor.Red),     // R1.2
-                    (1, 9, 2, 7, PieceType.Horse, PieceColor.Black),  // H2.3
-                    (6, 3, 6, 4, PieceType.Pawn, PieceColor.Red),     // P7.1
-                    (6, 6, 6, 5, PieceType.Pawn, PieceColor.Black),   // P7.1
-                    (7, 0, 6, 2, PieceType.Horse, PieceColor.Red),    // H8.7
-                    (2, 6, 2, 5, PieceType.Pawn, PieceColor.Black),   // P3.1
-                    (1, 0, 1, 5, PieceType.Rook, PieceColor.Red),     // R2.6
-                    (7, 7, 8, 7, PieceType.Cannon, PieceColor.Black), // C8.9
-                    (7, 2, 3, 2, PieceType.Cannon, PieceColor.Red),   // C8.4
-                    (0, 9, 1, 9, PieceType.Rook, PieceColor.Black),   // R1.2
-                    (4, 3, 4, 4, PieceType.Pawn, PieceColor.Red),     // P5.1
-                    (6, 7, 4, 6, PieceType.Horse, PieceColor.Black)   // H7.5
+                    (7, 1, 7, 4, PieceType.Cannon, PieceColor.Red),   // Pháo 2 bình 5
+                    (0, 1, 2, 2, PieceType.Horse, PieceColor.Black),  // Mã 8 tấn 7
+                    (9, 1, 7, 2, PieceType.Horse, PieceColor.Red),    // Mã 2 tấn 3
+                    (0, 0, 0, 1, PieceType.Rook, PieceColor.Black),   // Xe 9 bình 8
+                    (9, 0, 9, 1, PieceType.Rook, PieceColor.Red),     // Xe 1 bình 2
+                    (3, 6, 4, 6, PieceType.Pawn, PieceColor.Black),   // Binh 7 tấn 1
+                    (6, 6, 5, 6, PieceType.Pawn, PieceColor.Red),     // Binh 7 tấn 1
+                    (0, 7, 2, 6, PieceType.Horse, PieceColor.Black),  // Mã 2 tấn 3
+                    (7, 7, 7, 8, PieceType.Cannon, PieceColor.Red),   // Pháo 8 bình 9
+                    (2, 1, 2, 3, PieceType.Cannon, PieceColor.Black), // Pháo 2 bình 4
+                    (9, 7, 7, 6, PieceType.Horse, PieceColor.Red),    // Mã 8 tấn 7
+                    (0, 5, 1, 4, PieceType.Advisor, PieceColor.Black) // Sĩ 6 tấn 5
                 },
                 1 => new (int fx, int fy, int tx, int ty, PieceType pt, PieceColor pc)[]
                 {
-                    (2, 0, 4, 2, PieceType.Elephant, PieceColor.Red), // E2.4
-                    (1, 7, 5, 7, PieceType.Cannon, PieceColor.Black), // C2.6
-                    (1, 0, 2, 2, PieceType.Horse, PieceColor.Red),    // H2.3
-                    (1, 9, 2, 7, PieceType.Horse, PieceColor.Black),  // H2.3
-                    (0, 0, 1, 0, PieceType.Rook, PieceColor.Red),     // R1.2
-                    (0, 9, 1, 9, PieceType.Rook, PieceColor.Black),   // R1.2
-                    (7, 0, 6, 2, PieceType.Horse, PieceColor.Red),    // H8.7
-                    (6, 6, 6, 5, PieceType.Pawn, PieceColor.Black),   // P7.1
-                    (6, 3, 6, 4, PieceType.Pawn, PieceColor.Red),     // P7.1
-                    (7, 9, 6, 7, PieceType.Horse, PieceColor.Black),  // H8.7
-                    (7, 2, 8, 2, PieceType.Cannon, PieceColor.Red),   // C8.9
-                    (7, 7, 7, 5, PieceType.Cannon, PieceColor.Black), // C8.2
-                    (2, 3, 2, 4, PieceType.Pawn, PieceColor.Red),     // P3.1
-                    (2, 6, 2, 5, PieceType.Pawn, PieceColor.Black)    // P3.1
+                    (7, 1, 7, 4, PieceType.Cannon, PieceColor.Red),   // Pháo 2 bình 5
+                    (2, 7, 2, 4, PieceType.Cannon, PieceColor.Black), // Pháo 8 bình 5 (Thuận pháo)
+                    (9, 1, 7, 2, PieceType.Horse, PieceColor.Red),    // Mã 2 tấn 3
+                    (0, 1, 2, 2, PieceType.Horse, PieceColor.Black),  // Mã 8 tấn 7
+                    (9, 0, 9, 1, PieceType.Rook, PieceColor.Red),     // Xe 1 bình 2
+                    (0, 0, 0, 1, PieceType.Rook, PieceColor.Black),   // Xe 9 bình 8
+                    (9, 1, 5, 1, PieceType.Rook, PieceColor.Red),     // Xe 2 tấn 4 (Tuần hà xa)
+                    (0, 7, 2, 6, PieceType.Horse, PieceColor.Black),  // Mã 2 tấn 3
+                    (6, 2, 5, 2, PieceType.Pawn, PieceColor.Red),     // Binh 3 tấn 1
+                    (3, 2, 4, 2, PieceType.Pawn, PieceColor.Black),   // Binh 3 tấn 1
+                    (9, 7, 7, 6, PieceType.Horse, PieceColor.Red),    // Mã 8 tấn 7
+                    (0, 8, 0, 7, PieceType.Rook, PieceColor.Black)    // Xe 1 bình 2
                 },
                 2 => new (int fx, int fy, int tx, int ty, PieceType pt, PieceColor pc)[]
                 {
-                    (6, 3, 6, 4, PieceType.Pawn, PieceColor.Red),     // P7.1
-                    (6, 6, 6, 5, PieceType.Pawn, PieceColor.Black),   // P7.1
-                    (1, 2, 4, 2, PieceType.Cannon, PieceColor.Red),   // C2.5
-                    (7, 9, 6, 7, PieceType.Horse, PieceColor.Black),  // H8.7
-                    (1, 0, 2, 2, PieceType.Horse, PieceColor.Red),    // H2.3
-                    (8, 9, 8, 8, PieceType.Rook, PieceColor.Black),   // R9.1
-                    (0, 0, 1, 0, PieceType.Rook, PieceColor.Red),     // R1.2
-                    (1, 9, 2, 7, PieceType.Horse, PieceColor.Black),  // H2.3
-                    (7, 0, 6, 2, PieceType.Horse, PieceColor.Red),    // H8.7
-                    (2, 6, 2, 5, PieceType.Pawn, PieceColor.Black),   // P3.1
-                    (1, 0, 1, 5, PieceType.Rook, PieceColor.Red),     // R2.6
-                    (7, 7, 8, 7, PieceType.Cannon, PieceColor.Black), // C8.9
-                    (7, 2, 3, 2, PieceType.Cannon, PieceColor.Red),   // C8.4
-                    (0, 9, 1, 9, PieceType.Rook, PieceColor.Black)    // R1.2
+                    (9, 1, 7, 2, PieceType.Horse, PieceColor.Red),    // Mã 2 tấn 3 (Khởi mã cuộc)
+                    (2, 7, 2, 4, PieceType.Cannon, PieceColor.Black), // Pháo 8 bình 5
+                    (6, 6, 5, 6, PieceType.Pawn, PieceColor.Red),     // Binh 7 tấn 1
+                    (0, 1, 2, 2, PieceType.Horse, PieceColor.Black),  // Mã 8 tấn 7
+                    (7, 1, 7, 4, PieceType.Cannon, PieceColor.Red),   // Pháo 2 bình 5
+                    (0, 7, 2, 6, PieceType.Horse, PieceColor.Black),  // Mã 2 tấn 3
+                    (9, 0, 9, 1, PieceType.Rook, PieceColor.Red),     // Xe 1 bình 2
+                    (0, 0, 0, 1, PieceType.Rook, PieceColor.Black),   // Xe 9 bình 8
+                    (9, 7, 7, 6, PieceType.Horse, PieceColor.Red),    // Mã 8 tấn 7
+                    (0, 1, 4, 1, PieceType.Rook, PieceColor.Black),   // Xe 8 tấn 4 (Kỵ hà xa)
+                    (6, 2, 5, 2, PieceType.Pawn, PieceColor.Red),     // Binh 3 tấn 1
+                    (0, 3, 1, 4, PieceType.Advisor, PieceColor.Black) // Sĩ 4 tấn 5
                 },
                 _ => new (int fx, int fy, int tx, int ty, PieceType pt, PieceColor pc)[]
                 {
-                    (1, 0, 2, 2, PieceType.Horse, PieceColor.Red),    // H2.3
-                    (6, 6, 6, 5, PieceType.Pawn, PieceColor.Black),   // P7.1
-                    (6, 3, 6, 4, PieceType.Pawn, PieceColor.Red),     // P7.1
-                    (1, 7, 4, 7, PieceType.Cannon, PieceColor.Black), // C2.5
-                    (1, 2, 3, 2, PieceType.Cannon, PieceColor.Red),   // C2.4
-                    (1, 9, 2, 7, PieceType.Horse, PieceColor.Black),  // H2.3
-                    (7, 0, 6, 2, PieceType.Horse, PieceColor.Red),    // H8.7
-                    (0, 9, 1, 9, PieceType.Rook, PieceColor.Black),   // R1.2
-                    (0, 0, 1, 0, PieceType.Rook, PieceColor.Red),     // R1.2
-                    (7, 9, 6, 7, PieceType.Horse, PieceColor.Black),  // H8.7
-                    (1, 0, 1, 5, PieceType.Rook, PieceColor.Red),     // R2.6
-                    (2, 6, 2, 5, PieceType.Pawn, PieceColor.Black),   // P3.1
-                    (7, 2, 8, 2, PieceType.Cannon, PieceColor.Red),   // C8.9
-                    (7, 7, 8, 7, PieceType.Cannon, PieceColor.Black)  // C8.9
+                    (9, 2, 7, 4, PieceType.Elephant, PieceColor.Red), // Tượng 3 tấn 5 (Phi tượng cuộc)
+                    (3, 6, 4, 6, PieceType.Pawn, PieceColor.Black),   // Binh 7 tấn 1
+                    (9, 1, 7, 2, PieceType.Horse, PieceColor.Red),    // Mã 2 tấn 3
+                    (0, 1, 2, 2, PieceType.Horse, PieceColor.Black),  // Mã 8 tấn 7
+                    (7, 1, 7, 3, PieceType.Cannon, PieceColor.Red),   // Pháo 2 bình 4 (Quá cung pháo)
+                    (0, 0, 0, 1, PieceType.Rook, PieceColor.Black),   // Xe 9 bình 8
+                    (9, 0, 9, 1, PieceType.Rook, PieceColor.Red),     // Xe 1 bình 2
+                    (0, 7, 2, 6, PieceType.Horse, PieceColor.Black),  // Mã 2 tấn 3
+                    (6, 2, 5, 2, PieceType.Pawn, PieceColor.Red),     // Binh 3 tấn 1
+                    (2, 7, 6, 7, PieceType.Cannon, PieceColor.Black), // Pháo 8 tiến 4 (Quá hà pháo)
+                    (9, 7, 7, 6, PieceType.Horse, PieceColor.Red),    // Mã 8 tấn 7
+                    (2, 1, 2, 3, PieceType.Cannon, PieceColor.Black)  // Pháo 2 bình 4
                 }
             };
 
@@ -641,5 +625,22 @@ namespace ChessCore.Data
 
             return moves;
         }
+
+        private static readonly string[] CampaignLevel1Keys = new string[]
+        {
+            "endgame:98", "endgame:376", "endgame:485", "endgame:2966", "endgame:1095", "endgame:2516", "endgame:1441", "endgame:374",
+            "basic:23", "endgame:2542", "endgame:1582", "endgame:1757", "endgame:1397", "endgame:6948", "endgame:3863", "endgame:2017",
+            "endgame:234", "endgame:3477", "endgame:1967", "endgame:3013", "endgame:3110", "endgame:3090", "endgame:2205", "endgame:243",
+            "endgame:4742", "endgame:3015", "endgame:3997", "endgame:4763", "endgame:3853", "endgame:308", "endgame:5044", "endgame:6630",
+            "endgame:4286", "endgame:5397", "endgame:5167", "endgame:1795", "endgame:5200", "endgame:3943", "endgame:6076", "endgame:6614",
+            "endgame:3683", "endgame:39", "basic:53", "advanced:324", "advanced:477", "endgame:1399", "endgame:5639", "advanced:282",
+            "basic:28", "endgame:870", "advanced:194", "endgame:5299", "endgame:2632", "basic:50", "advanced:74", "advanced:288",
+            "endgame:1784", "endgame:5925", "endgame:190", "advanced:366", "endgame:1010", "endgame:258", "endgame:6526", "endgame:623",
+            "advanced:5", "advanced:113", "advanced:68", "endgame:1893", "endgame:6675", "endgame:2590", "advanced:368", "endgame:1193",
+            "endgame:298", "endgame:4401", "endgame:5995", "advanced:6", "advanced:105", "endgame:538", "endgame:2073", "endgame:4762",
+            "endgame:5815", "advanced:367", "endgame:4519", "endgame:424", "endgame:6243", "endgame:954", "endgame:6809", "advanced:325",
+            "endgame:5719", "endgame:2984", "endgame:2046", "advanced:450", "endgame:4761", "endgame:425", "endgame:7124", "endgame:2911",
+            "endgame:4743", "endgame:1774", "endgame:3530", "endgame:4158"
+        };
     }
 }

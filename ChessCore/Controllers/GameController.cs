@@ -193,11 +193,43 @@ namespace ChessCore.Controllers
             for (int i = 0; i < orderedMoves.Count; i++)
             {
                 var move = orderedMoves[i];
-                var piece = board.GetPieceAt(move.FromX, move.FromY);
+                int fx = move.FromX;
+                int fy = move.FromY;
+                int tx = move.ToX;
+                int ty = move.ToY;
+
+                // Defensive check: đảm bảo tọa độ nằm trong biên bàn cờ (Row: 0..9, Col: 0..8)
+                if (fx < 0 || fx > 9 || fy < 0 || fy > 8 || tx < 0 || tx > 9 || ty < 0 || ty > 8)
+                {
+                    if (fy >= 0 && fy <= 9 && fx >= 0 && fx <= 8 && ty >= 0 && ty <= 9 && tx >= 0 && tx <= 8)
+                    {
+                        // Hoán đổi nếu bị đảo cột và hàng
+                        int tmpFx = fx; fx = fy; fy = tmpFx;
+                        int tmpTx = tx; tx = ty; ty = tmpTx;
+                    }
+                    else
+                    {
+                        fx = Math.Clamp(fx, 0, 9);
+                        fy = Math.Clamp(fy, 0, 8);
+                        tx = Math.Clamp(tx, 0, 9);
+                        ty = Math.Clamp(ty, 0, 8);
+                    }
+                }
+
+                var piece = board.GetPieceAt(fx, fy) ?? new Piece(move.PieceType, move.PieceColor);
 
                 // Gợi ý nước đi tối ưu từ Minimax engine trước khi đi
-                var bestEngineMove = engine.FindBestMove(board, move.PieceColor);
-                int optFx = move.FromX, optFy = move.FromY, optTx = move.ToX, optTy = move.ToY;
+                EngineMove? bestEngineMove = null;
+                try
+                {
+                    bestEngineMove = engine.FindBestMove(board, move.PieceColor);
+                }
+                catch
+                {
+                    bestEngineMove = null;
+                }
+
+                int optFx = fx, optFy = fy, optTx = tx, optTy = ty;
                 string aiAlternative = "";
                 if (bestEngineMove != null)
                 {
@@ -211,24 +243,38 @@ namespace ChessCore.Controllers
 
                 // Đánh giá nước đi bằng cách so sánh nước tốt nhất của AI với nước người chơi đã đi tại cùng vị trí
                 int bestEvalScore = 0;
-                if (bestEngineMove != null)
+                if (bestEngineMove != null && optFx >= 0 && optFx <= 9 && optFy >= 0 && optFy <= 8 && optTx >= 0 && optTx <= 9 && optTy >= 0 && optTy <= 8)
                 {
-                    var optBoard = board.Clone();
-                    optBoard.Grid[optFx, optFy] = null;
-                    optBoard.Grid[optTx, optTy] = board.GetPieceAt(optFx, optFy);
-                    optBoard.SetCurrentTurn(GameRules.Opponent(move.PieceColor));
-                    bestEvalScore = engine.EvaluatePosition(optBoard, move.PieceColor);
+                    try
+                    {
+                        var optBoard = board.Clone();
+                        var optPieceAt = board.GetPieceAt(optFx, optFy);
+                        optBoard.Grid[optFx, optFy] = null;
+                        optBoard.Grid[optTx, optTy] = optPieceAt;
+                        optBoard.SetCurrentTurn(GameRules.Opponent(move.PieceColor));
+                        bestEvalScore = engine.EvaluatePosition(optBoard, move.PieceColor);
+                    }
+                    catch
+                    {
+                        bestEvalScore = 0;
+                    }
                 }
 
-                // Áp dụng nước đi thực tế của người chơi lên bàn cờ
-                board.Grid[move.FromX, move.FromY] = null;
-                if (piece != null)
-                {
-                    board.Grid[move.ToX, move.ToY] = piece;
-                }
+                // Áp dụng nước đi thực tế của người chơi lên bàn cờ một cách an toàn
+                board.Grid[fx, fy] = null;
+                board.Grid[tx, ty] = piece;
                 board.SetCurrentTurn(GameRules.Opponent(move.PieceColor));
 
-                int actualMoveEval = engine.EvaluatePosition(board, move.PieceColor);
+                int actualMoveEval = 0;
+                try
+                {
+                    actualMoveEval = engine.EvaluatePosition(board, move.PieceColor);
+                }
+                catch
+                {
+                    actualMoveEval = 0;
+                }
+
                 int evalLoss = (bestEngineMove != null) ? Math.Max(0, bestEvalScore - actualMoveEval) : 0;
 
                 string judgment = "Good";
@@ -236,7 +282,7 @@ namespace ChessCore.Controllers
                 string badge = "✓";
                 string comment = "";
 
-                bool isSameAsBest = (bestEngineMove != null && move.FromX == optFx && move.FromY == optFy && move.ToX == optTx && move.ToY == optTy);
+                bool isSameAsBest = (bestEngineMove != null && fx == optFx && fy == optFy && tx == optTx && ty == optTy);
 
                 if (isSameAsBest || evalLoss <= 15)
                 {
