@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", function () {
   let currentGameRedElo = null;
   let currentGameBlackElo = null;
   let currentMoveCount = 0;
+  let isGuestReadyState = false;
+  let hasBlackPlayerState = false;
 
   function getMyOnlineColor() {
     return sessionStorage.getItem("onlinePlayerColor") || localStorage.getItem("onlinePlayerColor") || "Red";
@@ -193,6 +195,33 @@ document.addEventListener("DOMContentLoaded", function () {
           if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
               showToast(data.message || "Phòng chơi đã bị hủy.", "warning");
               backToModeSelection();
+          }
+      });
+
+      connection.on("GuestReadyChanged", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
+              if (data.game) {
+                  updateGameFromApi(data.game);
+              }
+              const myColor = localStorage.getItem("onlinePlayerColor");
+              if (myColor === "Red") {
+                  showToast(
+                      data.isGuestReady
+                          ? "Đối thủ đã Sẵn sàng! Bạn có thể bấm Bắt đầu ván đấu."
+                          : "Đối thủ đã hủy trạng thái Sẵn sàng.",
+                      data.isGuestReady ? "success" : "info"
+                  );
+              }
+          }
+      });
+
+      connection.on("MatchStarted", function (data) {
+          if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
+              if (data.game) {
+                  updateGameFromApi(data.game);
+              }
+              showToast("Ván cờ đã bắt đầu! Quân Đỏ đi trước.", "success");
+              playSound('move');
           }
       });
 
@@ -749,6 +778,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     VS_COMPUTER = false;
 
+    isOnlineMode = false;
+
+    isMakingMove = false;
+
+    isHandlingTimeout = false;
+
     gameId = null;
 
     currentTurn = null;
@@ -776,6 +811,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     localStorage.removeItem("xiangqiGameId");
     localStorage.removeItem("manualBoardFlipped");
+    localStorage.removeItem("isOnlineMode");
+    localStorage.removeItem("onlinePlayerColor");
+    localStorage.removeItem("onlineOpponentName");
     updateBoardOrientation();
 
     if (playerVsPlayerButton) {
@@ -962,6 +1000,109 @@ document.addEventListener("DOMContentLoaded", function () {
   // UPDATE GAME
   // =====================================================
 
+  function getCurrentDbUserId() {
+    const el = document.querySelector(".game-view-container");
+    const raw = el ? el.getAttribute("data-current-user-id") : "";
+    const parsed = raw ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  function updateOnlineLobbyControls(data) {
+    const lobbyControls = document.getElementById("online-room-lobby-controls");
+    const lobbyStatusText = document.getElementById("room-lobby-status-text");
+    const hostStartBtn = document.getElementById("host-start-game-btn");
+    const guestReadyBtn = document.getElementById("guest-ready-btn");
+    const guestLeaveBtn = document.getElementById("guest-leave-room-btn");
+    const cancelWaitBtn = document.getElementById("cancel-room-wait-btn");
+    const invitePanel = document.getElementById("opponent-invite-panel");
+
+    const apiMode = (data.gameMode || "").toLowerCase();
+    const isOnline = apiMode.startsWith("online");
+    const hasOpponent = Boolean(data.blackPlayerId);
+    const guestReady = Boolean(data.isGuestReady);
+
+    hasBlackPlayerState = hasOpponent;
+    isGuestReadyState = guestReady;
+
+    if (!isOnline || data.status !== "WaitingForPlayers") {
+      if (lobbyControls) {
+        lobbyControls.classList.add("hidden");
+        lobbyControls.style.display = "none";
+      }
+      if (hostStartBtn) hostStartBtn.classList.add("hidden");
+      if (guestReadyBtn) guestReadyBtn.classList.add("hidden");
+      if (guestLeaveBtn) guestLeaveBtn.classList.add("hidden");
+      if (cancelWaitBtn && data.status === "InProgress") {
+        cancelWaitBtn.style.display = "none";
+      }
+      if (invitePanel && data.status === "InProgress") {
+        invitePanel.classList.add("hidden");
+      }
+      return;
+    }
+
+    const myDbUserId = getCurrentDbUserId();
+    const isHost = myDbUserId
+      ? data.redPlayerId === myDbUserId
+      : localStorage.getItem("onlinePlayerColor") === "Red";
+    const isGuest = myDbUserId
+      ? data.blackPlayerId === myDbUserId
+      : localStorage.getItem("onlinePlayerColor") === "Black";
+
+    if (lobbyControls) {
+      lobbyControls.classList.remove("hidden");
+      lobbyControls.style.display = "flex";
+    }
+
+    if (isHost) {
+      if (hostStartBtn) {
+        hostStartBtn.classList.remove("hidden");
+        const canStart = hasOpponent && guestReady;
+        hostStartBtn.disabled = !canStart;
+        hostStartBtn.style.opacity = canStart ? "1" : "0.5";
+        hostStartBtn.style.cursor = canStart ? "pointer" : "not-allowed";
+      }
+      if (guestReadyBtn) guestReadyBtn.classList.add("hidden");
+      if (guestLeaveBtn) guestLeaveBtn.classList.add("hidden");
+      if (cancelWaitBtn) cancelWaitBtn.style.display = "";
+      if (invitePanel) {
+        if (hasOpponent) invitePanel.classList.add("hidden");
+        else invitePanel.classList.remove("hidden");
+      }
+      if (lobbyStatusText) {
+        if (!hasOpponent) {
+          lobbyStatusText.textContent = "Đang chờ đối thủ vào phòng...";
+        } else if (!guestReady) {
+          lobbyStatusText.textContent = `Đối thủ ${data.blackPlayerUsername || ""} đã vào phòng. Đang chờ đối thủ bấm Sẵn sàng...`;
+        } else {
+          lobbyStatusText.textContent = `✅ Đối thủ ${data.blackPlayerUsername || ""} đã Sẵn sàng! Hãy bấm Bắt đầu ván đấu.`;
+        }
+      }
+    } else if (isGuest) {
+      if (hostStartBtn) hostStartBtn.classList.add("hidden");
+      if (cancelWaitBtn) cancelWaitBtn.style.display = "none";
+      if (invitePanel) invitePanel.classList.add("hidden");
+      if (guestReadyBtn) {
+        guestReadyBtn.classList.remove("hidden");
+        if (guestReady) {
+          guestReadyBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Hủy sẵn sàng';
+          guestReadyBtn.style.background = "#f59e0b";
+          guestReadyBtn.style.borderColor = "#f59e0b";
+        } else {
+          guestReadyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Sẵn sàng';
+          guestReadyBtn.style.background = "#10b981";
+          guestReadyBtn.style.borderColor = "#10b981";
+        }
+      }
+      if (guestLeaveBtn) guestLeaveBtn.classList.remove("hidden");
+      if (lobbyStatusText) {
+        lobbyStatusText.textContent = guestReady
+          ? "✅ Bạn đã Sẵn sàng! Đang chờ chủ phòng bấm Bắt đầu..."
+          : "Bạn đã vào phòng. Hãy bấm Sẵn sàng để chủ phòng bắt đầu ván cờ.";
+      }
+    }
+  }
+
   function updateGameFromApi(data) {
     if (!data) {
       return;
@@ -970,18 +1111,37 @@ document.addEventListener("DOMContentLoaded", function () {
     gameId = data.id;
     joinSignalRGroup(gameId);
 
-    if (data.redPlayerUsername) currentGameRedPlayer = data.redPlayerUsername;
-    if (data.blackPlayerUsername) currentGameBlackPlayer = data.blackPlayerUsername;
-    if (data.redPlayerElo !== undefined && data.redPlayerElo !== null) currentGameRedElo = data.redPlayerElo;
-    if (data.blackPlayerElo !== undefined && data.blackPlayerElo !== null) currentGameBlackElo = data.blackPlayerElo;
+    currentGameRedPlayer = data.redPlayerUsername || "";
+    currentGameBlackPlayer = data.blackPlayerUsername || "";
+    currentGameRedElo = (data.redPlayerElo !== undefined && data.redPlayerElo !== null) ? data.redPlayerElo : null;
+    currentGameBlackElo = (data.blackPlayerElo !== undefined && data.blackPlayerElo !== null) ? data.blackPlayerElo : null;
 
-    const cancelWaitBtn = document.getElementById("cancel-room-wait-btn");
-    if (cancelWaitBtn) {
-      if (data.status === "InProgress") {
-        cancelWaitBtn.style.display = "none";
-      } else if (data.status === "WaitingForPlayers") {
-        cancelWaitBtn.style.display = "";
+    // Đồng bộ chính xác chế độ chơi & màu quân cầm từ server để không bị kẹt/sai lệch localStorage
+    const apiMode = (data.gameMode || "").toLowerCase();
+    if (apiMode.startsWith("online")) {
+      isOnlineMode = true;
+      VS_COMPUTER = false;
+      IS_AI_VS_AI = false;
+      localStorage.setItem("isOnlineMode", "true");
+
+      const myDbUserId = getCurrentDbUserId();
+      if (myDbUserId) {
+        if (data.redPlayerId === myDbUserId && data.blackPlayerId !== myDbUserId) {
+          localStorage.setItem("onlinePlayerColor", "Red");
+        } else if (data.blackPlayerId === myDbUserId && data.redPlayerId !== myDbUserId) {
+          localStorage.setItem("onlinePlayerColor", "Black");
+        }
       }
+    } else if (apiMode) {
+      isOnlineMode = false;
+      localStorage.removeItem("isOnlineMode");
+      localStorage.removeItem("onlinePlayerColor");
+    }
+
+    updateOnlineLobbyControls(data);
+
+    if (data.status === "InProgress") {
+      isHandlingTimeout = false;
     }
 
     const roomBox = document.getElementById("room-info-box");
@@ -1201,7 +1361,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (typeof data.remainingSeconds === "number") {
       remainingSeconds = data.remainingSeconds;
     } else if (data.lastMoveAt) {
-      const elapsed = Math.floor((Date.now() - new Date(data.lastMoveAt).getTime()) / 1000);
+      const isoStr = (typeof data.lastMoveAt === "string" && !data.lastMoveAt.endsWith("Z") && !data.lastMoveAt.includes("+"))
+        ? data.lastMoveAt + "Z"
+        : data.lastMoveAt;
+      const elapsed = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
       remainingSeconds = Math.max(0, 180 - elapsed);
     } else {
       remainingSeconds = 180;
@@ -1894,6 +2057,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
 
     if (isOnline) {
+      if (gameStatus === "WaitingForPlayers") {
+        if (!hasBlackPlayerState) {
+          turnStatus.textContent = "⏳ Đang chờ đối thủ vào phòng";
+        } else if (!isGuestReadyState) {
+          turnStatus.textContent = "⏳ Chờ đối thủ bấm Sẵn sàng";
+        } else {
+          turnStatus.textContent = "✅ Đối thủ đã sẵn sàng — Chờ chủ phòng bắt đầu";
+        }
+        if (turnIndicator) turnIndicator.textContent = isGuestReadyState ? "✅" : "⏳";
+        return;
+      }
+
       const myColor = localStorage.getItem("onlinePlayerColor");
       const isMyTurn = currentTurn === myColor;
       const pieceName = currentTurn === "Red" ? "QUÂN ĐỎ" : "QUÂN ĐEN";
@@ -2235,11 +2410,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function handlePieceClick(pieceGroup) {
     try {
-      if (isComputerThinking) {
+      if (isComputerThinking || isMakingMove) {
+        return;
+      }
+
+      if (gameStatus === "WaitingForPlayers") {
+        showToast("Ván cờ chưa bắt đầu! Hãy chờ các bên sẵn sàng và chủ phòng bấm Bắt đầu.", "info");
         return;
       }
 
       if (gameStatus !== "InProgress") {
+        checkGameResult();
         return;
       }
 
@@ -2251,13 +2432,13 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
-      if (isOnline) {
+      const onlineActive = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+      if (onlineActive) {
           const myColor = getMyOnlineColor();
-          if (currentTurn !== myColor) {
+          if (myColor && currentTurn !== myColor) {
               const enemyName = currentTurn === "Red" ? "Quân Đỏ" : "Quân Đen";
               showToast(`Đang là lượt đi của đối thủ (${enemyName}). Vui lòng chờ đối thủ ra nước cờ!`, "info");
-              return; 
+              return;
           }
       }
 
@@ -2348,8 +2529,14 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch(url);
 
       if (!response.ok) {
-        const errJson = await response.json().catch(() => null);
-        throw new Error(errJson?.message || "Không thể lấy nước đi hợp lệ");
+        const errData = await response.json().catch(() => null);
+        if (errData?.message) {
+          showToast(errData.message, "warning");
+        }
+        if (response.status === 400 || response.status === 403) {
+          await loadGame();
+        }
+        throw new Error(errData?.message || "Không thể lấy nước đi");
       }
 
       const data = await response.json();
@@ -2504,26 +2691,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const position = getPosition(row, col);
 
+    const moveGroup = document.createElementNS(SVG_NS, "g");
+    moveGroup.style.cursor = "pointer";
+
+    // Vùng bấm rộng quanh giao điểm giúp chọn nước đi nhạy và chính xác hơn
+    const hitTarget = document.createElementNS(SVG_NS, "circle");
+    hitTarget.setAttribute("cx", position.x);
+    hitTarget.setAttribute("cy", position.y);
+    hitTarget.setAttribute("r", 38);
+    hitTarget.setAttribute("fill", "transparent");
+
     const moveCircle = document.createElementNS(SVG_NS, "circle");
-
     moveCircle.setAttribute("cx", position.x);
-
     moveCircle.setAttribute("cy", position.y);
-
     moveCircle.setAttribute("r", isCapture ? 25 : 15);
-
     moveCircle.setAttribute(
       "class",
       isCapture ? "valid-move capture-move" : "valid-move",
     );
 
-    moveCircle.addEventListener("click", async function (event) {
+    moveGroup.appendChild(hitTarget);
+    moveGroup.appendChild(moveCircle);
+
+    moveGroup.addEventListener("click", async function (event) {
       event.stopPropagation();
 
       await makeMove(row, col);
     });
 
-    movesLayer.appendChild(moveCircle);
+    movesLayer.appendChild(moveGroup);
   }
 
   // =====================================================
@@ -2557,32 +2753,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const fromRow = selectedPieceData.row;
       const fromCol = selectedPieceData.col;
 
-      // OPTIMISTIC MOVE: Di chuyển quân cờ tức thì trên giao diện (giảm độ trễ về 0ms)
-      const backupPieces = JSON.parse(JSON.stringify(initialPieces));
-      const backupTurn = currentTurn;
-      const backupStatus = gameStatus;
-
-      try {
-        initialPieces = initialPieces.filter(p => !(p.row === toRow && p.col === toCol));
-        const moving = initialPieces.find(p => p.row === fromRow && p.col === fromCol);
-        if (moving) {
-          moving.row = toRow;
-          moving.col = toCol;
-        }
-        currentTurn = currentTurn === "Red" ? "Black" : "Red";
-        selectedPieceElement = null;
-        selectedPieceData = null;
-        currentValidMoves = [];
-        clearMoveHighlights();
-        renderPieces();
-        renderLastMoveHighlight(fromRow, fromCol, toRow, toCol);
-        updateTurnStatus();
-        updatePlayerStatus();
-        playSound('move');
-      } catch (optErr) {
-        console.warn("Optimistic move render warning:", optErr);
-      }
-
       isMakingMove = true;
 
       const requestData = {
@@ -2601,24 +2771,18 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       if (!response.ok) {
-        // Rollback lại bàn cờ cũ nếu server từ chối nước đi
-        initialPieces = backupPieces;
-        currentTurn = backupTurn;
-        gameStatus = backupStatus;
-        renderPieces();
-        updateTurnStatus();
-        updatePlayerStatus();
-
         const errorData = await response.json().catch(() => null);
         if (errorData?.game) {
           updateGameFromApi(errorData.game);
+        } else {
+          await loadGame();
         }
         throw new Error(errorData?.message || "Không thể thực hiện nước đi");
       }
 
       const data = await response.json();
-
       updateGameFromApi(data);
+      playSound(data.isCheck ? 'check' : 'move');
     } catch (error) {
       console.error("Lỗi di chuyển:", error);
 
@@ -3899,8 +4063,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (gameStatus === "WaitingForPlayers") {
-      redStatus.textContent = "🟠 Đang chờ đối thủ";
-      blackStatus.textContent = "⚪ Chờ tham gia";
+      if (!hasBlackPlayerState) {
+        redStatus.textContent = "🟠 Chủ phòng (Đang chờ)";
+        blackStatus.textContent = "⚪ Chờ đối thủ vào";
+      } else if (!isGuestReadyState) {
+        redStatus.textContent = "🟠 Chủ phòng (Chờ bắt đầu)";
+        blackStatus.textContent = "🟡 Đã vào (Chưa sẵn sàng)";
+      } else {
+        redStatus.textContent = "🟢 Chờ bấm Bắt đầu";
+        blackStatus.textContent = "✅ Đã sẵn sàng";
+      }
       return;
     }
 
@@ -5148,6 +5320,88 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  const guestReadyBtn = document.getElementById("guest-ready-btn");
+  if (guestReadyBtn) {
+    guestReadyBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      if (!gameId) return;
+      guestReadyBtn.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE_URL}/${gameId}/ready`, { method: "POST" });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(result.message || "Không thể cập nhật trạng thái sẵn sàng.");
+        }
+        if (result.game) {
+          updateGameFromApi(result.game);
+        }
+        showToast(
+          result.isGuestReady ? "Bạn đã bấm Sẵn sàng!" : "Bạn đã hủy trạng thái Sẵn sàng.",
+          result.isGuestReady ? "success" : "info"
+        );
+      } catch (err) {
+        showToast(err.message || "Lỗi cập nhật sẵn sàng.", "danger");
+      } finally {
+        guestReadyBtn.disabled = false;
+      }
+    });
+  }
+
+  const hostStartGameBtn = document.getElementById("host-start-game-btn");
+  if (hostStartGameBtn) {
+    hostStartGameBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      if (!gameId) return;
+      hostStartGameBtn.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE_URL}/${gameId}/start`, { method: "POST" });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(result.message || "Không thể bắt đầu ván đấu.");
+        }
+        if (result.game) {
+          updateGameFromApi(result.game);
+        }
+        showToast("Ván cờ đã bắt đầu! Quân Đỏ đi trước.", "success");
+        playSound('move');
+      } catch (err) {
+        showToast(err.message || "Chưa thể bắt đầu ván đấu.", "warning");
+      } finally {
+        if (gameStatus === "WaitingForPlayers") {
+          const canStart = hasBlackPlayerState && isGuestReadyState;
+          hostStartGameBtn.disabled = !canStart;
+          hostStartGameBtn.style.opacity = canStart ? "1" : "0.5";
+          hostStartGameBtn.style.cursor = canStart ? "pointer" : "not-allowed";
+        }
+      }
+    });
+  }
+
+  const guestLeaveRoomBtn = document.getElementById("guest-leave-room-btn");
+  if (guestLeaveRoomBtn) {
+    guestLeaveRoomBtn.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      if (!gameId) {
+        backToModeSelection();
+        return;
+      }
+      guestLeaveRoomBtn.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE_URL}/${gameId}/leave`, { method: "POST" });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(result.message || "Không thể rời phòng.");
+        }
+        showToast("Bạn đã rời phòng chờ.", "info");
+        backToModeSelection();
+      } catch (err) {
+        showToast(err.message || "Lỗi khi rời phòng.", "danger");
+      } finally {
+        guestLeaveRoomBtn.disabled = false;
+      }
+    });
+  }
+
   // =====================================================
   // XỬ THUA DO HẾT GIỜ (CLAIM TIMEOUT)
   // =====================================================
@@ -5175,11 +5429,17 @@ document.addEventListener("DOMContentLoaded", function () {
   async function requestOnlineRematch() {
     if (!gameId) return;
     try {
-      showToast("Đang tạo ván mới và hoán đổi màu quân...", "info");
       const response = await fetch(`${API_BASE_URL}/${gameId}/rematch`, { method: "POST" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         showToast(data.message || "Không thể khởi tạo ván đấu mới.", "warning");
+        return;
+      }
+      if (data.isOffer) {
+        showToast(data.message || "Đã gửi lời mời tái đấu tới đối thủ. Vui lòng chờ đối thủ đồng ý!", "info");
+        return;
+      }
+      if (!data.id) {
         return;
       }
       closeGameResult();
