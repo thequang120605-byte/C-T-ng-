@@ -25,17 +25,17 @@ namespace ChessCore.Data
                     return;
                 }
 
-                // Kiểm tra xem đã nạp dữ liệu chênh lệch tự nhiên (D1 của QT là 35 ván, TQ là 8 ván) chưa
+                // Kiểm tra xem đã nạp dữ liệu mới nhất (TheQuang tỷ lệ thắng cao 62.9%, D1=9, QT D1=33) chưa
                 int tqD1 = await dbContext.Games.CountAsync(g => (g.RedPlayerId == theQuang.Id || g.BlackPlayerId == theQuang.Id) && g.AiDepth == 1);
                 int qtD1 = await dbContext.Games.CountAsync(g => (g.RedPlayerId == quocTrung.Id || g.BlackPlayerId == quocTrung.Id) && g.AiDepth == 1);
 
-                if (!force && tqD1 == 8 && qtD1 == 35)
+                if (!force && tqD1 == 9 && qtD1 == 33)
                 {
-                    logger?.LogInformation(">>> Dữ liệu 3 tài khoản đã phong phú, chênh lệch tự nhiên, không cần nạp lại.");
+                    logger?.LogInformation(">>> Dữ liệu 3 tài khoản đã phong phú, tỷ lệ thắng TheQuang cao, không cần nạp lại.");
                     return;
                 }
 
-                logger?.LogInformation(">>> Đang tiến hành làm giàu dữ liệu chênh lệch tự nhiên cho 3 tài khoản (TheQuang, TrongNguyen34, QuocTrung)...");
+                logger?.LogInformation(">>> Đang nạp lại dữ liệu phong phú: TheQuang chơi giỏi thắng cao (62.9%)...");
 
                 var targetIds = new[] { theQuang.Id, trongNguyen.Id, quocTrung.Id };
 
@@ -68,12 +68,12 @@ namespace ChessCore.Data
 
                 await dbContext.SaveChangesAsync();
 
-                // 2. Tạo các ván đấu PvE Depth 1..4 với số lượng chênh lệch thực tế, không bị đều/tròn số
-                // TheQuang (Kỳ thủ giỏi): D1: 8 (7W, 1D, 0L), D2: 19 (10W, 3D, 6L), D3: 15 (3W, 3D, 9L), D4: 7 (0W, 1D, 6L) -> PvE 49
-                // TrongNguyen34 (Toàn diện, chăm chỉ): D1: 26 (21W, 2D, 3L), D2: 17 (9W, 2D, 6L), D3: 11 (1W, 2D, 8L), D4: 5 (0W, 1D, 4L) -> PvE 59
-                // QuocTrung (Mới chơi): D1: 35 (25W, 4D, 6L), D2: 13 (4W, 2D, 7L), D3: 7 (1W, 1D, 5L), D4: 4 (0W, 0D, 4L) -> PvE 59
+                // 2. Tạo các ván đấu PvE Depth 1..4:
+                // TheQuang (Kỳ thủ giỏi - thắng cao): D1: 9 (8W, 1D, 0L), D2: 18 (14W, 2D, 2L), D3: 14 (6W, 3D, 5L), D4: 7 (0W, 2D, 5L) -> PvE 48 (28W, 8D, 12L)
+                // TrongNguyen34 (Toàn diện, chăm chỉ): D1: 24 (19W, 2D, 3L), D2: 17 (9W, 2D, 6L), D3: 11 (1W, 2D, 8L), D4: 5 (0W, 1D, 4L) -> PvE 57 (29W, 7D, 21L)
+                // QuocTrung (Mới chơi): D1: 33 (22W, 4D, 7L), D2: 13 (4W, 2D, 7L), D3: 7 (1W, 1D, 5L), D4: 4 (0W, 0D, 4L) -> PvE 57 (27W, 7D, 23L)
                 var baseDate = DateTime.UtcNow.AddDays(-38);
-                int gameSeedCounter = 120;
+                int gameSeedCounter = 150;
 
                 var userPlans = new[]
                 {
@@ -82,17 +82,17 @@ namespace ChessCore.Data
                         User = theQuang,
                         InitialElo = 1215,
                         TargetElo = 1285,
-                        D1 = (W: 7, D: 1, L: 0),
-                        D2 = (W: 10, D: 3, L: 6),
-                        D3 = (W: 3, D: 3, L: 9),
-                        D4 = (W: 0, D: 1, L: 6)
+                        D1 = (W: 8, D: 1, L: 0),
+                        D2 = (W: 14, D: 2, L: 2),
+                        D3 = (W: 6, D: 3, L: 5),
+                        D4 = (W: 0, D: 2, L: 5)
                     },
                     new
                     {
                         User = trongNguyen,
                         InitialElo = 1202,
                         TargetElo = 1260,
-                        D1 = (W: 21, D: 2, L: 3),
+                        D1 = (W: 19, D: 2, L: 3),
                         D2 = (W: 9, D: 2, L: 6),
                         D3 = (W: 1, D: 2, L: 8),
                         D4 = (W: 0, D: 1, L: 4)
@@ -102,7 +102,7 @@ namespace ChessCore.Data
                         User = quocTrung,
                         InitialElo = 1145,
                         TargetElo = 1165,
-                        D1 = (W: 25, D: 4, L: 6),
+                        D1 = (W: 22, D: 4, L: 7),
                         D2 = (W: 4, D: 2, L: 7),
                         D3 = (W: 1, D: 1, L: 5),
                         D4 = (W: 0, D: 0, L: 4)
@@ -135,7 +135,7 @@ namespace ChessCore.Data
                         for (int i = 0; i < dCount; i++) results.Add("D");
                         for (int i = 0; i < lCount; i++) results.Add("L");
 
-                        var rng = new Random(uId * 100 + depth * 11 + 3);
+                        var rng = new Random(uId * 100 + depth * 11 + 5);
                         results = results.OrderBy(_ => rng.Next()).ToList();
 
                         for (int rIdx = 0; rIdx < results.Count; rIdx++)
@@ -191,15 +191,17 @@ namespace ChessCore.Data
                     }
                 }
 
-                // 3. Tạo các ván PvP đối kháng Online với số ván phân bổ tự nhiên
-                // Đối đầu TheQuang vs TrongNguyen34: 3 ván (TQ thắng 2, TN thắng 1)
+                // 3. Tạo các ván PvP đối kháng Online
+                // TheQuang chơi xuất sắc, áp đảo trong các trận đối kháng:
+                // TheQuang vs TrongNguyen34: 4 ván (TQ thắng 3, TN thắng 1)
                 // TheQuang vs QuocTrung: 4 ván (TQ thắng 3, QT thắng 1)
                 // TrongNguyen34 vs QuocTrung: 5 ván (TN thắng 3, QT thắng 1, Hòa 1)
                 var pvpMatches = new List<(int p1, int p2, string res1, string note)>
                 {
                     (theQuang.Id, trongNguyen.Id, "W", "Đại chiến Kỳ vương TheQuang vs TrongNguyen34"),
-                    (trongNguyen.Id, theQuang.Id, "W", "Phục hận đỉnh cao TrongNguyen34 vs TheQuang"),
-                    (theQuang.Id, trongNguyen.Id, "W", "Thư hùng trung cuộc TheQuang vs TrongNguyen34"),
+                    (theQuang.Id, trongNguyen.Id, "W", "Trung cuộc biến hóa TheQuang vs TrongNguyen34"),
+                    (trongNguyen.Id, theQuang.Id, "W", "Nỗ lực gỡ hòa TrongNguyen34 vs TheQuang"),
+                    (theQuang.Id, trongNguyen.Id, "W", "Thư hùng tàn cục TheQuang vs TrongNguyen34"),
 
                     (theQuang.Id, quocTrung.Id, "W", "Giao hữu xếp hạng TheQuang vs QuocTrung"),
                     (theQuang.Id, quocTrung.Id, "W", "Đối công vũ bão TheQuang vs QuocTrung"),
@@ -246,32 +248,32 @@ namespace ChessCore.Data
                     userGamesMap[match.p2].Add((pvpGame, !p1Wins && !isDraw, isDraw, p1Wins, p2Reason));
                 }
 
-                // Thêm một số ván PvP với các kỳ thủ khác trên cộng đồng để tổng số trận và tỷ lệ chênh lệch tự nhiên:
-                // TheQuang: thêm 5 ván (3 thắng, 1 hòa, 1 thua) -> PvP tổng 12 ván (8W, 1D, 3L)
-                // TrongNguyen34: thêm 8 ván (6 thắng, 2 hòa, 0 thua) -> PvP tổng 16 ván (10W, 3D, 3L)
-                // QuocTrung: thêm 3 ván (1 thắng, 0 hòa, 2 thua) -> PvP tổng 12 ván (3W, 1D, 8L)
+                // Thêm các ván PvP với các kỳ thủ khác trên cộng đồng:
+                // TheQuang: 6 ván (5 thắng, 1 hòa, 0 thua) -> PvP tổng 14 ván (11W, 1D, 2L)
+                // TrongNguyen34: 7 ván (4 thắng, 2 hòa, 1 thua) -> PvP tổng 16 ván (8W, 3D, 5L)
+                // QuocTrung: 3 ván (0 thắng, 0 hòa, 3 thua) -> PvP tổng 12 ván (2W, 1D, 9L)
                 var soloPvpExtra = new[]
                 {
-                    // TheQuang
+                    // TheQuang: thắng áp đảo đối thủ bên ngoài
                     (theQuang.Id, "W", 14.0, "Thắng đối thủ cộng đồng (Hà Nội)"),
                     (theQuang.Id, "W", 18.0, "Thắng đối thủ cộng đồng (Đà Nẵng)"),
                     (theQuang.Id, "D", 22.0, "Hòa kịch tính đối thủ kiện tướng"),
-                    (theQuang.Id, "L", 27.0, "Thua sát nút cao thủ phòng mở"),
-                    (theQuang.Id, "W", 32.0, "Thắng thuyết phục đối thủ kỳ hữu"),
+                    (theQuang.Id, "W", 27.0, "Thắng áp đảo cao thủ phòng mở"),
+                    (theQuang.Id, "W", 31.0, "Thắng thuyết phục đối thủ kỳ hữu"),
+                    (theQuang.Id, "W", 35.0, "Thắng đối thủ kỳ đài online"),
 
                     // TrongNguyen34
                     (trongNguyen.Id, "W", 11.0, "Thắng đối thủ phòng công khai #102"),
                     (trongNguyen.Id, "W", 15.0, "Chiến thắng đối thủ kỳ đài"),
                     (trongNguyen.Id, "D", 19.0, "Hòa thế trận tàn cuộc nghẹt thở"),
-                    (trongNguyen.Id, "W", 23.0, "Thắng đối thủ xếp hạng #208"),
+                    (trongNguyen.Id, "L", 23.0, "Thua đối thủ xếp hạng #208"),
                     (trongNguyen.Id, "W", 26.0, "Thắng chớp nhoáng đối thủ online"),
                     (trongNguyen.Id, "D", 29.0, "Hòa cờ tàn pháo tốt"),
-                    (trongNguyen.Id, "W", 33.0, "Thắng đối thủ giao lưu miền Nam"),
-                    (trongNguyen.Id, "W", 36.0, "Thắng đối thủ kỳ hữu CLB"),
+                    (trongNguyen.Id, "W", 34.0, "Thắng đối thủ kỳ hữu CLB"),
 
-                    // QuocTrung
+                    // QuocTrung: thua đối thủ cao cờ bên ngoài
                     (quocTrung.Id, "L", 12.0, "Thua đối thủ xếp hạng #301"),
-                    (quocTrung.Id, "W", 21.0, "Thắng đối thủ mới tham gia"),
+                    (quocTrung.Id, "L", 21.0, "Thua đối thủ kỳ cựu"),
                     (quocTrung.Id, "L", 30.0, "Thua đối thủ cao cờ phòng 104")
                 };
 
@@ -291,7 +293,7 @@ namespace ChessCore.Data
                         Status = status,
                         CurrentTurn = PieceColor.Red,
                         RedPlayerId = extra.Item1,
-                        BlackPlayerId = null, // Đối thủ online bên ngoài
+                        BlackPlayerId = null,
                         IsRated = true,
                         CreatedAt = gTime,
                         LastMoveAt = gTime.AddMinutes(11),
@@ -526,7 +528,7 @@ namespace ChessCore.Data
                 // 7. Đồng bộ GamesPlayed/Wins/Losses/Draws vào bảng Users
                 await SynchronizeUserStatsAndCleanupAsync(dbContext, logger);
 
-                logger?.LogInformation(">>> Đã nạp thành công bộ dữ liệu chênh lệch tự nhiên cho 3 tài khoản!");
+                logger?.LogInformation(">>> Đã nạp thành công bộ dữ liệu TheQuang chơi giỏi thắng cao!");
             }
             catch (Exception ex)
             {
