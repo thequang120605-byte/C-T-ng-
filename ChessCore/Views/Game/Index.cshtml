@@ -188,7 +188,7 @@
                         <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin: 4px 0;">— HOẶC VÀO PHÒNG CỦA BẠN BÈ —</div>
 
                         <div class="lobby-input-group" style="margin: 0;">
-                            <input type="text" id="online-room-id" placeholder="Nhập mã phòng (8 ký tự)" maxlength="8" autocapitalize="characters" autocomplete="off" />
+                            <input type="text" id="online-room-id" placeholder="Nhập mã phòng hoặc dán link mời..." maxlength="150" autocapitalize="characters" autocomplete="off" />
                             <button id="join-online-btn" class="btn-lobby-action" type="button">
                                 <i class="fa-solid fa-right-to-bracket"></i> Vào phòng
                             </button>
@@ -237,6 +237,30 @@
         
         <!-- CỘT TRÁI: BÀN CỜ VÀ THÔNG TIN NGƯỜI CHƠI -->
         <div class="board-column">
+            
+            <!-- THANH TIÊU ĐỀ & ĐỒNG HỒ TỔNG THỜI GIAN VÁN ĐẤU (VỊ TRÍ 1) -->
+            <div id="match-duration-bar" class="match-duration-bar">
+                <div class="match-duration-left">
+                    <span id="match-mode-tag" class="match-badge mode-badge">
+                        <i class="fa-solid fa-gamepad"></i> <span id="match-mode-label">Chơi Cờ</span>
+                    </span>
+                    <span id="match-room-tag" class="match-badge room-badge hidden">
+                        <i class="fa-solid fa-hashtag"></i> <span id="match-room-label">----</span>
+                    </span>
+                </div>
+                <div class="match-duration-center">
+                    <div class="match-timer-box" title="Tổng thời gian diễn ra ván cờ">
+                        <i class="fa-regular fa-clock match-timer-icon"></i>
+                        <span class="match-timer-label">Tổng thời gian:</span>
+                        <strong id="match-total-timer" class="match-timer-val">00:00</strong>
+                    </div>
+                </div>
+                <div class="match-duration-right">
+                    <span id="match-turn-badge" class="match-badge turn-badge">
+                        <span class="pulse-dot"></span> <span id="match-turn-label">Lượt Đỏ</span>
+                    </span>
+                </div>
+            </div>
             
             <!-- THÔNG TIN ĐỐI THỦ (QUÂN ĐEN) -->
             <div id="black-player-card" class="player-bar player-black">
@@ -359,6 +383,9 @@
                 </div>
                 <button id="copy-room-code-btn" class="btn-secondary" style="width: 100%; margin-top: 10px; padding: 6px; font-size: 12px;">
                     <i class="fa-regular fa-copy"></i> Sao chép mã
+                </button>
+                <button id="copy-room-link-btn" class="btn-secondary" type="button" style="width: 100%; margin-top: 6px; padding: 6px; font-size: 12px; color: var(--accent-gold); border-color: rgba(212, 175, 55, 0.4);">
+                    <i class="fa-solid fa-link"></i> Sao chép link mời bạn
                 </button>
                 <button id="cancel-room-wait-btn" class="btn-secondary" type="button" style="width: 100%; margin-top: 6px; padding: 6px; font-size: 12px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
                     <i class="fa-solid fa-ban"></i> Hủy phòng / Rời sảnh

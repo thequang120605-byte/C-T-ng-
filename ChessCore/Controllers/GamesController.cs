@@ -369,10 +369,33 @@ namespace ChessCore.Controllers
                 return BadRequest(new { message = "Vui lòng nhập mã bàn." });
 
             var normalizedRoomCode = roomCode.Trim().ToUpperInvariant();
-            var gameId = await _dbContext.Games
+            int? gameId = null;
+
+            // 1. Tìm theo RoomCode chính xác
+            gameId = await _dbContext.Games
                 .Where(game => game.RoomCode == normalizedRoomCode)
                 .Select(game => (int?)game.Id)
                 .FirstOrDefaultAsync();
+
+            // 2. Hỗ trợ tìm kiếm theo ID nếu người dùng nhập số ID phòng thay vì mã chữ
+            if (!gameId.HasValue && int.TryParse(normalizedRoomCode, out int parsedId))
+            {
+                gameId = await _dbContext.Games
+                    .Where(game => game.Id == parsedId)
+                    .Select(game => (int?)game.Id)
+                    .FirstOrDefaultAsync();
+            }
+
+            // 3. Hỗ trợ trường hợp gõ nhầm các ký tự tương đồng: 0 <-> O, 1 <-> I/L
+            if (!gameId.HasValue)
+            {
+                string fuzzyCode = normalizedRoomCode.Replace('0', 'O').Replace('1', 'I');
+                gameId = await _dbContext.Games
+                    .Where(game => game.RoomCode == fuzzyCode)
+                    .Select(game => (int?)game.Id)
+                    .FirstOrDefaultAsync();
+            }
+
             if (!gameId.HasValue)
                 return NotFound(new { message = "Không tìm thấy bàn với mã này." });
 
@@ -614,6 +637,8 @@ namespace ChessCore.Controllers
             public string? InitialFen { get; set; }
             public string? GameMode { get; set; }
             public int? TimeControl { get; set; }
+            public int? AiDepth { get; set; }
+            public string? AiColor { get; set; }
         }
 
         [HttpPost]
@@ -621,11 +646,14 @@ namespace ChessCore.Controllers
             [FromQuery] string? initialFen = null, 
             [FromQuery] string? gameMode = null, 
             [FromQuery] int? timeControl = null, 
+            [FromQuery] int? aiDepth = null,
             [FromBody] CreateGameBodyRequest? body = null)
         {
             var targetFen = !string.IsNullOrWhiteSpace(initialFen) ? initialFen : body?.InitialFen;
             var targetMode = !string.IsNullOrWhiteSpace(gameMode) ? gameMode : (body?.GameMode ?? "PvP");
             var targetTime = timeControl ?? body?.TimeControl;
+            int? targetAiDepth = aiDepth ?? body?.AiDepth;
+            string? targetAiColor = body?.AiColor;
 
             // FIX BUG_017: Từ chối thời gian thi đấu âm hoặc không hợp lệ
             if (targetTime.HasValue && (targetTime.Value <= 0 || targetTime.Value > 180))
@@ -651,17 +679,24 @@ namespace ChessCore.Controllers
 
             // AN TOÀN THỐNG KÊ: Chỉ gán người chơi cho PvE. Với Local (cùng máy) hoặc AiVsAi (hai bot),
             // RedPlayerId và BlackPlayerId phải là null để không làm sai lệch số liệu thắng/thua cá nhân.
-            if (TryGetCurrentUserId(out int userId))
+            if (normalizedTargetMode == GameModes.PvE)
             {
-                if (normalizedTargetMode == GameModes.PvE)
+                game.AiDepth = (targetAiDepth.HasValue && targetAiDepth.Value >= 1 && targetAiDepth.Value <= 4)
+                    ? targetAiDepth.Value
+                    : 1;
+                if (!string.IsNullOrWhiteSpace(targetAiColor))
+                {
+                    game.AiColor = targetAiColor;
+                }
+                if (TryGetCurrentUserId(out int userId))
                 {
                     game.RedPlayerId = userId;
                 }
-                else
-                {
-                    game.RedPlayerId = null;
-                    game.BlackPlayerId = null;
-                }
+            }
+            else if (TryGetCurrentUserId(out int userId))
+            {
+                game.RedPlayerId = null;
+                game.BlackPlayerId = null;
             }
             await _dbContext.SaveChangesAsync();
 
@@ -989,6 +1024,7 @@ namespace ChessCore.Controllers
                 newStatus = repCheck.ResultStatus;
             }
 
+            Game? savedGame = null;
             var strategy = _dbContext.Database.CreateExecutionStrategy();
             bool moveSaved = await strategy.ExecuteAsync(async () =>
             {
@@ -1025,6 +1061,7 @@ namespace ChessCore.Controllers
 
                     await _dbContext.SaveChangesAsync(HttpContext.RequestAborted);
                     await transaction.CommitAsync(HttpContext.RequestAborted);
+                    savedGame = freshGame;
                     return true;
                 }
                 catch (Exception)
@@ -1048,11 +1085,10 @@ namespace ChessCore.Controllers
             }
 
             // =================================================
-            // LẤY GAME MỚI NHẤT
+            // LẤY GAME MỚI NHẤT (Tận dụng bản ghi đã commit, tránh thêm 1 roundtrip mạng)
             // =================================================
 
-            var updatedGame =
-                await _gameService.GetGameByIdAsync(id);
+            var updatedGame = savedGame ?? await _gameService.GetGameByIdAsync(id);
 
             if (updatedGame == null)
             {
@@ -1163,6 +1199,13 @@ namespace ChessCore.Controllers
             if (difficulty > 4)
             {
                 difficulty = 4;
+            }
+
+            // Ghi nhận độ sâu AI (Depth 1..4) vào ván đấu phục vụ thống kê nâng cao
+            if (game.AiDepth != difficulty)
+            {
+                game.AiDepth = difficulty;
+                await _dbContext.SaveChangesAsync();
             }
 
             // =================================================
@@ -1511,10 +1554,11 @@ namespace ChessCore.Controllers
             if (normalizedMode == GameModes.Local || normalizedMode == GameModes.AiVsAi)
             {
                 await _settlementService.SettleGameAsync(id, GameStatus.Draw, "Hai bên thỏa thuận hòa");
+                game.Status = GameStatus.Draw;
                 var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
                 var drawResponse = BuildGameResponse(game, board);
                 await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", drawResponse);
-                await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Ván cờ kết thúc hòa do hai bên thỏa thuận." });
+                await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Ván cờ kết thúc hòa do hai bên thỏa thuận.", game = drawResponse });
                 return Ok(new { accepted = true, message = "Ván cờ kết thúc hòa.", game = drawResponse });
             }
 
@@ -1562,10 +1606,11 @@ namespace ChessCore.Controllers
                 if (computerAgrees)
                 {
                     await _settlementService.SettleGameAsync(id, GameStatus.Draw, "Máy đồng ý hòa");
+                    game.Status = GameStatus.Draw;
 
                     var drawResponse = BuildGameResponse(game, board);
                     await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", drawResponse);
-                    await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Máy đã đồng ý hòa ván cờ!" });
+                    await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Máy đã đồng ý hòa ván cờ!", game = drawResponse });
 
                     return Ok(new { accepted = true, message = "Máy đã đồng ý hòa ván cờ!", game = drawResponse });
                 }
@@ -1643,12 +1688,13 @@ namespace ChessCore.Controllers
             if (isAccepted)
             {
                 await _settlementService.SettleGameAsync(id, GameStatus.Draw, "Hai bên thỏa thuận hòa");
+                game.Status = GameStatus.Draw;
 
                 var board = GameRules.RebuildBoard(game.InitialFen, game.Moves, game.CurrentTurn);
                 var drawResponse = BuildGameResponse(game, board);
 
                 await _hubContext.Clients.Group(id.ToString()).SendAsync("GameUpdated", drawResponse);
-                await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Hai bên đã đồng ý hòa ván cờ!" });
+                await _hubContext.Clients.Group(id.ToString()).SendAsync("MatchEnded_Draw", new { gameId = id, message = "Hai bên đã đồng ý hòa ván cờ!", game = drawResponse });
 
                 return Ok(new { accepted = true, message = "Đã đồng ý hòa ván cờ thành công.", game = drawResponse });
             }
@@ -1883,6 +1929,12 @@ namespace ChessCore.Controllers
 
                 CreatedAt =
                     game.CreatedAt,
+
+                ResultsProcessedAt =
+                    game.ResultsProcessedAt,
+
+                TotalDurationSeconds =
+                    (int)Math.Max(0, ((game.ResultsProcessedAt ?? DateTime.UtcNow) - game.CreatedAt).TotalSeconds),
 
                 LastMoveAt =
                     game.LastMoveAt,

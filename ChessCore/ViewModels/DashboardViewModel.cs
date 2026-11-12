@@ -19,6 +19,7 @@ namespace ChessCore.ViewModels
         public List<PuzzleLeaderboardItem> PuzzleLeaderboard { get; set; } = new List<PuzzleLeaderboardItem>();
         public List<EloPointDto> EloHistory { get; set; } = new List<EloPointDto>();
         public List<UserAccountOptionDto> AllAccounts { get; set; } = new();
+        public List<AiDepthStatDto> AiDepthStats { get; set; } = new();
     }
 
     public class EloPointDto
@@ -83,6 +84,46 @@ namespace ChessCore.ViewModels
         public int LessonsCompleted { get; set; }
         public bool IsCurrentUser { get; set; }
         public int Rank { get; set; }
+
+        // Bổ sung chi tiết thống kê Đấu Máy theo từng Depth (1..4)
+        public int TotalPveGames { get; set; }
+        public int PveWins { get; set; }
+        public int PveLosses { get; set; }
+        public int PveDraws { get; set; }
+        public double PveWinRate { get; set; }
+
+        public int Depth1Games { get; set; }
+        public int Depth1Wins { get; set; }
+        public int Depth1Losses { get; set; }
+        public double Depth1WinRate { get; set; }
+
+        public int Depth2Games { get; set; }
+        public int Depth2Wins { get; set; }
+        public int Depth2Losses { get; set; }
+        public double Depth2WinRate { get; set; }
+
+        public int Depth3Games { get; set; }
+        public int Depth3Wins { get; set; }
+        public int Depth3Losses { get; set; }
+        public double Depth3WinRate { get; set; }
+
+        public int Depth4Games { get; set; }
+        public int Depth4Wins { get; set; }
+        public int Depth4Losses { get; set; }
+        public double Depth4WinRate { get; set; }
+
+        public List<AiDepthStatDto> DepthStats { get; set; } = new();
+    }
+
+    public class AiDepthStatDto
+    {
+        public int Depth { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int TotalGames { get; set; }
+        public int Wins { get; set; }
+        public int Losses { get; set; }
+        public int Draws { get; set; }
+        public double WinRate { get; set; }
     }
 
     public class AdvancedStatsRequest
@@ -98,6 +139,7 @@ namespace ChessCore.ViewModels
         public ChessCore.Services.LearningStatistics Learning { get; set; } = new();
         public AdvancedDonutDto Donut { get; set; } = new();
         public Dictionary<string, int> ModeDistribution { get; set; } = new();
+        public List<AiDepthStatDto> AiDepthSummary { get; set; } = new();
     }
 
     public class AdvancedKpiDto

@@ -11,7 +11,7 @@ using ChessCore.Enums;
 
 namespace ChessCore.Data
 {
-    public static class DatabaseBootstrap
+    public static partial class DatabaseBootstrap
     {
         public static async Task InitializeAsync(AppDbContext dbContext, ILogger logger)
         {
@@ -41,6 +41,9 @@ namespace ChessCore.Data
             // 5. Chuẩn hóa tiêu đề cờ thế (loại bỏ chú thích thừa và số bài thừa)
             await NormalizePuzzleTitlesAsync(dbContext, logger);
 
+            // 5.5 Nạp bộ dữ liệu phong phú, sống động cho 3 tài khoản kiểm thử (TheQuang, TrongNguyen34, QuocTrung)
+            await EnsureRichTestingDataForTopThreeUsersAsync(dbContext, logger);
+
             // 6. Dọn dẹp phòng trống bỏ rơi và chuẩn hóa đồng bộ thống kê người dùng
             await SynchronizeUserStatsAndCleanupAsync(dbContext, logger);
 
@@ -56,6 +59,7 @@ namespace ChessCore.Data
 
             // --- 2. BẢNG Games (Sửa lỗi Unknown column 'g.aidepth', 'g.gamemode', 'g.israted', v.v.) ---
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `AiDepth` INT NULL;", logger);
+            await ExecuteRawSqlSafely(dbContext, "UPDATE `Games` SET `AiDepth` = 1 WHERE (`GameMode` = 'PvE' OR `GameMode` = 'pve') AND `AiDepth` IS NULL;", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `GameMode` VARCHAR(20) NOT NULL DEFAULT 'PvP';", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `OpeningId` INT NULL;", logger);
             await ExecuteRawSqlSafely(dbContext, "ALTER TABLE `Games` ADD COLUMN `IsRated` TINYINT(1) NOT NULL DEFAULT 0;", logger);

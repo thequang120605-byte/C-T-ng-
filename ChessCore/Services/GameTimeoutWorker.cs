@@ -48,7 +48,8 @@ namespace ChessCore.Services
                     _logger.LogError(ex, "Lỗi trong chu kỳ quét hết giờ ván cờ.");
                 }
 
-                await Task.Delay(3000, stoppingToken);
+                // Quét hết giờ mỗi 10 giây để tránh làm nghẽn CPU và nghẽn kết nối Database TiDB Cloud trên Render
+                await Task.Delay(10000, stoppingToken);
             }
         }
 

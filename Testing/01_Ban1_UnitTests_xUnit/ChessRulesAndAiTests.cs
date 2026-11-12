@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using ChessCore.Engine;
 using ChessCore.Enums;
 using ChessCore.Models;
@@ -222,6 +223,96 @@ namespace ChessCore.Tests
             Assert.False(ok);
             Assert.Null(board);
             Assert.Contains("Lượt đi phải là 'w' (Đỏ) hoặc 'b' (Đen)", error);
+        }
+
+        #endregion
+#region AI Depth & Advanced Stats Tests
+
+        [Fact]
+        public void AdvancedStats_AiDepth_Breakdown_Calculations_Are_Accurate()
+        {
+            var user = new ChessCore.ViewModels.UserAccountOptionDto
+            {
+                Id = 1,
+                Username = "TrongNguyen34",
+                Depth1Games = 5,
+                Depth1Wins = 4,
+                Depth1WinRate = 80.0,
+                Depth2Games = 3,
+                Depth2Wins = 1,
+                Depth2WinRate = 33.3,
+                Depth3Games = 2,
+                Depth3Wins = 0,
+                Depth3WinRate = 0.0,
+                Depth4Games = 1,
+                Depth4Wins = 1,
+                Depth4WinRate = 100.0,
+                TotalPveGames = 11,
+                PveWins = 6,
+                PveWinRate = 54.5
+            };
+
+            Assert.Equal(11, user.TotalPveGames);
+            Assert.Equal(6, user.PveWins);
+            Assert.Equal(5, user.Depth1Games);
+            Assert.Equal(4, user.Depth1Wins);
+            Assert.Equal(3, user.Depth2Games);
+            Assert.Equal(2, user.Depth3Games);
+            Assert.Equal(1, user.Depth4Games);
+        }
+
+        [Fact]
+        public async Task Seed_And_Verify_Rich_Testing_Data_Top_Three_Users()
+        {
+            try
+            {
+                var connStr = "Server=localhost;Port=3306;Database=chess_db;User=root;Password=;CharSet=utf8mb4;";
+                var serverVersion = Microsoft.EntityFrameworkCore.ServerVersion.AutoDetect(connStr);
+                var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<ChessCore.Data.AppDbContext>()
+                    .UseMySql(connStr, serverVersion)
+                    .Options;
+                using var db = new ChessCore.Data.AppDbContext(options);
+
+                // Nạp dữ liệu phong phú mới
+                await ChessCore.Data.DatabaseBootstrap.EnsureRichTestingDataForTopThreeUsersAsync(db, null, force: true);
+
+                int[] targetIds = { 1, 27, 43 };
+                var users = db.Users.Where(u => targetIds.Contains(u.Id)).OrderBy(u => u.Id).ToList();
+                foreach (var u in users)
+                {
+                    Console.WriteLine($"VERIFY_USER: Id={u.Id}, Name={u.Username}, Elo={u.Elo}, GamesPlayed={u.GamesPlayed}, W={u.Wins}, L={u.Losses}, D={u.Draws}, PuzzleScore={u.PuzzleScore}");
+                    var pve = db.Games.Where(g => (g.RedPlayerId == u.Id || g.BlackPlayerId == u.Id) && (g.GameMode == "PvE" || g.GameMode == "pve")).ToList();
+                    Console.WriteLine($"  PvE Total: {pve.Count}");
+                    for (int d = 1; d <= 4; d++)
+                    {
+                        var dGames = pve.Where(g => g.AiDepth == d).ToList();
+                        int w = dGames.Count(g => (g.RedPlayerId == u.Id && g.Status == ChessCore.Enums.GameStatus.RedWins) || (g.BlackPlayerId == u.Id && g.Status == ChessCore.Enums.GameStatus.BlackWins));
+                        int l = dGames.Count(g => (g.RedPlayerId == u.Id && g.Status == ChessCore.Enums.GameStatus.BlackWins) || (g.BlackPlayerId == u.Id && g.Status == ChessCore.Enums.GameStatus.RedWins));
+                        int dr = dGames.Count(g => g.Status == ChessCore.Enums.GameStatus.Draw);
+                        double wr = dGames.Count > 0 ? (double)w * 100.0 / dGames.Count : 0;
+                        Console.WriteLine($"  Depth {d}: Total={dGames.Count}, W={w}, L={l}, D={dr}, WinRate={wr:F1}%");
+                    }
+                    var puz = db.PuzzleProgresses.Where(p => p.UserId == u.Id).ToList();
+                    Console.WriteLine($"  Puzzles: Solved={puz.Count(p => p.CompletedAt != null)}, TotalAttempts={puz.Sum(p => p.Attempts)}");
+                    var courses = db.UserCourseProgresses.Where(p => p.UserId == u.Id).ToList();
+                    Console.WriteLine($"  Courses: Completed={courses.Count(p => p.IsCompleted)}, TotalRecords={courses.Count}, QuizAttempts={courses.Sum(p => p.QuizAttempts)}");
+                    var eloHist = db.UserEloHistories.Where(h => h.UserId == u.Id).Count();
+                    Console.WriteLine($"  EloHistories Count: {eloHist}");
+                }
+
+                // Verify StatisticsService returns exact numbers
+                var statService = new ChessCore.Services.StatisticsService(db);
+                var advStats = await statService.GetAdvancedStatsAsync(targetIds);
+                Console.WriteLine($"ADVANCED_STATS: UsersCount={advStats.Users.Count}, TotalGames={advStats.Kpis.TotalGames}, AvgElo={advStats.Kpis.AvgElo}");
+                foreach (var d in advStats.AiDepthSummary)
+                {
+                    Console.WriteLine($"  Summary Depth {d.Depth} ({d.Name}): Total={d.TotalGames}, W={d.Wins}, L={d.Losses}, D={d.Draws}, WinRate={d.WinRate:F1}%");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("DB Error: " + ex.Message);
+            }
         }
 
         #endregion

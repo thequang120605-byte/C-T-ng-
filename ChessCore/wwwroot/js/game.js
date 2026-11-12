@@ -41,11 +41,70 @@ document.addEventListener("DOMContentLoaded", function () {
   let currentGameBlackPlayer = "";
   let currentGameRedElo = null;
   let currentGameBlackElo = null;
+  let currentMoveCount = 0;
+
+  function getMyOnlineColor() {
+    return sessionStorage.getItem("onlinePlayerColor") || localStorage.getItem("onlinePlayerColor") || "Red";
+  }
+
+  function setMyOnlineColor(color) {
+    if (color) {
+      sessionStorage.setItem("onlinePlayerColor", color);
+      localStorage.setItem("onlinePlayerColor", color);
+    } else {
+      sessionStorage.removeItem("onlinePlayerColor");
+      localStorage.removeItem("onlinePlayerColor");
+    }
+  }
 
   function joinSignalRGroup(gid) {
     if (!gid || !connection || typeof signalR === "undefined") return;
     if (connection.state === signalR.HubConnectionState.Connected) {
       connection.invoke("JoinGame", gid.toString()).catch(err => console.warn("Lỗi JoinGame SignalR:", err));
+    } else {
+      setTimeout(() => {
+        if (connection && connection.state === signalR.HubConnectionState.Connected) {
+          connection.invoke("JoinGame", gid.toString()).catch(err => console.warn("Lỗi JoinGame SignalR (retry):", err));
+        }
+      }, 600);
+    }
+  }
+
+  let onlineSyncTimer = null;
+  function startOnlineSync() {
+    if (onlineSyncTimer) return;
+    onlineSyncTimer = setInterval(async () => {
+      const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+      if (!isOnline || !gameId || gameStatus !== "InProgress") {
+        stopOnlineSync();
+        return;
+      }
+      const myColor = getMyOnlineColor();
+      const isOpponentTurn = currentTurn !== myColor;
+      const isSignalRDisconnected = !connection || connection.state !== signalR.HubConnectionState.Connected;
+
+      if (isOpponentTurn || isSignalRDisconnected) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/${gameId}`);
+          if (res.ok) {
+            const data = await res.json();
+            const serverMovesCount = (data.moves || []).length;
+            if (data.currentTurn !== currentTurn || data.status !== gameStatus || serverMovesCount !== currentMoveCount) {
+              console.log("Fallback Polling: Đồng bộ dữ liệu mới từ máy chủ:", data);
+              updateGameFromApi(data);
+            }
+          }
+        } catch (e) {
+          // Bỏ qua lỗi ngầm
+        }
+      }
+    }, 2500);
+  }
+
+  function stopOnlineSync() {
+    if (onlineSyncTimer) {
+      clearInterval(onlineSyncTimer);
+      onlineSyncTimer = null;
     }
   }
 
@@ -85,6 +144,18 @@ document.addEventListener("DOMContentLoaded", function () {
       connection.on("MatchEnded_Draw", function (data) {
           if (typeof gameId !== 'undefined' && data && data.gameId == gameId) {
               closeDrawOfferModal();
+              closeConfirmDrawModal();
+              gameStatus = "Draw";
+              if (timerInterval) {
+                  clearInterval(timerInterval);
+                  timerInterval = null;
+              }
+              stopOnlineSync();
+              if (data.game) {
+                  updateGameFromApi(data.game);
+              }
+              checkGameResult();
+              showGameNotification("🤝", "HÒA CỜ", data.message || "Ván cờ kết thúc với kết quả hòa!", 4000);
           }
       });
 
@@ -128,9 +199,9 @@ document.addEventListener("DOMContentLoaded", function () {
       connection.on("RematchStarted", function (data) {
           if (typeof gameId !== 'undefined' && data && data.oldGameId == gameId) {
               closeGameResult();
-              const oldColor = localStorage.getItem("onlinePlayerColor");
+              const oldColor = getMyOnlineColor();
               const newColor = oldColor === "Red" ? "Black" : "Red";
-              localStorage.setItem("onlinePlayerColor", newColor);
+              setMyOnlineColor(newColor);
               localStorage.setItem("xiangqiGameId", data.newGameId);
               gameId = data.newGameId;
               showToast("Đã bắt đầu ván mới! Hai bên hoán đổi màu quân thành công.", "success");
@@ -339,6 +410,8 @@ document.addEventListener("DOMContentLoaded", function () {
   let isCheck = false;
 
   let timerInterval = null;
+  let matchTotalSeconds = 0;
+  let matchDurationInterval = null;
 
   let remainingSeconds = 180;
 
@@ -692,6 +765,10 @@ document.addEventListener("DOMContentLoaded", function () {
       clearInterval(timerInterval);
       timerInterval = null;
     }
+    if (matchDurationInterval) {
+      clearInterval(matchDurationInterval);
+      matchDurationInterval = null;
+    }
     const redTimer = document.getElementById("red-player-timer");
     const blackTimer = document.getElementById("black-player-timer");
     if (redTimer) { redTimer.textContent = "03:00"; redTimer.classList.remove("danger"); }
@@ -813,6 +890,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       let url = `${API_BASE_URL}?gameMode=${encodeURIComponent(targetMode)}`;
+      if (targetMode === "PvE") {
+        url += `&aiDepth=${encodeURIComponent(computerDifficulty)}`;
+      }
       if (initialFen) {
         url += `&initialFen=${encodeURIComponent(initialFen)}`;
       }
@@ -904,6 +984,13 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    const roomBox = document.getElementById("room-info-box");
+    const roomCodeDisplay = document.getElementById("display-room-code");
+    if (roomBox && roomCodeDisplay && data.roomCode) {
+      roomBox.classList.remove("hidden");
+      roomCodeDisplay.textContent = data.roomCode;
+    }
+
     currentTurn = data.currentTurn;
 
     gameStatus = data.status;
@@ -917,6 +1004,7 @@ document.addEventListener("DOMContentLoaded", function () {
     selectedPieceData = null;
 
     currentValidMoves = [];
+    validMovesCache = {};
 
     clearMoveHighlights();
 
@@ -927,6 +1015,8 @@ document.addEventListener("DOMContentLoaded", function () {
     updatePlayerNames();
 
     updatePlayerTimers(data);
+
+    updateMatchDuration(data);
 
     const invitePanel = document.getElementById("opponent-invite-panel");
     if (invitePanel && data.status === "InProgress") {
@@ -944,6 +1034,13 @@ document.addEventListener("DOMContentLoaded", function () {
     updateActionButtonsVisibility();
 
     checkGameResult();
+
+    const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+    if (isOnline && data.status === "InProgress") {
+      startOnlineSync();
+    } else {
+      stopOnlineSync();
+    }
     
     // Phát âm thanh khi có nước đi mới
     const currentMovesCount = (data.moves || []).length;
@@ -1011,6 +1108,13 @@ document.addEventListener("DOMContentLoaded", function () {
       clearInterval(timerInterval);
       timerInterval = null;
     }
+    if (matchDurationInterval) {
+      clearInterval(matchDurationInterval);
+      matchDurationInterval = null;
+    }
+    matchTotalSeconds = 0;
+    const matchTimerEl = document.getElementById("match-total-timer");
+    if (matchTimerEl) matchTimerEl.textContent = "00:00";
 
     playSound('timeout');
 
@@ -1046,6 +1150,8 @@ document.addEventListener("DOMContentLoaded", function () {
     updatePlayerStatus();
     updateTurnStatus();
     checkGameResult();
+
+
 
     // Gửi yêu cầu cập nhật đồng bộ lên Backend API
     if (gameId) {
@@ -1140,6 +1246,131 @@ document.addEventListener("DOMContentLoaded", function () {
         handleTimeoutExpiry();
       }
     }, 1000);
+  }
+
+  // =====================================================
+  // TOTAL MATCH DURATION TIMER (ĐỒNG HỒ TỔNG THỜI GIAN VÁN ĐẤU)
+  // =====================================================
+
+  function formatMatchDuration(seconds) {
+    const totalSecs = Math.max(0, Math.floor(seconds));
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    const mStr = (mins < 10 ? "0" : "") + mins;
+    const sStr = (secs < 10 ? "0" : "") + secs;
+    if (hours > 0) {
+      const hStr = (hours < 10 ? "0" : "") + hours;
+      return `${hStr}:${mStr}:${sStr}`;
+    }
+    return `${mStr}:${sStr}`;
+  }
+
+  function updateMatchDuration(data) {
+    if (!data) return;
+
+    // 1. Cập nhật thẻ chế độ chơi
+    const modeBadge = document.getElementById("match-mode-tag");
+    const modeLabel = document.getElementById("match-mode-label");
+    const roomTag = document.getElementById("match-room-tag");
+    const roomLabel = document.getElementById("match-room-label");
+
+    const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+
+    if (modeBadge) {
+      if (isOnline) {
+        modeBadge.className = "match-badge mode-badge online";
+        modeBadge.innerHTML = '<i class="fa-solid fa-earth-americas"></i> <span id="match-mode-label">Đấu Online</span>';
+        if (roomTag && roomLabel) {
+          const roomCode = data.roomCode || (gameId ? String(gameId).slice(-6).toUpperCase() : "");
+          if (roomCode) {
+            roomTag.classList.remove("hidden");
+            roomLabel.textContent = roomCode;
+          } else {
+            roomTag.classList.add("hidden");
+          }
+        }
+      } else if (VS_COMPUTER) {
+        modeBadge.className = "match-badge mode-badge ai";
+        modeBadge.innerHTML = '<i class="fa-solid fa-robot"></i> <span id="match-mode-label">Chơi Với Máy</span>';
+        if (roomTag) roomTag.classList.add("hidden");
+      } else {
+        modeBadge.className = "match-badge mode-badge local";
+        modeBadge.innerHTML = '<i class="fa-solid fa-user-group"></i> <span id="match-mode-label">Chung Thiết Bị</span>';
+        if (roomTag) roomTag.classList.add("hidden");
+      }
+    }
+
+    // 2. Cập nhật thẻ lượt đi
+    const turnBadge = document.getElementById("match-turn-badge");
+    if (turnBadge) {
+      if (data.status === "InProgress") {
+        if (data.currentTurn === "Red") {
+          turnBadge.className = "match-badge turn-badge red-turn";
+          turnBadge.innerHTML = '<span class="pulse-dot red-pulse"></span> <span id="match-turn-label">Lượt Đỏ</span>';
+        } else {
+          turnBadge.className = "match-badge turn-badge black-turn";
+          turnBadge.innerHTML = '<span class="pulse-dot black-pulse"></span> <span id="match-turn-label">Lượt Đen</span>';
+        }
+      } else {
+        turnBadge.className = "match-badge turn-badge finished";
+        turnBadge.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> <span id="match-turn-label">Kết thúc</span>';
+      }
+    }
+
+    // 3. Tính toán tổng thời gian đã trôi qua
+    let calculatedSeconds = 0;
+    if (typeof data.totalDurationSeconds === "number") {
+      calculatedSeconds = data.totalDurationSeconds;
+    } else if (typeof data.TotalDurationSeconds === "number") {
+      calculatedSeconds = data.TotalDurationSeconds;
+    } else if (data.createdAt || data.CreatedAt) {
+      const createdDate = new Date(data.createdAt || data.CreatedAt);
+      if (!isNaN(createdDate.getTime())) {
+        const endDate = (data.status !== "InProgress" && (data.resultsProcessedAt || data.ResultsProcessedAt))
+          ? new Date(data.resultsProcessedAt || data.ResultsProcessedAt)
+          : new Date();
+        calculatedSeconds = Math.max(0, Math.floor((endDate.getTime() - createdDate.getTime()) / 1000));
+      }
+    }
+
+    // Đồng bộ thời gian tính toán nếu chênh lệch nhiều (>3s) hoặc chưa set
+    if (calculatedSeconds > 0) {
+      if (Math.abs(matchTotalSeconds - calculatedSeconds) > 3 || matchTotalSeconds === 0) {
+        matchTotalSeconds = calculatedSeconds;
+      }
+    }
+
+    const matchTimerEl = document.getElementById("match-total-timer");
+    if (matchTimerEl) {
+      matchTimerEl.textContent = formatMatchDuration(matchTotalSeconds);
+    }
+
+    // Quản lý interval đồng hồ đếm tổng
+    if (data.status === "InProgress") {
+      if (!matchDurationInterval) {
+        matchDurationInterval = setInterval(function () {
+          if (gameStatus === "InProgress") {
+            matchTotalSeconds++;
+            const timerEl = document.getElementById("match-total-timer");
+            if (timerEl) {
+              timerEl.textContent = formatMatchDuration(matchTotalSeconds);
+            }
+          } else {
+            clearInterval(matchDurationInterval);
+            matchDurationInterval = null;
+          }
+        }, 1000);
+      }
+    } else {
+      if (matchDurationInterval) {
+        clearInterval(matchDurationInterval);
+        matchDurationInterval = null;
+      }
+      if (matchTimerEl) {
+        matchTimerEl.textContent = formatMatchDuration(matchTotalSeconds);
+      }
+    }
   }
 
   // =====================================================
@@ -1494,6 +1725,15 @@ document.addEventListener("DOMContentLoaded", function () {
         clearInterval(timerInterval);
         timerInterval = null;
       }
+      if (matchDurationInterval) {
+        clearInterval(matchDurationInterval);
+        matchDurationInterval = null;
+      }
+      const turnBadge = document.getElementById("match-turn-badge");
+      if (turnBadge) {
+        turnBadge.className = "match-badge turn-badge finished";
+        turnBadge.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> <span id="match-turn-label">Kết thúc</span>';
+      }
     }
 
     if (gameStatus === "Draw") {
@@ -1604,7 +1844,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     resultTitle.textContent = title;
     winnerName.textContent = winner;
-    resultMessage.textContent = message;
+    let fullMsg = message;
+    if (matchTotalSeconds > 0) {
+      fullMsg += ` (Tổng thời gian: ${formatMatchDuration(matchTotalSeconds)})`;
+    }
+    resultMessage.textContent = fullMsg;
 
     const reviewBtn = document.getElementById("result-review-btn");
     if (reviewBtn) {
@@ -1815,7 +2059,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
     if (isOnline) {
-      return localStorage.getItem("onlinePlayerColor") === "Black";
+      return getMyOnlineColor() === "Black";
     }
     return false;
   }
@@ -2007,10 +2251,12 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const isOnlineMode = localStorage.getItem("isOnlineMode") === "true";
-      if (isOnlineMode) {
-          const myColor = localStorage.getItem("onlinePlayerColor");
+      const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+      if (isOnline) {
+          const myColor = getMyOnlineColor();
           if (currentTurn !== myColor) {
+              const enemyName = currentTurn === "Red" ? "Quân Đỏ" : "Quân Đen";
+              showToast(`Đang là lượt đi của đối thủ (${enemyName}). Vui lòng chờ đối thủ ra nước cờ!`, "info");
               return; 
           }
       }
@@ -2039,11 +2285,18 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
-      // TURN
+      // TURN & COLOR VALIDATION
 
-      if (piece.color.toLowerCase() !== currentTurn.toLowerCase()) {
-        console.log("Chưa tới lượt quân này");
-
+      if (isOnline) {
+        const myColor = getMyOnlineColor();
+        if (piece.color.toLowerCase() !== myColor.toLowerCase()) {
+          const myName = myColor === "Red" ? "Quân Đỏ" : "Quân Đen";
+          showToast(`Bạn đang cầm ${myName}, không thể điều khiển quân của đối thủ!`, "warning");
+          return;
+        }
+      } else if (piece.color.toLowerCase() !== currentTurn.toLowerCase()) {
+        const turnName = currentTurn === "Red" ? "Quân Đỏ" : "Quân Đen";
+        showToast(`Chưa tới lượt quân này. Hiện tại đang là lượt của ${turnName}.`, "info");
         return;
       }
 
@@ -2075,8 +2328,17 @@ document.addEventListener("DOMContentLoaded", function () {
   // FETCH VALID MOVES
   // =====================================================
 
+  let validMovesCache = {};
+
   async function fetchValidMoves(row, col) {
     if (!gameId) {
+      return;
+    }
+
+    const cacheKey = `${row},${col}`;
+    if (validMovesCache[cacheKey]) {
+      currentValidMoves = validMovesCache[cacheKey];
+      showValidMovesFromApi(currentValidMoves);
       return;
     }
 
@@ -2086,17 +2348,19 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error("Không thể lấy nước đi");
+        const errJson = await response.json().catch(() => null);
+        throw new Error(errJson?.message || "Không thể lấy nước đi hợp lệ");
       }
 
       const data = await response.json();
 
       currentValidMoves = data || [];
+      validMovesCache[cacheKey] = currentValidMoves;
 
       showValidMovesFromApi(currentValidMoves);
     } catch (error) {
       console.error("Lỗi valid moves:", error);
-
+      showToast(error.message, "warning");
       clearMoveHighlights();
     }
   }
@@ -2212,6 +2476,7 @@ document.addEventListener("DOMContentLoaded", function () {
     selectedPieceData = null;
 
     currentValidMoves = [];
+    validMovesCache = {};
 
     clearMoveHighlights();
   }
@@ -2437,6 +2702,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function showResignModal() {
     if (gameStatus !== "InProgress") {
       checkGameResult();
+
+
       return;
     }
 
@@ -2495,6 +2762,8 @@ document.addEventListener("DOMContentLoaded", function () {
       closeResignModal();
       await loadGame();
       checkGameResult();
+
+
       return;
     }
 
@@ -2530,6 +2799,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (response.status === 400 && (errorData?.message?.includes("kết thúc") || errorData?.message?.includes("ended"))) {
           await loadGame();
           checkGameResult();
+
+
           return;
         }
 
@@ -2562,6 +2833,8 @@ document.addEventListener("DOMContentLoaded", function () {
       showToast(error.message, "warning");
       await loadGame();
       checkGameResult();
+
+
     } finally {
       isResigning = false;
       if (confirmResignButton) {
@@ -2771,11 +3044,18 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       closeConfirmDrawModal();
 
+      const jwtToken = localStorage.getItem("token") || localStorage.getItem("jwt_token") || "";
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (jwtToken) {
+        headers["Authorization"] = `Bearer ${jwtToken}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/${gameId}/draw/offer`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: headers,
+        credentials: "include",
       });
 
       const data = await response.json().catch(() => ({}));
@@ -2786,10 +3066,17 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (data.accepted === true) {
+        gameStatus = "Draw";
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        stopOnlineSync();
         showGameNotification("🤝", "HÒA CỜ", data.message || "Ván cờ kết thúc với kết quả hòa!", 3000);
         if (data.game) {
           updateGameFromApi(data.game);
         }
+        checkGameResult();
       } else if (data.accepted === false) {
         showToast(data.message || "Máy đã từ chối lời xin hòa. Hãy tiếp tục thi đấu!", "warning");
       } else {
@@ -2847,11 +3134,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     try {
+      const jwtToken = localStorage.getItem("token") || localStorage.getItem("jwt_token") || "";
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (jwtToken) {
+        headers["Authorization"] = `Bearer ${jwtToken}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/${gameId}/draw/respond`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: headers,
+        credentials: "include",
         body: JSON.stringify({
           accepted: isAccepted,
           isAccepted: isAccepted,
@@ -2865,8 +3159,17 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      if (isAccepted && data.game) {
-        updateGameFromApi(data.game);
+      if (isAccepted) {
+        gameStatus = "Draw";
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        stopOnlineSync();
+        if (data.game) {
+          updateGameFromApi(data.game);
+        }
+        checkGameResult();
       }
     } catch (error) {
       console.error("Lỗi phản hồi xin hòa:", error);
@@ -2915,7 +3218,7 @@ document.addEventListener("DOMContentLoaded", function () {
       isOnlineMode = false;
       IS_AI_VS_AI = false;
       localStorage.removeItem("isOnlineMode");
-      localStorage.removeItem("onlinePlayerColor");
+      setMyOnlineColor(null);
       localStorage.removeItem("onlineOpponentName");
       if (onlineSelection) { onlineSelection.style.display = "none"; onlineSelection.classList.add("hidden"); }
       if (startGameButton) { startGameButton.style.display = "block"; startGameButton.classList.remove("hidden"); }
@@ -2929,7 +3232,7 @@ document.addEventListener("DOMContentLoaded", function () {
       isOnlineMode = false;
       IS_AI_VS_AI = false;
       localStorage.removeItem("isOnlineMode");
-      localStorage.removeItem("onlinePlayerColor");
+      setMyOnlineColor(null);
       localStorage.removeItem("onlineOpponentName");
       if (onlineSelection) { onlineSelection.style.display = "none"; onlineSelection.classList.add("hidden"); }
       if (startGameButton) { startGameButton.style.display = "block"; startGameButton.classList.remove("hidden"); }
@@ -2944,7 +3247,7 @@ document.addEventListener("DOMContentLoaded", function () {
       VS_COMPUTER = false;
       IS_AI_VS_AI = true;
       localStorage.removeItem("isOnlineMode");
-      localStorage.removeItem("onlinePlayerColor");
+      setMyOnlineColor(null);
       localStorage.removeItem("onlineOpponentName");
       if (onlineSelection) { onlineSelection.style.display = "none"; onlineSelection.classList.add("hidden"); }
       if (startGameButton) { startGameButton.style.display = "block"; startGameButton.classList.remove("hidden"); }
@@ -2993,7 +3296,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const data = await response.json();
           gameId = data.id;
           localStorage.setItem("xiangqiGameId", gameId);
-          localStorage.setItem("onlinePlayerColor", "Red");
+          setMyOnlineColor("Red");
           localStorage.setItem("isOnlineMode", "true");
           localStorage.removeItem("onlineOpponentName");
           localStorage.removeItem("manualBoardFlipped");
@@ -3131,9 +3434,18 @@ document.addEventListener("DOMContentLoaded", function () {
   if (joinOnlineButton) {
       joinOnlineButton.addEventListener("click", async function (event) {
           event.stopPropagation();
-          const roomId = onlineRoomIdInput.value.trim();
+          let roomId = onlineRoomIdInput.value.trim();
+          // Hỗ trợ tự động trích xuất mã nếu người dùng dán cả link mời
+          if (roomId.includes("joinRoom=")) {
+              const match = roomId.match(/joinRoom=([A-Za-z0-9]+)/);
+              if (match) roomId = match[1];
+          } else if (roomId.includes("/")) {
+              roomId = roomId.split("/").pop();
+          }
+          roomId = roomId.trim();
+
           if (!roomId) {
-              showToast("Vui lòng nhập mã bàn đối thủ cung cấp.", "warning");
+              showToast("Vui lòng nhập mã bàn hoặc dán link mời đối thủ cung cấp.", "warning");
               onlineRoomIdInput.focus();
               return;
           }
@@ -3152,7 +3464,7 @@ document.addEventListener("DOMContentLoaded", function () {
               const data = joinResult.game;
               gameId = data.id;
               localStorage.setItem("xiangqiGameId", gameId);
-              localStorage.setItem("onlinePlayerColor", "Black");
+              setMyOnlineColor("Black");
               localStorage.setItem("isOnlineMode", "true");
               localStorage.removeItem("manualBoardFlipped");
               localStorage.setItem("onlineOpponentName", joinResult.opponentUsername || "Đối thủ");
@@ -3257,14 +3569,35 @@ document.addEventListener("DOMContentLoaded", function () {
     copyRoomCodeBtn.addEventListener("click", function () {
       const codeEl = document.getElementById("display-room-code");
       const code = codeEl ? codeEl.textContent.trim() : "";
-      if (!code) return;
+      if (!code || code === "----") return;
       navigator.clipboard.writeText(code).then(() => {
         const originalText = copyRoomCodeBtn.innerHTML;
-        copyRoomCodeBtn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép';
+        copyRoomCodeBtn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép mã';
         copyRoomCodeBtn.style.color = '#10b981';
+        showToast("Đã sao chép mã phòng!", "success");
         setTimeout(() => {
           copyRoomCodeBtn.innerHTML = originalText;
           copyRoomCodeBtn.style.color = '';
+        }, 2000);
+      });
+    });
+  }
+
+  const copyRoomLinkBtn = document.getElementById("copy-room-link-btn");
+  if (copyRoomLinkBtn) {
+    copyRoomLinkBtn.addEventListener("click", function () {
+      const codeEl = document.getElementById("display-room-code");
+      const code = codeEl ? codeEl.textContent.trim() : "";
+      if (!code || code === "----") return;
+      const inviteUrl = `${window.location.origin}/Game?joinRoom=${encodeURIComponent(code)}`;
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        const originalText = copyRoomLinkBtn.innerHTML;
+        copyRoomLinkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép link';
+        copyRoomLinkBtn.style.color = '#10b981';
+        showToast("Đã sao chép link mời! Gửi link này cho bạn để vào thẳng bàn chơi.", "success");
+        setTimeout(() => {
+          copyRoomLinkBtn.innerHTML = originalText;
+          copyRoomLinkBtn.style.color = '';
         }, 2000);
       });
     });
@@ -4850,9 +5183,9 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
       closeGameResult();
-      const oldColor = localStorage.getItem("onlinePlayerColor");
+      const oldColor = getMyOnlineColor();
       const newColor = oldColor === "Red" ? "Black" : "Red";
-      localStorage.setItem("onlinePlayerColor", newColor);
+      setMyOnlineColor(newColor);
       localStorage.setItem("xiangqiGameId", data.id);
       gameId = data.id;
       showToast("Đã bắt đầu ván mới thành công!", "success");

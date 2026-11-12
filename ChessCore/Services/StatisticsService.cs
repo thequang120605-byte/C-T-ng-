@@ -30,6 +30,9 @@ public sealed class LearningStatistics
     public double AverageBestQuizScore { get; set; }
     public int PuzzlesSolved { get; set; }
     public int PuzzleAttempts { get; set; }
+    public int UserCount { get; set; } = 1;
+    public double AverageCompletedLessons => UserCount > 0 ? Math.Round((double)CompletedLessonRecords / UserCount, 1) : 0;
+    public double AveragePuzzlesSolved => UserCount > 0 ? Math.Round((double)PuzzlesSolved / UserCount, 1) : 0;
 }
 public sealed class StatisticsService(AppDbContext db)
 {
@@ -153,12 +156,14 @@ public sealed class StatisticsService(AppDbContext db)
     {
         var lessons = db.UserCourseProgresses.AsNoTracking();
         var puzzles = db.PuzzleProgresses.AsNoTracking();
+        int uCount = (userIds != null && userIds.Count > 0) ? userIds.Distinct().Count() : 1;
         if (userIds != null && userIds.Count > 0)
         {
             lessons = lessons.Where(p => userIds.Contains(p.UserId));
             puzzles = puzzles.Where(p => userIds.Contains(p.UserId));
         }
         return new LearningStatistics {
+            UserCount = uCount,
             TotalLessons = await db.CourseLessons.CountAsync(ct),
             CompletedLessonRecords = await lessons.CountAsync(p => p.IsCompleted, ct),
             QuizAttempts = await lessons.SumAsync(p => (int?)p.QuizAttempts, ct) ?? 0,
@@ -245,6 +250,120 @@ public sealed class StatisticsService(AppDbContext db)
 
         var modeDist = modeStats.ToDictionary(m => m.Mode, m => m.Created);
 
+        // =====================================================================
+        // THỐNG KÊ CHI TIẾT ĐẤU MÁY THEO ĐỘ SÂU AI (DEPTH 1, 2, 3, 4)
+        // =====================================================================
+        var pveGames = await db.Games.AsNoTracking()
+            .Where(g => (g.GameMode == GameModes.PvE || g.GameMode == "PvE")
+                     && ((g.RedPlayerId.HasValue && selectedIds.Contains(g.RedPlayerId.Value))
+                      || (g.BlackPlayerId.HasValue && selectedIds.Contains(g.BlackPlayerId.Value))))
+            .Select(g => new {
+                g.Id,
+                g.Status,
+                g.RedPlayerId,
+                g.BlackPlayerId,
+                AiDepth = (g.AiDepth.HasValue && g.AiDepth.Value >= 1 && g.AiDepth.Value <= 4) ? g.AiDepth.Value : 1
+            })
+            .ToListAsync(ct);
+
+        // 1. Thống kê theo Depth cho từng User được chọn
+        foreach (var u in userDtos)
+        {
+            var uPveGames = pveGames.Where(g => g.RedPlayerId == u.Id || g.BlackPlayerId == u.Id).ToList();
+            var uDepthList = new List<ChessCore.ViewModels.AiDepthStatDto>();
+
+            for (int d = 1; d <= 4; d++)
+            {
+                var udGames = uPveGames.Where(g => g.AiDepth == d).ToList();
+                int total = udGames.Count;
+                int wins = udGames.Count(g => (g.RedPlayerId == u.Id && g.Status == GameStatus.RedWins)
+                                           || (g.BlackPlayerId == u.Id && g.Status == GameStatus.BlackWins));
+                int losses = udGames.Count(g => (g.RedPlayerId == u.Id && g.Status == GameStatus.BlackWins)
+                                             || (g.BlackPlayerId == u.Id && g.Status == GameStatus.RedWins));
+                int draws = udGames.Count(g => g.Status == GameStatus.Draw);
+                int finished = wins + losses + draws;
+                double wr = finished > 0 ? Math.Round((double)wins * 100.0 / finished, 1) : 0;
+
+                string dName = d switch
+                {
+                    1 => "Cấp 1 - Dễ (Depth 1)",
+                    2 => "Cấp 2 - Trung bình (Depth 2)",
+                    3 => "Cấp 3 - Khó (Depth 3)",
+                    4 => "Cấp 4 - Siêu khó (Depth 4)",
+                    _ => $"Depth {d}"
+                };
+
+                var statDto = new ChessCore.ViewModels.AiDepthStatDto
+                {
+                    Depth = d,
+                    Name = dName,
+                    TotalGames = total,
+                    Wins = wins,
+                    Losses = losses,
+                    Draws = draws,
+                    WinRate = wr
+                };
+                uDepthList.Add(statDto);
+
+                switch (d)
+                {
+                    case 1:
+                        u.Depth1Games = total; u.Depth1Wins = wins; u.Depth1Losses = losses; u.Depth1WinRate = wr;
+                        break;
+                    case 2:
+                        u.Depth2Games = total; u.Depth2Wins = wins; u.Depth2Losses = losses; u.Depth2WinRate = wr;
+                        break;
+                    case 3:
+                        u.Depth3Games = total; u.Depth3Wins = wins; u.Depth3Losses = losses; u.Depth3WinRate = wr;
+                        break;
+                    case 4:
+                        u.Depth4Games = total; u.Depth4Wins = wins; u.Depth4Losses = losses; u.Depth4WinRate = wr;
+                        break;
+                }
+            }
+
+            u.DepthStats = uDepthList;
+            u.TotalPveGames = uPveGames.Count;
+            u.PveWins = uDepthList.Sum(x => x.Wins);
+            u.PveLosses = uDepthList.Sum(x => x.Losses);
+            u.PveDraws = uDepthList.Sum(x => x.Draws);
+            int uPveFinished = u.PveWins + u.PveLosses + u.PveDraws;
+            u.PveWinRate = uPveFinished > 0 ? Math.Round((double)u.PveWins * 100.0 / uPveFinished, 1) : 0;
+        }
+
+        // 2. Thống kê theo Depth tổng hợp cho cả nhóm (Group Summary)
+        var depthSummary = new List<ChessCore.ViewModels.AiDepthStatDto>();
+        for (int d = 1; d <= 4; d++)
+        {
+            var dGames = pveGames.Where(g => g.AiDepth == d).ToList();
+            int dTotal = dGames.Count;
+            int dWins = dGames.Count(g => (g.RedPlayerId.HasValue && selectedIds.Contains(g.RedPlayerId.Value) && g.Status == GameStatus.RedWins)
+                                       || (g.BlackPlayerId.HasValue && selectedIds.Contains(g.BlackPlayerId.Value) && g.Status == GameStatus.BlackWins));
+            int dLosses = dGames.Count(g => (g.RedPlayerId.HasValue && selectedIds.Contains(g.RedPlayerId.Value) && g.Status == GameStatus.BlackWins)
+                                         || (g.BlackPlayerId.HasValue && selectedIds.Contains(g.BlackPlayerId.Value) && g.Status == GameStatus.RedWins));
+            int dDraws = dGames.Count(g => g.Status == GameStatus.Draw);
+            int dFinished = dWins + dLosses + dDraws;
+            double dWinRate = dFinished > 0 ? Math.Round((double)dWins * 100.0 / dFinished, 1) : 0;
+            string dName = d switch
+            {
+                1 => "Cấp 1 - Dễ (Depth 1)",
+                2 => "Cấp 2 - Trung bình (Depth 2)",
+                3 => "Cấp 3 - Khó (Depth 3)",
+                4 => "Cấp 4 - Siêu khó (Depth 4)",
+                _ => $"Depth {d}"
+            };
+            depthSummary.Add(new ChessCore.ViewModels.AiDepthStatDto
+            {
+                Depth = d,
+                Name = dName,
+                TotalGames = dTotal,
+                Wins = dWins,
+                Losses = dLosses,
+                Draws = dDraws,
+                WinRate = dWinRate
+            });
+        }
+
         return new ChessCore.ViewModels.AdvancedStatsResponseDto
         {
             Kpis = new ChessCore.ViewModels.AdvancedKpiDto
@@ -268,8 +387,59 @@ public sealed class StatisticsService(AppDbContext db)
                 Draws = totalDraws,
                 WinRate = avgWinRate
             },
-            ModeDistribution = modeDist
+            ModeDistribution = modeDist,
+            AiDepthSummary = depthSummary
         };
+    }
+
+    public async Task<List<ChessCore.ViewModels.AiDepthStatDto>> GetAiDepthStatsAsync(IReadOnlyCollection<int> userIds, CancellationToken ct = default)
+    {
+        var selectedIds = userIds.Distinct().ToList();
+        var pveGames = await db.Games.AsNoTracking()
+            .Where(g => (g.GameMode == GameModes.PvE || g.GameMode == "PvE")
+                     && ((g.RedPlayerId.HasValue && selectedIds.Contains(g.RedPlayerId.Value))
+                      || (g.BlackPlayerId.HasValue && selectedIds.Contains(g.BlackPlayerId.Value))))
+            .Select(g => new {
+                g.Id,
+                g.Status,
+                g.RedPlayerId,
+                g.BlackPlayerId,
+                AiDepth = (g.AiDepth.HasValue && g.AiDepth.Value >= 1 && g.AiDepth.Value <= 4) ? g.AiDepth.Value : 1
+            })
+            .ToListAsync(ct);
+
+        var depthSummary = new List<ChessCore.ViewModels.AiDepthStatDto>();
+        for (int d = 1; d <= 4; d++)
+        {
+            var dGames = pveGames.Where(g => g.AiDepth == d).ToList();
+            int dTotal = dGames.Count;
+            int dWins = dGames.Count(g => (g.RedPlayerId.HasValue && selectedIds.Contains(g.RedPlayerId.Value) && g.Status == GameStatus.RedWins)
+                                       || (g.BlackPlayerId.HasValue && selectedIds.Contains(g.BlackPlayerId.Value) && g.Status == GameStatus.BlackWins));
+            int dLosses = dGames.Count(g => (g.RedPlayerId.HasValue && selectedIds.Contains(g.RedPlayerId.Value) && g.Status == GameStatus.BlackWins)
+                                         || (g.BlackPlayerId.HasValue && selectedIds.Contains(g.BlackPlayerId.Value) && g.Status == GameStatus.RedWins));
+            int dDraws = dGames.Count(g => g.Status == GameStatus.Draw);
+            int dFinished = dWins + dLosses + dDraws;
+            double dWinRate = dFinished > 0 ? Math.Round((double)dWins * 100.0 / dFinished, 1) : 0;
+            string dName = d switch
+            {
+                1 => "Cấp 1 - Dễ (Depth 1)",
+                2 => "Cấp 2 - Trung bình (Depth 2)",
+                3 => "Cấp 3 - Khó (Depth 3)",
+                4 => "Cấp 4 - Siêu khó (Depth 4)",
+                _ => $"Depth {d}"
+            };
+            depthSummary.Add(new ChessCore.ViewModels.AiDepthStatDto
+            {
+                Depth = d,
+                Name = dName,
+                TotalGames = dTotal,
+                Wins = dWins,
+                Losses = dLosses,
+                Draws = dDraws,
+                WinRate = dWinRate
+            });
+        }
+        return depthSummary;
     }
     public async Task<LearningStatistics> LearningAsync(int? userId = null, CancellationToken ct = default)
     {
@@ -277,6 +447,7 @@ public sealed class StatisticsService(AppDbContext db)
         var puzzles = db.PuzzleProgresses.AsNoTracking();
         if (userId.HasValue) { lessons = lessons.Where(p => p.UserId == userId); puzzles = puzzles.Where(p => p.UserId == userId); }
         return new LearningStatistics {
+            UserCount = 1,
             TotalLessons = await db.CourseLessons.CountAsync(ct),
             CompletedLessonRecords = await lessons.CountAsync(p => p.IsCompleted, ct),
             QuizAttempts = await lessons.SumAsync(p => (int?)p.QuizAttempts, ct) ?? 0,

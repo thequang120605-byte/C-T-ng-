@@ -25,3 +25,12 @@ potential_multi.txt
 __pycache__/
 
 docs/~$*
+*.xlsx
+*_dump*.sql
+backup_*.sql
+TestSuites/*_output.txt
+TestSuites/*.png
+pull_from_tidb.py
+build_full_excel.py
+generate_testcases_excel.py
+

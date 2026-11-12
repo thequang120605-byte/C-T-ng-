@@ -796,9 +796,9 @@ namespace ChessCore.Services
             wsUsers.ShowGridLines = true;
 
             wsUsers.Row(1).Height = 10;
-            var uTitle = wsUsers.Range(2, 1, 2, 10);
+            var uTitle = wsUsers.Range(2, 1, 2, 16);
             uTitle.Merge();
-            uTitle.Value = "BẢNG ĐỐI CHIẾU THÀNH TÍCH TỪNG KỲ THỦ ĐƯỢC CHỌN";
+            uTitle.Value = "BẢNG ĐỐI CHIẾU THÀNH TÍCH TỪNG KỲ THỦ ĐƯỢC CHỌN (KÈM CHI TIẾT ĐẤU MÁY AI DEPTH 1 - 4)";
             uTitle.Style.Font.Bold = true;
             uTitle.Style.Font.FontSize = 14;
             uTitle.Style.Font.FontColor = XLColor.FromHtml("#0F172A");
@@ -806,7 +806,12 @@ namespace ChessCore.Services
             uTitle.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
             wsUsers.Row(2).Height = 28;
 
-            string[] uHeaders = { "Hạng", "Kỳ thủ", "Mã ID", "Elo", "Danh hiệu", "Tổng ván", "Thắng - Hòa - Thua", "Tỉ lệ thắng (%)", "Cờ thế đã giải", "Khóa học" };
+            string[] uHeaders = { 
+                "Hạng", "Kỳ thủ", "Mã ID", "Elo", "Danh hiệu", 
+                "Tổng ván", "Thắng - Hòa - Thua", "Tỉ lệ thắng (%)", 
+                "PvE (Tổng)", "Depth 1 (Dễ)", "Depth 2 (TB)", "Depth 3 (Khó)", "Depth 4 (Siêu khó)", "Tỉ lệ thắng AI",
+                "Cờ thế đã giải", "Khóa học" 
+            };
             for (int i = 0; i < uHeaders.Length; i++)
             {
                 var cell = wsUsers.Cell(4, i + 1);
@@ -829,10 +834,16 @@ namespace ChessCore.Services
                 wsUsers.Cell(uRow, 6).SetValue(u.GamesPlayed);
                 wsUsers.Cell(uRow, 7).SetValue($"{u.Wins} - {u.Draws} - {u.Losses}");
                 wsUsers.Cell(uRow, 8).SetValue($"{u.WinRate:0.0}%");
-                wsUsers.Cell(uRow, 9).SetValue(u.PuzzlesSolved);
-                wsUsers.Cell(uRow, 10).SetValue($"{u.LessonsCompleted} bài");
+                wsUsers.Cell(uRow, 9).SetValue(u.TotalPveGames);
+                wsUsers.Cell(uRow, 10).SetValue($"{u.Depth1Games} ván ({u.Depth1Wins} thắng)");
+                wsUsers.Cell(uRow, 11).SetValue($"{u.Depth2Games} ván ({u.Depth2Wins} thắng)");
+                wsUsers.Cell(uRow, 12).SetValue($"{u.Depth3Games} ván ({u.Depth3Wins} thắng)");
+                wsUsers.Cell(uRow, 13).SetValue($"{u.Depth4Games} ván ({u.Depth4Wins} thắng)");
+                wsUsers.Cell(uRow, 14).SetValue($"{u.PveWinRate:0.0}%");
+                wsUsers.Cell(uRow, 15).SetValue(u.PuzzlesSolved);
+                wsUsers.Cell(uRow, 16).SetValue($"{u.LessonsCompleted} bài");
 
-                var r = wsUsers.Range(uRow, 1, uRow, 10);
+                var r = wsUsers.Range(uRow, 1, uRow, 16);
                 r.Style.Fill.BackgroundColor = (uRow % 2 == 1) ? XLColor.FromHtml("#F8FAFC") : XLColor.White;
                 r.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 r.Style.Border.InsideBorder = XLBorderStyleValues.Thin;

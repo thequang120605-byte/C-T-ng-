@@ -84,6 +84,8 @@ namespace ChessCore.DTOs
         public int NeuralScore { get; set; }
         public LastMoveEvaluationDto? LastMoveEval { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime? ResultsProcessedAt { get; set; }
+        public int TotalDurationSeconds { get; set; }
 
         public DateTime? LastMoveAt { get; set; }
         public int RemainingSeconds { get; set; } = 180;

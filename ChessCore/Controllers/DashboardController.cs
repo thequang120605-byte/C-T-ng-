@@ -140,6 +140,7 @@ namespace ChessCore.Controllers
 
             vm.ModeStats = await _statistics.ModesAsync(userId, HttpContext.RequestAborted);
             vm.Learning = await _statistics.LearningAsync(userId, HttpContext.RequestAborted);
+            vm.AiDepthStats = await _statistics.GetAiDepthStatsAsync(new[] { userId }, HttpContext.RequestAborted);
             await _statistics.ApplyDisplayCountersAsync(new[] { currentUser });
 
             var rankedModes = vm.ModeStats.Where(m => m.Mode != "AiVsAi").ToList();
@@ -199,6 +200,20 @@ namespace ChessCore.Controllers
                 .Select(g => new { UserId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.UserId, x => x.Count);
 
+            var allUserIds = allUsers.Select(u => u.Id).ToList();
+            var allPveGames = await _context.Games.AsNoTracking()
+                .Where(g => (g.GameMode == GameModes.PvE || g.GameMode == "PvE")
+                         && ((g.RedPlayerId.HasValue && allUserIds.Contains(g.RedPlayerId.Value))
+                          || (g.BlackPlayerId.HasValue && allUserIds.Contains(g.BlackPlayerId.Value))))
+                .Select(g => new {
+                    g.Id,
+                    g.Status,
+                    g.RedPlayerId,
+                    g.BlackPlayerId,
+                    AiDepth = (g.AiDepth.HasValue && g.AiDepth.Value >= 1 && g.AiDepth.Value <= 4) ? g.AiDepth.Value : 1
+                })
+                .ToListAsync();
+
             int allRankCounter = 1;
             vm.AllAccounts = allUsers.Select(u =>
             {
@@ -212,6 +227,37 @@ namespace ChessCore.Controllers
                     >= 1050 => "Người mới chơi",
                     _ => "Tập sự"
                 };
+
+                var uPve = allPveGames.Where(g => g.RedPlayerId == u.Id || g.BlackPlayerId == u.Id).ToList();
+                int d1Games = uPve.Count(g => g.AiDepth == 1);
+                int d1Wins = uPve.Count(g => g.AiDepth == 1 && ((g.RedPlayerId == u.Id && g.Status == GameStatus.RedWins) || (g.BlackPlayerId == u.Id && g.Status == GameStatus.BlackWins)));
+                int d1Losses = uPve.Count(g => g.AiDepth == 1 && ((g.RedPlayerId == u.Id && g.Status == GameStatus.BlackWins) || (g.BlackPlayerId == u.Id && g.Status == GameStatus.RedWins)));
+                int d1Draws = uPve.Count(g => g.AiDepth == 1 && g.Status == GameStatus.Draw);
+                int d1Fin = d1Wins + d1Losses + d1Draws;
+
+                int d2Games = uPve.Count(g => g.AiDepth == 2);
+                int d2Wins = uPve.Count(g => g.AiDepth == 2 && ((g.RedPlayerId == u.Id && g.Status == GameStatus.RedWins) || (g.BlackPlayerId == u.Id && g.Status == GameStatus.BlackWins)));
+                int d2Losses = uPve.Count(g => g.AiDepth == 2 && ((g.RedPlayerId == u.Id && g.Status == GameStatus.BlackWins) || (g.BlackPlayerId == u.Id && g.Status == GameStatus.RedWins)));
+                int d2Draws = uPve.Count(g => g.AiDepth == 2 && g.Status == GameStatus.Draw);
+                int d2Fin = d2Wins + d2Losses + d2Draws;
+
+                int d3Games = uPve.Count(g => g.AiDepth == 3);
+                int d3Wins = uPve.Count(g => g.AiDepth == 3 && ((g.RedPlayerId == u.Id && g.Status == GameStatus.RedWins) || (g.BlackPlayerId == u.Id && g.Status == GameStatus.BlackWins)));
+                int d3Losses = uPve.Count(g => g.AiDepth == 3 && ((g.RedPlayerId == u.Id && g.Status == GameStatus.BlackWins) || (g.BlackPlayerId == u.Id && g.Status == GameStatus.RedWins)));
+                int d3Draws = uPve.Count(g => g.AiDepth == 3 && g.Status == GameStatus.Draw);
+                int d3Fin = d3Wins + d3Losses + d3Draws;
+
+                int d4Games = uPve.Count(g => g.AiDepth == 4);
+                int d4Wins = uPve.Count(g => g.AiDepth == 4 && ((g.RedPlayerId == u.Id && g.Status == GameStatus.RedWins) || (g.BlackPlayerId == u.Id && g.Status == GameStatus.BlackWins)));
+                int d4Losses = uPve.Count(g => g.AiDepth == 4 && ((g.RedPlayerId == u.Id && g.Status == GameStatus.BlackWins) || (g.BlackPlayerId == u.Id && g.Status == GameStatus.RedWins)));
+                int d4Draws = uPve.Count(g => g.AiDepth == 4 && g.Status == GameStatus.Draw);
+                int d4Fin = d4Wins + d4Losses + d4Draws;
+
+                int pveWins = d1Wins + d2Wins + d3Wins + d4Wins;
+                int pveLosses = d1Losses + d2Losses + d3Losses + d4Losses;
+                int pveDraws = d1Draws + d2Draws + d3Draws + d4Draws;
+                int pveFin = pveWins + pveLosses + pveDraws;
+
                 return new UserAccountOptionDto
                 {
                     Id = u.Id,
@@ -227,7 +273,33 @@ namespace ChessCore.Controllers
                     PuzzlesSolved = puzzleSolvedCounts.TryGetValue(u.Id, out int pCount) ? pCount : 0,
                     LessonsCompleted = lessonCompletedCounts.TryGetValue(u.Id, out int lCount) ? lCount : 0,
                     IsCurrentUser = (u.Id == userId),
-                    Rank = allRankCounter++
+                    Rank = allRankCounter++,
+
+                    TotalPveGames = uPve.Count,
+                    PveWins = pveWins,
+                    PveLosses = pveLosses,
+                    PveDraws = pveDraws,
+                    PveWinRate = pveFin > 0 ? Math.Round((double)pveWins * 100.0 / pveFin, 1) : 0,
+
+                    Depth1Games = d1Games,
+                    Depth1Wins = d1Wins,
+                    Depth1Losses = d1Losses,
+                    Depth1WinRate = d1Fin > 0 ? Math.Round((double)d1Wins * 100.0 / d1Fin, 1) : 0,
+
+                    Depth2Games = d2Games,
+                    Depth2Wins = d2Wins,
+                    Depth2Losses = d2Losses,
+                    Depth2WinRate = d2Fin > 0 ? Math.Round((double)d2Wins * 100.0 / d2Fin, 1) : 0,
+
+                    Depth3Games = d3Games,
+                    Depth3Wins = d3Wins,
+                    Depth3Losses = d3Losses,
+                    Depth3WinRate = d3Fin > 0 ? Math.Round((double)d3Wins * 100.0 / d3Fin, 1) : 0,
+
+                    Depth4Games = d4Games,
+                    Depth4Wins = d4Wins,
+                    Depth4Losses = d4Losses,
+                    Depth4WinRate = d4Fin > 0 ? Math.Round((double)d4Wins * 100.0 / d4Fin, 1) : 0
                 };
             }).ToList();
 
