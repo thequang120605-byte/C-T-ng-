@@ -29,7 +29,10 @@ namespace ChessCore.Data
                 int tqD1 = await dbContext.Games.CountAsync(g => (g.RedPlayerId == theQuang.Id || g.BlackPlayerId == theQuang.Id) && g.AiDepth == 1);
                 int qtD1 = await dbContext.Games.CountAsync(g => (g.RedPlayerId == quocTrung.Id || g.BlackPlayerId == quocTrung.Id) && g.AiDepth == 1);
 
-                if (!force && tqD1 == 9 && qtD1 == 33)
+                int puzCount = await dbContext.PuzzleProgresses.CountAsync(p => p.UserId == theQuang.Id);
+                int tqCourseCount = await dbContext.UserCourseProgresses.CountAsync(c => c.UserId == theQuang.Id && c.IsCompleted);
+                int tnPuzCount = await dbContext.PuzzleProgresses.CountAsync(p => p.UserId == trongNguyen.Id);
+                if (!force && tqD1 == 26 && qtD1 == 33 && puzCount == 324 && tnPuzCount == 246 && tqCourseCount == 19)
                 {
                     logger?.LogInformation(">>> Dữ liệu 3 tài khoản đã phong phú, tỷ lệ thắng TheQuang cao, không cần nạp lại.");
                     return;
@@ -69,7 +72,7 @@ namespace ChessCore.Data
                 await dbContext.SaveChangesAsync();
 
                 // 2. Tạo các ván đấu PvE Depth 1..4:
-                // TheQuang (Kỳ thủ giỏi - thắng cao): D1: 9 (8W, 1D, 0L), D2: 18 (14W, 2D, 2L), D3: 14 (6W, 3D, 5L), D4: 7 (0W, 2D, 5L) -> PvE 48 (28W, 8D, 12L)
+                // TheQuang (Kỳ thủ giỏi - thắng cao): D1: 26 (21W, 4D, 1L), D2: 18 (13W, 3D, 2L), D3: 14 (5W, 3D, 6L), D4: 7 (0W, 2D, 5L) -> PvE 65 (39W, 12D, 14L)
                 // TrongNguyen34 (Toàn diện, chăm chỉ): D1: 24 (19W, 2D, 3L), D2: 17 (9W, 2D, 6L), D3: 11 (1W, 2D, 8L), D4: 5 (0W, 1D, 4L) -> PvE 57 (29W, 7D, 21L)
                 // QuocTrung (Mới chơi): D1: 33 (22W, 4D, 7L), D2: 13 (4W, 2D, 7L), D3: 7 (1W, 1D, 5L), D4: 4 (0W, 0D, 4L) -> PvE 57 (27W, 7D, 23L)
                 var baseDate = DateTime.UtcNow.AddDays(-38);
@@ -82,9 +85,9 @@ namespace ChessCore.Data
                         User = theQuang,
                         InitialElo = 1215,
                         TargetElo = 1285,
-                        D1 = (W: 8, D: 1, L: 0),
-                        D2 = (W: 14, D: 2, L: 2),
-                        D3 = (W: 6, D: 3, L: 5),
+                        D1 = (W: 21, D: 4, L: 1),
+                        D2 = (W: 13, D: 3, L: 2),
+                        D3 = (W: 5, D: 3, L: 6),
                         D4 = (W: 0, D: 2, L: 5)
                     },
                     new
@@ -383,10 +386,11 @@ namespace ChessCore.Data
                 await dbContext.SaveChangesAsync();
 
                 // 5. Cập nhật Khóa học (UserCourseProgresses)
+                // Yêu cầu: CẢ 3 TÀI KHOẢN ĐỀU HOÀN THÀNH 19/19 BÀI HỌC (100%)
                 var coursesToAdd = new List<UserCourseProgress>();
                 for (int lessonId = 1; lessonId <= 19; lessonId++)
                 {
-                    // TrongNguyen: hoàn thành 19/19 bài, điểm 95-100%
+                    // TrongNguyen34: 19/19 bài hoàn thành (100%)
                     coursesToAdd.Add(new UserCourseProgress
                     {
                         UserId = trongNguyen.Id,
@@ -399,123 +403,88 @@ namespace ChessCore.Data
                         UpdatedAt = baseDate.AddDays(lessonId * 1.6).AddMinutes(45)
                     });
 
-                    // QuocTrung: hoàn thành 17/19 bài, điểm 80-95%
-                    if (lessonId <= 17)
+                    // QuocTrung: 19/19 bài hoàn thành (100%)
+                    coursesToAdd.Add(new UserCourseProgress
                     {
-                        coursesToAdd.Add(new UserCourseProgress
-                        {
-                            UserId = quocTrung.Id,
-                            LessonId = lessonId,
-                            IsCompleted = true,
-                            BestQuizScore = 80 + (lessonId % 4) * 5,
-                            QuizAttempts = 1 + (lessonId % 3),
-                            StartedAt = baseDate.AddDays(lessonId * 1.7),
-                            CompletedAt = baseDate.AddDays(lessonId * 1.7).AddMinutes(50),
-                            UpdatedAt = baseDate.AddDays(lessonId * 1.7).AddMinutes(50)
-                        });
-                    }
-                    else if (lessonId == 18)
-                    {
-                        coursesToAdd.Add(new UserCourseProgress
-                        {
-                            UserId = quocTrung.Id,
-                            LessonId = lessonId,
-                            IsCompleted = false,
-                            BestQuizScore = 60,
-                            QuizAttempts = 1,
-                            StartedAt = baseDate.AddDays(31),
-                            CompletedAt = null,
-                            UpdatedAt = baseDate.AddDays(31)
-                        });
-                    }
+                        UserId = quocTrung.Id,
+                        LessonId = lessonId,
+                        IsCompleted = true,
+                        BestQuizScore = 80 + (lessonId % 4) * 5,
+                        QuizAttempts = 1 + (lessonId % 3),
+                        StartedAt = baseDate.AddDays(lessonId * 1.7),
+                        CompletedAt = baseDate.AddDays(lessonId * 1.7).AddMinutes(50),
+                        UpdatedAt = baseDate.AddDays(lessonId * 1.7).AddMinutes(50)
+                    });
 
-                    // TheQuang: hoàn thành 15/19 bài, điểm 85-95%
-                    if (lessonId <= 15)
+                    // TheQuang: 19/19 bài hoàn thành (100%)
+                    coursesToAdd.Add(new UserCourseProgress
                     {
-                        coursesToAdd.Add(new UserCourseProgress
-                        {
-                            UserId = theQuang.Id,
-                            LessonId = lessonId,
-                            IsCompleted = true,
-                            BestQuizScore = 85 + (lessonId % 3) * 5,
-                            QuizAttempts = 1 + (lessonId % 2),
-                            StartedAt = baseDate.AddDays(lessonId * 1.9),
-                            CompletedAt = baseDate.AddDays(lessonId * 1.9).AddMinutes(40),
-                            UpdatedAt = baseDate.AddDays(lessonId * 1.9).AddMinutes(40)
-                        });
-                    }
-                    else if (lessonId == 16)
-                    {
-                        coursesToAdd.Add(new UserCourseProgress
-                        {
-                            UserId = theQuang.Id,
-                            LessonId = lessonId,
-                            IsCompleted = false,
-                            BestQuizScore = 70,
-                            QuizAttempts = 1,
-                            StartedAt = baseDate.AddDays(30),
-                            CompletedAt = null,
-                            UpdatedAt = baseDate.AddDays(30)
-                        });
-                    }
+                        UserId = theQuang.Id,
+                        LessonId = lessonId,
+                        IsCompleted = true,
+                        BestQuizScore = 85 + (lessonId % 3) * 5,
+                        QuizAttempts = 1 + (lessonId % 2),
+                        StartedAt = baseDate.AddDays(lessonId * 1.8),
+                        CompletedAt = baseDate.AddDays(lessonId * 1.8).AddMinutes(40),
+                        UpdatedAt = baseDate.AddDays(lessonId * 1.8).AddMinutes(40)
+                    });
                 }
                 dbContext.UserCourseProgresses.AddRange(coursesToAdd);
                 await dbContext.SaveChangesAsync();
 
-                // 6. Cập nhật Cờ thế (PuzzleProgresses) với số lẻ tự nhiên:
-                // TheQuang: 43 thế (attempts 65)
-                // TrongNguyen: 87 thế (attempts 131)
-                // QuocTrung: 76 thế (attempts 152)
-                // Sử dụng danh sách key thực tế từ Cấp 1 của Chiến dịch cờ thế để đảm bảo
-                // số lượng bài thế hiển thị trên trang Cờ thế (/Puzzle) và trang Dashboard khớp nhau 100%
-                var puzKeys = CampaignLevel1Keys.ToList();
+                // 6. Cập nhật Cờ thế (PuzzleProgresses):
+                // Tổng số cờ thế của hệ thống là 500 bài.
+                // Phân hóa hợp lý: TheQuang giải nhiều nhất (248 thế), TrongNguyen vừa phải (162 thế), QuocTrung (128 thế)
+                var puzKeyPool = new List<string>();
+                for (int i = 0; i < 66; i++) puzKeyPool.Add($"basic:{i}");
+                for (int i = 0; i < 350; i++) puzKeyPool.Add($"advanced:{i}");
 
                 var puzzlesToAdd = new List<PuzzleProgress>();
 
-                // TrongNguyen34: 87 bài
-                for (int k = 0; k < Math.Min(87, puzKeys.Count); k++)
-                {
-                    puzzlesToAdd.Add(new PuzzleProgress
-                    {
-                        UserId = trongNguyen.Id,
-                        PuzzleKey = puzKeys[k],
-                        Attempts = 1 + (k % 2),
-                        CompletedAt = baseDate.AddHours(k * 8.2),
-                        UpdatedAt = baseDate.AddHours(k * 8.2)
-                    });
-                }
-
-                // QuocTrung: 76 bài
-                for (int k = 0; k < Math.Min(76, puzKeys.Count); k++)
-                {
-                    puzzlesToAdd.Add(new PuzzleProgress
-                    {
-                        UserId = quocTrung.Id,
-                        PuzzleKey = puzKeys[k],
-                        Attempts = 1 + (k % 3),
-                        CompletedAt = baseDate.AddHours(k * 9.3),
-                        UpdatedAt = baseDate.AddHours(k * 9.3)
-                    });
-                }
-
-                // TheQuang: 43 bài
-                for (int k = 0; k < Math.Min(43, puzKeys.Count); k++)
+                // TheQuang: 324 bài (300+ bài thế, cao nhất, xứng đáng kỳ thủ Giỏi Top 1)
+                for (int k = 0; k < 324 && k < puzKeyPool.Count; k++)
                 {
                     puzzlesToAdd.Add(new PuzzleProgress
                     {
                         UserId = theQuang.Id,
-                        PuzzleKey = puzKeys[k],
+                        PuzzleKey = puzKeyPool[k],
                         Attempts = 1 + (k % 2),
-                        CompletedAt = baseDate.AddHours(k * 14.5),
-                        UpdatedAt = baseDate.AddHours(k * 14.5)
+                        CompletedAt = baseDate.AddHours(k * 2.1),
+                        UpdatedAt = baseDate.AddHours(k * 2.1)
+                    });
+                }
+
+                // TrongNguyen34: 246 bài (200+ bài thế, xếp hạng 2)
+                for (int k = 0; k < 246 && k < puzKeyPool.Count; k++)
+                {
+                    puzzlesToAdd.Add(new PuzzleProgress
+                    {
+                        UserId = trongNguyen.Id,
+                        PuzzleKey = puzKeyPool[k],
+                        Attempts = 1 + (k % 2),
+                        CompletedAt = baseDate.AddHours(k * 2.7),
+                        UpdatedAt = baseDate.AddHours(k * 2.7)
+                    });
+                }
+
+                // QuocTrung: 215 bài (200+ bài thế, xếp hạng 3)
+                for (int k = 0; k < 215 && k < puzKeyPool.Count; k++)
+                {
+                    puzzlesToAdd.Add(new PuzzleProgress
+                    {
+                        UserId = quocTrung.Id,
+                        PuzzleKey = puzKeyPool[k],
+                        Attempts = 1 + (k % 3),
+                        CompletedAt = baseDate.AddHours(k * 3.1),
+                        UpdatedAt = baseDate.AddHours(k * 3.1)
                     });
                 }
 
                 dbContext.PuzzleProgresses.AddRange(puzzlesToAdd);
 
-                theQuang.PuzzleScore = 735;
-                trongNguyen.PuzzleScore = 1145;
-                quocTrung.PuzzleScore = 985;
+                theQuang.PuzzleScore = 3240;
+                trongNguyen.PuzzleScore = 2460;
+                quocTrung.PuzzleScore = 2150;
 
                 await dbContext.SaveChangesAsync();
 

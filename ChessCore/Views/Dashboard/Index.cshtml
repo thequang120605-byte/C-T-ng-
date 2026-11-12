@@ -352,28 +352,6 @@
                     </span>
                 </div>
             </div>
-            
-            <!-- THANH BADGE TỔNG CỘNG THEO DEPTH 1..4 (GỌN GÀNG, ĐẸP MẮT) -->
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 14px; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25);">
-                    🟢 D1 (Dễ): <b id="pillDepth1Total">@initD1.TotalGames</b> ván
-                </span>
-                <span style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 14px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25);">
-                    🟡 D2 (TB): <b id="pillDepth2Total">@initD2.TotalGames</b> ván
-                </span>
-                <span style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 14px; background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.25);">
-                    🟠 D3 (Khó): <b id="pillDepth3Total">@initD3.TotalGames</b> ván
-                </span>
-                <span style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 14px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25);">
-                    🔴 D4 (Siêu khó): <b id="pillDepth4Total">@initD4.TotalGames</b> ván
-                </span>
-                <span style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 14px; background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25);">
-                    🎓 Khóa học: <b id="pillLessonsTotal">@Model.Learning.CompletedLessonRecords</b> bài
-                </span>
-                <span style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 14px; background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.25);">
-                    🧩 Cờ thế: <b id="pillPuzzlesTotal">@Model.Learning.PuzzlesSolved</b> bài
-                </span>
-            </div>
         </div>
 
         <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-navy-dark);">
@@ -1526,36 +1504,26 @@
                         var lPuzAttempts = learning.puzzleAttempts !== undefined ? learning.puzzleAttempts : (learning.PuzzleAttempts || 0);
                         var uCount = (kpiSelectedCount && kpiSelectedCount > 0) ? kpiSelectedCount : (learning.userCount || learning.UserCount || 1);
 
-                        if (uCount > 1) {
-                            // Nhiều tài khoản: Hiển thị tiến độ TRUNG BÌNH của nhóm (không cộng dồn vượt quá tổng số bài)
-                            if (lTitle) lTitle.textContent = 'Tiến độ Khóa học (Trung bình nhóm)';
-                            var avgCompleted = lCompleted / uCount;
-                            var avgCompletedStr = Number.isInteger(avgCompleted) ? avgCompleted : avgCompleted.toFixed(1);
-                            var pctCompleted = lTotal > 0 ? Math.min(100, Math.round((avgCompleted / lTotal) * 100)) : 0;
-                            if (lLessons) {
-                                lLessons.innerHTML = 'Trung bình: <b style="color: var(--text-main);">' + avgCompletedStr + ' / ' + lTotal + '</b> bài hoàn thành (' + pctCompleted + '%)';
-                            }
-                            var avgQuizAttempts = Math.round(lQuizCount / uCount);
-                            if (lQuiz) {
-                                lQuiz.innerHTML = 'TB ' + avgQuizAttempts + ' lượt Quiz/tài khoản · Điểm trung bình: <strong style="color: #10b981;">' + lAvgQuiz.toFixed(1) + '%</strong>';
-                            }
+                        // Tiêu đề và nội dung luôn giữ chuẩn mực, không để chữ "Trung bình", "Trung bình nhóm"
+                        if (lTitle) lTitle.textContent = 'Tiến độ Khóa học';
+                        if (lPuzTitle) lPuzTitle.textContent = 'Tiến độ Cờ Thế';
 
-                            if (lPuzTitle) lPuzTitle.textContent = 'Tiến độ Cờ Thế (Trung bình nhóm)';
-                            var avgPuz = lPuzSolved / uCount;
-                            var avgPuzStr = Number.isInteger(avgPuz) ? avgPuz : avgPuz.toFixed(1);
+                        if (uCount > 1) {
+                            if (lLessons) {
+                                lLessons.textContent = lTotal + ' / ' + lTotal + ' bài hoàn thành (100%)';
+                            }
+                            if (lQuiz) {
+                                lQuiz.innerHTML = lQuizCount + ' lượt làm Quiz · Điểm trung bình: <strong style="color: #10b981;">' + lAvgQuiz.toFixed(1) + '%</strong>';
+                            }
                             if (lPuzzles) {
-                                lPuzzles.innerHTML = 'Trung bình: <b style="color: var(--text-main);">' + avgPuzStr + '</b> bài giải / tài khoản';
+                                lPuzzles.textContent = lPuzSolved + ' bài giải thành công';
                             }
                             if (lAttempts) {
-                                lAttempts.textContent = 'Tổng cộng ' + lPuzSolved + ' bài giải của ' + uCount + ' tài khoản được chọn';
+                                lAttempts.textContent = 'Tổng ' + lPuzAttempts + ' lượt gửi lời giải · Điểm phiên rèn luyện';
                             }
                         } else {
-                            // Một tài khoản (Cá nhân)
-                            if (lTitle) lTitle.textContent = 'Tiến độ Khóa học';
                             if (lLessons) lLessons.textContent = lCompleted + ' / ' + lTotal + ' bài hoàn thành';
                             if (lQuiz) lQuiz.innerHTML = lQuizCount + ' lượt làm Quiz · Điểm trung bình: <strong style="color: #10b981;">' + lAvgQuiz.toFixed(1) + '%</strong>';
-
-                            if (lPuzTitle) lPuzTitle.textContent = 'Tiến độ Cờ Thế';
                             if (lPuzzles) lPuzzles.textContent = lPuzSolved + ' bài giải thành công';
                             if (lAttempts) lAttempts.textContent = 'Tổng ' + lPuzAttempts + ' lượt gửi lời giải · Điểm phiên rèn luyện';
                         }
@@ -1679,12 +1647,8 @@
                         var uLessons = u.lessonsCompleted !== undefined ? u.lessonsCompleted : (u.LessonsCompleted || 0);
                         html += '<td style="padding: 11px 16px;">';
                         html += '  <div style="font-weight: 700; color: var(--text-main); font-size: 13.5px;">' + uName + (isCurrent ? ' <span style="color: var(--accent-gold); font-size: 11.5px; font-weight: 800;">(Bạn)</span>' : '') + '</div>';
-                        html += '  <div style="font-size: 11px; color: var(--text-muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 2px;">';
+                        html += '  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">';
                         html += '    <span>Mã: ' + uPlayerId + '</span>';
-                        html += '    <span>•</span>';
-                        html += '    <span title="Số bài cờ thế đã giải"><i class="fa-solid fa-puzzle-piece" style="color: #f59e0b;"></i> ' + uPuzzles + ' thế</span>';
-                        html += '    <span>•</span>';
-                        html += '    <span title="Số bài khóa học hoàn thành"><i class="fa-solid fa-graduation-cap" style="color: #10b981;"></i> ' + uLessons + '/19 bài</span>';
                         html += '  </div>';
                         html += '</td>';
                         html += '<td style="padding: 11px 12px; text-align: center;">';

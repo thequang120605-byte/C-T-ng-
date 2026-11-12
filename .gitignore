@@ -28,6 +28,7 @@ docs/~$*
 *.xlsx
 *_dump*.sql
 backup_*.sql
+server_*.log
 TestSuites/*_output.txt
 TestSuites/*.png
 pull_from_tidb.py
