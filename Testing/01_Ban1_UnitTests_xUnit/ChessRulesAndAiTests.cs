@@ -308,6 +308,26 @@ namespace ChessCore.Tests
                 {
                     Console.WriteLine($"  Summary Depth {d.Depth} ({d.Name}): Total={d.TotalGames}, W={d.Wins}, L={d.Losses}, D={d.Draws}, WinRate={d.WinRate:F1}%");
                 }
+                // Verify PuzzleCampaignService sync
+                var campaign = new ChessCore.Services.PuzzleCampaignService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ChessCore.Services.PuzzleCampaignService>.Instance);
+                string dataDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "ChessCore", "Data", "Puzzles");
+                string cacheDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "ChessCore", "Data", "PuzzleCache");
+                campaign.Start(dataDir, cacheDir);
+                for (int wait = 0; wait < 50 && (!campaign.Ready || campaign.Playable.Count < 500); wait++) await Task.Delay(200);
+
+                Console.WriteLine($"CAMPAIGN_READY: {campaign.Ready}");
+                foreach (var u in users)
+                {
+                    var rawDone = db.PuzzleProgresses.Where(p => p.UserId == u.Id && p.CompletedAt != null).Select(p => p.PuzzleKey).ToHashSet();
+                    var linearDone = campaign.GetLinearCampaignCompletedKeys(rawDone);
+                    Console.WriteLine($"USER {u.Username}: RawDone={rawDone.Count}, LinearCampaignDone={linearDone.Count}");
+                    for (int lv = 1; lv <= 5; lv++)
+                    {
+                        var items = campaign.InLevel(lv);
+                        int comp = items.Count(p => linearDone.Contains(p.Key));
+                        Console.WriteLine($"  Level {lv}: {comp}/{items.Count}");
+                    }
+                }
             }
             catch (Exception ex)
             {

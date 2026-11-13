@@ -32,7 +32,8 @@ namespace ChessCore.Data
                 int puzCount = await dbContext.PuzzleProgresses.CountAsync(p => p.UserId == theQuang.Id);
                 int tqCourseCount = await dbContext.UserCourseProgresses.CountAsync(c => c.UserId == theQuang.Id && c.IsCompleted);
                 int tnPuzCount = await dbContext.PuzzleProgresses.CountAsync(p => p.UserId == trongNguyen.Id);
-                if (!force && tqD1 == 26 && qtD1 == 33 && puzCount == 324 && tnPuzCount == 246 && tqCourseCount == 19)
+                bool hasExactCampaignSync = await dbContext.PuzzleProgresses.AnyAsync(p => p.UserId == theQuang.Id && p.PuzzleKey == Campaign500Keys[0]);
+                if (!force && tqD1 == 26 && qtD1 == 33 && puzCount == 324 && tnPuzCount == 246 && tqCourseCount == 19 && hasExactCampaignSync)
                 {
                     logger?.LogInformation(">>> Dữ liệu 3 tài khoản đã phong phú, tỷ lệ thắng TheQuang cao, không cần nạp lại.");
                     return;
@@ -432,22 +433,21 @@ namespace ChessCore.Data
                 dbContext.UserCourseProgresses.AddRange(coursesToAdd);
                 await dbContext.SaveChangesAsync();
 
-                // 6. Cập nhật Cờ thế (PuzzleProgresses):
-                // Tổng số cờ thế của hệ thống là 500 bài.
-                // Phân hóa hợp lý: TheQuang giải nhiều nhất (248 thế), TrongNguyen vừa phải (162 thế), QuocTrung (128 thế)
-                var puzKeyPool = new List<string>();
-                for (int i = 0; i < 66; i++) puzKeyPool.Add($"basic:{i}");
-                for (int i = 0; i < 350; i++) puzKeyPool.Add($"advanced:{i}");
-
+                // 6. Cập nhật Cờ thế (PuzzleProgresses) đồng bộ 100% với Campaign 500 bài:
+                // Sử dụng chính xác 500 key từ Campaign500Keys theo đúng thứ tự Cấp 1 -> Cấp 5
+                // Đảm bảo số lượng cờ thế hiển thị trên trang Thử thách Cờ Thế (/Puzzle) và Dashboard trùng khớp 100%:
+                // - TheQuang: 324/500 bài (Cấp 1: 100/100, Cấp 2: 100/100, Cấp 3: 100/100, Cấp 4: 24/100)
+                // - TrongNguyen34: 246/500 bài (Cấp 1: 100/100, Cấp 2: 100/100, Cấp 3: 46/100)
+                // - QuocTrung: 215/500 bài (Cấp 1: 100/100, Cấp 2: 100/100, Cấp 3: 15/100)
                 var puzzlesToAdd = new List<PuzzleProgress>();
 
                 // TheQuang: 324 bài (300+ bài thế, cao nhất, xứng đáng kỳ thủ Giỏi Top 1)
-                for (int k = 0; k < 324 && k < puzKeyPool.Count; k++)
+                for (int k = 0; k < 324 && k < Campaign500Keys.Length; k++)
                 {
                     puzzlesToAdd.Add(new PuzzleProgress
                     {
                         UserId = theQuang.Id,
-                        PuzzleKey = puzKeyPool[k],
+                        PuzzleKey = Campaign500Keys[k],
                         Attempts = 1 + (k % 2),
                         CompletedAt = baseDate.AddHours(k * 2.1),
                         UpdatedAt = baseDate.AddHours(k * 2.1)
@@ -455,12 +455,12 @@ namespace ChessCore.Data
                 }
 
                 // TrongNguyen34: 246 bài (200+ bài thế, xếp hạng 2)
-                for (int k = 0; k < 246 && k < puzKeyPool.Count; k++)
+                for (int k = 0; k < 246 && k < Campaign500Keys.Length; k++)
                 {
                     puzzlesToAdd.Add(new PuzzleProgress
                     {
                         UserId = trongNguyen.Id,
-                        PuzzleKey = puzKeyPool[k],
+                        PuzzleKey = Campaign500Keys[k],
                         Attempts = 1 + (k % 2),
                         CompletedAt = baseDate.AddHours(k * 2.7),
                         UpdatedAt = baseDate.AddHours(k * 2.7)
@@ -468,12 +468,12 @@ namespace ChessCore.Data
                 }
 
                 // QuocTrung: 215 bài (200+ bài thế, xếp hạng 3)
-                for (int k = 0; k < 215 && k < puzKeyPool.Count; k++)
+                for (int k = 0; k < 215 && k < Campaign500Keys.Length; k++)
                 {
                     puzzlesToAdd.Add(new PuzzleProgress
                     {
                         UserId = quocTrung.Id,
-                        PuzzleKey = puzKeyPool[k],
+                        PuzzleKey = Campaign500Keys[k],
                         Attempts = 1 + (k % 3),
                         CompletedAt = baseDate.AddHours(k * 3.1),
                         UpdatedAt = baseDate.AddHours(k * 3.1)
@@ -495,6 +495,7 @@ namespace ChessCore.Data
             }
             catch (Exception ex)
             {
+                Console.WriteLine(">>> ERROR IN EnsureRichTestingDataForTopThreeUsersAsync: " + ex.ToString());
                 logger?.LogWarning(">>> Cảnh báo khi nạp dữ liệu 3 tài khoản: {Message}", ex.Message);
             }
         }
@@ -595,7 +596,7 @@ namespace ChessCore.Data
             return moves;
         }
 
-        private static readonly string[] CampaignLevel1Keys = new string[]
+        private static readonly string[] Campaign500Keys = new string[]
         {
             "endgame:98", "endgame:376", "endgame:485", "endgame:2966", "endgame:1095", "endgame:2516", "endgame:1441", "endgame:374",
             "basic:23", "endgame:2542", "endgame:1582", "endgame:1757", "endgame:1397", "endgame:6948", "endgame:3863", "endgame:2017",
@@ -609,7 +610,57 @@ namespace ChessCore.Data
             "endgame:298", "endgame:4401", "endgame:5995", "advanced:6", "advanced:105", "endgame:538", "endgame:2073", "endgame:4762",
             "endgame:5815", "advanced:367", "endgame:4519", "endgame:424", "endgame:6243", "endgame:954", "endgame:6809", "advanced:325",
             "endgame:5719", "endgame:2984", "endgame:2046", "advanced:450", "endgame:4761", "endgame:425", "endgame:7124", "endgame:2911",
-            "endgame:4743", "endgame:1774", "endgame:3530", "endgame:4158"
+            "endgame:4743", "endgame:1774", "endgame:3530", "endgame:4158", "endgame:6224", "endgame:2150", "endgame:2617", "endgame:6753",
+            "endgame:245", "endgame:6897", "endgame:2182", "endgame:3963", "endgame:1381", "endgame:646", "endgame:7148", "endgame:2238",
+            "endgame:2963", "endgame:2269", "endgame:341", "endgame:3010", "endgame:6635", "endgame:4253", "endgame:836", "endgame:3187",
+            "endgame:938", "endgame:4580", "endgame:1025", "endgame:3325", "endgame:4703", "endgame:1186", "endgame:3618", "endgame:5169",
+            "endgame:1817", "endgame:4377", "endgame:6481", "endgame:1916", "endgame:5270", "endgame:2670", "endgame:6654", "endgame:3204",
+            "endgame:6874", "endgame:3385", "endgame:6895", "endgame:5854", "endgame:7083", "endgame:6307", "endgame:154", "endgame:6876",
+            "endgame:268", "endgame:7252", "endgame:356", "endgame:850", "endgame:660", "endgame:1325", "endgame:1444", "endgame:4925",
+            "endgame:867", "endgame:6110", "endgame:3255", "endgame:3188", "endgame:5913", "endgame:6885", "endgame:5596", "endgame:1577",
+            "endgame:4642", "endgame:252", "endgame:1468", "endgame:6247", "endgame:1584", "endgame:6807", "endgame:777", "endgame:2797",
+            "endgame:6263", "endgame:1728", "endgame:477", "endgame:6719", "endgame:2998", "endgame:2086", "endgame:2033", "endgame:3797",
+            "endgame:3164", "endgame:2196", "endgame:6692", "endgame:6833", "endgame:2371", "endgame:1294", "endgame:93", "endgame:2494",
+            "endgame:3657", "endgame:183", "endgame:2705", "endgame:4770", "endgame:687", "endgame:2818", "endgame:5548", "endgame:797",
+            "endgame:2922", "endgame:6059", "endgame:1031", "endgame:3506", "endgame:4980", "endgame:2547", "endgame:4060", "endgame:3226",
+            "endgame:733", "endgame:1846", "endgame:752", "endgame:2306", "endgame:879", "endgame:2453", "endgame:917", "endgame:2518",
+            "endgame:1305", "endgame:2700", "endgame:1472", "endgame:2904", "endgame:1661", "endgame:3167", "endgame:1859", "endgame:3668",
+            "endgame:1885", "endgame:3689", "endgame:2001", "endgame:4097", "endgame:2040", "endgame:4167", "endgame:2079", "endgame:4841",
+            "endgame:2190", "endgame:5351", "endgame:2201", "endgame:5700", "endgame:2213", "endgame:6412", "endgame:2314", "endgame:6865",
+            "endgame:2558", "endgame:6975", "endgame:4166", "endgame:3966", "endgame:4211", "endgame:4135", "endgame:4391", "endgame:4733",
+            "endgame:5340", "endgame:4738", "endgame:5735", "endgame:4765", "endgame:5810", "endgame:4994", "endgame:6289", "endgame:5101",
+            "endgame:6608", "endgame:5985", "endgame:7223", "endgame:249", "endgame:563", "endgame:1085", "endgame:1144", "endgame:1212",
+            "endgame:1353", "endgame:1599", "endgame:1707", "endgame:1943", "endgame:2005", "endgame:2119", "endgame:2204", "endgame:2526",
+            "endgame:2612", "endgame:2652", "endgame:2858", "endgame:2934", "endgame:3314", "endgame:4358", "endgame:4722", "endgame:5122",
+            "endgame:5422", "endgame:5457", "endgame:7121", "endgame:7291", "endgame:68", "endgame:275", "endgame:862", "endgame:914",
+            "endgame:1094", "endgame:1128", "endgame:1204", "endgame:1221", "endgame:1750", "endgame:1872", "endgame:2497", "endgame:2698",
+            "endgame:3052", "endgame:3390", "endgame:3433", "endgame:3745", "endgame:3903", "endgame:4875", "endgame:6128", "endgame:6642",
+            "endgame:3546", "endgame:6694", "endgame:7171", "endgame:3171", "advanced:27", "endgame:1152", "basic:8", "advanced:103",
+            "advanced:482", "endgame:884", "endgame:572", "endgame:6160", "advanced:331", "advanced:207", "basic:62", "endgame:277",
+            "endgame:5252", "advanced:8", "advanced:16", "advanced:486", "endgame:5033", "endgame:3606", "endgame:522", "advanced:358",
+            "endgame:147", "basic:18", "endgame:2384", "endgame:3388", "advanced:244", "advanced:101", "advanced:160", "endgame:1137",
+            "endgame:7086", "endgame:6253", "advanced:365", "endgame:1660", "basic:41", "endgame:4204", "endgame:5300", "advanced:7",
+            "advanced:284", "advanced:162", "endgame:173", "endgame:7313", "endgame:5284", "advanced:369", "endgame:2835", "endgame:291",
+            "endgame:4593", "endgame:6637", "endgame:4146", "advanced:299", "advanced:165", "endgame:2276", "advanced:388", "endgame:3109",
+            "endgame:900", "endgame:5800", "endgame:6669", "advanced:76", "advanced:285", "endgame:3300", "advanced:441", "endgame:4088",
+            "endgame:1767", "endgame:6702", "endgame:357", "advanced:99", "advanced:480", "endgame:3926", "advanced:449", "endgame:5448",
+            "endgame:2163", "endgame:335", "endgame:1956", "advanced:104", "advanced:161", "endgame:6074", "advanced:544", "endgame:5684",
+            "endgame:2197", "endgame:2868", "endgame:2028", "advanced:305", "advanced:479", "endgame:6089", "endgame:2674", "endgame:6425",
+            "endgame:3912", "advanced:326", "advanced:487", "endgame:1371", "endgame:2828", "endgame:6720", "endgame:4719", "advanced:328",
+            "advanced:510", "endgame:2299", "endgame:2899", "endgame:5634", "endgame:7197", "advanced:327", "advanced:297", "endgame:3152",
+            "endgame:3458", "endgame:2854", "advanced:97", "advanced:500", "endgame:3172", "endgame:4016", "advanced:50", "advanced:164",
+            "endgame:4198", "endgame:4354", "advanced:53", "advanced:481", "endgame:4269", "endgame:4435", "advanced:48", "advanced:511",
+            "endgame:6055", "endgame:4965", "endgame:3236", "advanced:60", "endgame:3117", "endgame:5761", "endgame:2919", "endgame:2790",
+            "endgame:3137", "endgame:5962", "endgame:3860", "endgame:3429", "endgame:3593", "endgame:6357", "endgame:6431", "endgame:4648",
+            "endgame:6836", "endgame:6397", "endgame:6520", "endgame:1523", "endgame:2903", "endgame:6590", "endgame:3721", "endgame:210",
+            "endgame:4638", "endgame:525", "endgame:6283", "endgame:586", "endgame:6679", "endgame:637", "endgame:3073", "endgame:659",
+            "endgame:6391", "endgame:1037", "endgame:1179", "endgame:1226", "endgame:1233", "endgame:1236", "endgame:1316", "endgame:1456",
+            "endgame:1924", "endgame:2302", "endgame:2775", "endgame:2970", "endgame:2990", "endgame:3021", "endgame:3272", "endgame:3379",
+            "endgame:3591", "endgame:3666", "endgame:3737", "endgame:4496", "endgame:4958", "endgame:5091", "endgame:5126", "endgame:5237",
+            "endgame:5502", "endgame:5592", "endgame:5765", "endgame:5941", "endgame:6252", "endgame:6875", "endgame:2050", "endgame:2289",
+            "endgame:2678", "endgame:3494", "endgame:5485", "endgame:5756", "endgame:6427", "endgame:6633", "endgame:6641", "endgame:7010",
+            "endgame:7301", "endgame:996", "endgame:1214", "endgame:2477", "endgame:3101", "endgame:6336", "endgame:502", "endgame:1572",
+            "endgame:2793", "endgame:2754", "endgame:2809", "endgame:5748",
         };
     }
 }
