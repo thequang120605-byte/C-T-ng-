@@ -437,6 +437,8 @@ document.addEventListener("DOMContentLoaded", function () {
   let gameStatus = null;
 
   let isCheck = false;
+  let lastCheckedMoveCount = -1;
+  let checkOverlayTimeout = null;
 
   let timerInterval = null;
   let matchTotalSeconds = 0;
@@ -534,6 +536,11 @@ document.addEventListener("DOMContentLoaded", function () {
     VS_COMPUTER = false;
     IS_AI_VS_AI = false;
     gameModeSelected = false;
+    lastCheckedMoveCount = -1;
+    if (checkOverlayTimeout) {
+      clearTimeout(checkOverlayTimeout);
+      checkOverlayTimeout = null;
+    }
 
     if (playerVsPlayerButton) {
       playerVsPlayerButton.classList.remove("selected");
@@ -1192,8 +1199,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     updatePlayerStatus();
 
-    handleCheckWarning();
-
     updateComputerStatus();
 
     updateActionButtonsVisibility();
@@ -1207,9 +1212,11 @@ document.addEventListener("DOMContentLoaded", function () {
       stopOnlineSync();
     }
     
-    // Phát âm thanh khi có nước đi mới
+    // Phát âm thanh và cảnh báo chỉ khi có nước đi mới
     const currentMovesCount = (data.moves || []).length;
     const currentPieceCount = (data.boardPieces || []).length;
+    currentMoveCount = currentMovesCount;
+
     if (currentMovesCount > previousMovesCount && previousMovesCount > 0) {
       if (isCheck) {
         playSound('check');
@@ -1218,11 +1225,11 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         playSound('move');
       }
-    } else if (isCheck && gameStatus === "InProgress") {
-      playSound('check');
     }
     previousMovesCount = currentMovesCount;
     previousPieceCount = currentPieceCount;
+
+    handleCheckWarning(currentMovesCount);
 
     renderMoveHistory(data.moves);
 
@@ -1849,7 +1856,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // CHECK WARNING
   // =====================================================
 
-  function handleCheckWarning() {
+  function handleCheckWarning(movesCount = 0) {
     document
       .querySelectorAll(".chess-piece.in-check")
       .forEach(function (element) {
@@ -1858,8 +1865,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const overlay = document.getElementById("check-overlay");
 
-    if (overlay) {
-      overlay.classList.add("hidden");
+    if (!isCheck) {
+      lastCheckedMoveCount = -1;
+      if (overlay) {
+        overlay.classList.add("hidden");
+      }
+      return;
     }
 
     if (isCheck && gameStatus === "InProgress" && currentTurn) {
@@ -1873,11 +1884,18 @@ document.addEventListener("DOMContentLoaded", function () {
         kingElement.classList.add("in-check");
       }
 
-      if (overlay) {
+      // CHỈ hiển thị popup to ở giữa bàn cờ đúng 1 lần khi có nước cờ mới dẫn đến chiếu tướng
+      // Tuyệt đối không bật tắt nhấp nháy liên tục khi người chơi đang suy nghĩ tìm nước thoát chiếu
+      if (overlay && movesCount !== lastCheckedMoveCount) {
+        lastCheckedMoveCount = movesCount;
         overlay.classList.remove("hidden");
 
-        setTimeout(function () {
+        if (checkOverlayTimeout) {
+          clearTimeout(checkOverlayTimeout);
+        }
+        checkOverlayTimeout = setTimeout(function () {
           overlay.classList.add("hidden");
+          checkOverlayTimeout = null;
         }, 1200);
       }
     }
