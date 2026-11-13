@@ -1146,9 +1146,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const roomBox = document.getElementById("room-info-box");
     const roomCodeDisplay = document.getElementById("display-room-code");
-    if (roomBox && roomCodeDisplay && data.roomCode) {
-      roomBox.classList.remove("hidden");
-      roomCodeDisplay.textContent = data.roomCode;
+    const isOnlineGame = isOnlineMode || (data.gameMode && data.gameMode.toLowerCase().startsWith("online"));
+    if (roomBox && roomCodeDisplay) {
+      if (isOnlineGame && data.roomCode) {
+        roomBox.classList.remove("hidden");
+        roomCodeDisplay.textContent = data.roomCode;
+      } else {
+        roomBox.classList.add("hidden");
+      }
     }
 
     currentTurn = data.currentTurn;
@@ -2432,8 +2437,8 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const onlineActive = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
-      if (onlineActive) {
+      const isOnline = isOnlineMode || localStorage.getItem("isOnlineMode") === "true";
+      if (isOnline) {
           const myColor = getMyOnlineColor();
           if (myColor && currentTurn !== myColor) {
               const enemyName = currentTurn === "Red" ? "Quân Đỏ" : "Quân Đen";
